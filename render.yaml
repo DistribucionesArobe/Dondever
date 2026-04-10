@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: dondever-app
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_NUMBER
+        sync: false
+      - key: SPORTSDB_API_KEY
+        sync: false
+      - key: APP_URL
+        value: https://dondever.app
+      - key: AFFILIATE_1XBET
+        sync: false
+      - key: AFFILIATE_BETSSON
+        sync: false
+      - key: AFFILIATE_CJ
+        sync: false

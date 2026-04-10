@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DondeVer.app - Donde ver juegos deportivos hoy</title>
+    <meta name="description" content="Encuentra donde ver los juegos de hoy en Mexico y Estados Unidos. Liga MX, NFL, NBA, MLB y mas. Canales de TV y streaming.">
+    <meta property="og:title" content="DondeVer.app - Donde ver juegos deportivos hoy">
+    <meta property="og:description" content="Guia completa de donde ver deportes en vivo. Liga MX, NFL, NBA, MLB, Champions League y mas.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ app_url }}">
+    <link rel="canonical" href="{{ app_url }}">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --surface: #141922;
+            --surface-2: #1c2333;
+            --border: #2a3245;
+            --text: #e4e8f1;
+            --text-muted: #8892a8;
+            --accent: #00d4aa;
+            --accent-glow: rgba(0, 212, 170, 0.15);
+            --live: #ff4757;
+            --live-glow: rgba(255, 71, 87, 0.2);
+            --yellow: #ffd32a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Header ─────────────────────────── */
+        .header {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .logo span { color: var(--text); }
+        .header-stats {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .header-stats strong { color: var(--accent); }
+
+        /* ── Filters ────────────────────────── */
+        .filters {
+            max-width: 1200px;
+            margin: 1rem auto;
+            padding: 0 1rem;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        /* ── Main Content ───────────────────── */
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .date-display {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            text-transform: capitalize;
+        }
+
+        /* ── League Section ─────────────────── */
+        .league-section {
+            margin-bottom: 2rem;
+        }
+        .league-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* ── Game Card ──────────────────────── */
+        .game-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto;
+            gap: 1rem;
+            align-items: center;
+            transition: border-color 0.2s;
+        }
+        .game-card:hover {
+            border-color: var(--accent);
+        }
+        .game-card.live {
+            border-left: 3px solid var(--live);
+            background: linear-gradient(90deg, var(--live-glow) 0%, var(--surface) 20%);
+        }
+
+        .team {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .team.away { justify-content: flex-end; text-align: right; }
+        .team-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: contain;
+            background: var(--surface-2);
+        }
+        .team-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .team-score {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .game-center {
+            text-align: center;
+            min-width: 80px;
+        }
+        .game-time {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--yellow);
+        }
+        .game-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .live-badge {
+            display: inline-block;
+            background: var(--live);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .game-channels {
+            text-align: right;
+        }
+        .channel-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin: 2px;
+        }
+        .channel-tag.cable { background: #1a365d; color: #63b3ed; }
+        .channel-tag.streaming { background: #322659; color: #b794f4; }
+        .channel-tag.broadcast { background: #1a3a2a; color: #68d391; }
+        .channel-tag.unknown { background: var(--surface-2); color: var(--text-muted); }
+
+        /* ── Affiliate Banner ───────────────── */
+        .affiliate-banner {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .affiliate-text {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .affiliate-cta {
+            padding: 0.6rem 1.5rem;
+            background: var(--accent);
+            color: var(--bg);
+            border-radius: 8px;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: transform 0.2s;
+        }
+        .affiliate-cta:hover { transform: scale(1.05); }
+        .affiliate-small {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* ── WhatsApp CTA ───────────────────── */
+        .wa-float {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #25d366;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+            transition: transform 0.2s;
+            z-index: 1000;
+        }
+        .wa-float:hover { transform: scale(1.1); }
+
+        /* ── Footer ─────────────────────────── */
+        .footer {
+            max-width: 1200px;
+            margin: 3rem auto 1rem;
+            padding: 2rem 1rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .footer a { color: var(--accent); text-decoration: none; }
+
+        /* ── No Games ───────────────────────── */
+        .no-games {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: var(--text-muted);
+        }
+        .no-games h2 { font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--text); }
+
+        /* ── Responsive ─────────────────────── */
+        @media (max-width: 768px) {
+            .game-card {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+                text-align: center;
+            }
+            .team, .team.away { justify-content: center; text-align: center; }
+            .game-channels { text-align: center; }
+            .affiliate-banner { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span>.app</a>
+        <div class="header-stats">
+            <strong>{{ total_games }}</strong> juegos hoy
+        </div>
+    </div>
+</header>
+
+<!-- Sport Filters -->
+<div class="filters">
+    <a href="/" class="filter-btn {% if not current_sport and not current_league %}active{% endif %}">Todos</a>
+    <a href="/?sport=soccer" class="filter-btn {% if current_sport == 'soccer' %}active{% endif %}">Futbol</a>
+    <a href="/?sport=football" class="filter-btn {% if current_sport == 'football' %}active{% endif %}">NFL</a>
+    <a href="/?sport=basketball" class="filter-btn {% if current_sport == 'basketball' %}active{% endif %}">Basket</a>
+    <a href="/?sport=baseball" class="filter-btn {% if current_sport == 'baseball' %}active{% endif %}">Beisbol</a>
+    <a href="/?sport=hockey" class="filter-btn {% if current_sport == 'hockey' %}active{% endif %}">Hockey</a>
+    <a href="/?sport=mma" class="filter-btn {% if current_sport == 'mma' %}active{% endif %}">UFC/Box</a>
+    <a href="/?sport=racing" class="filter-btn {% if current_sport == 'racing' %}active{% endif %}">Motor</a>
+    <a href="/?sport=tennis" class="filter-btn {% if current_sport == 'tennis' %}active{% endif %}">Tenis</a>
+</div>
+
+<main class="main">
+    <p class="date-display">{{ today_display }}</p>
+
+    {% if not games %}
+    <div class="no-games">
+        <h2>No hay juegos programados</h2>
+        <p>No se encontraron juegos para esta fecha/filtro. Intenta con otra fecha o quita los filtros.</p>
+    </div>
+    {% endif %}
+
+    {% set banner_shown = [false] %}
+    {% set league_count = [0] %}
+
+    {% for league_name, league_data in sports_grouped.items() %}
+    <section class="league-section">
+        <h2 class="league-header">
+            <span>{{ league_data.emoji }}</span>
+            {{ league_name }}
+            <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 400;">
+                ({{ league_data.games | length }})
+            </span>
+        </h2>
+
+        {% for game in league_data.games %}
+        <div class="game-card {% if game.status.state == 'in' %}live{% endif %}">
+            <!-- Away Team -->
+            <div class="team away">
+                <div>
+                    <div class="team-name">{{ game.away.name }}</div>
+                    {% if game.status.state != 'pre' %}
+                    <div class="team-score">{{ game.away.score }}</div>
+                    {% endif %}
+                </div>
+                {% if game.away.logo %}
+                <img src="{{ game.away.logo }}" alt="{{ game.away.name }}" class="team-logo" loading="lazy">
+                {% endif %}
+            </div>
+
+            <!-- Center (time/status) -->
+            <div class="game-center">
+                {% if game.status.state == 'in' %}
+                    <div class="live-badge">EN VIVO</div>
+                {% elif game.status.state == 'post' %}
+                    <div class="game-status">FINAL</div>
+                {% else %}
+                    <div class="game-time">{{ format_mx_time(game.date) }}</div>
+                    <div class="game-status">{{ format_us_time(game.date) }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Home Team -->
+            <div class="team">
+                {% if game.home.logo %}
+                <img src="{{ game.home.logo }}" alt="{{ game.home.name }}" class="team-logo" loading="lazy">
+                {% endif %}
+                <div>
+                    <div class="team-name">{{ game.home.name }}</div>
+                    {% if game.status.state != 'pre' %}
+                    <div class="team-score">{{ game.home.score }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Channels -->
+            <div class="game-channels">
+                {% if game.broadcasts %}
+                    {% for b in game.broadcasts %}
+                    <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}">
+                        {{ b.channel }}
+                    </span>
+                    {% endfor %}
+                {% else %}
+                    <span class="channel-tag unknown">Por confirmar</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+
+    <!-- Affiliate banner after 2nd league -->
+    {% set _ = league_count.__setitem__(0, league_count[0] + 1) %}
+    {% if league_count[0] == 2 and not banner_shown[0] %}
+        {% set _ = banner_shown.__setitem__(0, true) %}
+        {% for key, aff in affiliates.items() %}
+        {% if loop.first %}
+        <div class="affiliate-banner">
+            <div>
+                <div class="affiliate-text">Haz tus apuestas deportivas de forma segura</div>
+                <div class="affiliate-small">Publicidad</div>
+            </div>
+            <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="affiliate-cta">
+                {{ aff.cta }}
+            </a>
+        </div>
+        {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% endfor %}
+
+    <!-- Bottom affiliate banners -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 2rem;">
+        {% for key, aff in affiliates.items() %}
+        <div class="affiliate-banner" style="margin: 0;">
+            <div>
+                <div class="affiliate-text">{{ aff.name }}</div>
+                <div class="affiliate-small">Publicidad</div>
+            </div>
+            <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="affiliate-cta">
+                {{ aff.cta }}
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</main>
+
+<!-- WhatsApp floating button -->
+<a href="https://wa.me/14155238886?text=hoy" class="wa-float" title="Pregunta por WhatsApp">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="white">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.555 4.126 1.528 5.869L.06 23.897l6.171-1.617A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.94 0-3.75-.58-5.264-1.573l-.378-.224-3.91 1.025 1.043-3.811-.247-.393A9.777 9.777 0 012.182 12 9.818 9.818 0 0112 2.182 9.818 9.818 0 0121.818 12 9.818 9.818 0 0112 21.818z"/>
+    </svg>
+</a>
+
+<footer class="footer">
+    <p>DondeVer.app &copy; {{ now().year }} &mdash; Guia de donde ver deportes en vivo</p>
+    <p style="margin-top: 0.5rem;">
+        Escribe por <a href="https://wa.me/14155238886?text=hoy">WhatsApp</a> para saber donde ver cualquier juego
+    </p>
+    <p style="margin-top: 0.5rem; font-size: 0.7rem;">
+        Los enlaces de apuestas son publicidad. Apuesta responsablemente. Solo mayores de 18.
+    </p>
+</footer>
+
+<!-- Auto-refresh for live games -->
+<script>
+    // Refresh every 60 seconds if there are live games
+    const hasLiveGames = document.querySelector('.live-badge');
+    if (hasLiveGames) {
+        setTimeout(() => location.reload(), 60000);
+    }
+
+    // Track affiliate clicks
+    document.querySelectorAll('.affiliate-cta').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const name = this.closest('.affiliate-banner')?.querySelector('.affiliate-text')?.textContent || 'unknown';
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'affiliate_click', { affiliate: name });
+            }
+        });
+    });
+</script>
+</body>
+</html>
