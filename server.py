@@ -177,6 +177,30 @@ async def whatsapp_verify():
     return {"status": "ok", "service": "dondever-whatsapp"}
 
 
+# ── Twitter Bot Scheduler ────────────────────────────────
+
+import os
+if os.getenv("TWITTER_API_KEY"):
+    try:
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+        from twitter_bot import setup_twitter_scheduler
+
+        scheduler = AsyncIOScheduler()
+
+        @app.on_event("startup")
+        async def start_scheduler():
+            setup_twitter_scheduler(scheduler)
+            scheduler.start()
+            logger.info("Twitter bot scheduler started")
+
+        @app.on_event("shutdown")
+        async def stop_scheduler():
+            scheduler.shutdown()
+
+    except ImportError:
+        logger.warning("APScheduler not installed, Twitter bot disabled")
+
+
 # ── Health ───────────────────────────────────────────────
 
 @app.get("/health")
