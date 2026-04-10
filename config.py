@@ -30,15 +30,15 @@ AFFILIATES = {
     },
     "betsson": {
         "name": "Betsson",
-        "url": os.getenv("AFFILIATE_BETSSON", "#"),
+        "url": os.getenv("AFFILIATE_BETSSON", "https://record.betsson.mx/_HF2ZLLLzsI4k5VDSMnChDGCjLk9Ro7mn/1/"),
         "logo": "/static/affiliates/betsson.png",
         "cta": "Apostar en Betsson",
     },
     "cj": {
-        "name": "VPN Deal",
-        "url": os.getenv("AFFILIATE_CJ", "#"),
+        "name": "NordVPN",
+        "url": os.getenv("AFFILIATE_CJ", "https://www.anrdoezrs.net/click-101647648-16968809"),
         "logo": "/static/affiliates/vpn.png",
-        "cta": "Ver con VPN",
+        "cta": "Desbloquea con VPN",
     },
 }
 
