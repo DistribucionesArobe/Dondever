@@ -13,8 +13,9 @@ TWILIO_WA_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886")
 
 # ── APIs ─────────────────────────────────────────────────
 ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports"
-SPORTSDB_KEY = os.getenv("SPORTSDB_API_KEY", "1")
+SPORTSDB_KEY = os.getenv("SPORTSDB_API_KEY", "154704")
 SPORTSDB_BASE = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_KEY}"
+SPORTSDB_V2_BASE = f"https://www.thesportsdb.com/api/v2/json"
 
 # ── App ──────────────────────────────────────────────────
 APP_URL = os.getenv("APP_URL", "https://dondever.app")

@@ -1,6 +1,6 @@
 """
 Sports data fetcher — pulls schedules from ESPN's public API
-and enriches with TV broadcast data from TheSportsDB.
+and enriches with TV broadcast data from TheSportsDB Premium.
 """
 
 import httpx
@@ -10,12 +10,17 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from cachetools import TTLCache
 
-from config import ESPN_BASE, SPORTSDB_BASE, LEAGUES, CHANNEL_ALIASES
+from config import (
+    ESPN_BASE, SPORTSDB_BASE, SPORTSDB_KEY,
+    LEAGUES, CHANNEL_ALIASES
+)
 
 logger = logging.getLogger("dondever.sports")
 
 # Cache: 5 min TTL, max 500 entries
 _cache = TTLCache(maxsize=500, ttl=300)
+# TV cache: 30 min TTL (channels don't change often)
+_tv_cache = TTLCache(maxsize=1000, ttl=1800)
 
 
 # ── ESPN API ─────────────────────────────────────────────
@@ -31,7 +36,7 @@ async def fetch_espn_scoreboard(
     url = f"{ESPN_BASE}/{sport}/{league}/scoreboard"
     params = {}
     if date_str:
-        params["dates"] = date_str  # format: YYYYMMDD
+        params["dates"] = date_str
 
     async with httpx.AsyncClient(timeout=15) as client:
         try:
@@ -45,13 +50,161 @@ async def fetch_espn_scoreboard(
             return {"events": [], "leagues": []}
 
 
-def parse_espn_events(raw: dict, league_slug: str) -> list[dict]:
-    """Parse ESPN scoreboard response into clean event dicts."""
+# ── TheSportsDB Premium API ─────────────────────────────
+
+# Map ESPN league IDs to TheSportsDB league IDs
+SPORTSDB_LEAGUE_MAP = {
+    "liga-mx": "4350",
+    "mls": "4346",
+    "premier-league": "4328",
+    "la-liga": "4335",
+    "serie-a": "4332",
+    "bundesliga": "4331",
+    "ligue-1": "4334",
+    "champions": "4480",
+    "europa-league": "4481",
+    "nfl": "4391",
+    "nba": "4387",
+    "mlb": "4424",
+    "nhl": "4380",
+}
+
+
+async def fetch_sportsdb_schedule(
+    sportsdb_league_id: str, date_str: str
+) -> list[dict]:
+    """
+    Fetch schedule from TheSportsDB Premium API.
+    Returns events with TV station info.
+    date_str format: YYYY-MM-DD
+    """
+    cache_key = f"sportsdb:schedule:{sportsdb_league_id}:{date_str}"
+    if cache_key in _tv_cache:
+        return _tv_cache[cache_key]
+
+    url = f"{SPORTSDB_BASE}/eventsday.php"
+    params = {"d": date_str, "l": sportsdb_league_id}
+
+    async with httpx.AsyncClient(timeout=12) as client:
+        try:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            events = data.get("events") or []
+            _tv_cache[cache_key] = events
+            return events
+        except Exception as e:
+            logger.warning(f"TheSportsDB schedule error for league {sportsdb_league_id}: {e}")
+            return []
+
+
+async def fetch_sportsdb_tv_by_event(event_id: str) -> list[dict]:
+    """
+    Lookup TV broadcast channels for a specific event ID.
+    TheSportsDB Premium endpoint.
+    """
+    cache_key = f"sportsdb:tv:{event_id}"
+    if cache_key in _tv_cache:
+        return _tv_cache[cache_key]
+
+    url = f"{SPORTSDB_BASE}/lookupeventtv.php"
+    params = {"id": event_id}
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        try:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            tv_list = data.get("tvevent") or []
+            result = []
+            for tv in tv_list:
+                country = tv.get("strCountry", "")
+                # Only keep MX and US channels
+                if country in ("Mexico", "United States", "US", "MX", "Worldwide"):
+                    channel = tv.get("strChannel", "")
+                    if channel:
+                        result.append({
+                            "channel": channel,
+                            "country": country,
+                            "info": CHANNEL_ALIASES.get(channel, {
+                                "name": channel,
+                                "country": "MX" if "Mexico" in country else "US",
+                                "type": "cable"
+                            }),
+                        })
+            _tv_cache[cache_key] = result
+            return result
+        except Exception as e:
+            logger.warning(f"TheSportsDB TV lookup error: {e}")
+            return []
+
+
+async def get_sportsdb_tv_for_teams(
+    home_team: str, away_team: str, league_slug: str, date_str: str
+) -> list[dict]:
+    """
+    Try to find TV info from TheSportsDB by matching teams
+    from the daily schedule.
+    """
+    sportsdb_league = SPORTSDB_LEAGUE_MAP.get(league_slug)
+    if not sportsdb_league:
+        return []
+
+    # Convert YYYYMMDD to YYYY-MM-DD
+    formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+
+    events = await fetch_sportsdb_schedule(sportsdb_league, formatted_date)
+
+    # Try to match by team names
+    home_lower = home_team.lower()
+    away_lower = away_team.lower()
+
+    for ev in events:
+        db_home = (ev.get("strHomeTeam") or "").lower()
+        db_away = (ev.get("strAwayTeam") or "").lower()
+
+        # Fuzzy match: check if ESPN team name is contained in SportsDB name or vice versa
+        home_match = (home_lower in db_home or db_home in home_lower or
+                      home_lower.split()[-1] in db_home)
+        away_match = (away_lower in db_away or db_away in away_lower or
+                      away_lower.split()[-1] in db_away)
+
+        if home_match and away_match:
+            # Found the match! Get TV info
+            event_id = ev.get("idEvent", "")
+            tv_station = ev.get("strTVStation", "")
+
+            # First try the TV station field directly
+            tv_channels = []
+            if tv_station:
+                for ch in tv_station.split(","):
+                    ch = ch.strip()
+                    if ch:
+                        tv_channels.append({
+                            "channel": ch,
+                            "country": "",
+                            "info": CHANNEL_ALIASES.get(ch, {"name": ch, "type": "cable"}),
+                        })
+
+            # Then try the detailed TV lookup if we have an event ID
+            if event_id and not tv_channels:
+                tv_channels = await fetch_sportsdb_tv_by_event(event_id)
+
+            return tv_channels
+
+    return []
+
+
+# ── ESPN Event Parser (enriched with TheSportsDB) ────────
+
+async def parse_espn_events_enriched(
+    raw: dict, league_slug: str, date_str: str
+) -> list[dict]:
+    """Parse ESPN events and enrich with TheSportsDB TV data."""
     league_info = LEAGUES.get(league_slug, {})
     events = []
 
     for ev in raw.get("events", []):
-        # Extract competitors
         competitions = ev.get("competitions", [{}])
         comp = competitions[0] if competitions else {}
         competitors = comp.get("competitors", [])
@@ -74,28 +227,38 @@ def parse_espn_events(raw: dict, league_slug: str) -> list[dict]:
         if not away:
             away = {"name": "TBD", "short": "", "logo": "", "score": ""}
 
-        # Extract broadcast info from ESPN
-        broadcasts = []
+        # 1) Get ESPN broadcast info
+        espn_broadcasts = []
         for geo_broadcast in comp.get("geoBroadcasts", []):
             market = geo_broadcast.get("market", {}).get("type", "")
             media = geo_broadcast.get("media", {})
             channel = media.get("shortName", "")
             if channel:
-                broadcasts.append({
+                espn_broadcasts.append({
                     "channel": channel,
-                    "market": market,  # "National", "Home", "Away"
+                    "market": market,
                     "info": CHANNEL_ALIASES.get(channel, {}),
                 })
+
+        # 2) Try TheSportsDB for better TV data
+        sportsdb_tv = await get_sportsdb_tv_for_teams(
+            home["name"], away["name"], league_slug, date_str
+        )
+
+        # Merge: prefer TheSportsDB if it has data, fall back to ESPN
+        if sportsdb_tv:
+            broadcasts = sportsdb_tv
+        else:
+            broadcasts = espn_broadcasts
 
         # Status
         status_type = ev.get("status", {}).get("type", {})
         status = {
-            "state": status_type.get("state", "pre"),  # pre, in, post
+            "state": status_type.get("state", "pre"),
             "detail": ev.get("status", {}).get("type", {}).get("detail", ""),
             "display": status_type.get("description", "Scheduled"),
         }
 
-        # Venue
         venue_raw = comp.get("venue", {})
         venue = venue_raw.get("fullName", "")
 
@@ -118,37 +281,6 @@ def parse_espn_events(raw: dict, league_slug: str) -> list[dict]:
     return events
 
 
-# ── TheSportsDB (TV Broadcasts enrichment) ───────────────
-
-async def fetch_sportsdb_tv(event_name: str) -> list[dict]:
-    """Try to find TV broadcast info from TheSportsDB by event name.
-    Free tier is very limited, so we use this sparingly.
-    """
-    cache_key = f"sportsdb:tv:{event_name}"
-    if cache_key in _cache:
-        return _cache[cache_key]
-
-    url = f"{SPORTSDB_BASE}/searchevents.php"
-    params = {"e": event_name}
-
-    async with httpx.AsyncClient(timeout=10) as client:
-        try:
-            resp = await client.get(url, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-            events = data.get("event") or []
-            tv_info = []
-            for ev in events[:1]:  # just first match
-                tv = ev.get("strTVStation", "")
-                if tv:
-                    tv_info = [{"channel": ch.strip()} for ch in tv.split(",")]
-            _cache[cache_key] = tv_info
-            return tv_info
-        except Exception as e:
-            logger.warning(f"TheSportsDB error: {e}")
-            return []
-
-
 # ── Main aggregator ──────────────────────────────────────
 
 async def get_todays_games(
@@ -158,10 +290,9 @@ async def get_todays_games(
 ) -> list[dict]:
     """
     Fetch today's games across all configured leagues.
-    Returns a flat list of events sorted by date.
+    ESPN for schedule + TheSportsDB Premium for TV channels.
     """
     if not date_str:
-        # Use US Central time as default (good for MX/US)
         now = datetime.now(timezone(timedelta(hours=-6)))
         date_str = now.strftime("%Y%m%d")
 
@@ -183,19 +314,16 @@ async def get_todays_games(
         if isinstance(result, Exception):
             logger.error(f"Error fetching {slug}: {result}")
             continue
-        events = parse_espn_events(result, slug)
+        # Use enriched parser with TheSportsDB TV data
+        events = await parse_espn_events_enriched(result, slug, date_str)
         all_events.extend(events)
 
-    # Sort by date
     all_events.sort(key=lambda e: e.get("date", ""))
     return all_events
 
 
 async def search_games(query: str, date_str: Optional[str] = None) -> list[dict]:
-    """
-    Search for games matching a query (team name, league, etc.)
-    Used primarily by the WhatsApp bot.
-    """
+    """Search for games matching a query (team name, league, etc.)"""
     query_lower = query.lower()
     all_games = await get_todays_games(date_str=date_str)
 
