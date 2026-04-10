@@ -24,7 +24,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 AFFILIATES = {
     "1xbet": {
         "name": "1xBet",
-        "url": os.getenv("AFFILIATE_1XBET", "#"),
+        "url": os.getenv("AFFILIATE_1XBET", "https://reffpa.com/L?tag=d_5182312m_1599c_&site=5182312&ad=1599"),
         "logo": "/static/affiliates/1xbet.png",
         "cta": "Apuesta aqui",
     },
