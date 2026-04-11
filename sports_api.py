@@ -12,7 +12,7 @@ from cachetools import TTLCache
 
 from config import (
     ESPN_BASE, SPORTSDB_BASE, SPORTSDB_KEY,
-    LEAGUES, CHANNEL_ALIASES, TZ_MX
+    LEAGUES, ALL_LEAGUES, CHANNEL_ALIASES, TZ_MX
 )
 
 logger = logging.getLogger("dondever.sports")
@@ -201,7 +201,7 @@ async def parse_espn_events_enriched(
     raw: dict, league_slug: str, date_str: str
 ) -> list[dict]:
     """Parse ESPN events and enrich with TheSportsDB TV data."""
-    league_info = LEAGUES.get(league_slug, {})
+    league_info = ALL_LEAGUES.get(league_slug, {})
     events = []
 
     for ev in raw.get("events", []):
@@ -299,7 +299,10 @@ async def get_todays_games(
     tasks = []
     slugs = []
 
-    for slug, (sport, league, name, emoji) in LEAGUES.items():
+    # Use ALL_LEAGUES when filtering specific league/sport, LEAGUES for homepage
+    source = ALL_LEAGUES if (league_filter or sport_filter) else LEAGUES
+
+    for slug, (sport, league, name, emoji) in source.items():
         if league_filter and slug != league_filter:
             continue
         if sport_filter and sport != sport_filter:

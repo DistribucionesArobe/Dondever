@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
-from config import AFFILIATES, LEAGUES, APP_URL, TZ_MX, TZ_ET
+from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET
 from sports_api import get_todays_games, search_games
 from whatsapp_bot import handle_whatsapp_message
 
@@ -92,6 +92,18 @@ async def home(
 
     today = datetime.now(TZ_MX)
 
+    # Date navigation
+    if date:
+        try:
+            viewing_date = datetime.strptime(date, "%Y%m%d").replace(tzinfo=TZ_MX)
+        except ValueError:
+            viewing_date = today
+    else:
+        viewing_date = today
+
+    prev_date = (viewing_date - timedelta(days=1)).strftime("%Y%m%d")
+    next_date = (viewing_date + timedelta(days=1)).strftime("%Y%m%d")
+
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -103,7 +115,9 @@ async def home(
             "current_sport": sport,
             "current_league": league,
             "current_date": date or today.strftime("%Y%m%d"),
-            "today_display": today.strftime("%A %d de %B, %Y"),
+            "today_display": viewing_date.strftime("%A %d de %B, %Y"),
+            "prev_date": prev_date,
+            "next_date": next_date,
             "total_games": len(games),
         },
     )
@@ -131,12 +145,12 @@ async def league_page(request: Request, league_slug: str):
     Permanent league landing page — always has content for Google to index.
     e.g. /liga/liga-mx, /liga/nfl, /liga/nba
     """
-    if league_slug not in LEAGUES:
+    if league_slug not in ALL_LEAGUES:
         return templates.TemplateResponse(
             request, "404.html", status_code=404
         )
 
-    sport, league_id, display_name, emoji = LEAGUES[league_slug]
+    sport, league_id, display_name, emoji = ALL_LEAGUES[league_slug]
     games = await get_todays_games(league_filter=league_slug)
 
     return templates.TemplateResponse(

@@ -80,15 +80,20 @@ LEAGUES = {
     # Combate
     "ufc":           ("mma", "ufc",             "UFC",              "BOX"),
     "boxing":        ("boxing", "boxing",        "Boxeo",            "BOX"),
-    # Motor
+}
+
+# Leagues that don't show team names well (individual sports)
+# Only loaded when explicitly filtered, not on homepage
+LEAGUES_INDIVIDUAL = {
     "f1":            ("racing", "f1",            "Formula 1",        "F1"),
     "nascar":        ("racing", "nascar",        "NASCAR",           "CAR"),
-    # Tenis
     "atp":           ("tennis", "atp",           "ATP Tennis",       "TEN"),
     "wta":           ("tennis", "wta",           "WTA Tennis",       "TEN"),
-    # Golf
     "pga":           ("golf", "pga",             "PGA Tour",         "\u26f3"),
 }
+
+# Combined for lookups
+ALL_LEAGUES = {**LEAGUES, **LEAGUES_INDIVIDUAL}
 
 
 def get_affiliate_url(key: str, source: str = "web") -> str:
