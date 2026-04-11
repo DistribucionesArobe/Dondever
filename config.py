@@ -27,6 +27,12 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 
 # ── Affiliate links ─────────────────────────────────────
 AFFILIATES = {
+    "caliente": {
+        "name": "Caliente",
+        "url": os.getenv("AFFILIATE_CALIENTE", "") or "https://online.caliente.mx/page?member=Dondever&campaign=DEFAULT&channel=DEFAULT&zone=68997593&lp=68997591",
+        "logo": "/static/affiliates/caliente.svg",
+        "cta": "Apuesta en Caliente",
+    },
     "1xbet": {
         "name": "1xBet",
         "url": os.getenv("AFFILIATE_1XBET", "") or "https://reffpa.com/L?tag=d_5182312m_1599c_&site=5182312&ad=1599",

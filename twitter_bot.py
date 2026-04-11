@@ -67,7 +67,7 @@ def format_game_time_mx(date_str: str) -> str:
 
 def get_betting_affiliate_text() -> str:
     """Get a random BETTING affiliate CTA (no VPN) with Twitter tracking."""
-    betting_keys = [k for k in AFFILIATES if k in ("1xbet", "betsson")]
+    betting_keys = [k for k in AFFILIATES if k in ("caliente", "1xbet", "betsson")]
     if not betting_keys:
         return ""
     key = random.choice(betting_keys)
