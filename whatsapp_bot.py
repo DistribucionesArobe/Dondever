@@ -11,6 +11,7 @@ from datetime import datetime, timezone, timedelta
 from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX, get_affiliate_url, TEAM_ALIASES, HOME_LEFT_SPORTS
 from sports_api import search_games, get_todays_games
 from subscribers import subscribe, unsubscribe, update_last_active
+from whatsapp_alerts import add_favorite_team, remove_favorite_team, get_favorites_list
 
 logger = logging.getLogger("dondever.whatsapp")
 
@@ -140,6 +141,25 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             "Escribe *salir* si quieres cancelar."
         )
 
+    # Favorite team alerts: "alerta chivas", "alerta lakers"
+    if body_clean.startswith(("alerta ", "alertar ", "seguir ", "favorito ")):
+        team = body_clean.split(" ", 1)[1] if " " in body_clean else ""
+        if team:
+            subscribe(from_number)  # auto-subscribe
+            return add_favorite_team(from_number, team)
+        return "Escribe *alerta* seguido del equipo. Ejemplo: *alerta chivas*"
+
+    # Remove favorite: "quitar chivas"
+    if body_clean.startswith(("quitar ", "borrar ", "eliminar ")):
+        team = body_clean.split(" ", 1)[1] if " " in body_clean else ""
+        if team:
+            return remove_favorite_team(from_number, team)
+        return "Escribe *quitar* seguido del equipo. Ejemplo: *quitar chivas*"
+
+    # List favorites: "mis equipos"
+    if body_clean in ("mis equipos", "favoritos", "equipos", "mis alertas", "alertas"):
+        return get_favorites_list(from_number)
+
     # Help
     if body_clean in ("ayuda", "help", "hola", "hi", "menu", "inicio"):
         return (
@@ -148,8 +168,11 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             "- *hoy* - todos los juegos de hoy\n"
             "- *picks* - pick del dia\n"
             "- *suscribir* - recibe picks GRATIS cada manana\n"
+            "- *alerta chivas* - alertas 1h antes + goles\n"
+            "- *mis equipos* - ver tus favoritos\n"
+            "- *quitar chivas* - quitar equipo\n"
             "- *nfl* o *liga mx* - juegos por liga\n"
-            "- *America* o *Cowboys* - buscar por equipo\n"
+            "- *America* o *Cowboys* - buscar equipo\n"
             "- *salir* - dejar de recibir picks\n\n"
             f"O visita {APP_URL} para la guia completa"
         )

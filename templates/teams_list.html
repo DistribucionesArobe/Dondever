@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todos los equipos | DondeVer.app</title>
+    <meta name="description" content="Encuentra donde ver partidos de tu equipo favorito en vivo. Liga MX, Premier League, NBA, NFL, MLB y mas.">
+    <meta property="og:title" content="Todos los equipos - DondeVer.app">
+    <meta property="og:image" content="https://dondever.app/static/og-image.png">
+    <link rel="canonical" href="https://dondever.app/equipos">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f8fafc; color:#1a1a2e; }
+        .header { background:linear-gradient(135deg,#1a1a2e,#16213e); color:white; padding:1.25rem; text-align:center; }
+        .header h1 { font-size:1.1rem; }
+        .header a { color:#10b981; text-decoration:none; }
+        .container { max-width:900px; margin:0 auto; padding:1rem; }
+        h2 { font-size:1rem; margin:1.25rem 0 0.5rem; color:#1a1a2e; border-bottom:2px solid #10b981; padding-bottom:0.3rem; }
+        .teams-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:0.5rem; }
+        .team-link {
+            display:block; background:white; border:1px solid #e5e7eb; border-radius:8px;
+            padding:0.6rem 0.8rem; text-decoration:none; color:#1a1a2e; font-weight:600;
+            font-size:0.85rem; transition:all 0.15s;
+        }
+        .team-link:hover { border-color:#10b981; background:#f0fdf4; }
+        footer { text-align:center; padding:1.5rem; font-size:0.7rem; color:#9ca3af; }
+        footer a { color:#10b981; text-decoration:none; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1><a href="/">DondeVer.app</a> / Equipos</h1>
+</div>
+<div class="container">
+    <p style="font-size:0.9rem;color:#4b5563;margin-bottom:1rem;">Selecciona tu equipo para ver sus proximos partidos y en que canal los pasan.</p>
+
+    {% for league, slugs in teams_by_league.items() %}
+    <h2>{{ league }}</h2>
+    <div class="teams-grid">
+        {% for slug in slugs %}
+        <a href="/equipo/{{ slug }}" class="team-link">{{ POPULAR_TEAMS.get(slug, slug) }}</a>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+<footer>
+    <p><a href="/">DondeVer.app</a> &middot; <a href="/streaming">Comparar Streaming</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
+</footer>
+</body>
+</html>

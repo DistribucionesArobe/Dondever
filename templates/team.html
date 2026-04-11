@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donde ver {{ team_name }} en vivo | DondeVer.app</title>
+    <meta name="description" content="Donde ver partidos de {{ team_name }} en vivo hoy. Canales de TV y streaming para ver {{ team_name }} en Mexico y USA.">
+    <meta property="og:title" content="Donde ver {{ team_name }} en vivo">
+    <meta property="og:description" content="Canales de TV y streaming para {{ team_name }} en Mexico">
+    <meta property="og:image" content="https://dondever.app/static/og-image.png">
+    <link rel="canonical" href="https://dondever.app/equipo/{{ team_slug }}">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f8fafc; color:#1a1a2e; }
+        .header { background:linear-gradient(135deg,#1a1a2e,#16213e); color:white; padding:1.25rem; text-align:center; }
+        .header h1 { font-size:1.1rem; }
+        .header a { color:#10b981; text-decoration:none; }
+        .back-link { display:inline-block; color:#10b981; text-decoration:none; font-size:0.8rem; margin-bottom:0.5rem; }
+        .container { max-width:900px; margin:0 auto; padding:1rem; }
+
+        .team-hero {
+            display:flex; align-items:center; gap:1rem; padding:1.25rem;
+            background:white; border-radius:12px; margin-bottom:1rem; border:1px solid #e5e7eb;
+        }
+        .team-logo-big { width:64px; height:64px; border-radius:50%; object-fit:contain; background:#f3f4f6; }
+        .team-title { font-size:1.3rem; font-weight:800; }
+        .team-league { font-size:0.85rem; color:#6b7280; }
+
+        h2 { font-size:1rem; margin:1.25rem 0 0.5rem; color:#1a1a2e; }
+        .game-count { color:#9ca3af; font-weight:400; font-size:0.8rem; }
+
+        .game-card {
+            background:white; border:1px solid #e5e7eb; border-radius:10px;
+            padding:0.75rem 1rem; margin-bottom:0.5rem; display:grid;
+            grid-template-columns:1fr auto 1fr; gap:0.6rem; align-items:center;
+            text-decoration:none; color:inherit; cursor:pointer; transition:all 0.15s;
+        }
+        .game-card:hover { border-color:#10b981; box-shadow:0 2px 10px rgba(16,185,129,0.1); }
+        .game-card.live { border-left:4px solid #ef4444; background:#fef2f2; }
+
+        .team { display:flex; align-items:center; gap:0.5rem; }
+        .team.away { justify-content:flex-end; text-align:right; }
+        .team-logo-sm { width:24px; height:24px; border-radius:50%; object-fit:contain; background:#f3f4f6; }
+        .team-name { font-weight:600; font-size:0.85rem; }
+        .team-score { font-size:1.1rem; font-weight:800; color:#059669; }
+        .game-center { text-align:center; min-width:70px; }
+        .game-time { font-size:0.9rem; font-weight:700; color:#f97316; }
+        .game-meta { font-size:0.65rem; color:#9ca3af; }
+        .live-badge { display:inline-block; background:#ef4444; color:white; font-size:0.6rem; font-weight:700; padding:2px 8px; border-radius:4px; }
+        .final-badge { display:inline-block; background:#f3f4f6; color:#6b7280; font-size:0.6rem; font-weight:700; padding:2px 8px; border-radius:4px; }
+        .channels { font-size:0.7rem; color:#6b7280; margin-top:0.25rem; }
+        .countdown { font-size:0.6rem; color:#6b7280; margin-top:2px; }
+        .countdown.soon { color:#ef4444; font-weight:700; }
+
+        .no-games { text-align:center; padding:2rem; color:#9ca3af; }
+
+        .alert-box {
+            background:linear-gradient(135deg,#064e3b,#065f46); border-radius:12px;
+            padding:1rem 1.25rem; color:white; margin:1rem 0; display:flex;
+            align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;
+        }
+        .alert-box a { display:inline-block; background:#25d366; color:white; padding:0.5rem 1rem; border-radius:8px; font-weight:700; font-size:0.8rem; text-decoration:none; }
+
+        .seo-text { font-size:0.85rem; color:#4b5563; line-height:1.6; margin:1rem 0; }
+
+        footer { text-align:center; padding:1.5rem; font-size:0.7rem; color:#9ca3af; }
+        footer a { color:#10b981; text-decoration:none; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1><a href="/">DondeVer.app</a> / {{ team_name }}</h1>
+</div>
+
+<div class="container">
+    <a href="/" class="back-link">&larr; Todos los juegos</a>
+
+    <div class="team-hero">
+        {% if team_logo %}
+        <img src="{{ team_logo }}" alt="{{ team_name }}" class="team-logo-big">
+        {% endif %}
+        <div>
+            <div class="team-title">{{ team_name }}</div>
+            {% if team_league %}
+            <div class="team-league">{{ team_league }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="alert-box">
+        <div>
+            <div style="font-weight:700;font-size:0.9rem;">Recibe alertas de {{ team_name }}</div>
+            <div style="font-size:0.75rem;opacity:0.8;">1 hora antes del partido + notificacion de goles</div>
+        </div>
+        <a href="https://wa.me/15715463202?text=alerta%20{{ team_slug }}">Activar alertas</a>
+    </div>
+
+    {% if games %}
+    <h2>Partidos de hoy <span class="game-count">({{ games|length }})</span></h2>
+
+    {% for game in games %}
+    {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+    {% set left = game.home if home_left else game.away %}
+    {% set right = game.away if home_left else game.home %}
+    <a href="/juego/{{ game.id }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
+        <div class="team away">
+            <div>
+                <div class="team-name">{{ left.name }}</div>
+                {% if game.status.state != 'pre' %}
+                <div class="team-score">{{ left.score }}</div>
+                {% endif %}
+            </div>
+            {% if left.logo %}
+            <img src="{{ left.logo }}" alt="{{ left.name }}" class="team-logo-sm">
+            {% endif %}
+        </div>
+        <div class="game-center">
+            {% if game.status.state == 'in' %}
+                <div class="live-badge">EN VIVO</div>
+            {% elif game.status.state == 'post' %}
+                <div class="final-badge">FINAL</div>
+            {% else %}
+                <div class="game-time">{{ format_mx_time(game.date) }}</div>
+                <div class="countdown" data-kickoff="{{ game.date }}"></div>
+            {% endif %}
+            <div class="game-meta">{{ game.league_name }}</div>
+        </div>
+        <div class="team">
+            {% if right.logo %}
+            <img src="{{ right.logo }}" alt="{{ right.name }}" class="team-logo-sm">
+            {% endif %}
+            <div>
+                <div class="team-name">{{ right.name }}</div>
+                {% if game.status.state != 'pre' %}
+                <div class="team-score">{{ right.score }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </a>
+    <div class="channels">
+        {% if game.broadcasts %}
+            Donde verlo: {% for b in game.broadcasts[:4] %}{{ b.channel }}{% if not loop.last %}, {% endif %}{% endfor %}
+        {% else %}
+            Canal por confirmar
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="no-games">
+        <h2>No hay partidos de {{ team_name }} hoy</h2>
+        <p style="margin-top:0.5rem;">Activa alertas por WhatsApp para que te avisemos cuando jueguen.</p>
+    </div>
+    {% endif %}
+
+    <div class="seo-text">
+        <h2>Donde ver {{ team_name }} en vivo en Mexico</h2>
+        <p>En DondeVer.app te decimos en que canal pasan los partidos de {{ team_name }} en Mexico y Estados Unidos.
+        Cubrimos TV abierta, cable (TUDN, Fox Sports, ESPN) y streaming (ViX, ESPN+, Amazon Prime).
+        Activa alertas por WhatsApp para recibir un aviso 1 hora antes de cada partido de {{ team_name }}
+        y notificaciones de goles en tiempo real.</p>
+    </div>
+</div>
+
+<footer>
+    <p><a href="/">DondeVer.app</a> &middot; <a href="/streaming">Comparar Streaming</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
+</footer>
+
+<script>
+function updateCountdowns() {
+    document.querySelectorAll('.countdown[data-kickoff]').forEach(el => {
+        const kickoff = new Date(el.dataset.kickoff);
+        const diff = kickoff - new Date();
+        if (diff <= 0) { el.textContent = 'Por iniciar'; el.classList.add('soon'); return; }
+        const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000);
+        if (h > 0) el.textContent = `En ${h}h ${m}m`;
+        else { el.textContent = `En ${m} min`; el.classList.add('soon'); }
+    });
+}
+updateCountdowns(); setInterval(updateCountdowns, 60000);
+</script>
+</body>
+</html>

@@ -497,6 +497,13 @@ async def monitor_live_games():
                 })
                 logger.info(f"Live tweet: {event_type} — {game['name']}")
 
+            # Send WhatsApp goal/event alerts to subscribers with favorite teams
+            try:
+                from whatsapp_alerts import send_goal_alerts
+                await send_goal_alerts(game, event_type)
+            except Exception as e:
+                logger.warning(f"Goal alert failed: {e}")
+
         # Update stored state
         _last_scores[game_id] = current
 

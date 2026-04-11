@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
-from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET
+from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
 from sports_api import get_todays_games, search_games
 from whatsapp_bot import handle_whatsapp_message
 
@@ -247,6 +247,8 @@ try:
     from twitter_bot import setup_twitter_scheduler
     from whatsapp_broadcast import send_daily_broadcast
     from tiktok_generator import generate_daily_video, generate_daily_images
+    from whatsapp_alerts import send_pregame_alerts
+    from apscheduler.triggers.interval import IntervalTrigger
 
     scheduler = AsyncIOScheduler()
 
@@ -265,6 +267,16 @@ try:
             replace_existing=True,
         )
         logger.info("WhatsApp broadcast scheduled at 9:00 AM MX")
+
+        # WhatsApp pre-game alerts every 5 minutes
+        scheduler.add_job(
+            send_pregame_alerts,
+            IntervalTrigger(minutes=5),
+            id="whatsapp_pregame_alerts",
+            name="Pre-game WhatsApp alerts",
+            replace_existing=True,
+        )
+        logger.info("Pre-game alerts scheduled every 5 min")
 
         # TikTok/Reels daily video + images at 7:30 AM MX (13:30 UTC)
         scheduler.add_job(
@@ -393,6 +405,29 @@ async def sitemap_xml():
             f'    <priority>0.9</priority>\n  </url>'
         )
 
+    # Streaming comparator
+    urls.append(
+        f'  <url>\n    <loc>{APP_URL}/streaming</loc>\n'
+        f'    <lastmod>{today_str}</lastmod>\n'
+        f'    <changefreq>monthly</changefreq>\n'
+        f'    <priority>0.8</priority>\n  </url>'
+    )
+
+    # Team pages (SEO goldmine)
+    urls.append(
+        f'  <url>\n    <loc>{APP_URL}/equipos</loc>\n'
+        f'    <lastmod>{today_str}</lastmod>\n'
+        f'    <changefreq>daily</changefreq>\n'
+        f'    <priority>0.8</priority>\n  </url>'
+    )
+    for team_slug in POPULAR_TEAMS:
+        urls.append(
+            f'  <url>\n    <loc>{APP_URL}/equipo/{team_slug}</loc>\n'
+            f'    <lastmod>{today_str}</lastmod>\n'
+            f'    <changefreq>daily</changefreq>\n'
+            f'    <priority>0.7</priority>\n  </url>'
+        )
+
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -425,6 +460,92 @@ async def guide_page(request: Request, guide_slug: str):
         return templates.TemplateResponse(request, template_name)
     except Exception:
         return templates.TemplateResponse(request, "404.html", status_code=404)
+
+
+# ── Streaming Comparator ────────────────────────────────
+
+@app.get("/streaming", response_class=HTMLResponse)
+async def streaming_page(request: Request):
+    return templates.TemplateResponse(request, "streaming.html")
+
+
+# ── Team Pages ──────────────────────────────────────────
+
+# Popular teams for SEO (slug -> display name)
+POPULAR_TEAMS = {
+    "chivas": "Guadalajara (Chivas)", "america": "America", "cruz-azul": "Cruz Azul",
+    "pumas": "Pumas UNAM", "tigres": "Tigres UANL", "monterrey": "Monterrey",
+    "toluca": "Toluca", "santos": "Santos Laguna", "leon": "Leon", "pachuca": "Pachuca",
+    "atlas": "Atlas", "necaxa": "Necaxa", "puebla": "Puebla", "queretaro": "Queretaro",
+    "real-madrid": "Real Madrid", "barcelona": "Barcelona", "liverpool": "Liverpool",
+    "manchester-city": "Manchester City", "manchester-united": "Manchester United",
+    "arsenal": "Arsenal", "chelsea": "Chelsea", "psg": "Paris Saint-Germain",
+    "bayern": "Bayern Munich", "juventus": "Juventus", "inter-milan": "Inter Milan",
+    "lakers": "Los Angeles Lakers", "celtics": "Boston Celtics", "warriors": "Golden State Warriors",
+    "bulls": "Chicago Bulls", "heat": "Miami Heat", "knicks": "New York Knicks",
+    "cowboys": "Dallas Cowboys", "chiefs": "Kansas City Chiefs", "49ers": "San Francisco 49ers",
+    "eagles": "Philadelphia Eagles", "packers": "Green Bay Packers",
+    "dodgers": "Los Angeles Dodgers", "yankees": "New York Yankees",
+    "red-sox": "Boston Red Sox", "astros": "Houston Astros",
+}
+
+@app.get("/equipo/{team_slug}", response_class=HTMLResponse)
+async def team_page(request: Request, team_slug: str):
+    """Dynamic team page with today's games for that team."""
+    # Resolve team name from slug
+    team_name = POPULAR_TEAMS.get(team_slug)
+    if not team_name:
+        # Try from TEAM_ALIASES
+        clean_slug = team_slug.replace("-", " ")
+        resolved = TEAM_ALIASES.get(clean_slug, clean_slug)
+        team_name = resolved.title()
+
+    # Search for games
+    search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
+    games = await search_games(search_term)
+
+    # Get team info from first game found
+    team_logo = ""
+    team_league = ""
+    if games:
+        for game in games:
+            if search_term.lower() in game["home"]["name"].lower():
+                team_logo = game["home"].get("logo", "")
+                team_league = game.get("league_name", "")
+                break
+            elif search_term.lower() in game["away"]["name"].lower():
+                team_logo = game["away"].get("logo", "")
+                team_league = game.get("league_name", "")
+                break
+
+    return templates.TemplateResponse(request, "team.html", {
+        "team_name": team_name,
+        "team_slug": team_slug,
+        "team_logo": team_logo,
+        "team_league": team_league,
+        "games": games,
+        "format_mx_time": format_mx_time,
+    })
+
+
+@app.get("/equipos", response_class=HTMLResponse)
+async def teams_list(request: Request):
+    """List all popular teams for SEO indexing."""
+    teams_by_league = {
+        "Liga MX": ["chivas", "america", "cruz-azul", "pumas", "tigres", "monterrey", "toluca", "santos", "leon", "pachuca", "atlas", "necaxa", "puebla", "queretaro"],
+        "Premier League": ["liverpool", "manchester-city", "manchester-united", "arsenal", "chelsea"],
+        "La Liga": ["real-madrid", "barcelona"],
+        "Serie A": ["juventus", "inter-milan"],
+        "Bundesliga": ["bayern"],
+        "Ligue 1": ["psg"],
+        "NBA": ["lakers", "celtics", "warriors", "bulls", "heat", "knicks"],
+        "NFL": ["cowboys", "chiefs", "49ers", "eagles", "packers"],
+        "MLB": ["dodgers", "yankees", "red-sox", "astros"],
+    }
+    return templates.TemplateResponse(request, "teams_list.html", {
+        "teams_by_league": teams_by_league,
+        "POPULAR_TEAMS": POPULAR_TEAMS,
+    })
 
 
 # ── Health ───────────────────────────────────────────────
