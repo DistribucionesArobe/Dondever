@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre Nosotros - DondeVer.app</title>
+    <meta name="description" content="DondeVer.app es tu guia gratuita para encontrar donde ver deportes en vivo en Mexico y Estados Unidos. Horarios, canales y streaming.">
+    <link rel="canonical" href="{{ app_url }}/sobre-nosotros">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .content { max-width: 700px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 14px; border: 1px solid #e5e7eb; }
+        .content h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; color: #1a1a2e; }
+        .content h2 { font-size: 1.1rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: #059669; }
+        .content p { font-size: 0.9rem; line-height: 1.7; color: #374151; margin-bottom: 0.75rem; }
+        .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">Donde<span>Ver</span></a>
+            <a href="/" class="back">&larr; Inicio</a>
+        </div>
+    </header>
+
+    <div class="content">
+        <h1>Sobre DondeVer.app</h1>
+
+        <p>DondeVer.app nacio de una necesidad simple: saber donde ver el partido de hoy sin tener que buscar en 10 paginas diferentes. Si vives en Mexico o eres mexicano en Estados Unidos, sabes lo frustrante que es perderse un juego porque no sabias en que canal lo pasaban.</p>
+
+        <h2>Que hacemos</h2>
+        <p>DondeVer.app es una guia gratuita y actualizada que te dice exactamente donde ver cada juego deportivo del dia. Cubrimos Liga MX, NFL, NBA, MLB, NHL, Premier League, La Liga, Champions League, Serie A, Bundesliga, MLS y mas. Para cada partido te mostramos los canales de TV abierta, cable y plataformas de streaming disponibles tanto en Mexico como en Estados Unidos.</p>
+
+        <h2>Como funciona</h2>
+        <p>Nuestro sistema recopila informacion de horarios y transmisiones de multiples fuentes deportivas y la presenta de forma clara y rapida. Actualizamos los datos cada pocos minutos para que siempre tengas la informacion mas reciente, incluyendo marcadores en vivo.</p>
+
+        <h2>WhatsApp</h2>
+        <p>Tambien puedes consultar juegos y recibir picks diarios gratis por WhatsApp. Solo mandanos un mensaje y te decimos que juegos hay hoy y donde verlos. Es como tener un amigo que siempre sabe en que canal pasan el partido.</p>
+
+        <h2>Nuestro compromiso</h2>
+        <p>DondeVer.app es y siempre sera gratuito para los usuarios. Nos mantenemos a traves de enlaces de afiliados a casas de apuestas y servicios de streaming. Siempre marcamos claramente lo que es publicidad. Fomentamos el juego responsable y nuestro servicio es solo para mayores de 18 anos.</p>
+
+        <h2>Contacto</h2>
+        <p>Tienes una sugerencia o encontraste un error? Escribenos por WhatsApp o en Twitter <a href="https://twitter.com/dondeverapp" style="color:#059669;">@dondeverapp</a>. Nos encanta escuchar a nuestra comunidad.</p>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a></p>
+        <p style="margin-top:0.3rem"><a href="/privacidad">Privacidad</a> &middot; <a href="/terminos">Terminos</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminos de Uso - DondeVer.app</title>
+    <meta name="description" content="Terminos y condiciones de uso de DondeVer.app.">
+    <link rel="canonical" href="{{ app_url }}/terminos">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .content { max-width: 700px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 14px; border: 1px solid #e5e7eb; }
+        .content h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; color: #1a1a2e; }
+        .content h2 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: #059669; }
+        .content p { font-size: 0.85rem; line-height: 1.7; color: #374151; margin-bottom: 0.75rem; }
+        .content .date { font-size: 0.75rem; color: #9ca3af; margin-bottom: 1.5rem; }
+        .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">Donde<span>Ver</span></a>
+            <a href="/" class="back">&larr; Inicio</a>
+        </div>
+    </header>
+
+    <div class="content">
+        <h1>Terminos de Uso</h1>
+        <p class="date">Ultima actualizacion: {{ now().strftime('%d de %B, %Y') }}</p>
+
+        <p>Al usar DondeVer.app aceptas los siguientes terminos y condiciones.</p>
+
+        <h2>Descripcion del servicio</h2>
+        <p>DondeVer.app es un servicio informativo gratuito que proporciona horarios de eventos deportivos e informacion sobre canales de transmision en Mexico y Estados Unidos. No transmitimos ni alojamos contenido deportivo. Nuestra funcion es guiarte hacia los canales y plataformas oficiales donde puedes ver los eventos.</p>
+
+        <h2>Informacion deportiva</h2>
+        <p>Hacemos nuestro mejor esfuerzo para proporcionar informacion precisa y actualizada sobre horarios, canales y resultados. Sin embargo, los horarios pueden cambiar, las transmisiones pueden modificarse y los datos pueden tener errores. DondeVer.app no se hace responsable por cambios de ultima hora en horarios o canales de transmision. Siempre recomendamos verificar con los canales oficiales.</p>
+
+        <h2>Contenido de entretenimiento</h2>
+        <p>Las sugerencias, picks del dia y recomendaciones que proporcionamos son unicamente para fines de entretenimiento. No constituyen asesoria financiera ni garantizan resultados. Las decisiones de apuestas son responsabilidad exclusiva del usuario.</p>
+
+        <h2>Enlaces de afiliados y publicidad</h2>
+        <p>DondeVer.app contiene enlaces de afiliados a casas de apuestas deportivas y servicios de streaming. Estos enlaces estan claramente identificados como "Publicidad". Al hacer clic y registrarte a traves de estos enlaces, DondeVer.app puede recibir una comision. Esto no tiene costo adicional para ti y nos ayuda a mantener el servicio gratuito.</p>
+
+        <h2>Apuestas responsables</h2>
+        <p>Los servicios de apuestas deportivas que promovemos son exclusivamente para personas mayores de 18 anos. Fomentamos el juego responsable. Si crees que tienes un problema con el juego, busca ayuda profesional. Nunca apuestes mas de lo que puedas permitirte perder.</p>
+
+        <h2>Servicio de WhatsApp</h2>
+        <p>Nuestro servicio de WhatsApp es gratuito y voluntario. Al suscribirte a picks diarios, aceptas recibir mensajes con informacion deportiva y enlaces promocionales. Puedes cancelar tu suscripcion en cualquier momento escribiendo "salir". No compartimos tu numero de telefono con terceros.</p>
+
+        <h2>Propiedad intelectual</h2>
+        <p>Los logotipos de equipos y ligas deportivas pertenecen a sus respectivos propietarios. DondeVer.app los utiliza con fines informativos. El diseno y contenido original de DondeVer.app es propiedad de sus creadores.</p>
+
+        <h2>Limitacion de responsabilidad</h2>
+        <p>DondeVer.app se proporciona "tal cual" sin garantias de ningun tipo. No somos responsables por perdidas financieras derivadas de apuestas, interrupciones del servicio, inexactitudes en la informacion deportiva o cualquier dano derivado del uso de nuestro servicio.</p>
+
+        <h2>Modificaciones</h2>
+        <p>Nos reservamos el derecho de modificar estos terminos en cualquier momento. Los cambios seran publicados en esta pagina con la fecha de actualizacion.</p>
+
+        <h2>Contacto</h2>
+        <p>Para preguntas sobre estos terminos, contactanos por WhatsApp o en Twitter <a href="https://twitter.com/dondeverapp" style="color:#059669;">@dondeverapp</a>.</p>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a></p>
+        <p style="margin-top:0.3rem"><a href="/privacidad">Privacidad</a> &middot; <a href="/terminos">Terminos</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
+    </footer>
+</body>
+</html>

@@ -10,6 +10,7 @@ from datetime import datetime, timezone, timedelta
 
 from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX, get_affiliate_url, TEAM_ALIASES, HOME_LEFT_SPORTS
 from sports_api import search_games, get_todays_games
+from subscribers import subscribe, unsubscribe, update_last_active
 
 logger = logging.getLogger("dondever.whatsapp")
 
@@ -108,6 +109,37 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     except Exception:
         body_clean = ""
 
+    # Track activity for all users
+    update_last_active(from_number)
+
+    # Unsubscribe
+    if body_clean in ("salir", "stop", "parar", "cancelar", "baja", "unsub"):
+        unsubscribe(from_number)
+        return (
+            "Listo, ya no recibiras picks diarios.\n\n"
+            "Si cambias de opinion, escribe *suscribir* para volver a recibir.\n\n"
+            f"Siempre puedes consultar juegos en {APP_URL}"
+        )
+
+    # Subscribe
+    if body_clean in ("suscribir", "suscribirme", "subscribe", "alta", "diario"):
+        is_new = subscribe(from_number)
+        if is_new:
+            return (
+                "Te suscribiste a *picks diarios* de DondeVer!\n\n"
+                "Cada manana recibiras:\n"
+                "- Pick del dia\n"
+                "- Los mejores juegos\n"
+                "- Donde verlos\n\n"
+                "Escribe *salir* para cancelar cuando quieras.\n\n"
+                f"Mientras tanto, escribe *hoy* para ver los juegos de hoy."
+            )
+        return (
+            "Ya estas suscrito a picks diarios!\n\n"
+            "Cada manana recibes el pick del dia.\n"
+            "Escribe *salir* si quieres cancelar."
+        )
+
     # Help
     if body_clean in ("ayuda", "help", "hola", "hi", "menu", "inicio"):
         return (
@@ -115,14 +147,16 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             "Escribe:\n"
             "- *hoy* - todos los juegos de hoy\n"
             "- *picks* - pick del dia\n"
+            "- *suscribir* - recibe picks GRATIS cada manana\n"
             "- *nfl* o *liga mx* - juegos por liga\n"
             "- *America* o *Cowboys* - buscar por equipo\n"
-            "- *futbol* o *basket* - buscar por deporte\n\n"
+            "- *salir* - dejar de recibir picks\n\n"
             f"O visita {APP_URL} para la guia completa"
         )
 
-    # Picks del dia
+    # Picks del dia (auto-subscribe anyone who asks for picks)
     if body_clean in ("picks", "pick", "pick del dia", "sugerencia", "tip"):
+        subscribe(from_number)  # silent auto-subscribe
         games = await get_todays_games()
         priority = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga"]
         upcoming = [g for g in games if g["status"]["state"] == "pre" and g["broadcasts"]]

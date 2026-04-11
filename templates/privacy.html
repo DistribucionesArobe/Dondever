@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Politica de Privacidad - DondeVer.app</title>
+    <meta name="description" content="Politica de privacidad de DondeVer.app. Como manejamos tus datos y protegemos tu informacion.">
+    <link rel="canonical" href="{{ app_url }}/privacidad">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .content { max-width: 700px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 14px; border: 1px solid #e5e7eb; }
+        .content h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; color: #1a1a2e; }
+        .content h2 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: #059669; }
+        .content p { font-size: 0.85rem; line-height: 1.7; color: #374151; margin-bottom: 0.75rem; }
+        .content .date { font-size: 0.75rem; color: #9ca3af; margin-bottom: 1.5rem; }
+        .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">Donde<span>Ver</span></a>
+            <a href="/" class="back">&larr; Inicio</a>
+        </div>
+    </header>
+
+    <div class="content">
+        <h1>Politica de Privacidad</h1>
+        <p class="date">Ultima actualizacion: {{ now().strftime('%d de %B, %Y') }}</p>
+
+        <p>En DondeVer.app respetamos tu privacidad. Esta politica explica como manejamos la informacion cuando usas nuestro sitio web y servicio de WhatsApp.</p>
+
+        <h2>Informacion que recopilamos</h2>
+        <p>DondeVer.app no requiere registro ni cuenta de usuario. Cuando visitas nuestro sitio, podemos recopilar informacion tecnica anonima como tu direccion IP, tipo de navegador y paginas visitadas, a traves de herramientas de analitica web como Google Analytics.</p>
+        <p>Cuando usas nuestro servicio de WhatsApp, procesamos tu numero de telefono y los mensajes que nos envias unicamente para responder a tus consultas sobre juegos deportivos. Si te suscribes a picks diarios, almacenamos tu numero para enviarte mensajes. Puedes cancelar en cualquier momento escribiendo "salir".</p>
+
+        <h2>Uso de la informacion</h2>
+        <p>Utilizamos la informacion recopilada para proporcionar y mejorar nuestro servicio de informacion deportiva, enviar picks diarios a suscriptores de WhatsApp que lo soliciten, y analizar el uso del sitio para mejorar la experiencia del usuario.</p>
+
+        <h2>Cookies y tecnologias similares</h2>
+        <p>Nuestro sitio puede utilizar cookies de terceros para analitica (Google Analytics) y para mostrar publicidad relevante (Google AdSense). Estas cookies nos ayudan a entender como los usuarios interactuan con nuestro sitio. Puedes configurar tu navegador para rechazar cookies.</p>
+
+        <h2>Enlaces de afiliados</h2>
+        <p>DondeVer.app contiene enlaces de afiliados a casas de apuestas y servicios de streaming. Cuando haces clic en estos enlaces, las empresas asociadas pueden recopilar informacion segun sus propias politicas de privacidad. Recomendamos revisar las politicas de privacidad de cada servicio antes de registrarte. Todos los enlaces de afiliados estan claramente marcados como "Publicidad".</p>
+
+        <h2>Servicios de terceros</h2>
+        <p>Utilizamos servicios de terceros que pueden recopilar informacion: Google Analytics y Google AdSense para analitica y publicidad, Twilio para el servicio de WhatsApp, y Render para el alojamiento web. Cada servicio tiene su propia politica de privacidad.</p>
+
+        <h2>Proteccion de menores</h2>
+        <p>DondeVer.app no esta dirigido a menores de 18 anos. Los enlaces a casas de apuestas son exclusivamente para mayores de edad. No recopilamos intencionalmente informacion de menores.</p>
+
+        <h2>Tus derechos</h2>
+        <p>Puedes solicitar la eliminacion de tu numero de WhatsApp de nuestra lista de suscriptores escribiendo "salir" en cualquier momento. Para cualquier otra solicitud relacionada con tus datos, contactanos por WhatsApp o Twitter @dondeverapp.</p>
+
+        <h2>Cambios a esta politica</h2>
+        <p>Podemos actualizar esta politica de privacidad ocasionalmente. Publicaremos cualquier cambio en esta pagina con la fecha de actualizacion.</p>
+
+        <h2>Contacto</h2>
+        <p>Si tienes preguntas sobre esta politica de privacidad, contactanos a traves de nuestro WhatsApp o en Twitter <a href="https://twitter.com/dondeverapp" style="color:#059669;">@dondeverapp</a>.</p>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a></p>
+        <p style="margin-top:0.3rem"><a href="/privacidad">Privacidad</a> &middot; <a href="/terminos">Terminos</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
+    </footer>
+</body>
+</html>

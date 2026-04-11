@@ -241,25 +241,39 @@ async def whatsapp_verify():
 # ── Twitter Bot Scheduler ────────────────────────────────
 
 import os
-if os.getenv("TWITTER_API_KEY"):
-    try:
-        from apscheduler.schedulers.asyncio import AsyncIOScheduler
-        from twitter_bot import setup_twitter_scheduler
+try:
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    from apscheduler.triggers.cron import CronTrigger
+    from twitter_bot import setup_twitter_scheduler
+    from whatsapp_broadcast import send_daily_broadcast
 
-        scheduler = AsyncIOScheduler()
+    scheduler = AsyncIOScheduler()
 
-        @app.on_event("startup")
-        async def start_scheduler():
+    @app.on_event("startup")
+    async def start_scheduler():
+        # Twitter bot (only if credentials set)
+        if os.getenv("TWITTER_API_KEY"):
             setup_twitter_scheduler(scheduler)
-            scheduler.start()
-            logger.info("Twitter bot scheduler started")
 
-        @app.on_event("shutdown")
-        async def stop_scheduler():
-            scheduler.shutdown()
+        # WhatsApp daily broadcast at 9:00 AM MX time (15:00 UTC)
+        scheduler.add_job(
+            send_daily_broadcast,
+            CronTrigger(hour=15, minute=0),
+            id="whatsapp_daily_broadcast",
+            name="Daily WhatsApp picks broadcast",
+            replace_existing=True,
+        )
+        logger.info("WhatsApp broadcast scheduled at 9:00 AM MX")
 
-    except ImportError:
-        logger.warning("APScheduler not installed, Twitter bot disabled")
+        scheduler.start()
+        logger.info("Scheduler started")
+
+    @app.on_event("shutdown")
+    async def stop_scheduler():
+        scheduler.shutdown()
+
+except ImportError:
+    logger.warning("APScheduler not installed, scheduled jobs disabled")
 
 
 # ── SEO: Sitemap & Robots ───────────────────────────────
@@ -301,6 +315,25 @@ async def sitemap_xml():
             f'    <priority>0.8</priority>\n  </url>'
         )
 
+    # Static pages (legal + guides)
+    static_pages = [
+        ("sobre-nosotros", "monthly", "0.5"),
+        ("privacidad", "monthly", "0.3"),
+        ("terminos", "monthly", "0.3"),
+        ("guia/donde-ver-liga-mx", "weekly", "0.8"),
+        ("guia/donde-ver-nfl-en-mexico", "weekly", "0.8"),
+        ("guia/donde-ver-nba-en-mexico", "weekly", "0.8"),
+        ("guia/mejores-streaming-deportes-mexico", "weekly", "0.8"),
+        ("guia/donde-ver-champions-league", "weekly", "0.8"),
+    ]
+    for page, freq, priority in static_pages:
+        urls.append(
+            f'  <url>\n    <loc>{APP_URL}/{page}</loc>\n'
+            f'    <lastmod>{today_str}</lastmod>\n'
+            f'    <changefreq>{freq}</changefreq>\n'
+            f'    <priority>{priority}</priority>\n  </url>'
+        )
+
     # Permanent league landing pages (high priority — always have content)
     for slug in LEAGUES:
         urls.append(
@@ -318,6 +351,30 @@ async def sitemap_xml():
     )
 
     return Response(content=xml, media_type="application/xml")
+
+
+# ── Static Pages (Legal + Guides for AdSense) ───────────
+
+@app.get("/sobre-nosotros", response_class=HTMLResponse)
+async def about_page(request: Request):
+    return templates.TemplateResponse(request, "about.html")
+
+@app.get("/privacidad", response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    return templates.TemplateResponse(request, "privacy.html")
+
+@app.get("/terminos", response_class=HTMLResponse)
+async def terms_page(request: Request):
+    return templates.TemplateResponse(request, "terms.html")
+
+@app.get("/guia/{guide_slug}", response_class=HTMLResponse)
+async def guide_page(request: Request, guide_slug: str):
+    """Original content guides for SEO + AdSense."""
+    template_name = f"guides/{guide_slug}.html"
+    try:
+        return templates.TemplateResponse(request, template_name)
+    except Exception:
+        return templates.TemplateResponse(request, "404.html", status_code=404)
 
 
 # ── Health ───────────────────────────────────────────────
