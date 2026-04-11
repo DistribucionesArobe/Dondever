@@ -293,6 +293,192 @@ async def post_pick_del_dia():
     return result
 
 
+# ── Live Game Monitor (Reactive Tweets) ─────────────────
+
+# Track scores to detect changes (goals, etc.)
+_last_scores: dict[str, dict] = {}
+
+
+def compose_live_tweet(game: dict, event_type: str, detail: str = "") -> str:
+    """
+    Compose a reactive tweet for a live game event.
+    event_type: 'goal', 'started', 'halftime', 'final'
+    """
+    emoji = game.get("emoji", "")
+    league = game.get("league_name", "")
+    first, second = get_team_order(game)
+    first_score = game["home"]["score"] if game.get("sport", "") in HOME_LEFT_SPORTS else game["away"]["score"]
+    second_score = game["away"]["score"] if game.get("sport", "") in HOME_LEFT_SPORTS else game["home"]["score"]
+    hashtag = HASHTAG_MAP.get(league, "")
+    channels = format_broadcast_short(game["broadcasts"])
+    betting = get_betting_affiliate_text()
+
+    if event_type == "goal":
+        exclamations = ["GOOOL!", "GOL!", "GOLAZO!", "SE METIO!"]
+        excl = random.choice(exclamations)
+        headline = f"{excl} {emoji}\n\n{first} {first_score} - {second_score} {second}"
+    elif event_type == "score_change":
+        headline = f"ANOTACION! {emoji}\n\n{first} {first_score} - {second_score} {second}"
+    elif event_type == "started":
+        headline = f"ARRANCA! {emoji}\n\n{first} vs {second}\nEN VIVO ahora"
+    elif event_type == "halftime":
+        headline = f"MEDIO TIEMPO {emoji}\n\n{first} {first_score} - {second_score} {second}"
+    elif event_type == "final":
+        headline = f"FINAL! {emoji}\n\n{first} {first_score} - {second_score} {second}"
+    else:
+        headline = f"{emoji} {first} {first_score} - {second_score} {second}"
+
+    parts = [headline, f"{league}"]
+
+    if event_type in ("started", "goal", "score_change"):
+        parts.append(f"Donde verlo: {channels}")
+
+    if betting:
+        parts.append(f"\n{betting}")
+
+    parts.append(APP_URL)
+
+    if hashtag:
+        parts.append(f"{hashtag} #DondeVer")
+    else:
+        parts.append("#DondeVer")
+
+    tweet = "\n".join(parts)
+
+    # Trim if needed
+    if len(tweet) > 280:
+        parts = [headline, league, APP_URL]
+        if hashtag:
+            parts.append(f"{hashtag} #DondeVer")
+        tweet = "\n".join(parts)
+
+    return tweet[:280]
+
+
+async def monitor_live_games():
+    """
+    Monitor live games for score changes and key events.
+    Called every 2 minutes by scheduler.
+    Posts reactive tweets when:
+    - A game starts (state changes to 'in')
+    - Score changes (goal/touchdown/run)
+    - Halftime
+    - Game ends (state changes to 'post')
+
+    Only tweets for priority leagues to avoid spam.
+    """
+    global _last_scores
+
+    priority_leagues = {
+        "liga-mx", "premier-league", "champions", "la-liga",
+        "nfl", "nba", "mlb", "serie-a", "bundesliga",
+        "europa-league", "concacaf-cl", "mls",
+    }
+
+    games = await get_todays_games()
+    posted = []
+
+    for game in games:
+        game_id = game["id"]
+        slug = game["league_slug"]
+
+        # Only monitor priority leagues
+        if slug not in priority_leagues:
+            continue
+
+        state = game["status"]["state"]
+        home_score = game["home"]["score"] or "0"
+        away_score = game["away"]["score"] or "0"
+        detail = game["status"].get("detail", "")
+
+        current = {
+            "state": state,
+            "home_score": str(home_score),
+            "away_score": str(away_score),
+            "detail": detail,
+        }
+
+        prev = _last_scores.get(game_id)
+
+        if prev is None:
+            # First time seeing this game — just store it
+            _last_scores[game_id] = current
+            continue
+
+        # Detect events
+        event_type = None
+
+        # Game just started
+        if prev["state"] == "pre" and state == "in":
+            event_type = "started"
+
+        # Game just ended
+        elif prev["state"] == "in" and state == "post":
+            event_type = "final"
+
+        # Score changed (GOAL / TOUCHDOWN / etc.)
+        elif state == "in" and (
+            prev["home_score"] != str(home_score) or
+            prev["away_score"] != str(away_score)
+        ):
+            sport = game.get("sport", "")
+            if sport == "soccer":
+                event_type = "goal"
+            else:
+                event_type = "score_change"
+
+        # Halftime detection (check detail string)
+        elif state == "in" and "half" in detail.lower() and "half" not in prev.get("detail", "").lower():
+            event_type = "halftime"
+
+        # Post tweet if event detected
+        if event_type:
+            # Don't tweet every score change in high-scoring sports — only big moments
+            if event_type == "score_change":
+                sport = game.get("sport", "")
+                # For basketball, only tweet every ~10 points; for baseball every run
+                if sport == "basketball":
+                    total_now = int(home_score or 0) + int(away_score or 0)
+                    total_prev = int(prev["home_score"] or 0) + int(prev["away_score"] or 0)
+                    if (total_now - total_prev) < 8:
+                        _last_scores[game_id] = current
+                        continue
+                elif sport == "hockey":
+                    # Tweet every goal in hockey
+                    pass
+                # Football: tweet touchdowns (6+ point changes)
+                elif sport == "football":
+                    home_diff = abs(int(home_score or 0) - int(prev["home_score"] or 0))
+                    away_diff = abs(int(away_score or 0) - int(prev["away_score"] or 0))
+                    if max(home_diff, away_diff) < 6:
+                        _last_scores[game_id] = current
+                        continue
+
+            tweet_text = compose_live_tweet(game, event_type, detail)
+            result = post_tweet(tweet_text)
+            if result["success"]:
+                posted.append({
+                    "game": game["name"],
+                    "event": event_type,
+                    "tweet_id": result["tweet_id"],
+                })
+                logger.info(f"Live tweet: {event_type} — {game['name']}")
+
+        # Update stored state
+        _last_scores[game_id] = current
+
+    # Clean up old games (not in today's list)
+    current_ids = {g["id"] for g in games}
+    stale = [gid for gid in _last_scores if gid not in current_ids]
+    for gid in stale:
+        del _last_scores[gid]
+
+    if posted:
+        logger.info(f"Live monitor: {len(posted)} tweets posted")
+
+    return posted
+
+
 # ── Scheduler Integration ────────────────────────────────
 
 def setup_twitter_scheduler(scheduler):
@@ -341,4 +527,13 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    logger.info("Twitter bot scheduler configured (3 jobs: games, summary, pick)")
+    # 4) Live game monitor — every 2 minutes, check for goals/events
+    scheduler.add_job(
+        monitor_live_games,
+        IntervalTrigger(minutes=2),
+        id="twitter_live_monitor",
+        name="Live game monitor (goals, starts, finals)",
+        replace_existing=True,
+    )
+
+    logger.info("Twitter bot scheduler configured (4 jobs: games, summary, pick, live monitor)")
