@@ -405,3 +405,158 @@ async def search_games(query: str, date_str: Optional[str] = None) -> list[dict]
             matches.append(game)
 
     return matches
+
+
+# ── Team Stats & Standings ──────────────────────────────
+
+# Map team slugs to ESPN sport/league for standings lookup
+TEAM_LEAGUE_MAP = {
+    # Liga MX
+    "chivas": ("soccer", "mex.1"), "america": ("soccer", "mex.1"),
+    "cruz-azul": ("soccer", "mex.1"), "pumas": ("soccer", "mex.1"),
+    "tigres": ("soccer", "mex.1"), "monterrey": ("soccer", "mex.1"),
+    "toluca": ("soccer", "mex.1"), "santos": ("soccer", "mex.1"),
+    "leon": ("soccer", "mex.1"), "pachuca": ("soccer", "mex.1"),
+    "atlas": ("soccer", "mex.1"), "necaxa": ("soccer", "mex.1"),
+    "puebla": ("soccer", "mex.1"), "queretaro": ("soccer", "mex.1"),
+    # Premier League
+    "liverpool": ("soccer", "eng.1"), "manchester-city": ("soccer", "eng.1"),
+    "manchester-united": ("soccer", "eng.1"), "arsenal": ("soccer", "eng.1"),
+    "chelsea": ("soccer", "eng.1"),
+    # La Liga
+    "real-madrid": ("soccer", "esp.1"), "barcelona": ("soccer", "esp.1"),
+    # Serie A
+    "juventus": ("soccer", "ita.1"), "inter-milan": ("soccer", "ita.1"),
+    # Bundesliga
+    "bayern": ("soccer", "ger.1"),
+    # Ligue 1
+    "psg": ("soccer", "fra.1"),
+    # NBA
+    "lakers": ("basketball", "nba"), "celtics": ("basketball", "nba"),
+    "warriors": ("basketball", "nba"), "bulls": ("basketball", "nba"),
+    "heat": ("basketball", "nba"), "knicks": ("basketball", "nba"),
+    # NFL
+    "cowboys": ("football", "nfl"), "chiefs": ("football", "nfl"),
+    "49ers": ("football", "nfl"), "eagles": ("football", "nfl"),
+    "packers": ("football", "nfl"),
+    # MLB
+    "dodgers": ("baseball", "mlb"), "yankees": ("baseball", "mlb"),
+    "red-sox": ("baseball", "mlb"), "astros": ("baseball", "mlb"),
+}
+
+# Standings cache: 1 hour TTL
+_standings_cache = TTLCache(maxsize=50, ttl=3600)
+
+
+async def fetch_standings(sport: str, league: str) -> list[dict]:
+    """
+    Fetch standings from ESPN API.
+    Returns list of team entries with position, record, stats.
+    """
+    cache_key = f"standings:{sport}:{league}"
+    if cache_key in _standings_cache:
+        return _standings_cache[cache_key]
+
+    url = f"https://site.api.espn.com/apis/v2/sports/{sport}/{league}/standings"
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        try:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"Standings error for {sport}/{league}: {e}")
+            return []
+
+    entries = []
+
+    # ESPN returns standings in different structures depending on sport
+    standings_data = []
+    if "children" in data:
+        # Soccer leagues, NFL, MLB (divisions/groups)
+        for group in data["children"]:
+            group_name = group.get("name", "")
+            for entry in group.get("standings", {}).get("entries", []):
+                entry["_group"] = group_name
+                standings_data.append(entry)
+    elif "standings" in data:
+        standings_data = data.get("standings", {}).get("entries", [])
+
+    for entry in standings_data:
+        team = entry.get("team", {})
+        raw_stats = entry.get("stats", [])
+
+        # Convert stats list to dict for easy access
+        stats = {}
+        for s in raw_stats:
+            name = s.get("name", "")
+            val = s.get("displayValue", s.get("value", ""))
+            stats[name] = val
+
+        parsed = {
+            "team_id": team.get("id", ""),
+            "team_name": team.get("displayName", ""),
+            "team_short": team.get("abbreviation", ""),
+            "team_logo": team.get("logos", [{}])[0].get("href", "") if team.get("logos") else "",
+            "group": entry.get("_group", ""),
+            # Soccer stats
+            "rank": stats.get("rank", ""),
+            "wins": stats.get("wins", ""),
+            "losses": stats.get("losses", ""),
+            "ties": stats.get("ties", stats.get("draws", "")),
+            "points": stats.get("points", ""),
+            "games_played": stats.get("gamesPlayed", ""),
+            "goals_for": stats.get("pointsFor", stats.get("goalsFor", "")),
+            "goals_against": stats.get("pointsAgainst", stats.get("goalsAgainst", "")),
+            "goal_diff": stats.get("pointDifferential", stats.get("goalDifference", "")),
+            # US sports stats
+            "win_pct": stats.get("winPercent", stats.get("winPct", "")),
+            "streak": stats.get("streak", ""),
+            "record": stats.get("overall", stats.get("record", "")),
+            "all_stats": stats,
+        }
+        entries.append(parsed)
+
+    _standings_cache[cache_key] = entries
+    logger.info(f"Fetched {len(entries)} standings entries for {sport}/{league}")
+    return entries
+
+
+async def get_team_stats(team_slug: str) -> dict:
+    """
+    Get stats for a specific team: standing position, record, form.
+    Returns a dict with the team's stats or empty dict if not found.
+    """
+    league_info = TEAM_LEAGUE_MAP.get(team_slug)
+    if not league_info:
+        return {}
+
+    sport, league = league_info
+    standings = await fetch_standings(sport, league)
+    if not standings:
+        return {}
+
+    # Resolve team name from slug
+    from config import TEAM_ALIASES
+    team_name_search = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " ")).lower()
+
+    # Find the team in standings
+    for entry in standings:
+        entry_name = entry["team_name"].lower()
+        entry_short = entry["team_short"].lower()
+        if (team_name_search in entry_name or
+            entry_name in team_name_search or
+            team_slug.replace("-", "") in entry_name.replace(" ", "") or
+            team_name_search in entry_short):
+            # Determine sport type for formatting
+            entry["sport_type"] = sport
+            entry["league_id"] = league
+            return entry
+
+    return {}
+
+
+async def get_league_standings(sport: str, league: str, limit: int = 10) -> list[dict]:
+    """Get top N standings for a league."""
+    standings = await fetch_standings(sport, league)
+    return standings[:limit]

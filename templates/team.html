@@ -87,6 +87,68 @@
         </div>
     </div>
 
+    {% if stats %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.5rem;margin-bottom:1rem;">
+        {% if stats.rank %}
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem;text-align:center;">
+            <div style="font-size:1.3rem;font-weight:800;color:#059669;">{{ stats.rank }}</div>
+            <div style="font-size:0.7rem;color:#6b7280;">Posicion</div>
+        </div>
+        {% endif %}
+
+        {% if stats.sport_type == 'soccer' %}
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e;">{{ stats.wins }}-{{ stats.ties }}-{{ stats.losses }}</div>
+                <div style="font-size:0.7rem;color:#6b7280;">G-E-P</div>
+            </div>
+            {% if stats.points %}
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:800;color:#f97316;">{{ stats.points }}</div>
+                <div style="font-size:0.7rem;color:#6b7280;">Puntos</div>
+            </div>
+            {% endif %}
+            {% if stats.goal_diff %}
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:800;color:{% if stats.goal_diff|int > 0 %}#059669{% elif stats.goal_diff|int < 0 %}#ef4444{% else %}#6b7280{% endif %};">{{ stats.goal_diff }}</div>
+                <div style="font-size:0.7rem;color:#6b7280;">Dif. goles</div>
+            </div>
+            {% endif %}
+        {% else %}
+            {% if stats.record %}
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e;">{{ stats.record }}</div>
+                <div style="font-size:0.7rem;color:#6b7280;">Record</div>
+            </div>
+            {% elif stats.wins %}
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:800;color:#1a1a2e;">{{ stats.wins }}-{{ stats.losses }}</div>
+                <div style="font-size:0.7rem;color:#6b7280;">Record</div>
+            </div>
+            {% endif %}
+            {% if stats.win_pct %}
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem;text-align:center;">
+                <div style="font-size:1.3rem;font-weight:800;color:#f97316;">{{ stats.win_pct }}</div>
+                <div style="font-size:0.7rem;color:#6b7280;">Win %</div>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        {% if stats.streak %}
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem;text-align:center;">
+            <div style="font-size:1.3rem;font-weight:800;color:#6366f1;">{{ stats.streak }}</div>
+            <div style="font-size:0.7rem;color:#6b7280;">Racha</div>
+        </div>
+        {% endif %}
+
+        {% if stats.group %}
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem;text-align:center;">
+            <div style="font-size:0.8rem;font-weight:700;color:#1a1a2e;">{{ stats.group }}</div>
+            <div style="font-size:0.7rem;color:#6b7280;">Division</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <div class="alert-box">
         <div>
             <div style="font-weight:700;font-size:0.9rem;">Recibe alertas de {{ team_name }}</div>

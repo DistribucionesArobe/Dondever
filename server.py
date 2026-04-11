@@ -14,7 +14,7 @@ from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
 from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
-from sports_api import get_todays_games, search_games
+from sports_api import get_todays_games, search_games, get_team_stats
 from whatsapp_bot import handle_whatsapp_message
 
 # ── Logging ──────────────────────────────────────────────
@@ -518,12 +518,20 @@ async def team_page(request: Request, team_slug: str):
                 team_league = game.get("league_name", "")
                 break
 
+    # Fetch team stats (standings, record, etc.)
+    stats = await get_team_stats(team_slug)
+
+    # If we got stats but no logo from games, use logo from stats
+    if not team_logo and stats.get("team_logo"):
+        team_logo = stats["team_logo"]
+
     return templates.TemplateResponse(request, "team.html", {
         "team_name": team_name,
         "team_slug": team_slug,
         "team_logo": team_logo,
         "team_league": team_league,
         "games": games,
+        "stats": stats,
         "format_mx_time": format_mx_time,
     })
 
