@@ -14,7 +14,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://localhost:5432/do
 # ── Twilio / WhatsApp ────────────────────────────────────
 TWILIO_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
 TWILIO_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
-TWILIO_WA_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886")
+TWILIO_WA_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+15715463202")
 
 # ── APIs ─────────────────────────────────────────────────
 ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports"
