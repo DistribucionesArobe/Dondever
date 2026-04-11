@@ -8,7 +8,7 @@ import asyncio
 import logging
 import random
 from datetime import datetime, timezone, timedelta
-from config import AFFILIATES, APP_URL, TZ_MX
+from config import AFFILIATES, APP_URL, TZ_MX, get_affiliate_url
 from sports_api import get_todays_games
 
 logger = logging.getLogger("dondever.twitter")
@@ -62,11 +62,12 @@ def format_game_time_mx(date_str: str) -> str:
 
 
 def get_random_affiliate_text() -> str:
-    """Get a random affiliate CTA for the tweet."""
+    """Get a random affiliate CTA for the tweet with Twitter tracking."""
     options = []
     for key, aff in AFFILIATES.items():
         if aff["url"] != "#":
-            options.append(f"{aff['cta']}: {aff['url']}")
+            tracked_url = get_affiliate_url(key, source="twitter")
+            options.append(f"{aff['cta']}: {tracked_url}")
     if options:
         return random.choice(options)
     return ""
@@ -84,28 +85,44 @@ def compose_game_tweet(game: dict) -> str:
     time_str = format_game_time_mx(game["date"])
     channels = format_broadcast_short(game["broadcasts"])
 
+    # Build hashtags from league name
+    league = game.get("league_name", "")
+    hashtag_map = {
+        "Liga MX": "#LigaMX", "MLS": "#MLS", "Premier League": "#PremierLeague",
+        "La Liga": "#LaLiga", "Serie A": "#SerieA", "Bundesliga": "#Bundesliga",
+        "Champions League": "#ChampionsLeague", "NFL": "#NFL", "NBA": "#NBA",
+        "MLB": "#MLB", "NHL": "#NHL", "UFC": "#UFC", "Formula 1": "#F1",
+        "Ligue 1": "#Ligue1", "Copa del Mundo": "#Mundial",
+    }
+    hashtag = hashtag_map.get(league, "")
+
     # Build tweet parts
     headline = f"{emoji} {away} vs {home}"
     time_line = f"Hoy {time_str} (hora centro)"
     channel_line = f"Donde verlo: {channels}"
     link = f"{APP_URL}"
     affiliate = get_random_affiliate_text()
+    tags = f"{hashtag} #DondeVer" if hashtag else "#DondeVer"
 
     # Combine and check length
-    parts = [headline, time_line, channel_line, link]
+    parts = [headline, time_line, channel_line, link, tags]
     if affiliate:
-        parts.append(f"\n{affiliate}")
+        parts.insert(-1, f"\n{affiliate}")
 
     tweet = "\n".join(parts)
 
-    # Trim if too long
+    # Trim if too long — remove parts in priority order
     if len(tweet) > 280:
-        # Remove affiliate to fit
+        # Remove affiliate first
+        parts = [headline, time_line, channel_line, link, tags]
+        tweet = "\n".join(parts)
+
+    if len(tweet) > 280:
+        # Remove hashtags
         parts = [headline, time_line, channel_line, link]
         tweet = "\n".join(parts)
 
     if len(tweet) > 280:
-        # Shorten further
         tweet = f"{headline}\n{time_str} - {channels}\n{link}"
 
     return tweet[:280]

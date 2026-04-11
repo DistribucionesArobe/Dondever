@@ -8,7 +8,7 @@ import logging
 import random
 from datetime import datetime, timezone, timedelta
 
-from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX
+from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX, get_affiliate_url
 from sports_api import search_games, get_todays_games
 
 logger = logging.getLogger("dondever.whatsapp")
@@ -67,9 +67,11 @@ def format_game_for_whatsapp(game: dict) -> str:
 
 
 def get_random_affiliate() -> dict:
-    """Pick an affiliate to show (rotate between them)."""
+    """Pick an affiliate to show (rotate between them) with WhatsApp tracking."""
     key = random.choice(list(AFFILIATES.keys()))
-    return AFFILIATES[key]
+    aff = AFFILIATES[key].copy()
+    aff["url"] = get_affiliate_url(key, source="whatsapp")
+    return aff
 
 
 async def handle_whatsapp_message(body: str, from_number: str) -> str:

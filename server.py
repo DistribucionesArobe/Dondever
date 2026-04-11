@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, Request, Form, Query
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
@@ -201,6 +201,63 @@ if os.getenv("TWITTER_API_KEY"):
 
     except ImportError:
         logger.warning("APScheduler not installed, Twitter bot disabled")
+
+
+# ── SEO: Sitemap & Robots ───────────────────────────────
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+async def robots_txt():
+    """Robots.txt for search engine crawlers."""
+    return (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Allow: /juego/\n"
+        "Disallow: /api/\n"
+        "Disallow: /webhook/\n"
+        f"\nSitemap: {APP_URL}/sitemap.xml\n"
+    )
+
+
+@app.get("/sitemap.xml")
+async def sitemap_xml():
+    """Dynamic sitemap with today's game pages for Google indexing."""
+    today = datetime.now(TZ_MX)
+    today_str = today.strftime("%Y-%m-%d")
+
+    games = await get_todays_games()
+
+    urls = [
+        f'  <url>\n    <loc>{APP_URL}</loc>\n'
+        f'    <lastmod>{today_str}</lastmod>\n'
+        f'    <changefreq>hourly</changefreq>\n'
+        f'    <priority>1.0</priority>\n  </url>'
+    ]
+
+    for game in games:
+        urls.append(
+            f'  <url>\n    <loc>{APP_URL}/juego/{game["id"]}</loc>\n'
+            f'    <lastmod>{today_str}</lastmod>\n'
+            f'    <changefreq>hourly</changefreq>\n'
+            f'    <priority>0.8</priority>\n  </url>'
+        )
+
+    # Add static league filter pages
+    for slug in LEAGUES:
+        urls.append(
+            f'  <url>\n    <loc>{APP_URL}/?league={slug}</loc>\n'
+            f'    <lastmod>{today_str}</lastmod>\n'
+            f'    <changefreq>daily</changefreq>\n'
+            f'    <priority>0.6</priority>\n  </url>'
+        )
+
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(urls) +
+        '\n</urlset>'
+    )
+
+    return Response(content=xml, media_type="application/xml")
 
 
 # ── Health ───────────────────────────────────────────────

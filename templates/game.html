@@ -5,6 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donde ver {{ game.away.name }} vs {{ game.home.name }} - DondeVer.app</title>
     <meta name="description" content="Donde ver {{ game.away.name }} vs {{ game.home.name }} en vivo hoy. {{ game.league_name }}. Canales de TV y streaming en Mexico y Estados Unidos.">
+    <!-- Open Graph -->
+    <meta property="og:title" content="Donde ver {{ game.away.name }} vs {{ game.home.name }} hoy">
+    <meta property="og:description" content="{{ game.league_name }} en vivo. Canales de TV y streaming en Mexico y USA.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{ app_url }}/juego/{{ game.id }}">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta property="og:locale" content="es_MX">
+    {% if game.home.logo %}<meta property="og:image" content="{{ game.home.logo }}">{% endif %}
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@dondeverapp">
+    <meta name="twitter:title" content="Donde ver {{ game.away.name }} vs {{ game.home.name }}">
+    <meta name="twitter:description" content="{{ game.league_name }} - Canales de TV y streaming en Mexico y USA">
+    <link rel="canonical" href="{{ app_url }}/juego/{{ game.id }}">
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SportsEvent",
+      "name": "{{ game.away.name }} vs {{ game.home.name }}",
+      "startDate": "{{ game.date }}",
+      "location": {
+        "@type": "Place",
+        "name": "{{ game.venue or 'Por confirmar' }}"
+      },
+      "homeTeam": {
+        "@type": "SportsTeam",
+        "name": "{{ game.home.name }}"
+      },
+      "awayTeam": {
+        "@type": "SportsTeam",
+        "name": "{{ game.away.name }}"
+      },
+      "description": "Donde ver {{ game.away.name }} vs {{ game.home.name }} de {{ game.league_name }} en vivo en Mexico y Estados Unidos",
+      "url": "{{ app_url }}/juego/{{ game.id }}",
+      {% if game.broadcasts %}"broadcastEvent": {
+        "@type": "BroadcastEvent",
+        "isLiveBroadcast": true,
+        "videoFormat": "HD"
+      },{% endif %}
+      "organizer": {
+        "@type": "Organization",
+        "name": "{{ game.league_name }}"
+      }
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>

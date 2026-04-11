@@ -90,6 +90,21 @@ LEAGUES = {
     "pga":           ("golf", "pga",             "PGA Tour",         "\u26f3"),
 }
 
+
+def get_affiliate_url(key: str, source: str = "web") -> str:
+    """
+    Get affiliate URL with source tracking parameter.
+    source: 'web', 'twitter', 'whatsapp'
+    Most affiliate networks accept sub-tracking via URL params.
+    """
+    aff = AFFILIATES.get(key, {})
+    url = aff.get("url", "#")
+    if url == "#":
+        return url
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}sub1={source}"
+
+
 # Known TV channel mappings for Mexico/US (manual enrichment)
 CHANNEL_ALIASES = {
     # Mexico
