@@ -110,6 +110,62 @@ def get_affiliate_url(key: str, source: str = "web") -> str:
     return f"{url}{separator}sub1={source}"
 
 
+# ── Team Aliases (common names → ESPN names) ───────────
+# Allows WhatsApp bot and search to find teams by nicknames
+TEAM_ALIASES = {
+    # Liga MX
+    "chivas": "guadalajara",
+    "america": "america",
+    "aguilas": "america",
+    "las aguilas": "america",
+    "pumas": "unam",
+    "cougars": "unam",
+    "azul": "cruz azul",
+    "la maquina": "cruz azul",
+    "tuzos": "pachuca",
+    "rayados": "monterrey",
+    "tigres": "tigres uanl",
+    "santos": "santos laguna",
+    "diablos": "toluca",
+    "xolos": "tijuana",
+    "atlas": "atlas",
+    "zorros": "atlas",
+    "leon": "leon",
+    "necaxa": "necaxa",
+    "puebla": "puebla",
+    "queretaro": "queretaro",
+    "mazatlan": "mazatlan",
+    "juarez": "juarez",
+    # NFL
+    "pats": "patriots",
+    "niners": "49ers",
+    "pack": "packers",
+    "bolts": "chargers",
+    "birds": "eagles",
+    "fins": "dolphins",
+    "boys": "cowboys",
+    "vaqueros": "cowboys",
+    # NBA
+    "lakers": "lakers",
+    "warriors": "warriors",
+    "dubs": "warriors",
+    "celtics": "celtics",
+    "heat": "heat",
+    "bulls": "bulls",
+    # MLB
+    "dodgers": "dodgers",
+    "yankees": "yankees",
+    "yanquis": "yankees",
+    "medias rojas": "red sox",
+    "cachorros": "cubs",
+}
+
+# ── Sports display conventions ──────────────────────────
+# Sports where home team (local) goes on the LEFT side
+# In soccer/futbol, convention is Local vs Visitante
+HOME_LEFT_SPORTS = {"soccer", "boxing", "mma"}
+
+
 # Known TV channel mappings for Mexico/US (manual enrichment)
 CHANNEL_ALIASES = {
     # Mexico

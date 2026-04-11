@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Donde ver {{ game.away.name }} vs {{ game.home.name }} hoy en vivo - {{ game.league_name }} | DondeVer</title>
-    <meta name="description" content="Donde ver {{ game.away.name }} vs {{ game.home.name }} en vivo. {{ game.league_name }}. Hora, canales de TV y streaming para Mexico y USA. {% if game.broadcasts %}Transmite: {{ game.broadcasts[0].channel }}{% endif %}">
+    {% set home_left_meta = game.sport in ('soccer', 'boxing', 'mma') %}
+    {% set first_team = game.home.name if home_left_meta else game.away.name %}
+    {% set second_team = game.away.name if home_left_meta else game.home.name %}
+    <title>Donde ver {{ first_team }} vs {{ second_team }} hoy en vivo - {{ game.league_name }} | DondeVer</title>
+    <meta name="description" content="Donde ver {{ first_team }} vs {{ second_team }} en vivo. {{ game.league_name }}. Hora, canales de TV y streaming para Mexico y USA. {% if game.broadcasts %}Transmite: {{ game.broadcasts[0].channel }}{% endif %}">
     <!-- Open Graph -->
-    <meta property="og:title" content="Donde ver {{ game.away.name }} vs {{ game.home.name }} hoy">
+    <meta property="og:title" content="Donde ver {{ first_team }} vs {{ second_team }} hoy">
     <meta property="og:description" content="{{ game.league_name }} en vivo. Canales de TV y streaming en Mexico y USA.">
     <meta property="og:type" content="article">
     <meta property="og:url" content="{{ app_url }}/juego/{{ game.id }}">
@@ -117,17 +120,21 @@
 
     <div class="game-hero">
         <div class="league-badge">{{ game.emoji }} {{ game.league_name }}</div>
+        {# Soccer: Local (home) on LEFT. US sports: Away on LEFT #}
+        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+        {% set left_team = game.home if home_left else game.away %}
+        {% set right_team = game.away if home_left else game.home %}
         <div class="matchup">
             <div class="team-block">
-                {% if game.away.logo %}<img src="{{ game.away.logo }}" alt="{{ game.away.name }}">{% endif %}
-                <div class="name">{{ game.away.name }}</div>
-                {% if game.status.state != 'pre' %}<div class="score">{{ game.away.score }}</div>{% endif %}
+                {% if left_team.logo %}<img src="{{ left_team.logo }}" alt="{{ left_team.name }}">{% endif %}
+                <div class="name">{{ left_team.name }}</div>
+                {% if game.status.state != 'pre' %}<div class="score">{{ left_team.score }}</div>{% endif %}
             </div>
             <div class="vs">vs</div>
             <div class="team-block">
-                {% if game.home.logo %}<img src="{{ game.home.logo }}" alt="{{ game.home.name }}">{% endif %}
-                <div class="name">{{ game.home.name }}</div>
-                {% if game.status.state != 'pre' %}<div class="score">{{ game.home.score }}</div>{% endif %}
+                {% if right_team.logo %}<img src="{{ right_team.logo }}" alt="{{ right_team.name }}">{% endif %}
+                <div class="name">{{ right_team.name }}</div>
+                {% if game.status.state != 'pre' %}<div class="score">{{ right_team.score }}</div>{% endif %}
             </div>
         </div>
         <div class="time-block">

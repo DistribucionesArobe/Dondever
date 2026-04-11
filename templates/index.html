@@ -416,7 +416,8 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
             <div>
                 <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:#10b981;font-weight:700;">Pick del dia</div>
-                <div style="font-size:1.1rem;font-weight:800;margin:0.25rem 0;">{{ pick_game.emoji }} {{ pick_game.away.name }} vs {{ pick_game.home.name }}</div>
+                {% set pick_home_left = pick_game.sport in ('soccer', 'boxing', 'mma') %}
+                <div style="font-size:1.1rem;font-weight:800;margin:0.25rem 0;">{{ pick_game.emoji }} {% if pick_home_left %}{{ pick_game.home.name }} vs {{ pick_game.away.name }}{% else %}{{ pick_game.away.name }} vs {{ pick_game.home.name }}{% endif %}</div>
                 <div style="font-size:0.8rem;opacity:0.8;">{{ pick_game.league_name }} &middot; {{ format_mx_time(pick_game.date) }} hrs</div>
                 <div style="font-size:0.75rem;margin-top:0.4rem;color:#10b981;">Donde verlo: {% if pick_game.broadcasts %}{{ pick_game.broadcasts[0].channel }}{% else %}Por confirmar{% endif %}</div>
             </div>
@@ -471,16 +472,20 @@
         </h2>
 
         {% for game in league_data.games %}
+        {# Soccer convention: Local (home) on LEFT. US sports: Away on LEFT #}
+        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+        {% set left_team = game.home if home_left else game.away %}
+        {% set right_team = game.away if home_left else game.home %}
         <a href="/juego/{{ game.id }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
             <div class="team away">
                 <div>
-                    <div class="team-name">{{ game.away.name }}</div>
+                    <div class="team-name">{{ left_team.name }}</div>
                     {% if game.status.state != 'pre' %}
-                    <div class="team-score">{{ game.away.score }}</div>
+                    <div class="team-score">{{ left_team.score }}</div>
                     {% endif %}
                 </div>
-                {% if game.away.logo %}
-                <img src="{{ game.away.logo }}" alt="{{ game.away.name }}" class="team-logo" loading="lazy">
+                {% if left_team.logo %}
+                <img src="{{ left_team.logo }}" alt="{{ left_team.name }}" class="team-logo" loading="lazy">
                 {% endif %}
             </div>
 
@@ -496,13 +501,13 @@
             </div>
 
             <div class="team">
-                {% if game.home.logo %}
-                <img src="{{ game.home.logo }}" alt="{{ game.home.name }}" class="team-logo" loading="lazy">
+                {% if right_team.logo %}
+                <img src="{{ right_team.logo }}" alt="{{ right_team.name }}" class="team-logo" loading="lazy">
                 {% endif %}
                 <div>
-                    <div class="team-name">{{ game.home.name }}</div>
+                    <div class="team-name">{{ right_team.name }}</div>
                     {% if game.status.state != 'pre' %}
-                    <div class="team-score">{{ game.home.score }}</div>
+                    <div class="team-score">{{ right_team.score }}</div>
                     {% endif %}
                 </div>
             </div>

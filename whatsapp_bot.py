@@ -8,7 +8,7 @@ import logging
 import random
 from datetime import datetime, timezone, timedelta
 
-from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX, get_affiliate_url
+from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX, get_affiliate_url, TEAM_ALIASES, HOME_LEFT_SPORTS
 from sports_api import search_games, get_todays_games
 
 logger = logging.getLogger("dondever.whatsapp")
@@ -44,16 +44,24 @@ def format_game_for_whatsapp(game: dict) -> str:
     league = game.get("league_name", "")
     home = game["home"]["name"]
     away = game["away"]["name"]
+    sport = game.get("sport", "")
     time_str = format_game_time(game["date"])
     channels = format_broadcast_text(game["broadcasts"])
     status = game["status"]
 
+    # Soccer: Local vs Visitante. US sports: Away @ Home
+    home_left = sport in HOME_LEFT_SPORTS
+    first = home if home_left else away
+    second = away if home_left else home
+    first_score = game["home"]["score"] if home_left else game["away"]["score"]
+    second_score = game["away"]["score"] if home_left else game["home"]["score"]
+
     if status["state"] == "in":
-        score_line = f"EN VIVO {away} {game['away']['score']} - {game['home']['score']} {home}"
+        score_line = f"EN VIVO {first} {first_score} - {second_score} {second}"
     elif status["state"] == "post":
-        score_line = f"FINAL: {away} {game['away']['score']} - {game['home']['score']} {home}"
+        score_line = f"FINAL: {first} {first_score} - {second_score} {second}"
     else:
-        score_line = f"{away} vs {home}"
+        score_line = f"{first} vs {second}"
 
     lines = [
         f"{emoji} *{league}*",
@@ -86,6 +94,11 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     """
     try:
         body_clean = body.strip().lower()
+        # Strip common prefixes like "donde ver chivas" -> "chivas"
+        for prefix in ("donde ver ", "donde puedo ver ", "como ver ", "en donde ver "):
+            if body_clean.startswith(prefix):
+                body_clean = body_clean[len(prefix):]
+                break
     except Exception:
         body_clean = ""
 
@@ -121,11 +134,15 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
         channels = format_broadcast_text(pick["broadcasts"])
         time_str = format_game_time(pick["date"])
         aff = get_random_affiliate()
+        pick_sport = pick.get("sport", "")
+        pick_home_left = pick_sport in HOME_LEFT_SPORTS
+        pick_first = pick["home"]["name"] if pick_home_left else pick["away"]["name"]
+        pick_second = pick["away"]["name"] if pick_home_left else pick["home"]["name"]
 
         return (
             f"*PICK DEL DIA*\n\n"
             f"{pick.get('emoji', '')} *{pick['league_name']}*\n"
-            f"{pick['away']['name']} vs {pick['home']['name']}\n"
+            f"{pick_first} vs {pick_second}\n"
             f"Hora: {time_str} (hora centro)\n"
             f"Donde verlo: {channels}\n\n"
             f"Escribe *picks* diario para recibir sugerencias.\n\n"

@@ -12,7 +12,7 @@ from cachetools import TTLCache
 
 from config import (
     ESPN_BASE, SPORTSDB_BASE, SPORTSDB_KEY,
-    LEAGUES, ALL_LEAGUES, CHANNEL_ALIASES, TZ_MX
+    LEAGUES, ALL_LEAGUES, CHANNEL_ALIASES, TZ_MX, TEAM_ALIASES
 )
 
 logger = logging.getLogger("dondever.sports")
@@ -139,6 +139,49 @@ async def fetch_sportsdb_tv_by_event(event_id: str) -> list[dict]:
             return []
 
 
+# TheSportsDB uses different team names than ESPN sometimes
+# Map ESPN names -> additional search terms for matching
+SPORTSDB_TEAM_ALIASES = {
+    "guadalajara": ["chivas", "cd guadalajara"],
+    "america": ["club america", "cf america"],
+    "unam": ["pumas", "pumas unam"],
+    "cruz azul": ["cruz azul"],
+    "tigres uanl": ["tigres", "uanl tigres"],
+    "monterrey": ["cf monterrey", "rayados"],
+    "santos laguna": ["santos", "santos laguna"],
+    "pachuca": ["cf pachuca", "tuzos"],
+    "toluca": ["deportivo toluca"],
+    "tijuana": ["club tijuana", "xolos"],
+    "leon": ["club leon"],
+    "atletico madrid": ["atletico de madrid", "atletico"],
+    "atletico de madrid": ["atletico madrid", "atletico"],
+}
+
+
+def _team_matches(espn_name: str, db_name: str) -> bool:
+    """Check if an ESPN team name matches a TheSportsDB team name."""
+    espn = espn_name.lower()
+    db = db_name.lower()
+
+    # Direct contains
+    if espn in db or db in espn:
+        return True
+
+    # Last word match (e.g. "Guadalajara" matches "CD Guadalajara")
+    espn_last = espn.split()[-1] if espn else ""
+    db_last = db.split()[-1] if db else ""
+    if espn_last and len(espn_last) > 3 and (espn_last in db or db_last in espn):
+        return True
+
+    # Check aliases
+    aliases = SPORTSDB_TEAM_ALIASES.get(espn, [])
+    for alias in aliases:
+        if alias in db or db in alias:
+            return True
+
+    return False
+
+
 async def get_sportsdb_tv_for_teams(
     home_team: str, away_team: str, league_slug: str, date_str: str
 ) -> list[dict]:
@@ -155,19 +198,12 @@ async def get_sportsdb_tv_for_teams(
 
     events = await fetch_sportsdb_schedule(sportsdb_league, formatted_date)
 
-    # Try to match by team names
-    home_lower = home_team.lower()
-    away_lower = away_team.lower()
-
     for ev in events:
-        db_home = (ev.get("strHomeTeam") or "").lower()
-        db_away = (ev.get("strAwayTeam") or "").lower()
+        db_home = (ev.get("strHomeTeam") or "")
+        db_away = (ev.get("strAwayTeam") or "")
 
-        # Fuzzy match: check if ESPN team name is contained in SportsDB name or vice versa
-        home_match = (home_lower in db_home or db_home in home_lower or
-                      home_lower.split()[-1] in db_home)
-        away_match = (away_lower in db_away or db_away in away_lower or
-                      away_lower.split()[-1] in db_away)
+        home_match = _team_matches(home_team, db_home)
+        away_match = _team_matches(away_team, db_away)
 
         if home_match and away_match:
             # Found the match! Get TV info
@@ -245,11 +281,19 @@ async def parse_espn_events_enriched(
             home["name"], away["name"], league_slug, date_str
         )
 
-        # Merge: prefer TheSportsDB if it has data, fall back to ESPN
-        if sportsdb_tv:
-            broadcasts = sportsdb_tv
-        else:
-            broadcasts = espn_broadcasts
+        # Merge: combine both sources, prefer TheSportsDB, supplement with ESPN
+        seen_channels = set()
+        broadcasts = []
+        for b in sportsdb_tv:
+            ch = b["channel"].lower()
+            if ch not in seen_channels:
+                seen_channels.add(ch)
+                broadcasts.append(b)
+        for b in espn_broadcasts:
+            ch = b["channel"].lower()
+            if ch not in seen_channels:
+                seen_channels.add(ch)
+                broadcasts.append(b)
 
         # Status
         status_type = ev.get("status", {}).get("type", {})
@@ -262,11 +306,14 @@ async def parse_espn_events_enriched(
         venue_raw = comp.get("venue", {})
         venue = venue_raw.get("fullName", "")
 
+        sport_type = league_info[0] if isinstance(league_info, tuple) else ""
+
         events.append({
             "id": ev.get("id", ""),
             "league_slug": league_slug,
             "league_name": league_info[2] if isinstance(league_info, tuple) else league_slug,
             "emoji": league_info[3] if isinstance(league_info, tuple) and len(league_info) > 3 else "",
+            "sport": sport_type,
             "date": ev.get("date", ""),
             "name": ev.get("name", f"{away['name']} vs {home['name']}"),
             "short_name": ev.get("shortName", ""),
@@ -327,7 +374,19 @@ async def get_todays_games(
 
 async def search_games(query: str, date_str: Optional[str] = None) -> list[dict]:
     """Search for games matching a query (team name, league, etc.)"""
-    query_lower = query.lower()
+    query_lower = query.lower().strip()
+
+    # Expand aliases: "chivas" -> also search "guadalajara"
+    search_terms = [query_lower]
+    alias_target = TEAM_ALIASES.get(query_lower)
+    if alias_target:
+        search_terms.append(alias_target.lower())
+
+    # Also check if query is part of a multi-word alias key
+    for alias_key, alias_val in TEAM_ALIASES.items():
+        if query_lower in alias_key and alias_key != query_lower:
+            search_terms.append(alias_val.lower())
+
     all_games = await get_todays_games(date_str=date_str)
 
     matches = []
@@ -342,7 +401,7 @@ async def search_games(query: str, date_str: Optional[str] = None) -> list[dict]
             game["name"],
         ]).lower()
 
-        if query_lower in searchable:
+        if any(term in searchable for term in search_terms):
             matches.append(game)
 
     return matches

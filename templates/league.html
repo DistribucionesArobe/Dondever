@@ -174,13 +174,16 @@
             {{ emoji }} {{ league_name }} — {{ total_games }} juego{{ 's' if total_games != 1 else '' }} hoy
         </h2>
         {% for game in games %}
+        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+        {% set left_team = game.home if home_left else game.away %}
+        {% set right_team = game.away if home_left else game.home %}
         <a href="/juego/{{ game.id }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
             <div class="team away">
                 <div>
-                    <div class="team-name">{{ game.away.name }}</div>
-                    {% if game.status.state != 'pre' %}<div class="team-score">{{ game.away.score }}</div>{% endif %}
+                    <div class="team-name">{{ left_team.name }}</div>
+                    {% if game.status.state != 'pre' %}<div class="team-score">{{ left_team.score }}</div>{% endif %}
                 </div>
-                {% if game.away.logo %}<img src="{{ game.away.logo }}" alt="{{ game.away.name }}" class="team-logo" loading="lazy">{% endif %}
+                {% if left_team.logo %}<img src="{{ left_team.logo }}" alt="{{ left_team.name }}" class="team-logo" loading="lazy">{% endif %}
             </div>
             <div class="game-center">
                 {% if game.status.state == 'in' %}
@@ -193,10 +196,10 @@
                 {% endif %}
             </div>
             <div class="team">
-                {% if game.home.logo %}<img src="{{ game.home.logo }}" alt="{{ game.home.name }}" class="team-logo" loading="lazy">{% endif %}
+                {% if right_team.logo %}<img src="{{ right_team.logo }}" alt="{{ right_team.name }}" class="team-logo" loading="lazy">{% endif %}
                 <div>
-                    <div class="team-name">{{ game.home.name }}</div>
-                    {% if game.status.state != 'pre' %}<div class="team-score">{{ game.home.score }}</div>{% endif %}
+                    <div class="team-name">{{ right_team.name }}</div>
+                    {% if game.status.state != 'pre' %}<div class="team-score">{{ right_team.score }}</div>{% endif %}
                 </div>
             </div>
             <div class="game-channels">
