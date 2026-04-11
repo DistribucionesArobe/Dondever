@@ -1,25 +1,29 @@
 """
 Twitter/X bot for DondeVer.app
 Auto-posts before each game with where to watch + affiliate links.
+Includes: game alerts, daily summary, pick del dia.
 """
 
 import tweepy
 import asyncio
 import logging
 import random
+import os
 from datetime import datetime, timezone, timedelta
-from config import AFFILIATES, APP_URL, TZ_MX, get_affiliate_url
+from config import AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS, get_affiliate_url
 from sports_api import get_todays_games
 
 logger = logging.getLogger("dondever.twitter")
 
 # ── Twitter API Setup ────────────────────────────────────
-import os
 
 TWITTER_API_KEY = os.getenv("TWITTER_API_KEY", "")
 TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET", "")
 TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN", "")
 TWITTER_ACCESS_SECRET = os.getenv("TWITTER_ACCESS_SECRET", "")
+
+# WhatsApp link for CTA
+WA_PICKS_LINK = "https://wa.me/15715463202?text=picks"
 
 
 def twitter_credentials_valid() -> bool:
@@ -46,7 +50,7 @@ def get_twitter_client() -> tweepy.Client | None:
 def format_broadcast_short(broadcasts: list[dict]) -> str:
     """Short channel list for tweets."""
     if not broadcasts:
-        return "Canal por confirmar"
+        return "Por confirmar"
     channels = [b["channel"] for b in broadcasts[:3]]
     return " / ".join(channels)
 
@@ -61,75 +65,84 @@ def format_game_time_mx(date_str: str) -> str:
         return ""
 
 
-def get_random_affiliate_text() -> str:
-    """Get a random affiliate CTA for the tweet with Twitter tracking."""
-    options = []
-    for key, aff in AFFILIATES.items():
-        if aff["url"] != "#":
-            tracked_url = get_affiliate_url(key, source="twitter")
-            options.append(f"{aff['cta']}: {tracked_url}")
-    if options:
-        return random.choice(options)
-    return ""
+def get_betting_affiliate_text() -> str:
+    """Get a random BETTING affiliate CTA (no VPN) with Twitter tracking."""
+    betting_keys = [k for k in AFFILIATES if k in ("1xbet", "betsson")]
+    if not betting_keys:
+        return ""
+    key = random.choice(betting_keys)
+    aff = AFFILIATES[key]
+    tracked_url = get_affiliate_url(key, source="twitter")
+    return f"{aff['cta']}: {tracked_url}"
+
+
+def get_team_order(game: dict) -> tuple[str, str]:
+    """Return (first_team, second_team) respecting sport conventions."""
+    sport = game.get("sport", "")
+    if sport in HOME_LEFT_SPORTS:
+        return game["home"]["name"], game["away"]["name"]
+    return game["away"]["name"], game["home"]["name"]
+
+
+HASHTAG_MAP = {
+    "Liga MX": "#LigaMX", "MLS": "#MLS", "Premier League": "#PremierLeague",
+    "La Liga": "#LaLiga", "Serie A": "#SerieA", "Bundesliga": "#Bundesliga",
+    "Champions League": "#ChampionsLeague", "Europa League": "#EuropaLeague",
+    "NFL": "#NFL", "NBA": "#NBA", "MLB": "#MLB", "NHL": "#NHL",
+    "UFC": "#UFC", "Formula 1": "#F1", "Ligue 1": "#Ligue1",
+    "Copa del Mundo": "#Mundial", "Liga Expansion MX": "#LigaExpansion",
+    "Concacaf Champions Cup": "#Concacaf",
+}
 
 
 def compose_game_tweet(game: dict) -> str:
     """
     Compose a tweet for a single game.
-    Max 280 chars, includes: teams, time, channels, link, affiliate.
+    Max 280 chars. Includes: teams, time, channels, betting link.
     """
     emoji = game.get("emoji", "")
     league = game.get("league_name", "")
-    home = game["home"]["name"]
-    away = game["away"]["name"]
+    first, second = get_team_order(game)
     time_str = format_game_time_mx(game["date"])
     channels = format_broadcast_short(game["broadcasts"])
+    hashtag = HASHTAG_MAP.get(league, "")
 
-    # Build hashtags from league name
-    league = game.get("league_name", "")
-    hashtag_map = {
-        "Liga MX": "#LigaMX", "MLS": "#MLS", "Premier League": "#PremierLeague",
-        "La Liga": "#LaLiga", "Serie A": "#SerieA", "Bundesliga": "#Bundesliga",
-        "Champions League": "#ChampionsLeague", "NFL": "#NFL", "NBA": "#NBA",
-        "MLB": "#MLB", "NHL": "#NHL", "UFC": "#UFC", "Formula 1": "#F1",
-        "Ligue 1": "#Ligue1", "Copa del Mundo": "#Mundial",
-    }
-    hashtag = hashtag_map.get(league, "")
+    # Betting CTA
+    betting = get_betting_affiliate_text()
 
-    # Build tweet parts
-    headline = f"{emoji} {away} vs {home}"
-    time_line = f"Hoy {time_str} (hora centro)"
+    # Build tweet
+    headline = f"{emoji} {first} vs {second}"
+    time_line = f"Hoy {time_str} (MX)"
     channel_line = f"Donde verlo: {channels}"
-    link = f"{APP_URL}"
-    affiliate = get_random_affiliate_text()
+    site_link = APP_URL
     tags = f"{hashtag} #DondeVer" if hashtag else "#DondeVer"
 
-    # Combine and check length
-    parts = [headline, time_line, channel_line, link, tags]
-    if affiliate:
-        parts.insert(-1, f"\n{affiliate}")
+    # Try full version with betting link
+    parts = [headline, time_line, channel_line]
+    if betting:
+        parts.append(f"\n{betting}")
+    parts.append(site_link)
+    parts.append(tags)
 
     tweet = "\n".join(parts)
 
-    # Trim if too long — remove parts in priority order
+    # Trim if too long
     if len(tweet) > 280:
-        # Remove affiliate first
-        parts = [headline, time_line, channel_line, link, tags]
+        parts = [headline, time_line, channel_line, site_link, tags]
         tweet = "\n".join(parts)
 
     if len(tweet) > 280:
-        # Remove hashtags
-        parts = [headline, time_line, channel_line, link]
+        parts = [headline, time_line, channel_line, site_link]
         tweet = "\n".join(parts)
 
     if len(tweet) > 280:
-        tweet = f"{headline}\n{time_str} - {channels}\n{link}"
+        tweet = f"{headline}\n{time_str} - {channels}\n{site_link}"
 
     return tweet[:280]
 
 
 def compose_daily_summary_tweet(games: list[dict]) -> str:
-    """Compose a summary tweet with game count."""
+    """Compose a summary tweet with game count + WhatsApp picks CTA."""
     count = len(games)
     now = datetime.now(TZ_MX)
     date_str = now.strftime("%d/%m")
@@ -142,15 +155,64 @@ def compose_daily_summary_tweet(games: list[dict]) -> str:
     if len(sports) > 5:
         leagues_text += f" y {len(sports) - 5} mas"
 
+    betting = get_betting_affiliate_text()
+
     tweet = (
         f"Hoy {date_str} hay {count} juegos en vivo\n\n"
         f"{leagues_text}\n\n"
-        f"Ve donde verlos todos: {APP_URL}"
+        f"Ve donde verlos: {APP_URL}\n\n"
+        f"Recibe picks gratis diario por WhatsApp:\n"
+        f"{WA_PICKS_LINK}"
     )
 
-    affiliate = get_random_affiliate_text()
-    if affiliate and len(tweet) + len(affiliate) + 2 < 280:
-        tweet += f"\n\n{affiliate}"
+    # Add betting if it fits
+    if betting and len(tweet) + len(betting) + 2 <= 280:
+        tweet += f"\n\n{betting}"
+
+    return tweet[:280]
+
+
+def compose_pick_tweet(game: dict) -> str:
+    """Compose a PICK DEL DIA tweet — the money tweet."""
+    emoji = game.get("emoji", "")
+    league = game.get("league_name", "")
+    first, second = get_team_order(game)
+    time_str = format_game_time_mx(game["date"])
+    channels = format_broadcast_short(game["broadcasts"])
+    hashtag = HASHTAG_MAP.get(league, "")
+    betting = get_betting_affiliate_text()
+
+    tweet = (
+        f"PICK DEL DIA\n\n"
+        f"{emoji} {first} vs {second}\n"
+        f"{league} - {time_str} (MX)\n"
+        f"Donde verlo: {channels}\n"
+    )
+
+    if betting:
+        tweet += f"\n{betting}\n"
+
+    tweet += (
+        f"\nRecibe picks diarios gratis:\n"
+        f"{WA_PICKS_LINK}\n\n"
+    )
+
+    if hashtag:
+        tweet += f"{hashtag} #DondeVer"
+    else:
+        tweet += "#DondeVer"
+
+    # Trim disclaimer text first if too long
+    if len(tweet) > 280:
+        tweet = (
+            f"PICK DEL DIA\n\n"
+            f"{emoji} {first} vs {second}\n"
+            f"{league} - {time_str} (MX)\n"
+            f"Donde verlo: {channels}\n"
+        )
+        if betting:
+            tweet += f"\n{betting}\n"
+        tweet += f"\n{APP_URL}\n{hashtag} #DondeVer" if hashtag else f"\n{APP_URL}\n#DondeVer"
 
     return tweet[:280]
 
@@ -205,13 +267,38 @@ async def post_game_tweets(minutes_before: int = 30):
     return posted
 
 
+async def post_pick_del_dia():
+    """Post the pick del dia tweet — best upcoming game with betting CTA."""
+    games = await get_todays_games()
+    priority = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga"]
+
+    # Find best upcoming game with broadcasts
+    upcoming = [g for g in games if g["status"]["state"] == "pre" and g["broadcasts"]]
+    pick = None
+    for pl in priority:
+        pick = next((g for g in upcoming if g["league_slug"] == pl), None)
+        if pick:
+            break
+    if not pick and upcoming:
+        pick = upcoming[0]
+
+    if not pick:
+        logger.info("No pick del dia available — no upcoming games with broadcasts")
+        return None
+
+    tweet_text = compose_pick_tweet(pick)
+    result = post_tweet(tweet_text)
+    if result["success"]:
+        logger.info(f"Pick del dia posted: {pick['name']}")
+    return result
+
+
 # ── Scheduler Integration ────────────────────────────────
 
 def setup_twitter_scheduler(scheduler):
     """
     Add Twitter bot jobs to APScheduler (AsyncIOScheduler).
     Call this from server.py on startup.
-    Jobs are async functions — AsyncIOScheduler handles them natively.
     """
     from apscheduler.triggers.interval import IntervalTrigger
     from apscheduler.triggers.cron import CronTrigger
@@ -220,7 +307,7 @@ def setup_twitter_scheduler(scheduler):
         logger.warning("Twitter credentials incomplete — scheduler NOT started")
         return
 
-    # Check for upcoming games every 10 minutes
+    # 1) Check for upcoming games every 10 minutes
     scheduler.add_job(
         post_game_tweets,
         IntervalTrigger(minutes=10),
@@ -230,7 +317,7 @@ def setup_twitter_scheduler(scheduler):
         kwargs={"minutes_before": 15},
     )
 
-    # Daily summary at 8 AM MX time (14:00 UTC)
+    # 2) Daily summary at 8 AM MX time (14:00 UTC)
     async def post_daily():
         games = await get_todays_games()
         if games:
@@ -245,4 +332,13 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    logger.info("Twitter bot scheduler configured")
+    # 3) Pick del dia at 10 AM MX time (16:00 UTC)
+    scheduler.add_job(
+        post_pick_del_dia,
+        CronTrigger(hour=16, minute=0),
+        id="twitter_pick_del_dia",
+        name="Pick del dia tweet",
+        replace_existing=True,
+    )
+
+    logger.info("Twitter bot scheduler configured (3 jobs: games, summary, pick)")
