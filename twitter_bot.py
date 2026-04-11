@@ -95,10 +95,20 @@ HASHTAG_MAP = {
 }
 
 
+def get_pick_team(game: dict) -> str:
+    """
+    Pick a team for DondeVer Pick. Favors home team 60% of the time
+    (home advantage bias makes it feel more credible).
+    """
+    home = game["home"]["name"]
+    away = game["away"]["name"]
+    return home if random.random() < 0.6 else away
+
+
 def compose_game_tweet(game: dict) -> str:
     """
     Compose a tweet for a single game.
-    Max 280 chars. Includes: teams, time, channels, betting link.
+    Max 280 chars. Every tweet includes DondeVer Pick + betting link.
     """
     emoji = game.get("emoji", "")
     league = game.get("league_name", "")
@@ -107,32 +117,33 @@ def compose_game_tweet(game: dict) -> str:
     channels = format_broadcast_short(game["broadcasts"])
     hashtag = HASHTAG_MAP.get(league, "")
 
-    # Betting CTA
+    # DondeVer Pick + betting CTA
+    pick_team = get_pick_team(game)
     betting = get_betting_affiliate_text()
 
     # Build tweet
     headline = f"{emoji} {first} vs {second}"
     time_line = f"Hoy {time_str} (MX)"
     channel_line = f"Donde verlo: {channels}"
-    site_link = APP_URL
+    pick_line = f"DondeVer Pick: {pick_team}"
     tags = f"{hashtag} #DondeVer" if hashtag else "#DondeVer"
 
-    # Try full version with betting link
-    parts = [headline, time_line, channel_line]
+    # Full version: headline + time + channels + pick + betting + tags
+    parts = [headline, time_line, channel_line, f"\n{pick_line}"]
     if betting:
-        parts.append(f"\n{betting}")
-    parts.append(site_link)
+        parts.append(betting)
     parts.append(tags)
 
     tweet = "\n".join(parts)
 
-    # Trim if too long
+    # Trim: drop betting if too long
     if len(tweet) > 280:
-        parts = [headline, time_line, channel_line, site_link, tags]
+        parts = [headline, time_line, channel_line, f"\n{pick_line}", tags]
         tweet = "\n".join(parts)
 
+    # Trim: drop channels if still too long
     if len(tweet) > 280:
-        parts = [headline, time_line, channel_line, site_link]
+        parts = [headline, time_line, f"\n{pick_line}", tags]
         tweet = "\n".join(parts)
 
     if len(tweet) > 280:
@@ -142,7 +153,7 @@ def compose_game_tweet(game: dict) -> str:
 
 
 def compose_daily_summary_tweet(games: list[dict]) -> str:
-    """Compose a summary tweet with game count + WhatsApp picks CTA."""
+    """Compose a summary tweet with game count + DondeVer Pick of the day."""
     count = len(games)
     now = datetime.now(TZ_MX)
     date_str = now.strftime("%d/%m")
@@ -155,19 +166,29 @@ def compose_daily_summary_tweet(games: list[dict]) -> str:
     if len(sports) > 5:
         leagues_text += f" y {len(sports) - 5} mas"
 
+    # Pick the top game for DondeVer Pick
     betting = get_betting_affiliate_text()
+    pick_text = ""
+    if games:
+        top_game = games[0]
+        pick_team = get_pick_team(top_game)
+        first, second = get_team_order(top_game)
+        pick_text = f"\nDondeVer Pick: {pick_team} ({first} vs {second})"
 
     tweet = (
         f"Hoy {date_str} hay {count} juegos en vivo\n\n"
-        f"{leagues_text}\n\n"
-        f"Ve donde verlos: {APP_URL}\n\n"
-        f"Recibe picks gratis diario por WhatsApp:\n"
-        f"{WA_PICKS_LINK}"
+        f"{leagues_text}\n"
+        f"{pick_text}\n\n"
+        f"Ve donde verlos: {APP_URL}"
     )
 
-    # Add betting if it fits
     if betting and len(tweet) + len(betting) + 2 <= 280:
         tweet += f"\n\n{betting}"
+
+    # Add WhatsApp CTA if it fits
+    wa_cta = f"\n\nPicks gratis por WhatsApp: {WA_PICKS_LINK}"
+    if len(tweet) + len(wa_cta) <= 280:
+        tweet += wa_cta
 
     return tweet[:280]
 
@@ -328,15 +349,18 @@ def compose_live_tweet(game: dict, event_type: str, detail: str = "") -> str:
     else:
         headline = f"{emoji} {first} {first_score} - {second_score} {second}"
 
+    # DondeVer Pick for live tweets
+    pick_team = get_pick_team(game)
+    pick_line = f"DondeVer Pick: {pick_team}"
+
     parts = [headline, f"{league}"]
 
     if event_type in ("started", "goal", "score_change"):
         parts.append(f"Donde verlo: {channels}")
 
+    parts.append(f"\n{pick_line}")
     if betting:
-        parts.append(f"\n{betting}")
-
-    parts.append(APP_URL)
+        parts.append(betting)
 
     if hashtag:
         parts.append(f"{hashtag} #DondeVer")
@@ -345,9 +369,18 @@ def compose_live_tweet(game: dict, event_type: str, detail: str = "") -> str:
 
     tweet = "\n".join(parts)
 
-    # Trim if needed
+    # Trim: drop betting if too long
     if len(tweet) > 280:
-        parts = [headline, league, APP_URL]
+        parts = [headline, league, f"\n{pick_line}"]
+        if hashtag:
+            parts.append(f"{hashtag} #DondeVer")
+        else:
+            parts.append("#DondeVer")
+        tweet = "\n".join(parts)
+
+    # Trim: drop pick if still too long
+    if len(tweet) > 280:
+        parts = [headline, league]
         if hashtag:
             parts.append(f"{hashtag} #DondeVer")
         tweet = "\n".join(parts)
