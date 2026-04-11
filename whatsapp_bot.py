@@ -74,9 +74,15 @@ def format_game_for_whatsapp(game: dict) -> str:
     return "\n".join(lines)
 
 
-def get_random_affiliate() -> dict:
-    """Pick an affiliate to show (rotate between them) with WhatsApp tracking."""
-    key = random.choice(list(AFFILIATES.keys()))
+def get_random_affiliate(betting_only: bool = False) -> dict:
+    """Pick an affiliate to show (rotate between them) with WhatsApp tracking.
+    betting_only=True excludes VPN/non-betting affiliates (for picks, game results).
+    """
+    if betting_only:
+        betting_keys = [k for k in AFFILIATES if k in ("1xbet", "betsson")]
+        key = random.choice(betting_keys) if betting_keys else random.choice(list(AFFILIATES.keys()))
+    else:
+        key = random.choice(list(AFFILIATES.keys()))
     aff = AFFILIATES[key].copy()
     aff["url"] = get_affiliate_url(key, source="whatsapp")
     return aff
@@ -133,7 +139,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
 
         channels = format_broadcast_text(pick["broadcasts"])
         time_str = format_game_time(pick["date"])
-        aff = get_random_affiliate()
+        aff = get_random_affiliate(betting_only=True)
         pick_sport = pick.get("sport", "")
         pick_home_left = pick_sport in HOME_LEFT_SPORTS
         pick_first = pick["home"]["name"] if pick_home_left else pick["away"]["name"]
@@ -171,7 +177,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             lines.append(f"\nVe todos en {APP_URL}")
 
             # Add affiliate
-            aff = get_random_affiliate()
+            aff = get_random_affiliate(betting_only=True)
             lines.append(f"\n{aff['cta']}: {aff['url']}")
 
             return "\n".join(lines)
@@ -224,7 +230,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             lines.append(f"...y {len(games) - 10} juegos mas en {APP_URL}")
 
         # Affiliate link
-        aff = get_random_affiliate()
+        aff = get_random_affiliate(betting_only=True)
         lines.append(f"\n{aff['cta']}: {aff['url']}")
 
         return "\n".join(lines)
