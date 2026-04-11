@@ -7,3 +7,5 @@ build/
 .venv/
 venv/
 .DS_Store
+static/tiktok/
+subscribers.json

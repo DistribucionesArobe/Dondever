@@ -246,6 +246,7 @@ try:
     from apscheduler.triggers.cron import CronTrigger
     from twitter_bot import setup_twitter_scheduler
     from whatsapp_broadcast import send_daily_broadcast
+    from tiktok_generator import generate_daily_video, generate_daily_images
 
     scheduler = AsyncIOScheduler()
 
@@ -264,6 +265,23 @@ try:
             replace_existing=True,
         )
         logger.info("WhatsApp broadcast scheduled at 9:00 AM MX")
+
+        # TikTok/Reels daily video + images at 7:30 AM MX (13:30 UTC)
+        scheduler.add_job(
+            generate_daily_video,
+            CronTrigger(hour=13, minute=30),
+            id="tiktok_daily_video",
+            name="Daily TikTok video generation",
+            replace_existing=True,
+        )
+        scheduler.add_job(
+            generate_daily_images,
+            CronTrigger(hour=13, minute=30),
+            id="tiktok_daily_images",
+            name="Daily TikTok images generation",
+            replace_existing=True,
+        )
+        logger.info("TikTok video generation scheduled at 7:30 AM MX")
 
         scheduler.start()
         logger.info("Scheduler started")
@@ -290,6 +308,38 @@ async def robots_txt():
         "Disallow: /webhook/\n"
         f"\nSitemap: {APP_URL}/sitemap.xml\n"
     )
+
+
+@app.get("/tiktok/hoy")
+async def tiktok_today():
+    """Show today's TikTok video and images for easy download."""
+    from pathlib import Path
+    from datetime import datetime
+    date_tag = datetime.now(TZ_MX).strftime("%Y%m%d")
+    video_path = f"/static/tiktok/dondever_picks_{date_tag}.mp4"
+    images_dir = Path(f"static/tiktok/images/{date_tag}")
+    images = []
+    if images_dir.exists():
+        images = sorted([f"/static/tiktok/images/{date_tag}/{f.name}" for f in images_dir.glob("*.png")])
+    return {
+        "date": date_tag,
+        "video": video_path,
+        "images": images,
+        "instructions": "Descarga el video y subelo a TikTok/Reels/Shorts. Las imagenes sirven para carrusel de Instagram.",
+    }
+
+
+@app.get("/tiktok/generar")
+async def tiktok_generate_now():
+    """Manually trigger TikTok video generation."""
+    from tiktok_generator import generate_daily_video, generate_daily_images
+    video = await generate_daily_video()
+    images = await generate_daily_images()
+    return {
+        "video": video,
+        "images_count": len(images),
+        "status": "ok" if video else "no_games",
+    }
 
 
 @app.get("/sitemap.xml")

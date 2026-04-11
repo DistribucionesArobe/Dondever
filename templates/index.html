@@ -248,6 +248,11 @@
         .game-center { text-align: center; min-width: 70px; }
         .game-time { font-size: 0.9rem; font-weight: 700; color: #f97316; }
         .game-status { font-size: 0.65rem; color: #9ca3af; }
+        .countdown { font-size: 0.6rem; color: #6b7280; font-weight: 500; margin-top: 2px; }
+        .countdown.soon { color: #ef4444; font-weight: 700; }
+        .fav-btn { position:absolute; top:6px; right:6px; background:none; border:none; cursor:pointer; font-size:1rem; opacity:0.3; transition:opacity 0.2s; padding:2px; z-index:2; }
+        .fav-btn:hover, .fav-btn.active { opacity:1; }
+        .game-card { position: relative; }
         .live-badge {
             display: inline-block; background: #ef4444; color: white;
             font-size: 0.6rem; font-weight: 700; padding: 2px 8px;
@@ -398,6 +403,7 @@
 <!-- League Filters -->
 <div class="filters">
     <a href="/" class="filter-pill {% if not current_sport and not current_league %}active{% endif %}">Todos</a>
+    <button class="filter-pill" id="favFilter" onclick="toggleFavFilter()" style="cursor:pointer;border:none;display:none;">&#11088; Mis equipos</button>
     <a href="/?league=liga-mx" class="filter-pill {% if current_league == 'liga-mx' %}active{% endif %}">Liga MX</a>
     <a href="/?sport=soccer" class="filter-pill {% if current_sport == 'soccer' %}active{% endif %}">MLS</a>
     <a href="/?league=premier-league" class="filter-pill {% if current_league == 'premier-league' %}active{% endif %}">Premier</a>
@@ -480,7 +486,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set left_team = game.home if home_left else game.away %}
         {% set right_team = game.away if home_left else game.home %}
-        <a href="/juego/{{ game.id }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
+        <a href="/juego/{{ game.id }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}" data-date="{{ game.date }}" data-teams="{{ left_team.name|lower }},{{ right_team.name|lower }}">
             <div class="team away">
                 <div>
                     <div class="team-name">{{ left_team.name }}</div>
@@ -500,7 +506,7 @@
                     <div class="final-badge">FINAL</div>
                 {% else %}
                     <div class="game-time">{{ format_mx_time(game.date) }}</div>
-                    <div class="game-status">{{ format_us_time(game.date) }}</div>
+                    <div class="countdown" data-kickoff="{{ game.date }}"></div>
                 {% endif %}
             </div>
 
@@ -625,10 +631,118 @@
 </footer>
 
 <script>
-    // Auto-refresh for live games
+    // ── Countdown Timer ─────────────────────
+    function updateCountdowns() {
+        document.querySelectorAll('.countdown[data-kickoff]').forEach(el => {
+            const kickoff = new Date(el.dataset.kickoff);
+            const now = new Date();
+            const diff = kickoff - now;
+
+            if (diff <= 0) {
+                el.textContent = 'Por iniciar';
+                el.classList.add('soon');
+                return;
+            }
+
+            const hours = Math.floor(diff / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+
+            if (hours > 24) {
+                const days = Math.floor(hours / 24);
+                el.textContent = `En ${days}d ${hours % 24}h`;
+            } else if (hours > 0) {
+                el.textContent = `En ${hours}h ${mins}m`;
+            } else {
+                el.textContent = `En ${mins} min`;
+                el.classList.add('soon');
+            }
+        });
+    }
+    updateCountdowns();
+    setInterval(updateCountdowns, 60000);
+
+    // ── Favorite Teams ─────────────────────
+    let favTeams = JSON.parse(localStorage.getItem('dv_favs') || '[]');
+    let favFilterActive = false;
+
+    function saveFavs() {
+        localStorage.setItem('dv_favs', JSON.stringify(favTeams));
+    }
+
+    function toggleFav(teamName, btn, e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const t = teamName.toLowerCase();
+        const idx = favTeams.indexOf(t);
+        if (idx >= 0) {
+            favTeams.splice(idx, 1);
+            btn.classList.remove('active');
+        } else {
+            favTeams.push(t);
+            btn.classList.add('active');
+        }
+        saveFavs();
+        updateFavPill();
+        if (favFilterActive) applyFavFilter();
+    }
+
+    // Add star buttons to each game card
+    document.querySelectorAll('.game-card').forEach(card => {
+        const teams = (card.dataset.teams || '').split(',');
+        teams.forEach(t => {
+            if (!t) return;
+            const btn = document.createElement('button');
+            btn.className = 'fav-btn' + (favTeams.includes(t) ? ' active' : '');
+            btn.innerHTML = '&#11088;';
+            btn.title = 'Agregar a favoritos';
+            btn.onclick = (e) => toggleFav(t, btn, e);
+            card.appendChild(btn);
+        });
+    });
+
+    function updateFavPill() {
+        const pill = document.getElementById('favFilter');
+        if (favTeams.length > 0) {
+            pill.style.display = '';
+            pill.textContent = '\u2B50 Mis equipos (' + favTeams.length + ')';
+        } else {
+            pill.style.display = 'none';
+            favFilterActive = false;
+        }
+    }
+
+    function toggleFavFilter() {
+        favFilterActive = !favFilterActive;
+        const pill = document.getElementById('favFilter');
+        pill.classList.toggle('active', favFilterActive);
+        applyFavFilter();
+    }
+
+    function applyFavFilter() {
+        document.querySelectorAll('.game-card').forEach(card => {
+            if (!favFilterActive) {
+                card.style.display = '';
+                return;
+            }
+            const teams = (card.dataset.teams || '').split(',');
+            const match = teams.some(t => favTeams.includes(t));
+            card.style.display = match ? '' : 'none';
+        });
+        // Hide empty league sections
+        document.querySelectorAll('.league-section').forEach(sec => {
+            if (!favFilterActive) { sec.style.display = ''; return; }
+            const visible = sec.querySelectorAll('.game-card[style=""], .game-card:not([style])');
+            const anyVisible = Array.from(sec.querySelectorAll('.game-card')).some(c => c.style.display !== 'none');
+            sec.style.display = anyVisible ? '' : 'none';
+        });
+    }
+
+    updateFavPill();
+
+    // ── Auto-refresh for live games ────────
     if (document.querySelector('.live-badge')) { setTimeout(() => location.reload(), 60000); }
 
-    // Simple client-side search
+    // ── Client-side search ─────────────────
     const searchInput = document.getElementById('searchInput');
     searchInput?.addEventListener('input', function() {
         const q = this.value.toLowerCase();
@@ -638,7 +752,7 @@
         });
     });
 
-    // Affiliate click tracking
+    // ── Affiliate click tracking ───────────
     document.querySelectorAll('.promo-cta').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
