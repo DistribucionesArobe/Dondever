@@ -22,8 +22,21 @@ TWITTER_API_SECRET = os.getenv("TWITTER_API_SECRET", "")
 TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN", "")
 TWITTER_ACCESS_SECRET = os.getenv("TWITTER_ACCESS_SECRET", "")
 
-# WhatsApp link for CTA
+# WhatsApp links for CTAs (rotate to show different features)
 WA_PICKS_LINK = "https://wa.me/15715463202?text=picks"
+WA_HOY_LINK = "https://wa.me/15715463202?text=hoy"
+
+WA_CTAS = [
+    ("Picks gratis por WhatsApp", "https://wa.me/15715463202?text=picks"),
+    ("Alertas de gol por WhatsApp", "https://wa.me/15715463202?text=alerta"),
+    ("Juegos de hoy por WhatsApp", "https://wa.me/15715463202?text=hoy"),
+    ("Recibe alertas 1h antes del partido", "https://wa.me/15715463202?text=alerta"),
+]
+
+def get_wa_cta() -> str:
+    """Get a random WhatsApp CTA for tweets."""
+    text, link = random.choice(WA_CTAS)
+    return f"{text}: {link}"
 
 
 def twitter_credentials_valid() -> bool:
@@ -185,10 +198,10 @@ def compose_daily_summary_tweet(games: list[dict]) -> str:
     if betting and len(tweet) + len(betting) + 2 <= 280:
         tweet += f"\n\n{betting}"
 
-    # Add WhatsApp CTA if it fits
-    wa_cta = f"\n\nPicks gratis por WhatsApp: {WA_PICKS_LINK}"
-    if len(tweet) + len(wa_cta) <= 280:
-        tweet += wa_cta
+    # Add WhatsApp CTA if it fits (rotate features)
+    wa_cta_text = f"\n\n{get_wa_cta()}"
+    if len(tweet) + len(wa_cta_text) <= 280:
+        tweet += wa_cta_text
 
     return tweet[:280]
 
@@ -213,10 +226,7 @@ def compose_pick_tweet(game: dict) -> str:
     if betting:
         tweet += f"\n{betting}\n"
 
-    tweet += (
-        f"\nRecibe picks diarios gratis:\n"
-        f"{WA_PICKS_LINK}\n\n"
-    )
+    tweet += f"\n{get_wa_cta()}\n\n"
 
     if hashtag:
         tweet += f"{hashtag} #DondeVer"

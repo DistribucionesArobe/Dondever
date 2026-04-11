@@ -163,18 +163,24 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     # Help
     if body_clean in ("ayuda", "help", "hola", "hi", "menu", "inicio"):
         return (
-            "Hola! Soy *DondeVer* - te digo donde ver los juegos de hoy.\n\n"
-            "Escribe:\n"
-            "- *hoy* - todos los juegos de hoy\n"
-            "- *picks* - pick del dia\n"
-            "- *suscribir* - recibe picks GRATIS cada manana\n"
-            "- *alerta chivas* - alertas 1h antes + goles\n"
-            "- *mis equipos* - ver tus favoritos\n"
-            "- *quitar chivas* - quitar equipo\n"
-            "- *nfl* o *liga mx* - juegos por liga\n"
-            "- *America* o *Cowboys* - buscar equipo\n"
-            "- *salir* - dejar de recibir picks\n\n"
-            f"O visita {APP_URL} para la guia completa"
+            "Hola! Soy *DondeVer* - tu asistente de deportes en vivo.\n\n"
+            "*QUE PUEDO HACER:*\n\n"
+            "*Juegos de hoy*\n"
+            "Escribe *hoy* o el nombre de un equipo\n"
+            "_Ejemplo: hoy, chivas, lakers, nfl_\n\n"
+            "*Picks diarios gratis*\n"
+            "Escribe *picks* para el pick del dia\n"
+            "Escribe *suscribir* y te lo mando cada manana\n\n"
+            "*Alertas de tu equipo*\n"
+            "Escribe *alerta chivas* y te aviso:\n"
+            "- 1 hora antes de cada partido\n"
+            "- Cuando anoten gol en tiempo real\n"
+            "_Puedes agregar varios equipos!_\n\n"
+            "*Otros comandos:*\n"
+            "- *mis equipos* - ver tus alertas activas\n"
+            "- *quitar chivas* - quitar un equipo\n"
+            "- *salir* - dejar de recibir mensajes\n\n"
+            f"Todo GRATIS. Visita {APP_URL}"
         )
 
     # Picks del dia (auto-subscribe anyone who asks for picks)

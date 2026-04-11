@@ -229,22 +229,30 @@ def create_cta_slide() -> Image.Image:
             pass
 
     y = 580
-    y = text_center_x(draw, "RECIBE PICKS", font_big, y, WHITE)
-    y = text_center_x(draw, "GRATIS DIARIO", font_big, y, ACCENT)
-    y += 60
+    y = text_center_x(draw, "RECIBE GRATIS", font_big, y, WHITE)
+    y = text_center_x(draw, "POR WHATSAPP", font_big, y, ACCENT)
+    y += 40
 
-    # WhatsApp CTA box
-    draw_rounded_rect(draw, (100, y, WIDTH - 100, y + 120), 20, (0, 100, 50))
-    text_center_x(draw, "WhatsApp: escribe PICKS", font_med, y + 30, WHITE)
-    y += 160
+    # Feature list
+    features = [
+        ("Picks diarios", "escribe PICKS"),
+        ("Alertas 1h antes", "escribe ALERTA + equipo"),
+        ("Goles en tiempo real", "automatico"),
+    ]
+    for feat, desc in features:
+        draw_rounded_rect(draw, (100, y, WIDTH - 100, y + 70), 12, (0, 80, 40))
+        text_center_x(draw, feat, font_med, y + 8, WHITE)
+        text_center_x(draw, desc, font_brand, y + 42, GREEN)
+        y += 85
 
+    y += 20
     y = text_center_x(draw, "+1 (571) 546-3202", font_small, y, GREEN)
-    y += 60
+    y += 40
 
     # Follow CTA
-    draw_rounded_rect(draw, (100, y, WIDTH - 100, y + 100), 20, DARK_CARD)
-    text_center_x(draw, "@dondeverapp", font_med, y + 22, ACCENT)
-    y += 140
+    draw_rounded_rect(draw, (100, y, WIDTH - 100, y + 80), 20, DARK_CARD)
+    text_center_x(draw, "@dondeverapp", font_med, y + 18, ACCENT)
+    y += 110
 
     y = text_center_x(draw, "Siguenos para picks diarios", font_small, y, GRAY)
     y += 80
