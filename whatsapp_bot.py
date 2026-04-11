@@ -5,9 +5,10 @@ and responds with where to watch + affiliate links.
 """
 
 import logging
+import random
 from datetime import datetime, timezone, timedelta
 
-from config import AFFILIATES, APP_URL
+from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX
 from sports_api import search_games, get_todays_games
 
 logger = logging.getLogger("dondever.whatsapp")
@@ -31,8 +32,7 @@ def format_game_time(date_str: str) -> str:
     """Convert ISO date to readable MX time."""
     try:
         dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        # Convert to Mexico City time (UTC-6)
-        mx_time = dt.astimezone(timezone(timedelta(hours=-6)))
+        mx_time = dt.astimezone(TZ_MX)
         return mx_time.strftime("%I:%M %p")
     except Exception:
         return ""
@@ -68,7 +68,6 @@ def format_game_for_whatsapp(game: dict) -> str:
 
 def get_random_affiliate() -> dict:
     """Pick an affiliate to show (rotate between them)."""
-    import random
     key = random.choice(list(AFFILIATES.keys()))
     return AFFILIATES[key]
 
@@ -83,7 +82,10 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     - league name -> show that league's games
     - "ayuda" / "help" -> show help message
     """
-    body_clean = body.strip().lower()
+    try:
+        body_clean = body.strip().lower()
+    except Exception:
+        body_clean = ""
 
     # Help
     if body_clean in ("ayuda", "help", "hola", "hi", "menu", "inicio"):
@@ -97,81 +99,88 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             f"O visita {APP_URL} para la guia completa"
         )
 
-    # Today's overview (limit to games with broadcasts)
-    if body_clean in ("hoy", "juegos", "games", "today", "que hay hoy", "partidos"):
-        games = await get_todays_games()
+    try:
+        # Today's overview (limit to games with broadcasts)
+        if body_clean in ("hoy", "juegos", "games", "today", "que hay hoy", "partidos"):
+            games = await get_todays_games()
+            if not games:
+                return "No encontre juegos programados para hoy. Intenta manana!"
+
+            # Group by sport, show first 15 max
+            lines = ["*Juegos de hoy:*\n"]
+            shown = 0
+            for game in games[:15]:
+                lines.append(format_game_for_whatsapp(game))
+                lines.append("")  # blank line separator
+                shown += 1
+
+            remaining = len(games) - shown
+            if remaining > 0:
+                lines.append(f"...y {remaining} juegos mas.")
+            lines.append(f"\nVe todos en {APP_URL}")
+
+            # Add affiliate
+            aff = get_random_affiliate()
+            lines.append(f"\n{aff['cta']}: {aff['url']}")
+
+            return "\n".join(lines)
+
+        # Search by query
+        games = await search_games(body_clean)
+
+        # Also try matching league slugs and sport names
         if not games:
-            return "No encontre juegos programados para hoy. Intenta manana!"
+            # Try matching by sport
+            sport_map = {
+                "futbol": "soccer", "football": "soccer", "soccer": "soccer",
+                "basket": "basketball", "basquetbol": "basketball", "nba": "basketball",
+                "americano": "football", "nfl": "football",
+                "beisbol": "baseball", "baseball": "baseball", "mlb": "baseball",
+                "hockey": "hockey", "nhl": "hockey",
+                "box": "boxing", "boxeo": "boxing",
+                "ufc": "mma", "mma": "mma",
+                "f1": "racing", "formula": "racing", "nascar": "racing",
+                "tenis": "tennis", "tennis": "tennis",
+                "golf": "golf",
+            }
+            sport = sport_map.get(body_clean)
+            if sport:
+                games = await get_todays_games(sport_filter=sport)
 
-        # Group by sport, show first 15 max
-        lines = ["*Juegos de hoy:*\n"]
-        shown = 0
-        for game in games[:15]:
+        # Try league slug match
+        if not games:
+            for slug in LEAGUES:
+                if body_clean in slug or slug in body_clean:
+                    games = await get_todays_games(league_filter=slug)
+                    break
+
+        if not games:
+            return (
+                f"No encontre juegos para *{body.strip()}* hoy.\n\n"
+                "Intenta con:\n"
+                "- Nombre de equipo (America, Cowboys, Lakers)\n"
+                "- Nombre de liga (Liga MX, NFL, NBA)\n"
+                "- *hoy* para ver todos los juegos\n\n"
+                f"O visita {APP_URL}"
+            )
+
+        lines = [f"*Resultados para '{body.strip()}':*\n"]
+        for game in games[:10]:
             lines.append(format_game_for_whatsapp(game))
-            lines.append("")  # blank line separator
-            shown += 1
+            lines.append("")
 
-        remaining = len(games) - shown
-        if remaining > 0:
-            lines.append(f"...y {remaining} juegos mas.")
-        lines.append(f"\nVe todos en {APP_URL}")
+        if len(games) > 10:
+            lines.append(f"...y {len(games) - 10} juegos mas en {APP_URL}")
 
-        # Add affiliate
+        # Affiliate link
         aff = get_random_affiliate()
         lines.append(f"\n{aff['cta']}: {aff['url']}")
 
         return "\n".join(lines)
 
-    # Search by query
-    games = await search_games(body_clean)
-
-    # Also try matching league slugs and sport names
-    if not games:
-        # Try matching by sport
-        sport_map = {
-            "futbol": "soccer", "football": "soccer", "soccer": "soccer",
-            "basket": "basketball", "basquetbol": "basketball", "nba": "basketball",
-            "americano": "football", "nfl": "football",
-            "beisbol": "baseball", "baseball": "baseball", "mlb": "baseball",
-            "hockey": "hockey", "nhl": "hockey",
-            "box": "boxing", "boxeo": "boxing",
-            "ufc": "mma", "mma": "mma",
-            "f1": "racing", "formula": "racing", "nascar": "racing",
-            "tenis": "tennis", "tennis": "tennis",
-            "golf": "golf",
-        }
-        sport = sport_map.get(body_clean)
-        if sport:
-            games = await get_todays_games(sport_filter=sport)
-
-    # Try league slug match
-    if not games:
-        from config import LEAGUES
-        for slug in LEAGUES:
-            if body_clean in slug or slug in body_clean:
-                games = await get_todays_games(league_filter=slug)
-                break
-
-    if not games:
+    except Exception as e:
+        logger.error(f"Error handling WhatsApp message '{body}': {e}")
         return (
-            f"No encontre juegos para *{body.strip()}* hoy.\n\n"
-            "Intenta con:\n"
-            "- Nombre de equipo (America, Cowboys, Lakers)\n"
-            "- Nombre de liga (Liga MX, NFL, NBA)\n"
-            "- *hoy* para ver todos los juegos\n\n"
-            f"O visita {APP_URL}"
+            "Ups, hubo un error buscando los juegos.\n"
+            f"Intenta de nuevo o visita {APP_URL}"
         )
-
-    lines = [f"*Resultados para '{body.strip()}':*\n"]
-    for game in games[:10]:
-        lines.append(format_game_for_whatsapp(game))
-        lines.append("")
-
-    if len(games) > 10:
-        lines.append(f"...y {len(games) - 10} juegos mas en {APP_URL}")
-
-    # Affiliate link
-    aff = get_random_affiliate()
-    lines.append(f"\n{aff['cta']}: {aff['url']}")
-
-    return "\n".join(lines)

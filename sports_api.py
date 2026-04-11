@@ -12,7 +12,7 @@ from cachetools import TTLCache
 
 from config import (
     ESPN_BASE, SPORTSDB_BASE, SPORTSDB_KEY,
-    LEAGUES, CHANNEL_ALIASES
+    LEAGUES, CHANNEL_ALIASES, TZ_MX
 )
 
 logger = logging.getLogger("dondever.sports")
@@ -293,7 +293,7 @@ async def get_todays_games(
     ESPN for schedule + TheSportsDB Premium for TV channels.
     """
     if not date_str:
-        now = datetime.now(timezone(timedelta(hours=-6)))
+        now = datetime.now(TZ_MX)
         date_str = now.strftime("%Y%m%d")
 
     tasks = []

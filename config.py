@@ -1,7 +1,12 @@
 import os
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# ── Timezones (DST-aware) ───────────────────────────────
+TZ_MX = ZoneInfo("America/Mexico_City")
+TZ_ET = ZoneInfo("America/New_York")
 
 # ── Database ──────────────────────────────────────────────
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://localhost:5432/dondever")
@@ -15,7 +20,6 @@ TWILIO_WA_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886")
 ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports"
 SPORTSDB_KEY = os.getenv("SPORTSDB_API_KEY", "154704")
 SPORTSDB_BASE = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_KEY}"
-SPORTSDB_V2_BASE = f"https://www.thesportsdb.com/api/v2/json"
 
 # ── App ──────────────────────────────────────────────────
 APP_URL = os.getenv("APP_URL", "https://dondever.app")
@@ -26,19 +30,19 @@ AFFILIATES = {
     "1xbet": {
         "name": "1xBet",
         "url": os.getenv("AFFILIATE_1XBET", "https://reffpa.com/L?tag=d_5182312m_1599c_&site=5182312&ad=1599"),
-        "logo": "/static/affiliates/1xbet.png",
+        "logo": "/static/affiliates/1xbet.svg",
         "cta": "Apuesta aqui",
     },
     "betsson": {
         "name": "Betsson",
         "url": os.getenv("AFFILIATE_BETSSON", "https://record.betsson.mx/_HF2ZLLLzsI4k5VDSMnChDGCjLk9Ro7mn/1/"),
-        "logo": "/static/affiliates/betsson.png",
+        "logo": "/static/affiliates/betsson.svg",
         "cta": "Apostar en Betsson",
     },
     "cj": {
         "name": "NordVPN",
         "url": os.getenv("AFFILIATE_CJ", "https://www.anrdoezrs.net/click-101647648-16968809"),
-        "logo": "/static/affiliates/vpn.png",
+        "logo": "/static/affiliates/vpn.svg",
         "cta": "Desbloquea con VPN",
     },
 }

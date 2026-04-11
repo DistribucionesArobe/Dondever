@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
-from config import AFFILIATES, LEAGUES, APP_URL
+from config import AFFILIATES, LEAGUES, APP_URL, TZ_MX, TZ_ET
 from sports_api import get_todays_games, search_games
 from whatsapp_bot import handle_whatsapp_message
 
@@ -34,18 +34,20 @@ templates = Jinja2Templates(directory="templates")
 
 # ── Template helpers ─────────────────────────────────────
 def format_mx_time(iso_date: str) -> str:
+    """Convert ISO date to Mexico City time (DST-aware)."""
     try:
         dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
-        mx = dt.astimezone(timezone(timedelta(hours=-6)))
+        mx = dt.astimezone(TZ_MX)
         return mx.strftime("%I:%M %p")
     except Exception:
         return ""
 
 
 def format_us_time(iso_date: str) -> str:
+    """Convert ISO date to US Eastern time (DST-aware)."""
     try:
         dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
-        et = dt.astimezone(timezone(timedelta(hours=-4)))
+        et = dt.astimezone(TZ_ET)
         return et.strftime("%I:%M %p ET")
     except Exception:
         return ""
@@ -55,7 +57,7 @@ templates.env.globals["format_mx_time"] = format_mx_time
 templates.env.globals["format_us_time"] = format_us_time
 templates.env.globals["affiliates"] = AFFILIATES
 templates.env.globals["app_url"] = APP_URL
-templates.env.globals["now"] = lambda: datetime.now(timezone(timedelta(hours=-6)))
+templates.env.globals["now"] = lambda: datetime.now(TZ_MX)
 
 
 # ── Web Routes ───────────────────────────────────────────
@@ -88,7 +90,7 @@ async def home(
     # Available sports for filter
     sport_types = sorted(set(v[0] for v in LEAGUES.values()))
 
-    today = datetime.now(timezone(timedelta(hours=-6)))
+    today = datetime.now(TZ_MX)
 
     return templates.TemplateResponse(
         request,

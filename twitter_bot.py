@@ -8,7 +8,7 @@ import asyncio
 import logging
 import random
 from datetime import datetime, timezone, timedelta
-from config import AFFILIATES, APP_URL
+from config import AFFILIATES, APP_URL, TZ_MX
 from sports_api import get_todays_games
 
 logger = logging.getLogger("dondever.twitter")
@@ -22,8 +22,17 @@ TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN", "")
 TWITTER_ACCESS_SECRET = os.getenv("TWITTER_ACCESS_SECRET", "")
 
 
-def get_twitter_client() -> tweepy.Client:
-    """Create Twitter API v2 client."""
+def twitter_credentials_valid() -> bool:
+    """Check that all 4 Twitter credentials are set and non-empty."""
+    return all([TWITTER_API_KEY, TWITTER_API_SECRET,
+                TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET])
+
+
+def get_twitter_client() -> tweepy.Client | None:
+    """Create Twitter API v2 client. Returns None if credentials missing."""
+    if not twitter_credentials_valid():
+        logger.error("Twitter credentials incomplete — cannot create client")
+        return None
     return tweepy.Client(
         consumer_key=TWITTER_API_KEY,
         consumer_secret=TWITTER_API_SECRET,
@@ -46,7 +55,7 @@ def format_game_time_mx(date_str: str) -> str:
     """Convert to MX time string."""
     try:
         dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        mx = dt.astimezone(timezone(timedelta(hours=-6)))
+        mx = dt.astimezone(TZ_MX)
         return mx.strftime("%I:%M %p")
     except Exception:
         return ""
@@ -105,7 +114,7 @@ def compose_game_tweet(game: dict) -> str:
 def compose_daily_summary_tweet(games: list[dict]) -> str:
     """Compose a summary tweet with game count."""
     count = len(games)
-    now = datetime.now(timezone(timedelta(hours=-6)))
+    now = datetime.now(TZ_MX)
     date_str = now.strftime("%d/%m")
 
     sports = set()
@@ -135,6 +144,8 @@ def post_tweet(text: str) -> dict:
     """Post a tweet via Twitter API v2."""
     try:
         client = get_twitter_client()
+        if client is None:
+            return {"success": False, "error": "Twitter credentials not configured"}
         response = client.create_tweet(text=text)
         logger.info(f"Tweet posted: {response.data['id']}")
         return {"success": True, "tweet_id": response.data["id"]}
@@ -181,24 +192,28 @@ async def post_game_tweets(minutes_before: int = 30):
 
 def setup_twitter_scheduler(scheduler):
     """
-    Add Twitter bot jobs to APScheduler.
+    Add Twitter bot jobs to APScheduler (AsyncIOScheduler).
     Call this from server.py on startup.
+    Jobs are async functions — AsyncIOScheduler handles them natively.
     """
     from apscheduler.triggers.interval import IntervalTrigger
     from apscheduler.triggers.cron import CronTrigger
 
+    if not twitter_credentials_valid():
+        logger.warning("Twitter credentials incomplete — scheduler NOT started")
+        return
+
     # Check for upcoming games every 10 minutes
     scheduler.add_job(
-        lambda: asyncio.get_event_loop().run_until_complete(
-            post_game_tweets(minutes_before=15)
-        ),
+        post_game_tweets,
         IntervalTrigger(minutes=10),
         id="twitter_game_posts",
         name="Post tweets for upcoming games",
         replace_existing=True,
+        kwargs={"minutes_before": 15},
     )
 
-    # Daily summary at 8 AM MX time
+    # Daily summary at 8 AM MX time (14:00 UTC)
     async def post_daily():
         games = await get_todays_games()
         if games:
@@ -206,8 +221,8 @@ def setup_twitter_scheduler(scheduler):
             post_tweet(tweet)
 
     scheduler.add_job(
-        lambda: asyncio.get_event_loop().run_until_complete(post_daily()),
-        CronTrigger(hour=14, minute=0),  # 14:00 UTC = 8:00 AM MX
+        post_daily,
+        CronTrigger(hour=14, minute=0),
         id="twitter_daily_summary",
         name="Daily game summary tweet",
         replace_existing=True,
