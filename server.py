@@ -112,7 +112,6 @@ async def home(
 @app.get("/juego/{event_id}", response_class=HTMLResponse)
 async def game_detail(request: Request, event_id: str):
     """Individual game page — good for SEO."""
-    # Search across all leagues for this event
     all_games = await get_todays_games()
     game = next((g for g in all_games if g["id"] == event_id), None)
 
@@ -123,6 +122,32 @@ async def game_detail(request: Request, event_id: str):
 
     return templates.TemplateResponse(
         request, "game.html", context={"game": game}
+    )
+
+
+@app.get("/liga/{league_slug}", response_class=HTMLResponse)
+async def league_page(request: Request, league_slug: str):
+    """
+    Permanent league landing page — always has content for Google to index.
+    e.g. /liga/liga-mx, /liga/nfl, /liga/nba
+    """
+    if league_slug not in LEAGUES:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404
+        )
+
+    sport, league_id, display_name, emoji = LEAGUES[league_slug]
+    games = await get_todays_games(league_filter=league_slug)
+
+    return templates.TemplateResponse(
+        request, "league.html", context={
+            "league_slug": league_slug,
+            "league_name": display_name,
+            "emoji": emoji,
+            "sport": sport,
+            "games": games,
+            "total_games": len(games),
+        }
     )
 
 
@@ -212,6 +237,7 @@ async def robots_txt():
         "User-agent: *\n"
         "Allow: /\n"
         "Allow: /juego/\n"
+        "Allow: /liga/\n"
         "Disallow: /api/\n"
         "Disallow: /webhook/\n"
         f"\nSitemap: {APP_URL}/sitemap.xml\n"
@@ -241,13 +267,13 @@ async def sitemap_xml():
             f'    <priority>0.8</priority>\n  </url>'
         )
 
-    # Add static league filter pages
+    # Permanent league landing pages (high priority — always have content)
     for slug in LEAGUES:
         urls.append(
-            f'  <url>\n    <loc>{APP_URL}/?league={slug}</loc>\n'
+            f'  <url>\n    <loc>{APP_URL}/liga/{slug}</loc>\n'
             f'    <lastmod>{today_str}</lastmod>\n'
             f'    <changefreq>daily</changefreq>\n'
-            f'    <priority>0.6</priority>\n  </url>'
+            f'    <priority>0.9</priority>\n  </url>'
         )
 
     xml = (

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Donde ver {{ game.away.name }} vs {{ game.home.name }} - DondeVer.app</title>
-    <meta name="description" content="Donde ver {{ game.away.name }} vs {{ game.home.name }} en vivo hoy. {{ game.league_name }}. Canales de TV y streaming en Mexico y Estados Unidos.">
+    <title>Donde ver {{ game.away.name }} vs {{ game.home.name }} hoy en vivo - {{ game.league_name }} | DondeVer</title>
+    <meta name="description" content="Donde ver {{ game.away.name }} vs {{ game.home.name }} en vivo. {{ game.league_name }}. Hora, canales de TV y streaming para Mexico y USA. {% if game.broadcasts %}Transmite: {{ game.broadcasts[0].channel }}{% endif %}">
     <!-- Open Graph -->
     <meta property="og:title" content="Donde ver {{ game.away.name }} vs {{ game.home.name }} hoy">
     <meta property="og:description" content="{{ game.league_name }} en vivo. Canales de TV y streaming en Mexico y USA.">

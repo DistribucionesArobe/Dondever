@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donde ver {{ league_name }} en vivo hoy - Canales Mexico y USA | DondeVer.app</title>
+    <meta name="description" content="Donde ver {{ league_name }} en vivo hoy. Todos los juegos, horarios y canales de TV en Mexico y Estados Unidos. TUDN, ESPN, Fox Sports y mas.">
+    <!-- Open Graph -->
+    <meta property="og:title" content="Donde ver {{ league_name }} en vivo hoy - DondeVer.app">
+    <meta property="og:description" content="Todos los juegos de {{ league_name }} hoy con horarios y canales para Mexico y USA.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ app_url }}/liga/{{ league_slug }}">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta property="og:locale" content="es_MX">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@dondeverapp">
+    <meta name="twitter:title" content="Donde ver {{ league_name }} hoy">
+    <meta name="twitter:description" content="{{ total_games }} juegos de {{ league_name }} hoy. Horarios y canales en Mexico y USA.">
+    <link rel="canonical" href="{{ app_url }}/liga/{{ league_slug }}">
+    <!-- JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Donde ver {{ league_name }} en vivo",
+      "description": "Guia completa de donde ver juegos de {{ league_name }} en Mexico y Estados Unidos",
+      "url": "{{ app_url }}/liga/{{ league_slug }}",
+      "mainEntity": {
+        "@type": "SportsOrganization",
+        "name": "{{ league_name }}"
+      }
+    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; min-height: 100vh; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .hero { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 1rem; text-align: center; }
+        .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .hero p { color: #6b7280; font-size: 0.9rem; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+        .main { max-width: 900px; margin: 1rem auto; padding: 0 1rem 2rem; }
+        .game-card {
+            background: white; border: 1px solid #e5e7eb; border-radius: 10px;
+            padding: 0.75rem 1rem; margin-bottom: 0.5rem; display: grid;
+            grid-template-columns: 1fr auto 1fr auto; gap: 0.6rem; align-items: center;
+            text-decoration: none; color: inherit; cursor: pointer; transition: all 0.15s;
+        }
+        .game-card:hover { border-color: #10b981; box-shadow: 0 2px 10px rgba(16,185,129,0.1); }
+        .game-card.live { border-left: 4px solid #ef4444; background: #fef2f2; }
+        .team { display: flex; align-items: center; gap: 0.5rem; }
+        .team.away { justify-content: flex-end; text-align: right; }
+        .team-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: contain; background: #f3f4f6; }
+        .team-name { font-weight: 600; font-size: 0.85rem; }
+        .team-score { font-size: 1.1rem; font-weight: 800; color: #059669; }
+        .game-center { text-align: center; min-width: 70px; }
+        .game-time { font-size: 0.9rem; font-weight: 700; color: #f97316; }
+        .game-status { font-size: 0.65rem; color: #9ca3af; }
+        .live-badge { display: inline-block; background: #ef4444; color: white; font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; animation: pulse 2s infinite; }
+        .final-badge { display: inline-block; background: #f3f4f6; color: #6b7280; font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+        .game-channels { text-align: right; }
+        .channel-tag { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; margin: 1px; }
+        .channel-tag.cable { background: #dbeafe; color: #1d4ed8; }
+        .channel-tag.streaming { background: #ede9fe; color: #6d28d9; }
+        .channel-tag.broadcast { background: #d1fae5; color: #059669; }
+        .channel-tag.unknown { background: #f3f4f6; color: #9ca3af; }
+        .no-games { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
+        .no-games h2 { font-size: 1.2rem; color: #374151; margin-bottom: 0.4rem; }
+        .seo-content { max-width: 900px; margin: 1rem auto; padding: 0 1rem; }
+        .seo-card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.5rem; }
+        .seo-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: #1a1a2e; }
+        .seo-card h3 { font-size: 0.9rem; font-weight: 600; margin: 1rem 0 0.3rem; color: #374151; }
+        .seo-card p { font-size: 0.8rem; color: #6b7280; line-height: 1.7; margin-bottom: 0.5rem; }
+        .promo-banner { max-width: 900px; margin: 1rem auto; padding: 0 1rem; }
+        .promo-banner-inner {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            border-radius: 12px; padding: 1rem 1.5rem; display: flex;
+            align-items: center; justify-content: space-between; color: white;
+        }
+        .promo-left { display: flex; align-items: center; gap: 0.75rem; }
+        .promo-title { font-weight: 700; font-size: 0.95rem; }
+        .promo-sub { font-size: 0.75rem; opacity: 0.85; }
+        .promo-tiny { font-size: 0.6rem; opacity: 0.6; margin-top: 0.15rem; }
+        .promo-cta {
+            background: white; color: #059669; padding: 0.5rem 1.25rem;
+            border-radius: 8px; font-weight: 700; font-size: 0.85rem;
+            text-decoration: none; white-space: nowrap;
+        }
+        .league-links { max-width: 900px; margin: 1rem auto; padding: 0 1rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .league-link {
+            padding: 0.3rem 0.7rem; border-radius: 2rem; border: 1px solid #e5e7eb;
+            background: white; color: #6b7280; font-size: 0.75rem; font-weight: 600;
+            text-decoration: none; transition: all 0.2s;
+        }
+        .league-link:hover { border-color: #10b981; color: #059669; }
+        .league-link.active { background: #1a1a2e; color: white; border-color: #1a1a2e; }
+        .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+        .wa-float {
+            position: fixed; bottom: 1.5rem; right: 1.5rem;
+            background: #25d366; color: white; width: 52px; height: 52px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            text-decoration: none; box-shadow: 0 3px 12px rgba(37,211,102,0.4); z-index: 1000;
+        }
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.2rem; }
+            .game-card { grid-template-columns: 1fr; gap: 0.3rem; text-align: center; padding: 0.6rem; }
+            .team, .team.away { justify-content: center; text-align: center; }
+            .game-channels { text-align: center; }
+            .promo-banner-inner { flex-direction: column; text-align: center; gap: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+        <a href="/" class="back">&larr; Todos los juegos</a>
+    </div>
+</header>
+
+<div class="hero">
+    <h1>{{ emoji }} Donde ver {{ league_name }} en vivo hoy</h1>
+    <p>Todos los juegos de {{ league_name }} con horarios, canales de TV y opciones de streaming para Mexico y Estados Unidos.</p>
+</div>
+
+<!-- Other leagues -->
+<div class="league-links">
+    <a href="/" class="league-link">Todos</a>
+    <a href="/liga/liga-mx" class="league-link {% if league_slug == 'liga-mx' %}active{% endif %}">Liga MX</a>
+    <a href="/liga/mls" class="league-link {% if league_slug == 'mls' %}active{% endif %}">MLS</a>
+    <a href="/liga/premier-league" class="league-link {% if league_slug == 'premier-league' %}active{% endif %}">Premier</a>
+    <a href="/liga/la-liga" class="league-link {% if league_slug == 'la-liga' %}active{% endif %}">La Liga</a>
+    <a href="/liga/champions" class="league-link {% if league_slug == 'champions' %}active{% endif %}">Champions</a>
+    <a href="/liga/nfl" class="league-link {% if league_slug == 'nfl' %}active{% endif %}">NFL</a>
+    <a href="/liga/nba" class="league-link {% if league_slug == 'nba' %}active{% endif %}">NBA</a>
+    <a href="/liga/mlb" class="league-link {% if league_slug == 'mlb' %}active{% endif %}">MLB</a>
+    <a href="/liga/nhl" class="league-link {% if league_slug == 'nhl' %}active{% endif %}">NHL</a>
+    <a href="/liga/ufc" class="league-link {% if league_slug == 'ufc' %}active{% endif %}">UFC</a>
+    <a href="/liga/f1" class="league-link {% if league_slug == 'f1' %}active{% endif %}">F1</a>
+</div>
+
+<!-- Affiliate Banner -->
+{% for key, aff in affiliates.items() %}
+{% if loop.first %}
+<div class="promo-banner">
+    <div class="promo-banner-inner">
+        <div class="promo-left">
+            <div style="font-size:1.5rem">&#9917;</div>
+            <div>
+                <div class="promo-title">Quieres apostar en {{ league_name }}?</div>
+                <div class="promo-sub">Las mejores cuotas en {{ aff.name }}</div>
+                <div class="promo-tiny">+18 solo responsablemente</div>
+            </div>
+        </div>
+        <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="promo-cta">Apostar ahora &#8599;</a>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<!-- Games -->
+<main class="main">
+    {% if games %}
+        <h2 style="font-size:0.9rem;font-weight:700;color:#374151;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:2px solid #e5e7eb;">
+            {{ emoji }} {{ league_name }} — {{ total_games }} juego{{ 's' if total_games != 1 else '' }} hoy
+        </h2>
+        {% for game in games %}
+        <a href="/juego/{{ game.id }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
+            <div class="team away">
+                <div>
+                    <div class="team-name">{{ game.away.name }}</div>
+                    {% if game.status.state != 'pre' %}<div class="team-score">{{ game.away.score }}</div>{% endif %}
+                </div>
+                {% if game.away.logo %}<img src="{{ game.away.logo }}" alt="{{ game.away.name }}" class="team-logo" loading="lazy">{% endif %}
+            </div>
+            <div class="game-center">
+                {% if game.status.state == 'in' %}
+                    <div class="live-badge">EN VIVO</div>
+                {% elif game.status.state == 'post' %}
+                    <div class="final-badge">FINAL</div>
+                {% else %}
+                    <div class="game-time">{{ format_mx_time(game.date) }}</div>
+                    <div class="game-status">{{ format_us_time(game.date) }}</div>
+                {% endif %}
+            </div>
+            <div class="team">
+                {% if game.home.logo %}<img src="{{ game.home.logo }}" alt="{{ game.home.name }}" class="team-logo" loading="lazy">{% endif %}
+                <div>
+                    <div class="team-name">{{ game.home.name }}</div>
+                    {% if game.status.state != 'pre' %}<div class="team-score">{{ game.home.score }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="game-channels">
+                {% if game.broadcasts %}
+                    {% for b in game.broadcasts %}
+                    <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}">{{ b.channel }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span class="channel-tag unknown">Por confirmar</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    {% else %}
+        <div class="no-games">
+            <h2>No hay juegos de {{ league_name }} hoy</h2>
+            <p>Regresa cuando haya jornada o revisa <a href="/" style="color:#059669;">todos los juegos de hoy</a>.</p>
+        </div>
+    {% endif %}
+</main>
+
+<!-- SEO Content Block — permanent text Google can always index -->
+<div class="seo-content">
+    <div class="seo-card">
+        <h2>Donde ver {{ league_name }} en Mexico y Estados Unidos</h2>
+        <p>DondeVer.app es tu guia para encontrar donde ver los juegos de {{ league_name }} en vivo. Actualizamos los horarios y canales de transmision diariamente para que siempre sepas donde sintonizar.</p>
+
+        <h3>Canales que transmiten {{ league_name }} en Mexico</h3>
+        <p>Los juegos de {{ league_name }} se pueden ver en Mexico por TUDN, Canal 5 de Televisa, Azteca 7, Fox Sports Mexico, ESPN Mexico, y las plataformas de streaming ViX Premium y Claro Sports, dependiendo de los derechos de transmision de cada partido.</p>
+
+        <h3>Canales que transmiten {{ league_name }} en Estados Unidos</h3>
+        <p>En Estados Unidos, {{ league_name }} se transmite por ESPN, ESPN+, Fox Sports, NBC, CBS, Peacock, Paramount+, TNT, ABC, y Amazon Prime Video. Los canales en espanol incluyen Univision y TUDN USA.</p>
+
+        <h3>Como ver {{ league_name }} desde cualquier lugar</h3>
+        <p>Si estas fuera de tu region y no puedes acceder a los canales habituales, una VPN como NordVPN te permite conectarte a servidores en Mexico o Estados Unidos para acceder a las transmisiones disponibles en esas regiones.</p>
+    </div>
+</div>
+
+<!-- WhatsApp -->
+<a href="https://wa.me/14155238886?text={{ league_name }}" class="wa-float" title="Preguntar por {{ league_name }} en WhatsApp">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.555 4.126 1.528 5.869L.06 23.897l6.171-1.617A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.94 0-3.75-.58-5.264-1.573l-.378-.224-3.91 1.025 1.043-3.811-.247-.393A9.777 9.777 0 012.182 12 9.818 9.818 0 0112 2.182 9.818 9.818 0 0121.818 12 9.818 9.818 0 0112 21.818z"/>
+    </svg>
+</a>
+
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> — Tu guia de donde ver {{ league_name }} en vivo</p>
+    <p style="margin-top:0.3rem">Los enlaces de apuestas son publicidad. Apuesta responsablemente. Solo mayores de 18.</p>
+</footer>
+
+<script>
+    if (document.querySelector('.live-badge')) { setTimeout(() => location.reload(), 60000); }
+</script>
+</body>
+</html>
