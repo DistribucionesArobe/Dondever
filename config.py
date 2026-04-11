@@ -29,19 +29,19 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 AFFILIATES = {
     "1xbet": {
         "name": "1xBet",
-        "url": os.getenv("AFFILIATE_1XBET", "https://reffpa.com/L?tag=d_5182312m_1599c_&site=5182312&ad=1599"),
+        "url": os.getenv("AFFILIATE_1XBET", "") or "https://reffpa.com/L?tag=d_5182312m_1599c_&site=5182312&ad=1599",
         "logo": "/static/affiliates/1xbet.svg",
         "cta": "Apuesta aqui",
     },
     "betsson": {
         "name": "Betsson",
-        "url": os.getenv("AFFILIATE_BETSSON", "https://record.betsson.mx/_HF2ZLLLzsI4k5VDSMnChDGCjLk9Ro7mn/1/"),
+        "url": os.getenv("AFFILIATE_BETSSON", "") or "https://record.betsson.mx/_HF2ZLLLzsI4k5VDSMnChDGCjLk9Ro7mn/1/",
         "logo": "/static/affiliates/betsson.svg",
         "cta": "Apostar en Betsson",
     },
     "cj": {
         "name": "NordVPN",
-        "url": os.getenv("AFFILIATE_CJ", "https://www.anrdoezrs.net/click-101647648-16968809"),
+        "url": os.getenv("AFFILIATE_CJ", "") or "https://www.anrdoezrs.net/click-101647648-16968809",
         "logo": "/static/affiliates/vpn.svg",
         "cta": "Desbloquea con VPN",
     },
@@ -98,9 +98,9 @@ def get_affiliate_url(key: str, source: str = "web") -> str:
     Most affiliate networks accept sub-tracking via URL params.
     """
     aff = AFFILIATES.get(key, {})
-    url = aff.get("url", "#")
-    if url == "#":
-        return url
+    url = aff.get("url", "")
+    if not url or url == "#":
+        return "#"
     separator = "&" if "?" in url else "?"
     return f"{url}{separator}sub1={source}"
 
