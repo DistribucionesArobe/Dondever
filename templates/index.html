@@ -409,6 +409,27 @@
     <a href="/?sport=mma" class="filter-pill {% if current_sport == 'mma' %}active{% endif %}">UFC</a>
 </div>
 
+<!-- Pick del Dia -->
+{% if pick_game %}
+<div style="max-width:900px;margin:1rem auto;padding:0 1rem;">
+    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#2d2b55 100%);border-radius:14px;padding:1.25rem 1.5rem;color:white;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
+            <div>
+                <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:#10b981;font-weight:700;">Pick del dia</div>
+                <div style="font-size:1.1rem;font-weight:800;margin:0.25rem 0;">{{ pick_game.emoji }} {{ pick_game.away.name }} vs {{ pick_game.home.name }}</div>
+                <div style="font-size:0.8rem;opacity:0.8;">{{ pick_game.league_name }} &middot; {{ format_mx_time(pick_game.date) }} hrs</div>
+                <div style="font-size:0.75rem;margin-top:0.4rem;color:#10b981;">Donde verlo: {% if pick_game.broadcasts %}{{ pick_game.broadcasts[0].channel }}{% else %}Por confirmar{% endif %}</div>
+            </div>
+            <div style="text-align:center;">
+                <a href="https://wa.me/15715463202?text=picks" style="display:inline-block;background:#25d366;color:white;padding:0.6rem 1.25rem;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;">Recibe picks gratis</a>
+                <div style="font-size:0.6rem;opacity:0.5;margin-top:0.3rem;">Via WhatsApp diario</div>
+            </div>
+        </div>
+        <div style="font-size:0.55rem;opacity:0.35;margin-top:0.6rem;">Las sugerencias son solo entretenimiento, no garantizan resultados. Apuesta responsablemente. +18</div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Betting Promo Banner -->
 {% for key, aff in affiliates.items() %}
 {% if loop.first %}

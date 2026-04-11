@@ -35,7 +35,7 @@ AFFILIATES = {
     },
     "betsson": {
         "name": "Betsson",
-        "url": os.getenv("AFFILIATE_BETSSON", "") or "https://record.betsson.mx/_HF2ZLLLzsI4k5VDSMnChDGCjLk9Ro7mn/1/",
+        "url": os.getenv("AFFILIATE_BETSSON", "") or "https://record.betsson.mx/_HF2ZLLLzsI5GDKPB4tjc7WNd7ZgqdRLk/1/",
         "logo": "/static/affiliates/betsson.svg",
         "cta": "Apostar en Betsson",
     },

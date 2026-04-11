@@ -95,10 +95,42 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             "Hola! Soy *DondeVer* - te digo donde ver los juegos de hoy.\n\n"
             "Escribe:\n"
             "- *hoy* - todos los juegos de hoy\n"
+            "- *picks* - pick del dia\n"
             "- *nfl* o *liga mx* - juegos por liga\n"
             "- *America* o *Cowboys* - buscar por equipo\n"
             "- *futbol* o *basket* - buscar por deporte\n\n"
             f"O visita {APP_URL} para la guia completa"
+        )
+
+    # Picks del dia
+    if body_clean in ("picks", "pick", "pick del dia", "sugerencia", "tip"):
+        games = await get_todays_games()
+        priority = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga"]
+        upcoming = [g for g in games if g["status"]["state"] == "pre" and g["broadcasts"]]
+        pick = None
+        for pl in priority:
+            pick = next((g for g in upcoming if g["league_slug"] == pl), None)
+            if pick:
+                break
+        if not pick and upcoming:
+            pick = upcoming[0]
+
+        if not pick:
+            return f"No hay picks disponibles ahorita. Checa los juegos de hoy en {APP_URL}"
+
+        channels = format_broadcast_text(pick["broadcasts"])
+        time_str = format_game_time(pick["date"])
+        aff = get_random_affiliate()
+
+        return (
+            f"*PICK DEL DIA*\n\n"
+            f"{pick.get('emoji', '')} *{pick['league_name']}*\n"
+            f"{pick['away']['name']} vs {pick['home']['name']}\n"
+            f"Hora: {time_str} (hora centro)\n"
+            f"Donde verlo: {channels}\n\n"
+            f"Escribe *picks* diario para recibir sugerencias.\n\n"
+            f"{aff['cta']}: {aff['url']}\n\n"
+            f"_Las sugerencias son solo entretenimiento. Apuesta responsablemente. +18_"
         )
 
     try:

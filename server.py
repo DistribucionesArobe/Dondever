@@ -87,6 +87,25 @@ async def home(
             }
         sports_grouped[league_name]["games"].append(game)
 
+    # Pick del dia — choose most interesting upcoming game
+    pick_game = None
+    priority_leagues = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga", "mlb"]
+    upcoming = [g for g in games if g["status"]["state"] == "pre" and g["broadcasts"]]
+    if upcoming:
+        # Try priority leagues first
+        for pl in priority_leagues:
+            pick = next((g for g in upcoming if g["league_slug"] == pl), None)
+            if pick:
+                pick_game = pick
+                break
+        if not pick_game:
+            pick_game = upcoming[0]
+    elif games:
+        # If no upcoming, pick a live game
+        live = [g for g in games if g["status"]["state"] == "in"]
+        if live:
+            pick_game = live[0]
+
     # Available sports for filter
     sport_types = sorted(set(v[0] for v in LEAGUES.values()))
 
@@ -119,6 +138,7 @@ async def home(
             "prev_date": prev_date,
             "next_date": next_date,
             "total_games": len(games),
+            "pick_game": pick_game,
         },
     )
 
