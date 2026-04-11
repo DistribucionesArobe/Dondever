@@ -52,7 +52,7 @@ AFFILIATES = {
 LEAGUES = {
     # Futbol
     "liga-mx":       ("soccer", "mex.1",        "Liga MX",          "\u26bd"),
-    "liga-mx-femenil": ("soccer", "mex.w1",     "Liga MX Femenil",  "\u26bd"),
+    # "liga-mx-femenil": ("soccer", "mex.w1",     "Liga MX Femenil",  "\u26bd"),  # fuera de temporada
     "mls":           ("soccer", "usa.1",         "MLS",              "\u26bd"),
     "liga-expansion": ("soccer", "mex.2",        "Liga Expansion MX","\u26bd"),
     "premier-league":("soccer", "eng.1",         "Premier League",   "\u26bd"),
@@ -74,12 +74,12 @@ LEAGUES = {
     "wnba":          ("basketball", "wnba",      "WNBA",            "NBA"),
     # Beisbol
     "mlb":           ("baseball", "mlb",         "MLB",              "\u26be"),
-    "lmp":           ("baseball", "mex.pacific", "Liga Mexicana del Pacifico", "\u26be"),
+    # "lmp":           ("baseball", "mex.pacific", "Liga Mexicana del Pacifico", "\u26be"),  # fuera de temporada (oct-ene)
     # Hockey
     "nhl":           ("hockey", "nhl",           "NHL",              "NHL"),
     # Combate
     "ufc":           ("mma", "ufc",             "UFC",              "BOX"),
-    "boxing":        ("boxing", "boxing",        "Boxeo",            "BOX"),
+    # "boxing":        ("boxing", "boxing",        "Boxeo",            "BOX"),  # ESPN no soporta scoreboard con fecha
 }
 
 # Leagues that don't show team names well (individual sports)
