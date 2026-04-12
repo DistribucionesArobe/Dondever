@@ -308,6 +308,12 @@ except ImportError:
 
 # ── SEO: Sitemap & Robots ───────────────────────────────
 
+@app.get("/tiktokVCdYT0dv6jrqTL4pncMRP6dXaRB54Aka.txt", response_class=PlainTextResponse)
+async def tiktok_verification():
+    """TikTok domain verification file."""
+    return "tiktok-developers-site-verification=VCdYT0dv6jrqTL4pncMRP6dXaRB54Aka"
+
+
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots_txt():
     """Robots.txt for search engine crawlers."""
