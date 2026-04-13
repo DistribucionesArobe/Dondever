@@ -10,13 +10,14 @@ from urllib.parse import urlencode
 
 logger = logging.getLogger("dondever.tiktok")
 
-# ── TikTok Credentials ─────────────────────────────────
-TIKTOK_CLIENT_KEY = os.getenv("TIKTOK_CLIENT_KEY", "aw0indw4yqw478q7")
-TIKTOK_CLIENT_SECRET = os.getenv("TIKTOK_CLIENT_SECRET", "SczUe8BxUfydmdSeL58wjJnx0qgG40tq")
+# ── TikTok Credentials (Sandbox mode) ─────────────────
+TIKTOK_CLIENT_KEY = os.getenv("TIKTOK_CLIENT_KEY", "sbaw3wqwikladd038w")
+TIKTOK_CLIENT_SECRET = os.getenv("TIKTOK_CLIENT_SECRET", "jkgCxdESg3kgE4dsmfGcXm9MoFi5PRyi")
 TIKTOK_REDIRECT_URI = os.getenv("TIKTOK_REDIRECT_URI", "https://dondever.app/auth/tiktok/callback")
 
-# Scopes needed: user.info.basic + video.publish + video.upload
-TIKTOK_SCOPES = "user.info.basic,video.publish,video.upload"
+# Scopes available in sandbox: user.info.basic + video.upload
+# (video.upload sube como DRAFT - el usuario publica manualmente desde TikTok app)
+TIKTOK_SCOPES = "user.info.basic,video.upload"
 
 # Token storage (in production, use a database)
 _tiktok_tokens = {
@@ -118,8 +119,9 @@ async def upload_video_to_tiktok(video_path: str, title: str = "") -> dict:
     if not token:
         return {"error": "Not authenticated. Go to /tiktok/login first."}
 
-    # Step 1: Initialize video upload
-    init_url = "https://open.tiktokapis.com/v2/post/publish/video/init/"
+    # Step 1: Initialize video upload to INBOX (draft)
+    # En sandbox solo tenemos video.upload scope → sube como draft al inbox del user
+    init_url = "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
@@ -130,13 +132,6 @@ async def upload_video_to_tiktok(video_path: str, title: str = "") -> dict:
     video_size = _os.path.getsize(video_path)
 
     init_body = {
-        "post_info": {
-            "title": title[:150] if title else "Partidos de hoy | DondeVer.app",
-            "privacy_level": "PUBLIC_TO_EVERYONE",
-            "disable_duet": False,
-            "disable_comment": False,
-            "disable_stitch": False,
-        },
         "source_info": {
             "source": "FILE_UPLOAD",
             "video_size": video_size,
@@ -176,7 +171,7 @@ async def upload_video_to_tiktok(video_path: str, title: str = "") -> dict:
         "status": "uploaded",
         "publish_id": publish_id,
         "upload_status": upload_resp.status_code,
-        "message": "Video enviado a TikTok. Puede tardar unos minutos en procesarse.",
+        "message": "Video enviado como borrador a tu inbox de TikTok. Abre TikTok app → Inbox → revisa y publica.",
     }
 
 
