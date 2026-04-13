@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel TikTok | DondeVer</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; }
+
+        .header { background: #111; padding: 20px 24px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 16px; }
+        .header img { height: 32px; }
+        .header h1 { font-size: 20px; color: #fff; }
+        .header .badge { background: #fe2c55; color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 20px; }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 24px; }
+
+        .status-card { background: #1a1a1a; border-radius: 12px; padding: 24px; margin-bottom: 20px; border: 1px solid #2a2a2a; }
+        .status-card h2 { font-size: 16px; color: #888; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .status-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot.green { background: #25D366; }
+        .dot.red { background: #fe2c55; }
+
+        .btn { display: inline-block; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;
+               text-decoration: none; cursor: pointer; border: none; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.85; }
+        .btn-tiktok { background: #fe2c55; color: #fff; }
+        .btn-green { background: #25D366; color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid #444; color: #ccc; }
+        .btn-outline:hover { border-color: #888; }
+
+        .video-section { margin-top: 24px; }
+        .video-preview { background: #111; border-radius: 12px; overflow: hidden; max-width: 360px; margin: 16px 0; }
+        .video-preview video { width: 100%; display: block; }
+
+        .images-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
+        .images-grid img { width: 100%; border-radius: 8px; border: 1px solid #2a2a2a; }
+
+        .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+
+        .publish-result { margin-top: 16px; padding: 16px; border-radius: 8px; display: none; }
+        .publish-result.success { background: #1a3a1a; border: 1px solid #25D366; display: block; }
+        .publish-result.error { background: #3a1a1a; border: 1px solid #fe2c55; display: block; }
+
+        .steps { margin-top: 24px; }
+        .step { display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start; }
+        .step-num { background: #fe2c55; color: #fff; width: 32px; height: 32px; border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        .step-text { padding-top: 4px; }
+        .step-text strong { color: #fff; }
+
+        .loading { display: none; }
+        .loading.show { display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { width: 18px; height: 18px; border: 2px solid #fff3; border-top-color: #fff;
+                   border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DondeVer</h1>
+        <span class="badge">TikTok Panel</span>
+    </div>
+
+    <div class="container">
+        <!-- Connection Status -->
+        <div class="status-card">
+            <h2>Conexion TikTok</h2>
+            {% if authenticated %}
+            <div class="status-row">
+                <span class="dot green"></span>
+                <span>Conectado {% if open_id %}({{ open_id[:8] }}...){% endif %}</span>
+            </div>
+            {% else %}
+            <div class="status-row">
+                <span class="dot red"></span>
+                <span>No conectado</span>
+            </div>
+            <a href="/tiktok/login" class="btn btn-tiktok" style="margin-top: 12px;">Conectar con TikTok</a>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-text"><strong>Conecta tu cuenta TikTok</strong><br>Haz click en "Conectar con TikTok" y autoriza la app.</div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-text"><strong>Genera el video del dia</strong><br>Se genera automaticamente a las 7:30 AM o hazlo manual.</div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-text"><strong>Publica con un click</strong><br>El video se sube directo a tu cuenta de TikTok.</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Video Section -->
+        <div class="status-card video-section">
+            <h2>Video del dia ({{ date_tag }})</h2>
+
+            {% if video_exists %}
+            <div class="video-preview">
+                <video controls>
+                    <source src="{{ video_url }}" type="video/mp4">
+                </video>
+            </div>
+
+            <div class="actions">
+                {% if authenticated %}
+                <button class="btn btn-tiktok" id="publishBtn" onclick="publishVideo()">
+                    Publicar en TikTok
+                </button>
+                {% endif %}
+                <a href="{{ video_url }}" download class="btn btn-outline">Descargar MP4</a>
+                <button class="btn btn-outline" onclick="generateVideo()">Regenerar Video</button>
+            </div>
+            {% else %}
+            <p style="color: #888; margin: 16px 0;">No hay video generado para hoy.</p>
+            <button class="btn btn-green" onclick="generateVideo()">Generar Video Ahora</button>
+            {% endif %}
+
+            <div id="publishResult" class="publish-result"></div>
+        </div>
+
+        <!-- Images Section -->
+        {% if images %}
+        <div class="status-card">
+            <h2>Imagenes para Carrusel ({{ images|length }})</h2>
+            <div class="images-grid">
+                {% for img in images %}
+                <a href="{{ img }}" target="_blank"><img src="{{ img }}" alt="Slide {{ loop.index }}"></a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+    async function publishVideo() {
+        const btn = document.getElementById('publishBtn');
+        const result = document.getElementById('publishResult');
+        btn.innerHTML = '<span class="spinner"></span> Publicando...';
+        btn.disabled = true;
+        result.className = 'publish-result';
+        result.style.display = 'none';
+
+        try {
+            const resp = await fetch('/tiktok/publicar', { method: 'POST' });
+            const data = await resp.json();
+            if (data.error) {
+                result.className = 'publish-result error';
+                result.textContent = 'Error: ' + data.error;
+            } else {
+                result.className = 'publish-result success';
+                result.textContent = data.message || 'Video enviado a TikTok exitosamente!';
+            }
+        } catch (e) {
+            result.className = 'publish-result error';
+            result.textContent = 'Error de conexion: ' + e.message;
+        }
+        btn.innerHTML = 'Publicar en TikTok';
+        btn.disabled = false;
+    }
+
+    async function generateVideo() {
+        const result = document.getElementById('publishResult');
+        result.className = 'publish-result';
+        result.style.display = 'block';
+        result.style.background = '#1a1a2a';
+        result.style.border = '1px solid #4466ff';
+        result.textContent = 'Generando video... esto puede tardar unos segundos.';
+
+        try {
+            const resp = await fetch('/tiktok/generar');
+            const data = await resp.json();
+            if (data.status === 'ok') {
+                result.className = 'publish-result success';
+                result.textContent = 'Video generado! Recargando pagina...';
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                result.className = 'publish-result error';
+                result.textContent = 'No hay juegos para generar video hoy.';
+            }
+        } catch (e) {
+            result.className = 'publish-result error';
+            result.textContent = 'Error: ' + e.message;
+        }
+    }
+    </script>
+</body>
+</html>

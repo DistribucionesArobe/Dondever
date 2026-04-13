@@ -16,6 +16,11 @@ from twilio.twiml.messaging_response import MessagingResponse
 from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
 from sports_api import get_todays_games, search_games, get_team_stats
 from whatsapp_bot import handle_whatsapp_message
+from tiktok_auth import (
+    get_tiktok_auth_url, exchange_code_for_token, get_user_info,
+    upload_video_to_tiktok, check_publish_status, is_authenticated,
+    get_token_info,
+)
 
 # ── Logging ──────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -560,6 +565,120 @@ async def teams_list(request: Request):
         "teams_by_league": teams_by_league,
         "POPULAR_TEAMS": POPULAR_TEAMS,
     })
+
+
+# ── TikTok OAuth + Content Posting ─────────────────────
+
+@app.get("/tiktok/login")
+async def tiktok_login():
+    """Redirect to TikTok OAuth authorization."""
+    from fastapi.responses import RedirectResponse
+    auth_url = get_tiktok_auth_url()
+    return RedirectResponse(url=auth_url)
+
+
+@app.get("/auth/tiktok/callback", response_class=HTMLResponse)
+async def tiktok_callback(request: Request, code: str = "", state: str = "", error: str = ""):
+    """Handle TikTok OAuth callback after user authorizes."""
+    if error:
+        return HTMLResponse(f"<h1>Error de autorización TikTok</h1><p>{error}</p>")
+
+    if not code:
+        return HTMLResponse("<h1>No se recibió código de autorización</h1>")
+
+    # Exchange code for token
+    result = await exchange_code_for_token(code)
+
+    if "access_token" in result:
+        user_info = await get_user_info()
+        display_name = user_info.get("data", {}).get("user", {}).get("display_name", "Usuario")
+        return HTMLResponse(f"""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head><meta charset="UTF-8"><title>TikTok Conectado | DondeVer</title>
+        <style>
+            body {{ font-family: system-ui; background: #0a0a0a; color: #fff; display: flex;
+                   justify-content: center; align-items: center; min-height: 100vh; margin: 0; }}
+            .card {{ background: #1a1a1a; border-radius: 16px; padding: 40px; text-align: center; max-width: 500px; }}
+            .success {{ color: #25D366; font-size: 48px; }}
+            h1 {{ margin: 16px 0 8px; }}
+            .btn {{ display: inline-block; background: #fe2c55; color: #fff; padding: 14px 32px;
+                    border-radius: 8px; text-decoration: none; margin-top: 20px; font-weight: 600; }}
+            .btn:hover {{ opacity: 0.9; }}
+        </style></head>
+        <body><div class="card">
+            <div class="success">✓</div>
+            <h1>TikTok Conectado</h1>
+            <p>Cuenta: <strong>{display_name}</strong></p>
+            <p>Ahora puedes publicar videos automaticamente.</p>
+            <a href="/tiktok/panel" class="btn">Ir al Panel TikTok</a>
+        </div></body></html>
+        """)
+    else:
+        error_msg = result.get("error_description", result.get("error", "Error desconocido"))
+        return HTMLResponse(f"""
+        <h1>Error al conectar TikTok</h1>
+        <p>{error_msg}</p>
+        <a href="/tiktok/login">Intentar de nuevo</a>
+        """)
+
+
+@app.get("/tiktok/panel", response_class=HTMLResponse)
+async def tiktok_panel(request: Request):
+    """TikTok management panel — shows status, generate & publish videos."""
+    token_info = get_token_info()
+    date_tag = datetime.now(TZ_MX).strftime("%Y%m%d")
+
+    # Check if today's video exists
+    from pathlib import Path
+    video_path = Path(f"static/tiktok/dondever_picks_{date_tag}.mp4")
+    video_exists = video_path.exists()
+    video_url = f"/static/tiktok/dondever_picks_{date_tag}.mp4" if video_exists else None
+
+    # Check images
+    images_dir = Path(f"static/tiktok/images/{date_tag}")
+    images = sorted([f"/static/tiktok/images/{date_tag}/{f.name}" for f in images_dir.glob("*.png")]) if images_dir.exists() else []
+
+    return templates.TemplateResponse(request, "tiktok_panel.html", {
+        "authenticated": token_info["authenticated"],
+        "open_id": token_info.get("open_id"),
+        "video_exists": video_exists,
+        "video_url": video_url,
+        "images": images,
+        "date_tag": date_tag,
+    })
+
+
+@app.post("/tiktok/publicar")
+async def tiktok_publish():
+    """Publish today's video to TikTok."""
+    if not is_authenticated():
+        return JSONResponse({"error": "No conectado a TikTok. Ve a /tiktok/login"}, status_code=401)
+
+    date_tag = datetime.now(TZ_MX).strftime("%Y%m%d")
+    video_path = f"static/tiktok/dondever_picks_{date_tag}.mp4"
+
+    from pathlib import Path
+    if not Path(video_path).exists():
+        # Try generating first
+        from tiktok_generator import generate_daily_video
+        video_path_gen = await generate_daily_video()
+        if not video_path_gen:
+            return JSONResponse({"error": "No hay juegos hoy para generar video"}, status_code=404)
+        video_path = video_path_gen
+
+    today = datetime.now(TZ_MX)
+    title = f"Partidos de hoy {today.strftime('%d/%m')} | Donde verlos en vivo #deportes #futbol #nba #nfl #dondever"
+
+    result = await upload_video_to_tiktok(video_path, title)
+    return JSONResponse(result)
+
+
+@app.get("/tiktok/status/{publish_id}")
+async def tiktok_status(publish_id: str):
+    """Check publishing status of a video."""
+    result = await check_publish_status(publish_id)
+    return JSONResponse(result)
 
 
 # ── Health ───────────────────────────────────────────────
