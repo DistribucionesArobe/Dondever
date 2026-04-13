@@ -355,14 +355,21 @@ async def tiktok_today():
 @app.get("/tiktok/generar")
 async def tiktok_generate_now():
     """Manually trigger TikTok video generation."""
-    from tiktok_generator import generate_daily_video, generate_daily_images
-    video = await generate_daily_video()
-    images = await generate_daily_images()
-    return {
-        "video": video,
-        "images_count": len(images),
-        "status": "ok" if video else "no_games",
-    }
+    try:
+        from tiktok_generator import generate_daily_video, generate_daily_images
+        video = await generate_daily_video()
+        images = await generate_daily_images()
+        return JSONResponse({
+            "video": video,
+            "images_count": len(images) if images else 0,
+            "status": "ok" if video else "no_games",
+        })
+    except Exception as e:
+        logger.exception("tiktok_generate_now failed")
+        return JSONResponse(
+            {"status": "error", "error": str(e), "type": type(e).__name__},
+            status_code=500,
+        )
 
 
 @app.get("/sitemap.xml")
