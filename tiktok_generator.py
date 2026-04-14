@@ -319,14 +319,23 @@ def slides_to_video(slides: list[Image.Image], output_path: str) -> str:
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
         if result.returncode != 0:
-            logger.error(f"ffmpeg error: {result.stderr}")
-            return ""
+            stderr_tail = (result.stderr or "")[-1500:]
+            logger.error(f"ffmpeg error (rc={result.returncode}): {stderr_tail}")
+            raise RuntimeError(f"ffmpeg rc={result.returncode}: {stderr_tail}")
+        # Verify the output file actually exists and has content
+        out_size = 0
+        try:
+            out_size = os.path.getsize(output_path)
+        except Exception:
+            pass
+        if out_size < 1000:
+            raise RuntimeError(
+                f"ffmpeg rc=0 but output file is missing/empty (size={out_size}). "
+                f"stderr tail: {(result.stderr or '')[-500:]}"
+            )
     except subprocess.TimeoutExpired:
         logger.error("ffmpeg timeout")
-        return ""
-    except Exception as e:
-        logger.error(f"Video generation failed: {e}")
-        return ""
+        raise RuntimeError("ffmpeg timeout (90s)")
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
@@ -379,13 +388,10 @@ async def generate_daily_video() -> str:
     date_tag = now.strftime("%Y%m%d")
     output_path = str(OUTPUT_DIR / f"dondever_picks_{date_tag}.mp4")
 
+    # slides_to_video raises RuntimeError on failure — deja que propague
     video_path = slides_to_video(slides, output_path)
 
-    if video_path:
-        logger.info(f"TikTok video generated: {video_path}")
-    else:
-        logger.error("Failed to generate TikTok video")
-
+    logger.info(f"TikTok video generated: {video_path}")
     return video_path
 
 
