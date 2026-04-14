@@ -357,16 +357,33 @@ async def tiktok_generate_now(images: bool = False):
     """Manually trigger TikTok video generation. Pass ?images=true para generar carrusel tambien."""
     try:
         from tiktok_generator import generate_daily_video, generate_daily_images
+        from sports_api import get_todays_games
+
+        # Verificar primero que si hay juegos (para distinguir no_games vs error ffmpeg)
+        games_check = await get_todays_games()
+        if not games_check:
+            return JSONResponse({"status": "no_games", "message": "No hay juegos hoy"})
+
+        logger.info(f"[generar] {len(games_check)} juegos encontrados, generando video...")
         video = await generate_daily_video()
+
+        if not video:
+            # Hay juegos pero el video no se genero → error en ffmpeg/PIL
+            return JSONResponse(
+                {"status": "error", "error": "Video generation returned empty (ffmpeg/PIL error)", "games_found": len(games_check)},
+                status_code=500,
+            )
+
         img_count = 0
-        if images and video:
-            # Solo generar imagenes si el video funciono (evita OOM doble)
+        if images:
             img_list = await generate_daily_images()
             img_count = len(img_list) if img_list else 0
+
         return JSONResponse({
             "video": video,
             "images_count": img_count,
-            "status": "ok" if video else "no_games",
+            "games_used": len(games_check),
+            "status": "ok",
         })
     except Exception as e:
         logger.exception("tiktok_generate_now failed")
