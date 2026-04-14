@@ -175,14 +175,20 @@
 
         try {
             const resp = await fetch('/tiktok/generar');
-            const data = await resp.json();
+            const text = await resp.text();
+            let data;
+            try { data = JSON.parse(text); } catch { data = { status: 'error', error: text.slice(0, 300) }; }
+
             if (data.status === 'ok') {
                 result.className = 'publish-result success';
                 result.textContent = 'Video generado! Recargando pagina...';
                 setTimeout(() => location.reload(), 1500);
-            } else {
+            } else if (data.status === 'no_games') {
                 result.className = 'publish-result error';
                 result.textContent = 'No hay juegos para generar video hoy.';
+            } else {
+                result.className = 'publish-result error';
+                result.textContent = 'Error del servidor: ' + (data.error || 'Desconocido') + (data.type ? ' (' + data.type + ')' : '');
             }
         } catch (e) {
             result.className = 'publish-result error';
