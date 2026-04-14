@@ -352,6 +352,81 @@ async def tiktok_today():
     }
 
 
+@app.get("/twitter/debug")
+async def twitter_debug():
+    """Diagnostico del bot de Twitter — para saber por que no tweetea."""
+    from twitter_bot import (
+        twitter_credentials_valid, get_twitter_client,
+        _tweet_timestamps, MAX_TWEETS_PER_HOUR, MAX_TWEETS_PER_DAY,
+        MIN_SECONDS_BETWEEN_TWEETS, _can_post_now,
+    )
+    from sports_api import get_todays_games
+    from datetime import datetime, timezone
+    import time as _time
+
+    info = {
+        "credentials_set": twitter_credentials_valid(),
+        "tweets_posted_last_24h": len(_tweet_timestamps),
+        "limits": {
+            "per_hour": MAX_TWEETS_PER_HOUR,
+            "per_day": MAX_TWEETS_PER_DAY,
+            "min_seconds_between": MIN_SECONDS_BETWEEN_TWEETS,
+        },
+        "can_post_now": None,
+        "rate_limit_reason": None,
+        "auth_check": None,
+        "upcoming_games_20min": [],
+        "games_today": 0,
+    }
+
+    allowed, reason = _can_post_now()
+    info["can_post_now"] = allowed
+    info["rate_limit_reason"] = reason or None
+
+    # Verifica que los tokens funcionen (sin postear)
+    try:
+        client = get_twitter_client()
+        if client:
+            me = client.get_me()
+            info["auth_check"] = {"ok": True, "username": me.data.username if me.data else None}
+        else:
+            info["auth_check"] = {"ok": False, "error": "no client (credentials missing)"}
+    except Exception as e:
+        info["auth_check"] = {"ok": False, "error": str(e)}
+
+    # Juegos próximos en los siguientes 20 min
+    try:
+        games = await get_todays_games()
+        info["games_today"] = len(games)
+        now = datetime.now(timezone.utc)
+        for g in games:
+            if g["status"]["state"] != "pre":
+                continue
+            try:
+                gt = datetime.fromisoformat(g["date"].replace("Z", "+00:00"))
+                diff_min = (gt - now).total_seconds() / 60
+                if 0 < diff_min <= 20:
+                    info["upcoming_games_20min"].append({
+                        "name": g["name"], "in_minutes": round(diff_min, 1),
+                    })
+            except Exception:
+                pass
+    except Exception as e:
+        info["games_error"] = str(e)
+
+    return info
+
+
+@app.post("/twitter/test-tweet")
+async def twitter_test_tweet():
+    """Postea un tweet de prueba MANUALMENTE. Solo usar para verificar que funciona."""
+    from twitter_bot import post_tweet
+    from datetime import datetime
+    text = f"Test de DondeVer.app — {datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC. Juegos de hoy en https://dondever.app"
+    result = post_tweet(text)
+    return result
+
+
 @app.get("/tiktok/generar")
 async def tiktok_generate_now(images: bool = False):
     """Manually trigger TikTok video generation. Pass ?images=true para generar carrusel tambien."""
