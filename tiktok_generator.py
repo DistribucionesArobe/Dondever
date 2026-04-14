@@ -265,50 +265,70 @@ def create_cta_slide() -> Image.Image:
 # ── Video assembly ──────────────────────────────────────
 
 def slides_to_video(slides: list[Image.Image], output_path: str) -> str:
-    """Convert PIL slides to an MP4 video using ffmpeg."""
-    # Save frames as temp images
-    tmp_dir = Path("/tmp/dondever_frames")
-    tmp_dir.mkdir(exist_ok=True)
+    """
+    Convert PIL slides to MP4 via ffmpeg concat demuxer.
+    Memory efficient: guarda cada slide UNA vez como JPEG,
+    ffmpeg la repite por duracion en vez de duplicar archivos.
+    """
+    import tempfile
+    import shutil
 
-    frame_paths = []
+    tmp_dir = Path(tempfile.mkdtemp(prefix="dondever_"))
+    slide_paths = []
+    concat_lines = []
+
+    # 1) Guardar cada slide UNA vez como JPEG (mucho mas pequeño que PNG)
     for i, slide in enumerate(slides):
-        # Duplicate each slide for duration
-        for f in range(SLIDE_DURATION * FPS):
-            frame_num = len(frame_paths)
-            fp = tmp_dir / f"frame_{frame_num:04d}.png"
-            slide.save(fp, "PNG")
-            frame_paths.append(fp)
+        fp = tmp_dir / f"slide_{i:02d}.jpg"
+        if slide.mode != "RGB":
+            slide = slide.convert("RGB")
+        slide.save(fp, "JPEG", quality=82, optimize=True)
+        slide_paths.append(fp)
+        concat_lines.append(f"file '{fp}'")
+        concat_lines.append(f"duration {SLIDE_DURATION}")
 
-    # Use ffmpeg to create video
+    # ffmpeg concat requiere repetir el ultimo archivo sin duration
+    if slide_paths:
+        concat_lines.append(f"file '{slide_paths[-1]}'")
+
+    # Liberar memoria PIL inmediatamente
+    try:
+        slides.clear()
+    except Exception:
+        pass
+
+    concat_file = tmp_dir / "concat.txt"
+    concat_file.write_text("\n".join(concat_lines))
+
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [
-        "ffmpeg", "-y",
-        "-framerate", str(FPS),
-        "-i", str(tmp_dir / "frame_%04d.png"),
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-f", "concat", "-safe", "0",
+        "-i", str(concat_file),
+        "-vsync", "vfr",
         "-c:v", "libx264",
+        "-preset", "veryfast",
+        "-crf", "28",
         "-pix_fmt", "yuv420p",
-        "-vf", "scale=1080:1920",
         "-r", "30",
         output_path,
     ]
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
         if result.returncode != 0:
             logger.error(f"ffmpeg error: {result.stderr}")
             return ""
+    except subprocess.TimeoutExpired:
+        logger.error("ffmpeg timeout")
+        return ""
     except Exception as e:
         logger.error(f"Video generation failed: {e}")
         return ""
     finally:
-        # Cleanup temp frames
-        for fp in frame_paths:
-            try:
-                fp.unlink()
-            except Exception:
-                pass
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
     return output_path
 

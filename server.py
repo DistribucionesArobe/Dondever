@@ -353,15 +353,19 @@ async def tiktok_today():
 
 
 @app.get("/tiktok/generar")
-async def tiktok_generate_now():
-    """Manually trigger TikTok video generation."""
+async def tiktok_generate_now(images: bool = False):
+    """Manually trigger TikTok video generation. Pass ?images=true para generar carrusel tambien."""
     try:
         from tiktok_generator import generate_daily_video, generate_daily_images
         video = await generate_daily_video()
-        images = await generate_daily_images()
+        img_count = 0
+        if images and video:
+            # Solo generar imagenes si el video funciono (evita OOM doble)
+            img_list = await generate_daily_images()
+            img_count = len(img_list) if img_list else 0
         return JSONResponse({
             "video": video,
-            "images_count": len(images) if images else 0,
+            "images_count": img_count,
             "status": "ok" if video else "no_games",
         })
     except Exception as e:
