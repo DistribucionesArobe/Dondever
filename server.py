@@ -155,13 +155,29 @@ async def game_detail(request: Request, event_id: str):
     game = next((g for g in all_games if g["id"] == event_id), None)
 
     if not game:
+        # 410 Gone: le dice a Google que la URL existio pero ya no.
+        # Google desindexa mas rapido con 410 que con 404.
         return templates.TemplateResponse(
-            request, "404.html", status_code=404
+            request, "404.html", status_code=410,
+            context={"message": "Este juego ya termino. Ve los juegos de hoy en la home."}
         )
 
     return templates.TemplateResponse(
         request, "game.html", context={"game": game}
     )
+
+
+# Legacy URLs que Google sigue rastreando de versiones viejas del sitio
+# Redirect 301 permanente a la home para recuperar SEO
+@app.get("/game/{old_id}")
+async def legacy_game_redirect(old_id: str):
+    """Redirect de /game/* (URL vieja) a /juego/* (URL actual) o a home."""
+    from fastapi.responses import RedirectResponse
+    # Si el ID existe hoy, redirige al /juego/{id}, si no, a la home
+    all_games = await get_todays_games()
+    if any(g["id"] == old_id for g in all_games):
+        return RedirectResponse(url=f"/juego/{old_id}", status_code=301)
+    return RedirectResponse(url="/", status_code=301)
 
 
 @app.get("/liga/{league_slug}", response_class=HTMLResponse)

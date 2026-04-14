@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juego no encontrado - DondeVer.app</title>
+    <meta name="robots" content="noindex, follow">
+    <title>Juego no disponible - DondeVer.app</title>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #0a0e17; color: #e4e8f1; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; }
-        a { color: #00d4aa; }
+        body { font-family: 'Inter', sans-serif; background: #0a0e17; color: #e4e8f1; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 1rem; }
+        a { color: #00d4aa; text-decoration: none; font-weight: 600; }
+        a:hover { text-decoration: underline; }
         h1 { font-size: 3rem; margin-bottom: 1rem; }
+        p { font-size: 1.1rem; margin: 0.5rem 0; color: #b0b8c8; }
+        .btn { display: inline-block; margin-top: 1.5rem; padding: 0.8rem 1.5rem; background: #ff6b00; color: #fff; border-radius: 8px; }
     </style>
 </head>
 <body>
     <div>
-        <h1>404</h1>
-        <p>No encontramos ese juego.</p>
-        <p style="margin-top:1rem"><a href="/">Ver todos los juegos de hoy</a></p>
+        <h1>Juego no disponible</h1>
+        <p>{{ message or "Este juego ya termino o no lo encontramos." }}</p>
+        <a href="/" class="btn">Ver juegos de hoy</a>
     </div>
 </body>
 </html>
