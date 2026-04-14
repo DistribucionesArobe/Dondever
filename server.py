@@ -314,9 +314,15 @@ except ImportError:
 # ── SEO: Sitemap & Robots ───────────────────────────────
 
 @app.get("/tiktokVCdYT0dv6jrqTL4pncMRP6dXaRB54Aka.txt", response_class=PlainTextResponse)
-async def tiktok_verification():
-    """TikTok domain verification file."""
+async def tiktok_verification_old():
+    """TikTok domain verification file (legacy — sandbox)."""
     return "tiktok-developers-site-verification=VCdYT0dv6jrqTL4pncMRP6dXaRB54Aka"
+
+
+@app.get("/tiktokaCYk4BWSaFsTrBg1sjS4kQ1JZjaIpTRg.txt", response_class=PlainTextResponse)
+async def tiktok_verification_prod():
+    """TikTok domain verification file (production)."""
+    return "tiktok-developers-site-verification=aCYk4BWSaFsTrBg1sjS4kQ1JZjaIpTRg"
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)

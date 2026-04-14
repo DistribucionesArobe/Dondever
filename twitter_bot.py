@@ -304,10 +304,26 @@ def post_tweet(text: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
-async def post_game_tweets(minutes_before: int = 30):
+# Dedup: game IDs already tweeted (resets cada dia con la fecha)
+_posted_games: dict[str, set] = {}  # {"2026-04-14": {"game_id_1", ...}}
+
+def _already_posted(game_id: str) -> bool:
+    today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return game_id in _posted_games.get(today_key, set())
+
+def _mark_posted(game_id: str) -> None:
+    today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # Reset otros dias (libera memoria)
+    for k in list(_posted_games.keys()):
+        if k != today_key:
+            del _posted_games[k]
+    _posted_games.setdefault(today_key, set()).add(game_id)
+
+
+async def post_game_tweets(minutes_before: int = 60):
     """
     Check for games starting soon and post tweets for them.
-    Call this periodically (e.g., every 10 minutes via scheduler).
+    Uses dedup para no tuitear el mismo juego 2 veces el mismo dia.
     """
     games = await get_todays_games()
     now = datetime.now(timezone.utc)
@@ -315,6 +331,10 @@ async def post_game_tweets(minutes_before: int = 30):
     posted = []
     for game in games:
         if game["status"]["state"] != "pre":
+            continue
+
+        gid = str(game.get("id", "")) or game.get("name", "")
+        if _already_posted(gid):
             continue
 
         try:
@@ -330,12 +350,68 @@ async def post_game_tweets(minutes_before: int = 30):
             tweet_text = compose_game_tweet(game)
             result = post_tweet(tweet_text)
             if result["success"]:
+                _mark_posted(gid)
                 posted.append({
                     "game": game["name"],
                     "tweet_id": result["tweet_id"],
                 })
 
     return posted
+
+
+async def post_next_top_game():
+    """
+    Postea el proximo juego 'top' (liga popular) aunque sea en 2-4h.
+    1 vez por dia. Si no hay top game, no postea.
+    """
+    today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    sentinel = f"__next_top__{today_key}"
+    if sentinel in _posted_games.get(today_key, set()):
+        return None  # ya se posteo hoy
+
+    games = await get_todays_games()
+    now = datetime.now(timezone.utc)
+
+    priority_leagues = [
+        "liga-mx", "champions", "nfl", "nba", "premier-league",
+        "la-liga", "mlb", "concacaf",
+    ]
+
+    def top_score(g):
+        league = (g.get("league", "") or "").lower()
+        for i, p in enumerate(priority_leagues):
+            if p in league:
+                return i
+        return 99
+
+    upcoming = []
+    for g in games:
+        if g["status"]["state"] != "pre":
+            continue
+        gid = str(g.get("id", "")) or g.get("name", "")
+        if _already_posted(gid):
+            continue
+        try:
+            gt = datetime.fromisoformat(g["date"].replace("Z", "+00:00"))
+            diff_min = (gt - now).total_seconds() / 60
+            if 60 < diff_min <= 240:  # entre 1h y 4h
+                upcoming.append((top_score(g), diff_min, g))
+        except Exception:
+            continue
+
+    if not upcoming:
+        return None
+
+    upcoming.sort(key=lambda x: (x[0], x[1]))  # mejor liga + mas pronto
+    _, _, best = upcoming[0]
+    tweet_text = compose_game_tweet(best)
+    result = post_tweet(tweet_text)
+    if result["success"]:
+        gid = str(best.get("id", "")) or best.get("name", "")
+        _mark_posted(gid)
+        _mark_posted(sentinel)  # bloquea otro "next top" hoy
+        return {"game": best["name"], "tweet_id": result["tweet_id"]}
+    return None
 
 
 async def post_pick_del_dia():
@@ -583,14 +659,23 @@ def setup_twitter_scheduler(scheduler):
         logger.warning("Twitter credentials incomplete — scheduler NOT started")
         return
 
-    # 1) Check for upcoming games every 20 min (conservador post-suspension)
+    # 1) Check for upcoming games every 15 min — ventana 60 min con dedup
     scheduler.add_job(
         post_game_tweets,
-        IntervalTrigger(minutes=20),
+        IntervalTrigger(minutes=15),
         id="twitter_game_posts",
         name="Post tweets for upcoming games",
         replace_existing=True,
-        kwargs={"minutes_before": 20},
+        kwargs={"minutes_before": 60},
+    )
+
+    # 1b) Post next top game (1-4h away) — 1 vez al dia a las 12:00 MX (18:00 UTC)
+    scheduler.add_job(
+        post_next_top_game,
+        CronTrigger(hour=18, minute=0),
+        id="twitter_next_top_game",
+        name="Post next top game (1-4h ahead)",
+        replace_existing=True,
     )
 
     # 2) Daily summary at 8 AM MX time (14:00 UTC)
