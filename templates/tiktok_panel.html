@@ -145,20 +145,35 @@
         btn.innerHTML = '<span class="spinner"></span> Publicando...';
         btn.disabled = true;
         result.className = 'publish-result';
-        result.style.display = 'none';
+        result.style.display = 'block';
+        result.style.background = '#1a1a2a';
+        result.style.border = '1px solid #4466ff';
+        result.textContent = 'Subiendo video a TikTok (esto puede tardar 10-30 seg)...';
 
         try {
             const resp = await fetch('/tiktok/publicar', { method: 'POST' });
-            const data = await resp.json();
-            if (data.error) {
+            const text = await resp.text();
+            let data;
+            try { data = JSON.parse(text); }
+            catch { data = { error: `HTTP ${resp.status}: ${text.slice(0, 500)}` }; }
+
+            if (!resp.ok || data.error || data.status === 'error') {
                 result.className = 'publish-result error';
-                result.textContent = 'Error: ' + data.error;
+                result.style.display = 'block';
+                const errMsg = data.error || data.message || `HTTP ${resp.status}`;
+                const extra = data.type ? ` (${data.type})` : '';
+                result.textContent = 'Error: ' + errMsg + extra;
             } else {
                 result.className = 'publish-result success';
-                result.textContent = data.message || 'Video enviado a TikTok exitosamente!';
+                result.style.display = 'block';
+                let msg = data.message || 'Video enviado a TikTok exitosamente!';
+                if (data.publish_id) msg += ' | publish_id: ' + data.publish_id;
+                msg += ' — Abre la app de TikTok con @dondeverapp, el video llega como borrador en tu inbox.';
+                result.textContent = msg;
             }
         } catch (e) {
             result.className = 'publish-result error';
+            result.style.display = 'block';
             result.textContent = 'Error de conexion: ' + e.message;
         }
         btn.innerHTML = 'Publicar en TikTok';
