@@ -232,28 +232,41 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
         )
 
     try:
-        # Today's overview (limit to games with broadcasts)
+        # Today's overview — short version to avoid WhatsApp rejecting long messages
         if body_clean in ("hoy", "juegos", "games", "today", "que hay hoy", "partidos"):
             games = await get_todays_games()
             if not games:
                 return "No encontre juegos programados para hoy. Intenta manana!"
 
-            # Group by sport, show first 15 max
+            # Prioritize upcoming games with broadcasts first, then live, then finals
+            def _priority(g):
+                state = g.get("status", {}).get("state", "")
+                has_broadcast = bool(g.get("broadcasts"))
+                # Lower is better (sorts first)
+                if state == "pre" and has_broadcast:
+                    return 0
+                if state == "in":
+                    return 1
+                if state == "pre":
+                    return 2
+                return 3  # post/final
+
+            sorted_games = sorted(games, key=_priority)
+
+            # Max 6 games to stay under ~900 bytes (WhatsApp business API is finicky with long messages)
+            MAX_GAMES = 6
+            top = sorted_games[:MAX_GAMES]
+
             lines = ["*Juegos de hoy:*\n"]
-            shown = 0
-            for game in games[:15]:
+            for game in top:
                 lines.append(format_game_for_whatsapp(game))
-                lines.append("")  # blank line separator
-                shown += 1
+                lines.append("")
 
-            remaining = len(games) - shown
+            remaining = len(games) - len(top)
             if remaining > 0:
-                lines.append(f"...y {remaining} juegos mas.")
-            lines.append(f"\nVe todos en {APP_URL}")
-
-            # Add affiliate
-            aff = get_random_affiliate(betting_only=True)
-            lines.append(f"\n{aff['cta']}: {aff['url']}")
+                lines.append(f"_...y {remaining} mas. Ve todos en {APP_URL}_")
+            else:
+                lines.append(f"Ve mas en {APP_URL}")
 
             return "\n".join(lines)
 
