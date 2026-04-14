@@ -4,6 +4,7 @@ Where to watch sports in Mexico & USA
 """
 
 import logging
+import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -244,9 +245,23 @@ async def whatsapp_webhook(
     From: str = Form(""),
 ):
     """Twilio WhatsApp webhook — receives messages, responds with game info."""
-    logger.info(f"WhatsApp from {From}: {Body}")
+    logger.info(f"WhatsApp from {From}: {Body!r}")
 
-    response_text = await handle_whatsapp_message(Body, From)
+    try:
+        response_text = await handle_whatsapp_message(Body, From)
+        if not response_text:
+            logger.warning(f"WhatsApp handler returned empty response for body={Body!r}")
+            response_text = (
+                "Hmm, no entendi. Escribe *ayuda* para ver comandos, "
+                "*hoy* para juegos, o *picks* para el pick del dia."
+            )
+    except Exception as e:
+        logger.exception(f"WhatsApp handler crashed on body={Body!r}: {e}")
+        response_text = (
+            "Tuvimos un problema procesando tu mensaje. Intenta de nuevo o escribe *ayuda*."
+        )
+
+    logger.info(f"WhatsApp reply to {From}: {response_text[:100]}...")
 
     twiml = MessagingResponse()
     twiml.message(response_text)
@@ -257,6 +272,87 @@ async def whatsapp_webhook(
 async def whatsapp_verify():
     """Health check for Twilio webhook verification."""
     return {"status": "ok", "service": "dondever-whatsapp"}
+
+
+@app.get("/whatsapp/debug")
+async def whatsapp_debug():
+    """Diagnostico del webhook de WhatsApp."""
+    import os as _os
+    from subscribers import get_all_subscribers
+    sid = _os.getenv("TWILIO_ACCOUNT_SID", "")
+    token = _os.getenv("TWILIO_AUTH_TOKEN", "")
+    wa_num = _os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+15715463202")
+    info = {
+        "twilio_sid_set": bool(sid),
+        "twilio_sid_prefix": sid[:6] + "..." if sid else None,
+        "twilio_token_set": bool(token),
+        "whatsapp_number": wa_num,
+        "webhook_url_expected": "https://dondever.app/webhook/whatsapp (POST)",
+        "total_subscribers": 0,
+    }
+    try:
+        subs = get_all_subscribers()
+        info["total_subscribers"] = len(subs) if subs else 0
+    except Exception as e:
+        info["subscribers_error"] = str(e)
+    return info
+
+
+@app.post("/whatsapp/test-send")
+async def whatsapp_test_send(to: str):
+    """Enviar un mensaje de prueba a un numero via Twilio. ej: /whatsapp/test-send?to=+521XXXXXXXXXX"""
+    import os as _os
+    from twilio.rest import Client as TwilioClient
+    sid = _os.getenv("TWILIO_ACCOUNT_SID", "")
+    token = _os.getenv("TWILIO_AUTH_TOKEN", "")
+    wa_num = _os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+15715463202")
+    if not sid or not token:
+        return {"ok": False, "error": "TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN no configurados"}
+    if not to.startswith("whatsapp:"):
+        to = f"whatsapp:{to}"
+    try:
+        client = TwilioClient(sid, token)
+        msg = client.messages.create(
+            body="Test de DondeVer.app — si recibes este mensaje, el webhook de salida funciona. Responde *suscribir* para probar el flujo de entrada.",
+            from_=wa_num,
+            to=to,
+        )
+        return {"ok": True, "message_sid": msg.sid, "status": msg.status, "to": to, "from": wa_num}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "type": type(e).__name__}
+
+
+@app.post("/whatsapp/broadcast-now")
+async def whatsapp_broadcast_now(token: str = ""):
+    """Disparar el broadcast diario ahora mismo a todos los suscriptores."""
+    admin_token = os.getenv("ADMIN_TOKEN", "")
+    if not admin_token or token != admin_token:
+        return {"ok": False, "error": "token invalido"}
+    try:
+        from whatsapp_broadcast import send_daily_broadcast
+        result = await send_daily_broadcast()
+        return {"ok": True, "result": result}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "type": type(e).__name__}
+
+
+@app.post("/whatsapp/broadcast-to")
+async def whatsapp_broadcast_to(to: str):
+    """Mandar el broadcast diario a un solo numero. ej: /whatsapp/broadcast-to?to=+521XXXXXXXXXX"""
+    try:
+        from whatsapp_broadcast import compose_daily_broadcast, get_twilio_client
+        from config import TWILIO_WA_NUMBER
+        msg = await compose_daily_broadcast()
+        if not msg:
+            return {"ok": False, "error": "No hay juegos hoy"}
+        client = get_twilio_client()
+        if not client:
+            return {"ok": False, "error": "Twilio no configurado"}
+        to_num = to if to.startswith("whatsapp:") else f"whatsapp:{to}"
+        m = client.messages.create(body=msg, from_=TWILIO_WA_NUMBER, to=to_num)
+        return {"ok": True, "sid": m.sid, "status": m.status, "to": to_num, "preview": msg[:200]}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "type": type(e).__name__}
 
 
 # ── Twitter Bot Scheduler ────────────────────────────────

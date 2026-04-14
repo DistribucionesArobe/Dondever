@@ -126,14 +126,26 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     if body_clean in ("suscribir", "suscribirme", "subscribe", "alta", "diario"):
         is_new = subscribe(from_number)
         if is_new:
+            # Immediately send today's picks so user doesn't wait until tomorrow 9am
+            try:
+                from whatsapp_broadcast import compose_daily_broadcast, get_twilio_client
+                from config import TWILIO_WA_NUMBER
+                picks_msg = await compose_daily_broadcast()
+                client = get_twilio_client()
+                if picks_msg and client:
+                    to_number = from_number if from_number.startswith("whatsapp:") else f"whatsapp:{from_number}"
+                    client.messages.create(body=picks_msg, from_=TWILIO_WA_NUMBER, to=to_number)
+                    logger.info(f"Welcome picks sent to {to_number}")
+            except Exception as e:
+                logger.exception(f"Failed to send welcome picks: {e}")
             return (
                 "Te suscribiste a *picks diarios* de DondeVer!\n\n"
                 "Cada manana recibiras:\n"
                 "- Pick del dia\n"
                 "- Los mejores juegos\n"
                 "- Donde verlos\n\n"
-                "Escribe *salir* para cancelar cuando quieras.\n\n"
-                f"Mientras tanto, escribe *hoy* para ver los juegos de hoy."
+                "Te acabo de mandar los picks de *hoy* de regalo.\n\n"
+                "Escribe *salir* para cancelar cuando quieras."
             )
         return (
             "Ya estas suscrito a picks diarios!\n\n"
