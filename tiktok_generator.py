@@ -307,12 +307,11 @@ def slides_to_video(slides: list[Image.Image], output_path: str) -> str:
         "ffmpeg", "-y", "-loglevel", "error",
         "-f", "concat", "-safe", "0",
         "-i", str(concat_file),
-        "-vsync", "vfr",
+        "-fps_mode", "vfr",
         "-c:v", "libx264",
         "-preset", "veryfast",
         "-crf", "28",
         "-pix_fmt", "yuv420p",
-        "-r", "30",
         output_path,
     ]
 
