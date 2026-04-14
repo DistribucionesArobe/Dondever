@@ -19,11 +19,18 @@ logger = logging.getLogger("dondever.broadcast")
 
 
 def get_twilio_client() -> TwilioClient | None:
-    """Create Twilio client. Returns None if credentials missing."""
-    if not TWILIO_SID or not TWILIO_TOKEN:
-        logger.error("Twilio credentials not configured")
+    """Create Twilio client. Returns None if credentials missing.
+    Read env at call time to avoid stale config if set after import."""
+    import os as _os
+    sid = TWILIO_SID or _os.getenv("TWILIO_ACCOUNT_SID", "") or _os.getenv("TWILIO_SID", "")
+    token = TWILIO_TOKEN or _os.getenv("TWILIO_AUTH_TOKEN", "") or _os.getenv("TWILIO_TOKEN", "")
+    if not sid or not token:
+        logger.error(
+            f"Twilio credentials not configured: sid_set={bool(sid)} token_set={bool(token)} "
+            f"env_keys={[k for k in _os.environ if 'TWILIO' in k.upper()]}"
+        )
         return None
-    return TwilioClient(TWILIO_SID, TWILIO_TOKEN)
+    return TwilioClient(sid, token)
 
 
 def format_broadcast_channels(broadcasts: list[dict]) -> str:
