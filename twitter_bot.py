@@ -250,14 +250,54 @@ def compose_pick_tweet(game: dict) -> str:
 
 # ── Post Functions ───────────────────────────────────────
 
+# Rate limiter: max tweets per hour and per day (X reglas anti-spam)
+from collections import deque
+import time as _time
+
+_tweet_timestamps: deque = deque()  # stores unix timestamps of recent tweets
+MAX_TWEETS_PER_HOUR = 8  # conservador, muy por debajo de limites de X
+MAX_TWEETS_PER_DAY = 40  # conservador para cuenta automatizada
+MIN_SECONDS_BETWEEN_TWEETS = 180  # 3 min minimo entre tweets (evita burst posting)
+
+
+def _can_post_now() -> tuple[bool, str]:
+    """Check rate limits. Returns (allowed, reason_if_denied)."""
+    now = _time.time()
+    # Purge old timestamps (keep last 24h)
+    while _tweet_timestamps and _tweet_timestamps[0] < now - 86400:
+        _tweet_timestamps.popleft()
+
+    # Daily limit
+    if len(_tweet_timestamps) >= MAX_TWEETS_PER_DAY:
+        return False, f"rate_limit: {MAX_TWEETS_PER_DAY}/dia alcanzado"
+
+    # Hourly limit
+    recent_hour = sum(1 for t in _tweet_timestamps if t > now - 3600)
+    if recent_hour >= MAX_TWEETS_PER_HOUR:
+        return False, f"rate_limit: {MAX_TWEETS_PER_HOUR}/hora alcanzado"
+
+    # Min gap between tweets
+    if _tweet_timestamps and (now - _tweet_timestamps[-1]) < MIN_SECONDS_BETWEEN_TWEETS:
+        gap = int(now - _tweet_timestamps[-1])
+        return False, f"rate_limit: minimo {MIN_SECONDS_BETWEEN_TWEETS}s entre tweets (actual {gap}s)"
+
+    return True, ""
+
+
 def post_tweet(text: str) -> dict:
-    """Post a tweet via Twitter API v2."""
+    """Post a tweet via Twitter API v2 — with rate limiting."""
+    allowed, reason = _can_post_now()
+    if not allowed:
+        logger.warning(f"Tweet skipped: {reason}")
+        return {"success": False, "error": reason, "rate_limited": True}
+
     try:
         client = get_twitter_client()
         if client is None:
             return {"success": False, "error": "Twitter credentials not configured"}
         response = client.create_tweet(text=text)
-        logger.info(f"Tweet posted: {response.data['id']}")
+        _tweet_timestamps.append(_time.time())
+        logger.info(f"Tweet posted: {response.data['id']} ({len(_tweet_timestamps)}/{MAX_TWEETS_PER_DAY} hoy)")
         return {"success": True, "tweet_id": response.data["id"]}
     except Exception as e:
         logger.error(f"Tweet failed: {e}")
@@ -543,14 +583,14 @@ def setup_twitter_scheduler(scheduler):
         logger.warning("Twitter credentials incomplete — scheduler NOT started")
         return
 
-    # 1) Check for upcoming games every 10 minutes
+    # 1) Check for upcoming games every 20 min (conservador post-suspension)
     scheduler.add_job(
         post_game_tweets,
-        IntervalTrigger(minutes=10),
+        IntervalTrigger(minutes=20),
         id="twitter_game_posts",
         name="Post tweets for upcoming games",
         replace_existing=True,
-        kwargs={"minutes_before": 15},
+        kwargs={"minutes_before": 20},
     )
 
     # 2) Daily summary at 8 AM MX time (14:00 UTC)
@@ -577,10 +617,10 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    # 4) Live game monitor — every 2 minutes, check for goals/events
+    # 4) Live game monitor — every 5 min (suficiente para goles sin spammear)
     scheduler.add_job(
         monitor_live_games,
-        IntervalTrigger(minutes=2),
+        IntervalTrigger(minutes=5),
         id="twitter_live_monitor",
         name="Live game monitor (goals, starts, finals)",
         replace_existing=True,
