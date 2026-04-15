@@ -267,6 +267,24 @@ async def game_detail(request: Request, event_id: str):
     )
 
 
+# Branded affiliate redirect — "dondever.app/go/betsson" en vez de links largos
+@app.get("/go/{key}")
+async def affiliate_redirect(key: str, s: str = "web"):
+    """
+    Redirige a la URL del afiliado con tracking de source.
+    Uso: /go/betsson?s=twitter  →  link afiliado real + sub1=twitter
+    Beneficios: links cortos y con marca en tweets/WhatsApp + tracking de clicks.
+    """
+    from fastapi.responses import RedirectResponse
+    from config import get_affiliate_url
+    target = get_affiliate_url(key, source=s)
+    if target == "#":
+        return RedirectResponse(url="/", status_code=302)
+    # 302 (no permanente) para que podamos cambiar afiliado en el futuro sin que
+    # los navegadores cacheen la redirección.
+    return RedirectResponse(url=target, status_code=302)
+
+
 # Legacy URLs que Google sigue rastreando de versiones viejas del sitio
 # Redirect 301 permanente a la home para recuperar SEO
 @app.get("/game/{old_id}")

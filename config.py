@@ -110,6 +110,16 @@ def get_affiliate_url(key: str, source: str = "web") -> str:
     return f"{url}{separator}sub1={source}"
 
 
+def get_short_affiliate_url(key: str, source: str = "web") -> str:
+    """
+    Short branded link like https://dondever.app/go/betsson?s=twitter.
+    Used in tweets/WhatsApp for cleaner display — server redirects to real URL.
+    """
+    if key not in AFFILIATES:
+        return APP_URL
+    return f"{APP_URL}/go/{key}?s={source}"
+
+
 # ── Team Aliases (common names → ESPN names) ───────────
 # Allows WhatsApp bot and search to find teams by nicknames
 TEAM_ALIASES = {

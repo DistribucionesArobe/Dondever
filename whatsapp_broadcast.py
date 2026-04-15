@@ -9,7 +9,7 @@ from twilio.rest import Client as TwilioClient
 from config import (
     TWILIO_SID, TWILIO_TOKEN, TWILIO_WA_NUMBER,
     AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS,
-    get_affiliate_url,
+    get_affiliate_url, get_short_affiliate_url,
 )
 from sports_api import get_todays_games
 from subscribers import get_active_subscribers, get_subscriber_count
@@ -48,7 +48,7 @@ def get_betting_link() -> dict:
         return {"name": "", "cta": "", "url": ""}
     key = random.choice(betting_keys)
     aff = AFFILIATES[key].copy()
-    aff["url"] = get_affiliate_url(key, source="whatsapp")
+    aff["url"] = get_short_affiliate_url(key, source="whatsapp")
     return aff
 
 

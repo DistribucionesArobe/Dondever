@@ -8,7 +8,7 @@ import logging
 import random
 from datetime import datetime, timezone, timedelta
 
-from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX, get_affiliate_url, TEAM_ALIASES, HOME_LEFT_SPORTS
+from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX, get_affiliate_url, get_short_affiliate_url, TEAM_ALIASES, HOME_LEFT_SPORTS
 from sports_api import search_games, get_todays_games
 from subscribers import subscribe, unsubscribe, update_last_active
 from whatsapp_alerts import add_favorite_team, remove_favorite_team, get_favorites_list
@@ -86,7 +86,7 @@ def get_random_affiliate(betting_only: bool = False) -> dict:
     else:
         key = random.choice(list(AFFILIATES.keys()))
     aff = AFFILIATES[key].copy()
-    aff["url"] = get_affiliate_url(key, source="whatsapp")
+    aff["url"] = get_short_affiliate_url(key, source="whatsapp")
     return aff
 
 

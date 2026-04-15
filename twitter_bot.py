@@ -10,7 +10,7 @@ import logging
 import random
 import os
 from datetime import datetime, timezone, timedelta
-from config import AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS, get_affiliate_url
+from config import AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS, get_affiliate_url, get_short_affiliate_url
 from sports_api import get_todays_games
 
 logger = logging.getLogger("dondever.twitter")
@@ -79,14 +79,17 @@ def format_game_time_mx(date_str: str) -> str:
 
 
 def get_betting_affiliate_text() -> str:
-    """Get a random BETTING affiliate CTA (no VPN) with Twitter tracking."""
+    """
+    Random BETTING affiliate CTA con link corto branded.
+    Ej: 'Apostar en Betsson 👉 dondever.app/go/betsson?s=twitter'
+    """
     betting_keys = [k for k in AFFILIATES if k in ("caliente", "betsson")]
     if not betting_keys:
         return ""
     key = random.choice(betting_keys)
     aff = AFFILIATES[key]
-    tracked_url = get_affiliate_url(key, source="twitter")
-    return f"{aff['cta']}: {tracked_url}"
+    short_url = get_short_affiliate_url(key, source="twitter")
+    return f"{aff['cta']} 👉 {short_url}"
 
 
 def get_team_order(game: dict) -> tuple[str, str]:

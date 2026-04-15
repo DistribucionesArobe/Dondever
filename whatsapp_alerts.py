@@ -13,7 +13,7 @@ from twilio.rest import Client as TwilioClient
 from config import (
     TWILIO_SID, TWILIO_TOKEN, TWILIO_WA_NUMBER,
     AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS, TEAM_ALIASES,
-    get_affiliate_url,
+    get_affiliate_url, get_short_affiliate_url,
 )
 from sports_api import get_todays_games
 from subscribers import _load, _save, get_active_subscribers
@@ -149,7 +149,7 @@ def _get_betting_text() -> str:
         return ""
     key = random.choice(betting_keys)
     aff = AFFILIATES[key]
-    url = get_affiliate_url(key, source="whatsapp")
+    url = get_short_affiliate_url(key, source="whatsapp")
     return f"\n{aff['cta']}: {url}"
 
 
