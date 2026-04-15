@@ -123,7 +123,13 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
         )
 
     # Subscribe
-    if body_clean in ("suscribir", "suscribirme", "subscribe", "alta", "diario"):
+    if body_clean in (
+        "suscribir", "suscribirme", "suscribirse",
+        "suscripcion", "suscripción", "inscribir", "inscribirme",
+        "subscribe", "subscribirse", "alta", "diario", "picks", "pick",
+        "quiero picks", "quiero suscribirme", "quiero recibir picks",
+        "picks diarios", "recibir picks",
+    ):
         is_new = subscribe(from_number)
         if is_new:
             # Immediately send today's picks so user doesn't wait until tomorrow 9am
