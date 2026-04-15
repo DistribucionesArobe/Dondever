@@ -222,6 +222,47 @@ def compose_game_tweet(game: dict) -> str:
     return tweet[:280]
 
 
+PROMO_TWEETS = [
+    "📺 Te decimos dónde ver cualquier partido en México y USA.\nPicks gratis todos los días 👉 wa.me/15715463202",
+    "¿Cansado de buscar dónde pasan el partido?\nNosotros te lo decimos — México y USA.\nPicks gratis diarios 👇\nwa.me/15715463202",
+    "No te vuelvas a perder un juego.\nCobertura MX + USA, todos los deportes.\nPicks gratis cada mañana 📲\nwa.me/15715463202",
+    "✅ Liga MX\n✅ NFL, NBA, MLB\n✅ Champions, Premier, La Liga\nTe decimos dónde verlos + picks gratis diarios:\nwa.me/15715463202",
+    "Si eres de los que abre 4 apps para encontrar dónde pasan el juego… te tenemos.\nMX + USA, sin vueltas.\nPicks gratis 👉 wa.me/15715463202",
+    "Miles reciben picks gratis por WhatsApp cada día.\nAdemás te decimos dónde ver cualquier partido en MX y USA.\nÚnete 👇\nwa.me/15715463202",
+    "Un mensaje. Todos los partidos. Picks gratis.\n🇲🇽🇺🇸 wa.me/15715463202",
+    "GRATIS por WhatsApp:\n🎯 Picks diarios\n📺 Dónde ver cada juego (MX + USA)\n⏰ Alertas 1h antes del partido\nwa.me/15715463202",
+    "oye 👋 si quieres saber dónde ver el partido de hoy y de paso un pick gratis, mándanos WhatsApp 👇\nwa.me/15715463202",
+    "Hoy hay partidazo ¿ya sabes dónde verlo?\nNosotros sí — MX y USA.\nMándanos WhatsApp y te llegan los picks gratis cada mañana:\nwa.me/15715463202",
+]
+
+
+# Track which promos ya salieron hoy para no repetir
+_posted_promo_idx: dict[str, list[int]] = {}
+
+
+async def post_promo_tweet():
+    """Postea una promo aleatoria del pool, evitando repetir las del día."""
+    today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    used = set(_posted_promo_idx.get(today_key, []))
+    available = [i for i in range(len(PROMO_TWEETS)) if i not in used]
+    if not available:
+        # Reset si ya se usaron todas
+        available = list(range(len(PROMO_TWEETS)))
+        used = set()
+
+    idx = random.choice(available)
+    text = PROMO_TWEETS[idx]
+    result = post_tweet(text)
+    if result.get("success"):
+        _posted_promo_idx.setdefault(today_key, []).append(idx)
+        # Limpia días viejos
+        for k in list(_posted_promo_idx.keys()):
+            if k != today_key:
+                del _posted_promo_idx[k]
+        logger.info(f"Promo tweet #{idx} posted")
+    return result
+
+
 DAILY_OPENERS = [
     "☕ Agenda deportiva del día",
     "📅 Lo que se juega hoy",
@@ -830,6 +871,22 @@ def setup_twitter_scheduler(scheduler):
         CronTrigger(hour=15, minute=0),
         id="twitter_daily_poll",
         name="Encuesta diaria (quién gana)",
+        replace_existing=True,
+    )
+
+    # 3c) Promos del WhatsApp — 2 veces al día, 11:00 AM y 6:00 PM MX
+    scheduler.add_job(
+        post_promo_tweet,
+        CronTrigger(hour=17, minute=0),  # 11 AM MX = 17 UTC
+        id="twitter_promo_am",
+        name="Promo WhatsApp (mañana)",
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        post_promo_tweet,
+        CronTrigger(hour=0, minute=0),  # 6 PM MX = 00 UTC del dia siguiente
+        id="twitter_promo_pm",
+        name="Promo WhatsApp (tarde)",
         replace_existing=True,
     )
 
