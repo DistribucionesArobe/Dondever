@@ -43,13 +43,18 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class GAInjectMiddleware(BaseHTTPMiddleware):
-    """Inject Google Analytics 4 snippet into every HTML response.
-    Activated only when env var GA_MEASUREMENT_ID is set (format: G-XXXXXXXXXX)."""
+    """Inject Google Analytics 4 and Microsoft Clarity snippets into every HTML response.
+    Activated per-tool when env vars are set:
+      - GA_MEASUREMENT_ID (format: G-XXXXXXXXXX) for GA4
+      - CLARITY_PROJECT_ID (format: lowercase alphanumeric) for Microsoft Clarity
+    """
 
     async def dispatch(self, request, call_next):
         response = await call_next(request)
         ga_id = os.getenv("GA_MEASUREMENT_ID", "").strip()
-        if not ga_id:
+        clarity_id = os.getenv("CLARITY_PROJECT_ID", "").strip()
+        gtm_id = os.getenv("GTM_CONTAINER_ID", "").strip()
+        if not ga_id and not clarity_id and not gtm_id:
             return response
 
         ctype = response.headers.get("content-type", "")
@@ -61,18 +66,57 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
             async for chunk in response.body_iterator:
                 body += chunk
 
-            snippet = (
-                f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
-                f'<script>\n'
-                f'  window.dataLayer = window.dataLayer || [];\n'
-                f'  function gtag(){{dataLayer.push(arguments);}}\n'
-                f'  gtag("js", new Date());\n'
-                f'  gtag("config", "{ga_id}", {{ anonymize_ip: true }});\n'
-                f'</script>\n'
-            ).encode("utf-8")
+            snippet = ""
+            if gtm_id:
+                snippet += (
+                    f'<!-- Google Tag Manager -->\n'
+                    f'<script>(function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{"gtm.start":\n'
+                    f'new Date().getTime(),event:"gtm.js"}});var f=d.getElementsByTagName(s)[0],\n'
+                    f'j=d.createElement(s),dl=l!="dataLayer"?"&l="+l:"";j.async=true;j.src=\n'
+                    f'"https://www.googletagmanager.com/gtm.js?id="+i+dl;f.parentNode.insertBefore(j,f);\n'
+                    f'}})(window,document,"script","dataLayer","{gtm_id}");</script>\n'
+                    f'<!-- End Google Tag Manager -->\n'
+                )
+            if ga_id:
+                snippet += (
+                    f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
+                    f'<script>\n'
+                    f'  window.dataLayer = window.dataLayer || [];\n'
+                    f'  function gtag(){{dataLayer.push(arguments);}}\n'
+                    f'  gtag("js", new Date());\n'
+                    f'  gtag("config", "{ga_id}", {{ anonymize_ip: true }});\n'
+                    f'</script>\n'
+                )
+            if clarity_id:
+                snippet += (
+                    f'<script>\n'
+                    f'  (function(c,l,a,r,i,t,y){{\n'
+                    f'    c[a]=c[a]||function(){{(c[a].q=c[a].q||[]).push(arguments)}};\n'
+                    f'    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;\n'
+                    f'    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);\n'
+                    f'  }})(window, document, "clarity", "script", "{clarity_id}");\n'
+                    f'</script>\n'
+                )
+            snippet = snippet.encode("utf-8")
 
             if b"</head>" in body:
                 body = body.replace(b"</head>", snippet + b"</head>", 1)
+
+            # GTM also needs a <noscript> iframe right after <body>
+            if gtm_id:
+                gtm_noscript = (
+                    f'\n<!-- Google Tag Manager (noscript) -->\n'
+                    f'<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={gtm_id}"\n'
+                    f'height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>\n'
+                    f'<!-- End Google Tag Manager (noscript) -->\n'
+                ).encode("utf-8")
+                # Match both <body> and <body ...> variants
+                import re as _re
+                body = _re.sub(
+                    rb"(<body\b[^>]*>)",
+                    lambda m: m.group(1) + gtm_noscript,
+                    body, count=1, flags=_re.IGNORECASE,
+                )
 
             from starlette.responses import Response
             # Strip content-length so Starlette recalculates
@@ -753,7 +797,6 @@ async def casinos_page(request: Request):
     from config import get_affiliate_url
     return templates.TemplateResponse(request, "casinos.html", {
         "caliente_url": get_affiliate_url("caliente", source="casinos"),
-        "onexbet_url": get_affiliate_url("1xbet", source="casinos"),
         "betsson_url": get_affiliate_url("betsson", source="casinos"),
     })
 

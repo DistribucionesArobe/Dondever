@@ -17,8 +17,6 @@ services:
         sync: false
       - key: APP_URL
         value: https://dondever.app
-      - key: AFFILIATE_1XBET
-        sync: false
       - key: AFFILIATE_BETSSON
         sync: false
       - key: AFFILIATE_CJ

@@ -80,7 +80,7 @@ def format_game_time_mx(date_str: str) -> str:
 
 def get_betting_affiliate_text() -> str:
     """Get a random BETTING affiliate CTA (no VPN) with Twitter tracking."""
-    betting_keys = [k for k in AFFILIATES if k in ("caliente", "1xbet", "betsson")]
+    betting_keys = [k for k in AFFILIATES if k in ("caliente", "betsson")]
     if not betting_keys:
         return ""
     key = random.choice(betting_keys)
@@ -100,12 +100,60 @@ def get_team_order(game: dict) -> tuple[str, str]:
 HASHTAG_MAP = {
     "Liga MX": "#LigaMX", "MLS": "#MLS", "Premier League": "#PremierLeague",
     "La Liga": "#LaLiga", "Serie A": "#SerieA", "Bundesliga": "#Bundesliga",
-    "Champions League": "#ChampionsLeague", "Europa League": "#EuropaLeague",
+    "Champions League": "#UCL", "Europa League": "#UEL",
     "NFL": "#NFL", "NBA": "#NBA", "MLB": "#MLB", "NHL": "#NHL",
     "UFC": "#UFC", "Formula 1": "#F1", "Ligue 1": "#Ligue1",
     "Copa del Mundo": "#Mundial", "Liga Expansion MX": "#LigaExpansion",
-    "Concacaf Champions Cup": "#Concacaf",
+    "Concacaf Champions Cup": "#Concachampions",
 }
+
+
+# ── Engagement helpers ───────────────────────────────────
+# Rotate templates y decidir si incluir betting CTA (solo 1 de cada 3)
+
+PRE_GAME_OPENERS = [
+    "{emoji} Hoy se juega:\n{first} vs {second}",
+    "🔥 {first} vs {second}\nHoy a las {time} (MX)",
+    "{emoji} ¿Quién gana?\n{first} vs {second} — {time} MX",
+    "Ojo al partidazo 👀\n{first} vs {second} hoy {time} MX",
+    "📺 {first} vs {second}\n{time} MX — {channels}",
+    "{emoji} {league} HOY\n{first} vs {second} — {time} MX",
+]
+
+STARTED_OPENERS = [
+    "🟢 EN VIVO\n{first} vs {second}",
+    "¡Arrancó! {emoji}\n{first} vs {second}",
+    "Ya rueda el balón ⚽\n{first} vs {second}" ,
+    "🔴 EN VIVO ahora\n{first} vs {second}",
+    "Empezó {emoji}\n{first} vs {second}",
+]
+
+GOAL_OPENERS = [
+    "¡GOOOL! ⚽\n{first} {hs} - {as_} {second}",
+    "GOLAZO 🔥\n{first} {hs} - {as_} {second}",
+    "¡SE METIÓ! ⚽\n{first} {hs} - {as_} {second}",
+    "¡GOL! 🚨\n{first} {hs} - {as_} {second}",
+]
+
+FINAL_OPENERS = [
+    "🏁 FINAL\n{first} {hs} - {as_} {second}",
+    "Se acabó.\n{first} {hs} - {as_} {second}",
+    "⏱️ Final del partido\n{first} {hs} - {as_} {second}",
+]
+
+PICK_REASONS = [
+    "viene caliente",
+    "juega en casa",
+    "mejor forma reciente",
+    "histórico a favor",
+    "favorito en momios",
+    "defensa sólida últimos juegos",
+]
+
+
+def should_include_betting() -> bool:
+    """Solo 1 de cada 3 tweets incluye link de casa de apuestas (evita shadowban)."""
+    return random.random() < 0.33
 
 
 def get_pick_team(game: dict) -> str:
@@ -118,90 +166,105 @@ def get_pick_team(game: dict) -> str:
     return home if random.random() < 0.6 else away
 
 
+def get_pick_line(game: dict) -> str:
+    """Pick con razón corta para dar contexto creíble."""
+    pick = get_pick_team(game)
+    reason = random.choice(PICK_REASONS)
+    return f"🎯 Pick: {pick} ({reason})"
+
+
 def compose_game_tweet(game: dict) -> str:
     """
     Compose a tweet for a single game.
-    Max 280 chars. Every tweet includes DondeVer Pick + betting link.
+    Max 280 chars. Rotates templates, usa 1 hashtag, incluye pick con razón.
+    Betting CTA solo 1 de cada 3 (evita shadowban por spam).
     """
     emoji = game.get("emoji", "")
     league = game.get("league_name", "")
     first, second = get_team_order(game)
     time_str = format_game_time_mx(game["date"])
     channels = format_broadcast_short(game["broadcasts"])
-    hashtag = HASHTAG_MAP.get(league, "")
+    hashtag = HASHTAG_MAP.get(league, "#DondeVer")
 
-    # DondeVer Pick + betting CTA
-    pick_team = get_pick_team(game)
-    betting = get_betting_affiliate_text()
+    opener_tpl = random.choice(PRE_GAME_OPENERS)
+    headline = opener_tpl.format(
+        emoji=emoji, first=first, second=second,
+        time=time_str, channels=channels, league=league,
+    )
 
-    # Build tweet
-    headline = f"{emoji} {first} vs {second}"
-    time_line = f"Hoy {time_str} (MX)"
-    channel_line = f"Donde verlo: {channels}"
-    pick_line = f"DondeVer Pick: {pick_team}"
-    tags = f"{hashtag} #DondeVer" if hashtag else "#DondeVer"
+    pick_line = get_pick_line(game)
 
-    # Full version: headline + time + channels + pick + betting + tags
-    parts = [headline, time_line, channel_line, f"\n{pick_line}"]
-    if betting:
-        parts.append(betting)
-    parts.append(tags)
+    parts = [headline, "", pick_line]
 
+    # Agregar canales solo si el opener no los incluye
+    if "{channels}" not in opener_tpl and channels and channels != "Por confirmar":
+        parts.append(f"📺 {channels}")
+
+    # Betting CTA solo 1 de cada 3
+    if should_include_betting():
+        betting = get_betting_affiliate_text()
+        if betting:
+            parts.append(betting)
+
+    parts.append(f"\n{hashtag}")
     tweet = "\n".join(parts)
 
-    # Trim: drop betting if too long
+    # Trim si se pasa de 280
     if len(tweet) > 280:
-        parts = [headline, time_line, channel_line, f"\n{pick_line}", tags]
+        parts = [headline, "", pick_line, f"\n{hashtag}"]
         tweet = "\n".join(parts)
-
-    # Trim: drop channels if still too long
     if len(tweet) > 280:
-        parts = [headline, time_line, f"\n{pick_line}", tags]
-        tweet = "\n".join(parts)
-
-    if len(tweet) > 280:
-        tweet = f"{headline}\n{time_str} - {channels}\n{site_link}"
+        tweet = f"{headline}\n{pick_line}\n{hashtag}"
 
     return tweet[:280]
 
 
+DAILY_OPENERS = [
+    "☕ Agenda deportiva del día",
+    "📅 Lo que se juega hoy",
+    "🔥 Partidazos de hoy",
+    "🏟️ Hoy hay fútbol (y más)",
+    "👀 No te pierdas hoy:",
+]
+
+
 def compose_daily_summary_tweet(games: list[dict]) -> str:
-    """Compose a summary tweet with game count + DondeVer Pick of the day."""
+    """Resumen diario con opener variado + top 3 ligas + pregunta final."""
     count = len(games)
     now = datetime.now(TZ_MX)
     date_str = now.strftime("%d/%m")
 
-    sports = set()
-    for g in games:
-        sports.add(g.get("league_name", ""))
+    # Top ligas del día (las más frecuentes)
+    from collections import Counter
+    league_counts = Counter(g.get("league_name", "") for g in games if g.get("league_name"))
+    top_leagues = [lg for lg, _ in league_counts.most_common(3)]
+    leagues_text = " · ".join(top_leagues) if top_leagues else ""
 
-    leagues_text = ", ".join(list(sports)[:5])
-    if len(sports) > 5:
-        leagues_text += f" y {len(sports) - 5} mas"
+    opener = random.choice(DAILY_OPENERS)
 
-    # Pick the top game for DondeVer Pick
-    betting = get_betting_affiliate_text()
+    # Pick destacado
     pick_text = ""
     if games:
         top_game = games[0]
-        pick_team = get_pick_team(top_game)
         first, second = get_team_order(top_game)
-        pick_text = f"\nDondeVer Pick: {pick_team} ({first} vs {second})"
+        pick_text = f"\n🎯 Pick: {get_pick_team(top_game)} en {first} vs {second}"
+
+    # Pregunta para engagement
+    questions = [
+        "¿Qué partido vas a ver? 👇",
+        "¿A quién le vas hoy?",
+        "Dime en comentarios qué juego no te pierdes 👇",
+    ]
+    q = random.choice(questions)
 
     tweet = (
-        f"Hoy {date_str} hay {count} juegos en vivo\n\n"
-        f"{leagues_text}\n"
-        f"{pick_text}\n\n"
-        f"Ve donde verlos: {APP_URL}"
+        f"{opener} ({date_str})\n\n"
+        f"{count} juegos en vivo"
     )
-
-    if betting and len(tweet) + len(betting) + 2 <= 280:
-        tweet += f"\n\n{betting}"
-
-    # Add WhatsApp CTA if it fits (rotate features)
-    wa_cta_text = f"\n\n{get_wa_cta()}"
-    if len(tweet) + len(wa_cta_text) <= 280:
-        tweet += wa_cta_text
+    if leagues_text:
+        tweet += f"\n{leagues_text}"
+    tweet += pick_text
+    tweet += f"\n\n{q}\n\ndondever.app"
 
     return tweet[:280]
 
@@ -284,8 +347,8 @@ def _can_post_now() -> tuple[bool, str]:
     return True, ""
 
 
-def post_tweet(text: str) -> dict:
-    """Post a tweet via Twitter API v2 — with rate limiting."""
+def post_tweet(text: str, reply_to: str | None = None) -> dict:
+    """Post a tweet via Twitter API v2 — with rate limiting. Soporta replies."""
     allowed, reason = _can_post_now()
     if not allowed:
         logger.warning(f"Tweet skipped: {reason}")
@@ -295,13 +358,86 @@ def post_tweet(text: str) -> dict:
         client = get_twitter_client()
         if client is None:
             return {"success": False, "error": "Twitter credentials not configured"}
-        response = client.create_tweet(text=text)
+        kwargs = {"text": text}
+        if reply_to:
+            kwargs["in_reply_to_tweet_id"] = reply_to
+        response = client.create_tweet(**kwargs)
         _tweet_timestamps.append(_time.time())
         logger.info(f"Tweet posted: {response.data['id']} ({len(_tweet_timestamps)}/{MAX_TWEETS_PER_DAY} hoy)")
         return {"success": True, "tweet_id": response.data["id"]}
     except Exception as e:
         logger.error(f"Tweet failed: {e}")
         return {"success": False, "error": str(e)}
+
+
+def post_poll(text: str, options: list[str], duration_min: int = 720) -> dict:
+    """Post a poll (encuesta). 2-4 opciones, duración en minutos (default 12h)."""
+    allowed, reason = _can_post_now()
+    if not allowed:
+        return {"success": False, "error": reason, "rate_limited": True}
+    try:
+        client = get_twitter_client()
+        if client is None:
+            return {"success": False, "error": "Twitter credentials not configured"}
+        # Twitter exige 2-4 opciones, max 25 chars cada una
+        opts = [o[:25] for o in options[:4]]
+        if len(opts) < 2:
+            return {"success": False, "error": "poll needs >=2 options"}
+        response = client.create_tweet(
+            text=text[:280],
+            poll_options=opts,
+            poll_duration_minutes=duration_min,
+        )
+        _tweet_timestamps.append(_time.time())
+        logger.info(f"Poll posted: {response.data['id']}")
+        return {"success": True, "tweet_id": response.data["id"]}
+    except Exception as e:
+        logger.error(f"Poll failed: {e}")
+        return {"success": False, "error": str(e)}
+
+
+async def post_daily_poll():
+    """Encuesta diaria sobre el partido top del día. Alto engagement garantizado."""
+    today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    sentinel = f"__daily_poll__{today_key}"
+    if sentinel in _posted_games.get(today_key, set()):
+        return None
+
+    games = await get_todays_games()
+    priority = ["liga-mx", "champions", "premier-league", "la-liga", "nfl", "nba", "mlb"]
+    upcoming = [g for g in games if g["status"]["state"] == "pre"]
+
+    pick = None
+    for pl in priority:
+        pick = next((g for g in upcoming if g.get("league_slug") == pl), None)
+        if pick:
+            break
+    if not pick and upcoming:
+        pick = upcoming[0]
+    if not pick:
+        logger.info("No daily poll: sin juegos upcoming")
+        return None
+
+    first, second = get_team_order(pick)
+    emoji = pick.get("emoji", "")
+    league = pick.get("league_name", "")
+    time_str = format_game_time_mx(pick["date"])
+    hashtag = HASHTAG_MAP.get(league, "#DondeVer")
+
+    text = (
+        f"{emoji} ¿Quién gana hoy?\n"
+        f"{first} vs {second}\n"
+        f"{league} — {time_str} MX\n\n"
+        f"{hashtag}"
+    )
+
+    options = [first, second]
+    if pick.get("sport") == "soccer":
+        options.append("Empate")
+    result = post_poll(text, options, duration_min=720)
+    if result["success"]:
+        _mark_posted(sentinel)
+    return result
 
 
 # Dedup: game IDs already tweeted (resets cada dia con la fecha)
@@ -460,56 +596,39 @@ def compose_live_tweet(game: dict, event_type: str, detail: str = "") -> str:
     channels = format_broadcast_short(game["broadcasts"])
     betting = get_betting_affiliate_text()
 
+    hs, as_ = first_score, second_score
+
     if event_type == "goal":
-        exclamations = ["GOOOL!", "GOL!", "GOLAZO!", "SE METIO!"]
-        excl = random.choice(exclamations)
-        headline = f"{excl} {emoji}\n\n{first} {first_score} - {second_score} {second}"
+        headline = random.choice(GOAL_OPENERS).format(first=first, hs=hs, as_=as_, second=second)
     elif event_type == "score_change":
-        headline = f"ANOTACION! {emoji}\n\n{first} {first_score} - {second_score} {second}"
+        headline = f"🔔 {emoji} {first} {hs} - {as_} {second}"
     elif event_type == "started":
-        headline = f"ARRANCA! {emoji}\n\n{first} vs {second}\nEN VIVO ahora"
+        headline = random.choice(STARTED_OPENERS).format(emoji=emoji, first=first, second=second)
     elif event_type == "halftime":
-        headline = f"MEDIO TIEMPO {emoji}\n\n{first} {first_score} - {second_score} {second}"
+        headline = f"⏸️ Medio tiempo\n{first} {hs} - {as_} {second}"
     elif event_type == "final":
-        headline = f"FINAL! {emoji}\n\n{first} {first_score} - {second_score} {second}"
+        headline = random.choice(FINAL_OPENERS).format(first=first, hs=hs, as_=as_, second=second)
     else:
-        headline = f"{emoji} {first} {first_score} - {second_score} {second}"
+        headline = f"{emoji} {first} {hs} - {as_} {second}"
 
-    # DondeVer Pick for live tweets
-    pick_team = get_pick_team(game)
-    pick_line = f"DondeVer Pick: {pick_team}"
+    tag = hashtag if hashtag else "#DondeVer"
+    parts = [headline]
 
-    parts = [headline, f"{league}"]
+    # Solo incluir canales al arrancar el partido (no cada gol)
+    if event_type == "started" and channels and channels != "Por confirmar":
+        parts.append(f"📺 {channels}")
 
-    if event_type in ("started", "goal", "score_change"):
-        parts.append(f"Donde verlo: {channels}")
+    # Betting CTA solo 1 de cada 3 tweets en vivo
+    use_betting = should_include_betting() and event_type in ("started", "goal")
+    if use_betting and betting:
+        parts.append(f"\n{betting}")
 
-    parts.append(f"\n{pick_line}")
-    if betting:
-        parts.append(betting)
-
-    if hashtag:
-        parts.append(f"{hashtag} #DondeVer")
-    else:
-        parts.append("#DondeVer")
-
+    parts.append(f"\n{tag}")
     tweet = "\n".join(parts)
 
-    # Trim: drop betting if too long
+    # Trim si es muy largo
     if len(tweet) > 280:
-        parts = [headline, league, f"\n{pick_line}"]
-        if hashtag:
-            parts.append(f"{hashtag} #DondeVer")
-        else:
-            parts.append("#DondeVer")
-        tweet = "\n".join(parts)
-
-    # Trim: drop pick if still too long
-    if len(tweet) > 280:
-        parts = [headline, league]
-        if hashtag:
-            parts.append(f"{hashtag} #DondeVer")
-        tweet = "\n".join(parts)
+        tweet = f"{headline}\n{tag}"
 
     return tweet[:280]
 
@@ -702,6 +821,15 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
+    # 3b) Encuesta diaria a las 9 AM MX (15:00 UTC) — alto engagement
+    scheduler.add_job(
+        post_daily_poll,
+        CronTrigger(hour=15, minute=0),
+        id="twitter_daily_poll",
+        name="Encuesta diaria (quién gana)",
+        replace_existing=True,
+    )
+
     # 4) Live game monitor — every 5 min (suficiente para goles sin spammear)
     scheduler.add_job(
         monitor_live_games,
@@ -711,4 +839,4 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    logger.info("Twitter bot scheduler configured (4 jobs: games, summary, pick, live monitor)")
+    logger.info("Twitter bot scheduler configured (games, summary, pick, poll, live monitor)")
