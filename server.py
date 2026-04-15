@@ -645,6 +645,14 @@ async def sitemap_xml():
         f'    <priority>0.8</priority>\n  </url>'
     )
 
+    # Casinos comparator (high-value page for affiliate conversion)
+    urls.append(
+        f'  <url>\n    <loc>{APP_URL}/casinos</loc>\n'
+        f'    <lastmod>{today_str}</lastmod>\n'
+        f'    <changefreq>weekly</changefreq>\n'
+        f'    <priority>0.9</priority>\n  </url>'
+    )
+
     # Team pages (SEO goldmine)
     urls.append(
         f'  <url>\n    <loc>{APP_URL}/equipos</loc>\n'
@@ -683,6 +691,16 @@ async def privacy_page(request: Request):
 @app.get("/terminos", response_class=HTMLResponse)
 async def terms_page(request: Request):
     return templates.TemplateResponse(request, "terms.html")
+
+@app.get("/casinos", response_class=HTMLResponse)
+async def casinos_page(request: Request):
+    """Casino comparison landing — for SEO + affiliate conversion."""
+    from config import get_affiliate_url
+    return templates.TemplateResponse(request, "casinos.html", {
+        "caliente_url": get_affiliate_url("caliente", source="casinos"),
+        "onexbet_url": get_affiliate_url("1xbet", source="casinos"),
+        "betsson_url": get_affiliate_url("betsson", source="casinos"),
+    })
 
 @app.get("/guia/{guide_slug}", response_class=HTMLResponse)
 async def guide_page(request: Request, guide_slug: str):
