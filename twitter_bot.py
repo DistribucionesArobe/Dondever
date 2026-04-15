@@ -159,6 +159,36 @@ def should_include_betting() -> bool:
     return random.random() < 0.33
 
 
+# CTAs suaves que se rotan — siempre sale UNO (WhatsApp, sitio o casa)
+SOFT_CTAS_WA = [
+    "📲 Picks GRATIS por WhatsApp: wa.me/15715463202",
+    "📲 Recibe picks diarios: wa.me/15715463202",
+    "💬 Picks gratis en WhatsApp 👉 wa.me/15715463202",
+    "📲 Alertas 1h antes del partido: wa.me/15715463202",
+]
+
+SOFT_CTAS_SITE = [
+    "📺 Más juegos hoy: dondever.app",
+    "🔗 Agenda completa: dondever.app",
+    "👉 Ver todos los partidos: dondever.app",
+]
+
+
+def get_soft_cta() -> str:
+    """
+    Rota entre 3 tipos de CTA con distinta probabilidad:
+    - 50% WhatsApp (capta suscriptores = valor largo plazo)
+    - 30% sitio (tráfico orgánico)
+    - 20% sin CTA (para no saturar)
+    """
+    r = random.random()
+    if r < 0.50:
+        return random.choice(SOFT_CTAS_WA)
+    if r < 0.80:
+        return random.choice(SOFT_CTAS_SITE)
+    return ""
+
+
 def get_pick_team(game: dict) -> str:
     """
     Pick a team for DondeVer Pick. Favors home team 60% of the time
@@ -203,18 +233,27 @@ def compose_game_tweet(game: dict) -> str:
     if "{channels}" not in opener_tpl and channels and channels != "Por confirmar":
         parts.append(f"📺 {channels}")
 
-    # Betting CTA solo 1 de cada 3
+    # Betting CTA solo 1 de cada 3, el resto lleva CTA suave (WA/sitio)
     if should_include_betting():
         betting = get_betting_affiliate_text()
         if betting:
+            parts.append("")
             parts.append(betting)
+    else:
+        soft = get_soft_cta()
+        if soft:
+            parts.append("")
+            parts.append(soft)
 
     parts.append(f"\n{hashtag}")
     tweet = "\n".join(parts)
 
-    # Trim si se pasa de 280
+    # Trim progresivo si se pasa de 280
     if len(tweet) > 280:
-        parts = [headline, "", pick_line, f"\n{hashtag}"]
+        parts = [headline, "", pick_line, "", get_soft_cta() or f"📲 wa.me/15715463202", f"\n{hashtag}"]
+        tweet = "\n".join(parts)
+    if len(tweet) > 280:
+        parts = [headline, pick_line, f"\n{hashtag}"]
         tweet = "\n".join(parts)
     if len(tweet) > 280:
         tweet = f"{headline}\n{pick_line}\n{hashtag}"
@@ -658,19 +697,50 @@ def compose_live_tweet(game: dict, event_type: str, detail: str = "") -> str:
     tag = hashtag if hashtag else "#DondeVer"
     parts = [headline]
 
-    # Solo incluir canales al arrancar el partido (no cada gol)
-    if event_type == "started" and channels and channels != "Por confirmar":
-        parts.append(f"📺 {channels}")
+    # "Started" = tweet largo con pick, canales y CTA (máximo valor)
+    if event_type == "started":
+        pick_line = get_pick_line(game)
+        parts.append("")
+        parts.append(pick_line)
+        if channels and channels != "Por confirmar":
+            parts.append(f"📺 {channels}")
 
-    # Betting CTA solo 1 de cada 3 tweets en vivo
-    use_betting = should_include_betting() and event_type in ("started", "goal")
-    if use_betting and betting:
-        parts.append(f"\n{betting}")
+        # Rota: 33% betting, 50% soft CTA (WA/sitio), 17% nada
+        if should_include_betting() and betting:
+            parts.append("")
+            parts.append(betting)
+        else:
+            soft = get_soft_cta()
+            if soft:
+                parts.append("")
+                parts.append(soft)
+
+    # "Goal" / "score_change" = tweet corto y rápido, con 1 CTA suave rotativo
+    elif event_type in ("goal", "score_change"):
+        # 60% de estos llevan CTA suave (sin betting, para no saturar en goles)
+        if random.random() < 0.6:
+            soft = get_soft_cta()
+            if soft:
+                parts.append("")
+                parts.append(soft)
+
+    # "Final" = marcador final + CTA suave
+    elif event_type == "final":
+        soft = get_soft_cta()
+        if soft:
+            parts.append("")
+            parts.append(soft)
+
+    # "Halftime" y otros = sin CTA (es info rápida)
 
     parts.append(f"\n{tag}")
     tweet = "\n".join(parts)
 
-    # Trim si es muy largo
+    # Trim progresivo
+    if len(tweet) > 280:
+        # Quita el último bloque antes del hashtag (CTA)
+        parts = [p for p in parts if p != ""][:-1] + [f"\n{tag}"]
+        tweet = "\n".join(parts)
     if len(tweet) > 280:
         tweet = f"{headline}\n{tag}"
 
