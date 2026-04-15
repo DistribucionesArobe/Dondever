@@ -98,13 +98,18 @@ async def compose_daily_broadcast() -> str:
 
     # Pick del dia section
     if pick:
+        from whatsapp_bot import _compute_pick, _compute_extra_market
         first, second = team_order(pick)
         channels = format_broadcast_channels(pick["broadcasts"])
         time_str = fmt_time(pick["date"])
-        lines.append(f"*PICK DEL DIA*")
+        pick_team, pick_reason = _compute_pick(pick)
+        extra = _compute_extra_market(pick)
+        lines.append(f"🎯 *PICK DEL DIA*")
         lines.append(f"{pick.get('emoji', '')} {first} vs {second}")
-        lines.append(f"{pick['league_name']} - {time_str}")
-        lines.append(f"Donde verlo: {channels}\n")
+        lines.append(f"{pick['league_name']} — {time_str} MX")
+        lines.append(f"📺 {channels}")
+        lines.append(f"✅ Ganador: *{pick_team}* — _{pick_reason}_")
+        lines.append(f"💡 Mercado extra: {extra}\n")
 
     # Top games (up to 5, excluding pick)
     pick_id = pick["id"] if pick else None

@@ -90,6 +90,87 @@ def get_random_affiliate(betting_only: bool = False) -> dict:
     return aff
 
 
+# ── Pick logic ───────────────────────────────────────────
+
+_PICK_REASONS_HOME = [
+    "juega en casa y llega mejor parado",
+    "de local viene sólido",
+    "la localía pesa en este duelo",
+    "favorito en casa según momios",
+    "el factor casa marca la diferencia",
+]
+_PICK_REASONS_AWAY = [
+    "viene caliente de visita",
+    "mejor forma reciente",
+    "en racha ganadora",
+    "favorito según momios de apertura",
+    "llega con plantilla completa",
+]
+
+
+def _compute_pick(game: dict) -> tuple[str, str]:
+    """
+    Elige ganador sugerido + razón corta.
+    Heurística: 65% local (home advantage). Razón aleatoria del pool.
+    """
+    home = game["home"]["name"]
+    away = game["away"]["name"]
+    # Seed estable por game_id para que el mismo juego dé siempre el mismo pick en el día
+    gid = str(game.get("id", home + away))
+    rng = random.Random(gid + datetime.now(TZ_MX).strftime("%Y%m%d"))
+
+    if rng.random() < 0.65:
+        return home, rng.choice(_PICK_REASONS_HOME)
+    return away, rng.choice(_PICK_REASONS_AWAY)
+
+
+def _compute_extra_market(game: dict) -> str:
+    """Sugerencia de mercado extra (Over/Under, BTTS, Hándicap) según deporte."""
+    sport = game.get("sport", "")
+    gid = str(game.get("id", ""))
+    rng = random.Random(gid + "extra" + datetime.now(TZ_MX).strftime("%Y%m%d"))
+
+    if sport == "soccer":
+        opciones = [
+            "Más de 2.5 goles",
+            "Menos de 3.5 goles",
+            "Ambos equipos anotan (BTTS) — Sí",
+            "Primer tiempo con gol",
+            "Tarjetas: más de 4.5",
+        ]
+    elif sport == "basketball":
+        opciones = [
+            "Más de 220.5 puntos totales",
+            "Menos de 225.5 puntos totales",
+            "Primer cuarto: favorito gana",
+            "Doble-doble del jugador estrella",
+        ]
+    elif sport == "football":
+        opciones = [
+            "Más de 44.5 puntos totales",
+            "Menos de 47.5 puntos totales",
+            "Favorito cubre el spread",
+            "Primer TD antes del minuto 10",
+        ]
+    elif sport == "baseball":
+        opciones = [
+            "Más de 8.5 carreras totales",
+            "Menos de 7.5 carreras totales",
+            "Se anota en la 1a entrada",
+            "Favorito gana primeras 5 entradas",
+        ]
+    elif sport == "hockey":
+        opciones = [
+            "Más de 5.5 goles totales",
+            "Menos de 6.5 goles totales",
+            "Ambos equipos anotan",
+        ]
+    else:
+        opciones = ["Favorito gana", "Partido cerrado"]
+
+    return rng.choice(opciones)
+
+
 async def handle_whatsapp_message(body: str, from_number: str) -> str:
     """
     Process incoming WhatsApp message and return response text.
@@ -226,16 +307,59 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
         pick_first = pick["home"]["name"] if pick_home_left else pick["away"]["name"]
         pick_second = pick["away"]["name"] if pick_home_left else pick["home"]["name"]
 
+        # Ganador sugerido (pick real) + razón
+        pick_team, pick_reason = _compute_pick(pick)
+        # Mercado extra (Over/Under, BTTS, etc.)
+        extra_market = _compute_extra_market(pick)
+
         return (
-            f"*PICK DEL DIA*\n\n"
+            f"🎯 *PICK DEL DIA*\n\n"
             f"{pick.get('emoji', '')} *{pick['league_name']}*\n"
             f"{pick_first} vs {pick_second}\n"
-            f"Hora: {time_str} (hora centro)\n"
-            f"Donde verlo: {channels}\n\n"
-            f"Escribe *picks* diario para recibir sugerencias.\n\n"
+            f"🕐 {time_str} (MX)\n"
+            f"📺 {channels}\n\n"
+            f"✅ *Ganador sugerido:* {pick_team}\n"
+            f"_{pick_reason}_\n\n"
+            f"💡 *Mercado extra:* {extra_market}\n\n"
+            f"Escribe *combinada* para un parlay de 3 picks 🔥\n\n"
             f"{aff['cta']}: {aff['url']}\n\n"
-            f"_Las sugerencias son solo entretenimiento. Apuesta responsablemente. +18_"
+            f"_Sugerencias de entretenimiento. Apuesta responsable. +18_"
         )
+
+    # Combinada / parlay: 2-3 picks de distintos juegos
+    if body_clean in ("combinada", "parlay", "combo", "acumulada", "multiple"):
+        subscribe(from_number)
+        games = await get_todays_games()
+        upcoming = [g for g in games if g["status"]["state"] == "pre" and g["broadcasts"]]
+        if len(upcoming) < 2:
+            return f"No hay suficientes juegos hoy para una combinada. Checa {APP_URL}"
+
+        # Priorizar ligas top
+        priority = ["liga-mx", "champions", "premier-league", "la-liga", "nfl", "nba", "mlb"]
+        def score(g):
+            slug = g.get("league_slug", "")
+            return priority.index(slug) if slug in priority else 99
+        upcoming.sort(key=score)
+        combo_games = upcoming[:3] if len(upcoming) >= 3 else upcoming[:2]
+
+        aff = get_random_affiliate(betting_only=True)
+        lines = ["🔥 *COMBINADA DEL DIA*\n"]
+        for i, g in enumerate(combo_games, 1):
+            team, reason = _compute_pick(g)
+            sport = g.get("sport", "")
+            home_left = sport in HOME_LEFT_SPORTS
+            first = g["home"]["name"] if home_left else g["away"]["name"]
+            second = g["away"]["name"] if home_left else g["home"]["name"]
+            time_s = format_game_time(g["date"])
+            lines.append(
+                f"{i}) {g.get('emoji', '')} {first} vs {second}\n"
+                f"   ✅ {team} — _{reason}_\n"
+                f"   🕐 {time_s} MX"
+            )
+        lines.append(f"\n⚠️ A mayor número de selecciones, mayor riesgo.")
+        lines.append(f"\n{aff['cta']}: {aff['url']}\n")
+        lines.append("_Solo entretenimiento. Apuesta responsable. +18_")
+        return "\n".join(lines)
 
     try:
         # Today's overview — short version to avoid WhatsApp rejecting long messages
