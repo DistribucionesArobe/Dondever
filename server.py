@@ -395,7 +395,7 @@ async def whatsapp_verify():
 async def whatsapp_debug():
     """Diagnostico del webhook de WhatsApp."""
     import os as _os
-    from subscribers import get_all_subscribers
+    from subscribers import get_active_subscribers, get_subscriber_count
     sid = _os.getenv("TWILIO_ACCOUNT_SID", "")
     token = _os.getenv("TWILIO_AUTH_TOKEN", "")
     wa_num = _os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+15715463202")
@@ -408,11 +408,51 @@ async def whatsapp_debug():
         "total_subscribers": 0,
     }
     try:
-        subs = get_all_subscribers()
-        info["total_subscribers"] = len(subs) if subs else 0
+        info["total_subscribers"] = get_subscriber_count()
     except Exception as e:
         info["subscribers_error"] = str(e)
     return info
+
+
+@app.get("/admin/subscribers")
+async def admin_subscribers(token: str = ""):
+    """
+    Lista detallada de suscriptores. Protegido por ADMIN_TOKEN.
+    Uso: https://dondever.app/admin/subscribers?token=TU_TOKEN
+    """
+    admin_token = os.getenv("ADMIN_TOKEN", "")
+    if not admin_token or token != admin_token:
+        return {"ok": False, "error": "token invalido"}
+    from subscribers import _load
+    data = _load()
+    subs = data.get("subscribers", {})
+    active = [(p, info) for p, info in subs.items() if info.get("active", True)]
+    inactive = [(p, info) for p, info in subs.items() if not info.get("active", True)]
+
+    def mask(phone: str) -> str:
+        # Muestra +52155***1234 para privacidad en logs
+        if len(phone) > 6:
+            return phone[:5] + "***" + phone[-4:]
+        return phone
+
+    return {
+        "ok": True,
+        "total": len(subs),
+        "active_count": len(active),
+        "inactive_count": len(inactive),
+        "active": [
+            {
+                "phone": mask(p),
+                "subscribed_at": info.get("subscribed_at"),
+                "last_active": info.get("last_active"),
+            }
+            for p, info in active
+        ],
+        "inactive": [
+            {"phone": mask(p), "subscribed_at": info.get("subscribed_at")}
+            for p, info in inactive
+        ],
+    }
 
 
 @app.post("/whatsapp/test-send")
