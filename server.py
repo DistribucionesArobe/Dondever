@@ -38,6 +38,61 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+# ── Google Analytics middleware ──────────────────────────
+from starlette.middleware.base import BaseHTTPMiddleware
+
+
+class GAInjectMiddleware(BaseHTTPMiddleware):
+    """Inject Google Analytics 4 snippet into every HTML response.
+    Activated only when env var GA_MEASUREMENT_ID is set (format: G-XXXXXXXXXX)."""
+
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        ga_id = os.getenv("GA_MEASUREMENT_ID", "").strip()
+        if not ga_id:
+            return response
+
+        ctype = response.headers.get("content-type", "")
+        if "text/html" not in ctype:
+            return response
+
+        try:
+            body = b""
+            async for chunk in response.body_iterator:
+                body += chunk
+
+            snippet = (
+                f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
+                f'<script>\n'
+                f'  window.dataLayer = window.dataLayer || [];\n'
+                f'  function gtag(){{dataLayer.push(arguments);}}\n'
+                f'  gtag("js", new Date());\n'
+                f'  gtag("config", "{ga_id}", {{ anonymize_ip: true }});\n'
+                f'</script>\n'
+            ).encode("utf-8")
+
+            if b"</head>" in body:
+                body = body.replace(b"</head>", snippet + b"</head>", 1)
+
+            from starlette.responses import Response
+            # Strip content-length so Starlette recalculates
+            headers = dict(response.headers)
+            headers.pop("content-length", None)
+            return Response(
+                content=body,
+                status_code=response.status_code,
+                headers=headers,
+                media_type=ctype,
+            )
+        except Exception as e:
+            logger = logging.getLogger("dondever")
+            logger.warning(f"GA inject failed: {e}")
+            return response
+
+
+app.add_middleware(GAInjectMiddleware)
+
+
 # ── Template helpers ─────────────────────────────────────
 def format_mx_time(iso_date: str) -> str:
     """Convert ISO date to Mexico City time (DST-aware)."""
