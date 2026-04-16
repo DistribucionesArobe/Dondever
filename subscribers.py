@@ -2,19 +2,24 @@
 WhatsApp subscriber management for DondeVer.
 Stores phone numbers that opted in for daily picks broadcast.
 
-NOTE: Uses JSON file storage. On Render (ephemeral disk), subscribers
-persist until next deploy. For production, migrate to PostgreSQL.
+Uses JSON file storage on Render Persistent Disk (/data/subscribers.json).
+Set SUBSCRIBERS_FILE env var to point to persistent storage.
+Fallback: local subscribers.json (ephemeral, lost on redeploy).
 """
 
 import json
 import logging
 import os
+from pathlib import Path
 from datetime import datetime
 from config import TZ_MX
 
 logger = logging.getLogger("dondever.subscribers")
 
 SUBSCRIBERS_FILE = os.getenv("SUBSCRIBERS_FILE", "subscribers.json")
+
+# Ensure directory exists (first deploy on persistent disk)
+Path(SUBSCRIBERS_FILE).parent.mkdir(parents=True, exist_ok=True)
 
 
 def _load() -> dict:

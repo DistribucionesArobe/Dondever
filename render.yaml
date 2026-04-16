@@ -4,9 +4,15 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: dondever-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: "3.11"
+      - key: SUBSCRIBERS_FILE
+        value: /data/subscribers.json
       - key: TWILIO_ACCOUNT_SID
         sync: false
       - key: TWILIO_AUTH_TOKEN

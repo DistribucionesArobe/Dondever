@@ -203,11 +203,11 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             f"Siempre puedes consultar juegos en {APP_URL}"
         )
 
-    # Subscribe
+    # Subscribe (keywords explícitas — "picks" y "pick" van al handler de picks más abajo)
     if body_clean in (
         "suscribir", "suscribirme", "suscribirse",
         "suscripcion", "suscripción", "inscribir", "inscribirme",
-        "subscribe", "subscribirse", "alta", "diario", "picks", "pick",
+        "subscribe", "subscribirse", "alta", "diario",
         "quiero picks", "quiero suscribirme", "quiero recibir picks",
         "picks diarios", "recibir picks",
     ):
