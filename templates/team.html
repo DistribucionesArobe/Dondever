@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Donde ver {{ team_name }} en vivo | DondeVer.app</title>
-    <meta name="description" content="Donde ver partidos de {{ team_name }} en vivo hoy. Canales de TV y streaming para ver {{ team_name }} en Mexico y USA.">
-    <meta property="og:title" content="Donde ver {{ team_name }} en vivo">
-    <meta property="og:description" content="Canales de TV y streaming para {{ team_name }} en Mexico">
-    <meta property="og:image" content="https://dondever.app/static/og-image.png">
+    <title>Dónde ver {{ team_name }} hoy en vivo — Canal, horario y transmisión {{ team_league }} | DondeVer</title>
+    <meta name="description" content="¿Dónde ver a {{ team_name }} hoy en vivo? Canales de TV, horarios y streaming para ver {{ team_name }} ({{ team_league }}) en México y Estados Unidos. Actualizado hoy {{ team_aka }}.">
+    <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal, {{ team_name }} horario, {{ team_aka }}, {{ team_league }} en vivo, {{ team_sport }} en vivo hoy">
+    <meta property="og:title" content="¿Dónde ver a {{ team_name }} hoy? — Canal y horario en vivo">
+    <meta property="og:description" content="Canales de TV, horario y streaming para {{ team_name }} ({{ team_league }}) en México y USA. Actualizado hoy.">
+    <meta property="og:image" content="{{ team_logo or 'https://dondever.app/static/og-image.png' }}">
+    <meta property="og:url" content="https://dondever.app/equipo/{{ team_slug }}">
+    <meta property="og:type" content="website">
     <link rel="canonical" href="https://dondever.app/equipo/{{ team_slug }}">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }

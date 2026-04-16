@@ -878,33 +878,89 @@ async def streaming_page(request: Request):
 # ── Team Pages ──────────────────────────────────────────
 
 # Popular teams for SEO (slug -> display name)
+# slug -> {name, sport_label, league, keywords}
+# sport_label se usa en SEO: "futbol", "basketball", "futbol americano", "beisbol"
 POPULAR_TEAMS = {
-    "chivas": "Guadalajara (Chivas)", "america": "America", "cruz-azul": "Cruz Azul",
-    "pumas": "Pumas UNAM", "tigres": "Tigres UANL", "monterrey": "Monterrey",
-    "toluca": "Toluca", "santos": "Santos Laguna", "leon": "Leon", "pachuca": "Pachuca",
-    "atlas": "Atlas", "necaxa": "Necaxa", "puebla": "Puebla", "queretaro": "Queretaro",
-    "real-madrid": "Real Madrid", "barcelona": "Barcelona", "liverpool": "Liverpool",
-    "manchester-city": "Manchester City", "manchester-united": "Manchester United",
-    "arsenal": "Arsenal", "chelsea": "Chelsea", "psg": "Paris Saint-Germain",
-    "bayern": "Bayern Munich", "juventus": "Juventus", "inter-milan": "Inter Milan",
-    "lakers": "Los Angeles Lakers", "celtics": "Boston Celtics", "warriors": "Golden State Warriors",
-    "bulls": "Chicago Bulls", "heat": "Miami Heat", "knicks": "New York Knicks",
-    "cowboys": "Dallas Cowboys", "chiefs": "Kansas City Chiefs", "49ers": "San Francisco 49ers",
-    "eagles": "Philadelphia Eagles", "packers": "Green Bay Packers",
-    "dodgers": "Los Angeles Dodgers", "yankees": "New York Yankees",
-    "red-sox": "Boston Red Sox", "astros": "Houston Astros",
+    # Liga MX
+    "chivas": {"name": "Guadalajara (Chivas)", "sport": "futbol", "league": "Liga MX", "aka": "Chivas, Guadalajara, Rebaño Sagrado"},
+    "america": {"name": "Club América", "sport": "futbol", "league": "Liga MX", "aka": "América, Águilas, Club America"},
+    "cruz-azul": {"name": "Cruz Azul", "sport": "futbol", "league": "Liga MX", "aka": "Cruz Azul, La Máquina, Cementeros"},
+    "pumas": {"name": "Pumas UNAM", "sport": "futbol", "league": "Liga MX", "aka": "Pumas, UNAM, Auriazules"},
+    "tigres": {"name": "Tigres UANL", "sport": "futbol", "league": "Liga MX", "aka": "Tigres, UANL, Tigres de Monterrey"},
+    "monterrey": {"name": "Monterrey", "sport": "futbol", "league": "Liga MX", "aka": "Rayados, Monterrey, Rayados de Monterrey"},
+    "toluca": {"name": "Toluca", "sport": "futbol", "league": "Liga MX", "aka": "Toluca, Diablos Rojos, Choriceros"},
+    "santos": {"name": "Santos Laguna", "sport": "futbol", "league": "Liga MX", "aka": "Santos Laguna, Guerreros"},
+    "leon": {"name": "León", "sport": "futbol", "league": "Liga MX", "aka": "León, Club León, La Fiera"},
+    "pachuca": {"name": "Pachuca", "sport": "futbol", "league": "Liga MX", "aka": "Pachuca, Tuzos"},
+    "atlas": {"name": "Atlas", "sport": "futbol", "league": "Liga MX", "aka": "Atlas, Zorros, Rojinegros"},
+    "necaxa": {"name": "Necaxa", "sport": "futbol", "league": "Liga MX", "aka": "Necaxa, Rayos"},
+    "puebla": {"name": "Puebla", "sport": "futbol", "league": "Liga MX", "aka": "Puebla, La Franja, Camoteros"},
+    "queretaro": {"name": "Querétaro", "sport": "futbol", "league": "Liga MX", "aka": "Querétaro, Gallos Blancos"},
+    "mazatlan": {"name": "Mazatlán FC", "sport": "futbol", "league": "Liga MX", "aka": "Mazatlán, Cañoneros"},
+    "tijuana": {"name": "Club Tijuana", "sport": "futbol", "league": "Liga MX", "aka": "Tijuana, Xolos, Xoloitzcuintles"},
+    "juarez": {"name": "FC Juárez", "sport": "futbol", "league": "Liga MX", "aka": "Juárez, Bravos"},
+    # Europa
+    "real-madrid": {"name": "Real Madrid", "sport": "futbol", "league": "La Liga", "aka": "Real Madrid, Merengues"},
+    "barcelona": {"name": "FC Barcelona", "sport": "futbol", "league": "La Liga", "aka": "Barcelona, Barça, Blaugrana"},
+    "liverpool": {"name": "Liverpool FC", "sport": "futbol", "league": "Premier League", "aka": "Liverpool, Reds"},
+    "manchester-city": {"name": "Manchester City", "sport": "futbol", "league": "Premier League", "aka": "Man City, Citizens"},
+    "manchester-united": {"name": "Manchester United", "sport": "futbol", "league": "Premier League", "aka": "Man United, Red Devils"},
+    "arsenal": {"name": "Arsenal", "sport": "futbol", "league": "Premier League", "aka": "Arsenal, Gunners"},
+    "chelsea": {"name": "Chelsea", "sport": "futbol", "league": "Premier League", "aka": "Chelsea, Blues"},
+    "psg": {"name": "Paris Saint-Germain", "sport": "futbol", "league": "Ligue 1", "aka": "PSG, Paris"},
+    "bayern": {"name": "Bayern Munich", "sport": "futbol", "league": "Bundesliga", "aka": "Bayern, Bayern München"},
+    "juventus": {"name": "Juventus", "sport": "futbol", "league": "Serie A", "aka": "Juventus, Juve, Vecchia Signora"},
+    "inter-milan": {"name": "Inter de Milán", "sport": "futbol", "league": "Serie A", "aka": "Inter, Nerazzurri"},
+    # MLS
+    "lafc": {"name": "Los Angeles FC", "sport": "futbol", "league": "MLS", "aka": "LAFC, Los Angeles FC"},
+    "la-galaxy": {"name": "LA Galaxy", "sport": "futbol", "league": "MLS", "aka": "Galaxy, LA Galaxy"},
+    # NBA
+    "lakers": {"name": "Los Angeles Lakers", "sport": "basketball", "league": "NBA", "aka": "Lakers, LA Lakers"},
+    "celtics": {"name": "Boston Celtics", "sport": "basketball", "league": "NBA", "aka": "Celtics, Boston"},
+    "warriors": {"name": "Golden State Warriors", "sport": "basketball", "league": "NBA", "aka": "Warriors, Dubs, Golden State"},
+    "bulls": {"name": "Chicago Bulls", "sport": "basketball", "league": "NBA", "aka": "Bulls, Chicago"},
+    "heat": {"name": "Miami Heat", "sport": "basketball", "league": "NBA", "aka": "Heat, Miami"},
+    "knicks": {"name": "New York Knicks", "sport": "basketball", "league": "NBA", "aka": "Knicks, NY Knicks"},
+    "nuggets": {"name": "Denver Nuggets", "sport": "basketball", "league": "NBA", "aka": "Nuggets, Denver"},
+    "bucks": {"name": "Milwaukee Bucks", "sport": "basketball", "league": "NBA", "aka": "Bucks, Milwaukee"},
+    # NFL
+    "cowboys": {"name": "Dallas Cowboys", "sport": "futbol americano", "league": "NFL", "aka": "Cowboys, Vaqueros, Dallas"},
+    "chiefs": {"name": "Kansas City Chiefs", "sport": "futbol americano", "league": "NFL", "aka": "Chiefs, Kansas City"},
+    "49ers": {"name": "San Francisco 49ers", "sport": "futbol americano", "league": "NFL", "aka": "49ers, Niners, San Francisco"},
+    "eagles": {"name": "Philadelphia Eagles", "sport": "futbol americano", "league": "NFL", "aka": "Eagles, Philadelphia, Águilas"},
+    "packers": {"name": "Green Bay Packers", "sport": "futbol americano", "league": "NFL", "aka": "Packers, Green Bay"},
+    "steelers": {"name": "Pittsburgh Steelers", "sport": "futbol americano", "league": "NFL", "aka": "Steelers, Pittsburgh, Acereros"},
+    # MLB
+    "dodgers": {"name": "Los Angeles Dodgers", "sport": "beisbol", "league": "MLB", "aka": "Dodgers, LA Dodgers"},
+    "yankees": {"name": "New York Yankees", "sport": "beisbol", "league": "MLB", "aka": "Yankees, Yanquis, NY Yankees"},
+    "red-sox": {"name": "Boston Red Sox", "sport": "beisbol", "league": "MLB", "aka": "Red Sox, Medias Rojas, Boston"},
+    "astros": {"name": "Houston Astros", "sport": "beisbol", "league": "MLB", "aka": "Astros, Houston"},
+    "mets": {"name": "New York Mets", "sport": "beisbol", "league": "MLB", "aka": "Mets, NY Mets"},
+    "padres": {"name": "San Diego Padres", "sport": "beisbol", "league": "MLB", "aka": "Padres, San Diego"},
+    # NHL
+    "bruins": {"name": "Boston Bruins", "sport": "hockey", "league": "NHL", "aka": "Bruins, Boston"},
+    # UFC
+    "ufc": {"name": "UFC", "sport": "MMA", "league": "UFC", "aka": "UFC, Ultimate Fighting"},
 }
 
 @app.get("/equipo/{team_slug}", response_class=HTMLResponse)
 async def team_page(request: Request, team_slug: str):
     """Dynamic team page with today's games for that team."""
-    # Resolve team name from slug
-    team_name = POPULAR_TEAMS.get(team_slug)
-    if not team_name:
-        # Try from TEAM_ALIASES
+    # Resolve team info from slug
+    team_info = POPULAR_TEAMS.get(team_slug)
+    if team_info:
+        team_name = team_info["name"]
+        team_sport = team_info.get("sport", "")
+        team_league_seo = team_info.get("league", "")
+        team_aka = team_info.get("aka", team_name)
+    else:
+        # Fallback for unknown slugs
         clean_slug = team_slug.replace("-", " ")
         resolved = TEAM_ALIASES.get(clean_slug, clean_slug)
         team_name = resolved.title()
+        team_sport = ""
+        team_league_seo = ""
+        team_aka = team_name
 
     # Search for games
     search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
@@ -935,7 +991,9 @@ async def team_page(request: Request, team_slug: str):
         "team_name": team_name,
         "team_slug": team_slug,
         "team_logo": team_logo,
-        "team_league": team_league,
+        "team_league": team_league or team_league_seo,
+        "team_sport": team_sport,
+        "team_aka": team_aka,
         "games": games,
         "stats": stats,
         "format_mx_time": format_mx_time,

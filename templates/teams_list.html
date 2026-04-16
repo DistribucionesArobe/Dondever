@@ -38,7 +38,7 @@
     <h2>{{ league }}</h2>
     <div class="teams-grid">
         {% for slug in slugs %}
-        <a href="/equipo/{{ slug }}" class="team-link">{{ POPULAR_TEAMS.get(slug, slug) }}</a>
+        <a href="/equipo/{{ slug }}" class="team-link">{{ POPULAR_TEAMS[slug].name if slug in POPULAR_TEAMS else slug }}</a>
         {% endfor %}
     </div>
     {% endfor %}

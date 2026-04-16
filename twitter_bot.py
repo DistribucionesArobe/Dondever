@@ -648,6 +648,97 @@ def _mark_posted(game_id: str) -> None:
     _posted_games.setdefault(today_key, set()).add(game_id)
 
 
+ENGAGEMENT_REPLIES = [
+    "¿A quién le van? 👇",
+    "¿Quién gana este? Comenta 👇",
+    "¿Lo vas a ver? ¿En qué canal? 👇",
+    "Dale RT si vas con {first} ♻️\nLike si vas con {second} ❤️",
+    "Predicción de marcador? 👇",
+    "¿Quién es favorito para ti? 👇",
+]
+
+
+def _post_engagement_reply(parent_tweet_id: str, game: dict):
+    """Reply al tweet principal con pregunta de engagement."""
+    try:
+        sport = game.get("sport", "")
+        home_left = sport in HOME_LEFT_SPORTS
+        first = game["home"]["name"] if home_left else game["away"]["name"]
+        second = game["away"]["name"] if home_left else game["home"]["name"]
+
+        reply_tpl = random.choice(ENGAGEMENT_REPLIES)
+        reply_text = reply_tpl.format(first=first, second=second)
+        post_tweet(reply_text, reply_to=parent_tweet_id)
+    except Exception as e:
+        logger.warning(f"Engagement reply failed: {e}")
+
+
+# Store tweet IDs for quote-tweet results later
+_pregame_tweet_ids: dict[str, str] = {}  # game_id -> tweet_id
+
+RESULT_QUOTE_TEMPLATES = [
+    "¿Le atinamos? 🎯\n{first} {hs} - {as_} {second}\n\n{verdict}",
+    "Resultado final:\n{first} {hs} - {as_} {second}\n\n{verdict}",
+    "Se acabó 🏁\n{first} {hs} - {as_} {second}\n\n{verdict}",
+]
+
+
+def _post_result_quote(game_id: str, game: dict):
+    """Quote-tweet del pregame con el resultado final — conecta ambos tweets."""
+    original_tweet_id = _pregame_tweet_ids.get(game_id)
+    if not original_tweet_id:
+        return  # no hay tweet de arranque que quotear
+
+    try:
+        sport = game.get("sport", "")
+        home_left = sport in HOME_LEFT_SPORTS
+        first = game["home"]["name"] if home_left else game["away"]["name"]
+        second = game["away"]["name"] if home_left else game["home"]["name"]
+        hs = str(game["home"]["score"] or 0) if home_left else str(game["away"]["score"] or 0)
+        as_ = str(game["away"]["score"] or 0) if home_left else str(game["home"]["score"] or 0)
+
+        # Determinar si nuestro pick le atinó
+        pick_rng = random.Random(str(game_id) + datetime.now(TZ_MX).strftime("%Y%m%d"))
+        our_pick = game["home"]["name"] if pick_rng.random() < 0.65 else game["away"]["name"]
+
+        home_s = int(game["home"]["score"] or 0)
+        away_s = int(game["away"]["score"] or 0)
+        if home_s > away_s:
+            winner = game["home"]["name"]
+        elif away_s > home_s:
+            winner = game["away"]["name"]
+        else:
+            winner = None  # empate
+
+        if winner and winner == our_pick:
+            verdict = "✅ Pick acertado! 🔥"
+        elif winner is None:
+            verdict = "🤝 Empate — nadie gana"
+        else:
+            verdict = "❌ No le atinamos esta vez"
+
+        tpl = random.choice(RESULT_QUOTE_TEMPLATES)
+        text = tpl.format(first=first, second=second, hs=hs, as_=as_, verdict=verdict)
+
+        # Quote tweet via API v2
+        allowed, reason = _can_post_now()
+        if not allowed:
+            return
+        client = get_twitter_client()
+        if client:
+            response = client.create_tweet(
+                text=text[:280],
+                quote_tweet_id=original_tweet_id,
+            )
+            _tweet_timestamps.append(_time.time())
+            logger.info(f"Result quote-tweet posted: {response.data['id']} — {verdict}")
+
+        # Cleanup
+        del _pregame_tweet_ids[game_id]
+    except Exception as e:
+        logger.warning(f"Result quote-tweet failed: {e}")
+
+
 async def post_game_tweets(minutes_before: int = 60):
     """
     Check for games starting soon and post tweets for them.
@@ -686,10 +777,13 @@ async def post_game_tweets(minutes_before: int = 60):
                 result = post_tweet(tweet_text)
             if result["success"]:
                 _mark_posted(gid)
+                _pregame_tweet_ids[gid] = result["tweet_id"]  # guardar para quote-tweet al final
                 posted.append({
                     "game": game["name"],
                     "tweet_id": result["tweet_id"],
                 })
+                # Reply thread: pregunta de engagement
+                _post_engagement_reply(result["tweet_id"], game)
 
     return posted
 
@@ -982,6 +1076,15 @@ async def monitor_live_games():
                     "tweet_id": result["tweet_id"],
                 })
                 logger.info(f"Live tweet: {event_type} — {game['name']}")
+
+                # Reply thread cuando arranca
+                if event_type == "started":
+                    _pregame_tweet_ids[game_id] = result["tweet_id"]
+                    _post_engagement_reply(result["tweet_id"], game)
+
+                # Quote-tweet resultado final con referencia al tweet de arranque
+                if event_type == "final":
+                    _post_result_quote(game_id, game)
 
             # Send WhatsApp goal/event alerts to subscribers with favorite teams
             try:
