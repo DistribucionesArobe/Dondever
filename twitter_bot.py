@@ -11,6 +11,7 @@ import random
 import os
 from datetime import datetime, timezone, timedelta
 from config import AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS, get_affiliate_url, get_short_affiliate_url
+from game_card import generate_game_card, generate_live_card
 from sports_api import get_todays_games
 
 logger = logging.getLogger("dondever.twitter")
@@ -430,6 +431,90 @@ def _can_post_now() -> tuple[bool, str]:
     return True, ""
 
 
+def get_twitter_api_v1() -> tweepy.API | None:
+    """Create Twitter API v1.1 client (needed for media upload)."""
+    if not twitter_credentials_valid():
+        return None
+    auth = tweepy.OAuthHandler(TWITTER_API_KEY, TWITTER_API_SECRET)
+    auth.set_access_token(TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET)
+    return tweepy.API(auth)
+
+
+def _upload_media(image_bytes: bytes) -> str | None:
+    """Upload image to Twitter, return media_id string."""
+    try:
+        api = get_twitter_api_v1()
+        if api is None:
+            return None
+        import io
+        media = api.media_upload(filename="game_card.png", file=io.BytesIO(image_bytes))
+        logger.info(f"Media uploaded: {media.media_id}")
+        return str(media.media_id)
+    except Exception as e:
+        logger.warning(f"Media upload failed: {e}")
+        return None
+
+
+def _make_game_card(game: dict, pick_team: str = "", pick_reason: str = "") -> bytes | None:
+    """Generate a game card image from a game dict. Returns PNG bytes or None."""
+    try:
+        sport = game.get("sport", "")
+        home_left = sport in HOME_LEFT_SPORTS
+        channels = format_broadcast_short(game["broadcasts"])
+        time_str = format_game_time_mx(game["date"])
+
+        # ESPN logo URLs (if available in game data)
+        home_logo = game["home"].get("logo", "")
+        away_logo = game["away"].get("logo", "")
+
+        return generate_game_card(
+            home_name=game["home"]["name"],
+            away_name=game["away"]["name"],
+            home_logo_url=home_logo,
+            away_logo_url=away_logo,
+            league_name=game.get("league_name", ""),
+            emoji=game.get("emoji", ""),
+            time_str=time_str,
+            channels=channels if channels != "Por confirmar" else "",
+            pick_team=pick_team,
+            pick_reason=pick_reason,
+            sport=sport,
+            home_left=home_left,
+        )
+    except Exception as e:
+        logger.warning(f"Game card generation failed: {e}")
+        return None
+
+
+def _make_live_card(game: dict, event_type: str) -> bytes | None:
+    """Generate a live event card from a game dict."""
+    try:
+        sport = game.get("sport", "")
+        home_left = sport in HOME_LEFT_SPORTS
+        channels = format_broadcast_short(game["broadcasts"])
+
+        home_logo = game["home"].get("logo", "")
+        away_logo = game["away"].get("logo", "")
+
+        return generate_live_card(
+            home_name=game["home"]["name"],
+            away_name=game["away"]["name"],
+            home_score=str(game["home"]["score"] or "0"),
+            away_score=str(game["away"]["score"] or "0"),
+            home_logo_url=home_logo,
+            away_logo_url=away_logo,
+            league_name=game.get("league_name", ""),
+            emoji=game.get("emoji", ""),
+            event_type=event_type,
+            channels=channels if channels != "Por confirmar" else "",
+            sport=sport,
+            home_left=home_left,
+        )
+    except Exception as e:
+        logger.warning(f"Live card generation failed: {e}")
+        return None
+
+
 def post_tweet(text: str, reply_to: str | None = None) -> dict:
     """Post a tweet via Twitter API v2 — with rate limiting. Soporta replies."""
     allowed, reason = _can_post_now()
@@ -451,6 +536,30 @@ def post_tweet(text: str, reply_to: str | None = None) -> dict:
     except Exception as e:
         logger.error(f"Tweet failed: {e}")
         return {"success": False, "error": str(e)}
+
+
+def post_tweet_with_media(text: str, image_bytes: bytes) -> dict:
+    """Post a tweet with an image attached. Falls back to text-only if upload fails."""
+    media_id = _upload_media(image_bytes)
+    if media_id:
+        allowed, reason = _can_post_now()
+        if not allowed:
+            return {"success": False, "error": reason, "rate_limited": True}
+        try:
+            client = get_twitter_client()
+            if client is None:
+                return {"success": False, "error": "Twitter credentials not configured"}
+            response = client.create_tweet(text=text, media_ids=[media_id])
+            _tweet_timestamps.append(_time.time())
+            logger.info(f"Tweet+media posted: {response.data['id']}")
+            return {"success": True, "tweet_id": response.data["id"], "has_media": True}
+        except Exception as e:
+            logger.error(f"Tweet+media failed: {e}")
+            # Fallback to text only
+            return post_tweet(text)
+    else:
+        # Media upload failed, post text only
+        return post_tweet(text)
 
 
 def post_poll(text: str, options: list[str], duration_min: int = 720) -> dict:
@@ -567,7 +676,14 @@ async def post_game_tweets(minutes_before: int = 60):
         diff = (game_time - now).total_seconds() / 60
         if 0 < diff <= minutes_before:
             tweet_text = compose_game_tweet(game)
-            result = post_tweet(tweet_text)
+            # Generate game card image
+            pick = get_pick_team(game)
+            reason = random.choice(PICK_REASONS)
+            card = _make_game_card(game, pick_team=pick, pick_reason=reason)
+            if card:
+                result = post_tweet_with_media(tweet_text, card)
+            else:
+                result = post_tweet(tweet_text)
             if result["success"]:
                 _mark_posted(gid)
                 posted.append({
@@ -624,7 +740,10 @@ async def post_next_top_game():
     upcoming.sort(key=lambda x: (x[0], x[1]))  # mejor liga + mas pronto
     _, _, best = upcoming[0]
     tweet_text = compose_game_tweet(best)
-    result = post_tweet(tweet_text)
+    pick = get_pick_team(best)
+    reason = random.choice(PICK_REASONS)
+    card = _make_game_card(best, pick_team=pick, pick_reason=reason)
+    result = post_tweet_with_media(tweet_text, card) if card else post_tweet(tweet_text)
     if result["success"]:
         gid = str(best.get("id", "")) or best.get("name", "")
         _mark_posted(gid)
@@ -653,7 +772,10 @@ async def post_pick_del_dia():
         return None
 
     tweet_text = compose_pick_tweet(pick)
-    result = post_tweet(tweet_text)
+    pick_team = get_pick_team(pick)
+    reason = random.choice(PICK_REASONS)
+    card = _make_game_card(pick, pick_team=pick_team, pick_reason=reason)
+    result = post_tweet_with_media(tweet_text, card) if card else post_tweet(tweet_text)
     if result["success"]:
         logger.info(f"Pick del dia posted: {pick['name']}")
     return result
@@ -847,7 +969,12 @@ async def monitor_live_games():
                         continue
 
             tweet_text = compose_live_tweet(game, event_type, detail)
-            result = post_tweet(tweet_text)
+            # Generate live card for important events (started, goal, final)
+            if event_type in ("started", "goal", "final"):
+                card = _make_live_card(game, event_type)
+                result = post_tweet_with_media(tweet_text, card) if card else post_tweet(tweet_text)
+            else:
+                result = post_tweet(tweet_text)
             if result["success"]:
                 posted.append({
                     "game": game["name"],
