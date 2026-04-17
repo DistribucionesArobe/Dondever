@@ -6,6 +6,7 @@ and enriches with TV broadcast data from TheSportsDB Premium.
 import httpx
 import asyncio
 import logging
+import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from cachetools import TTLCache
@@ -21,6 +22,30 @@ logger = logging.getLogger("dondever.sports")
 _cache = TTLCache(maxsize=500, ttl=300)
 # TV cache: 30 min TTL (channels don't change often)
 _tv_cache = TTLCache(maxsize=1000, ttl=1800)
+# Odds cache: 10 min TTL (odds change frequently but we don't need real-time)
+_odds_cache = TTLCache(maxsize=200, ttl=600)
+
+# ── Odds API (the-odds-api.com) ────────────────────────
+ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
+ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports"
+
+# Map our league slugs to the-odds-api sport keys
+ODDS_SPORT_MAP = {
+    "liga-mx": "soccer_mexico_ligamx",
+    "mls": "soccer_usa_mls",
+    "premier-league": "soccer_epl",
+    "la-liga": "soccer_spain_la_liga",
+    "serie-a": "soccer_italy_serie_a",
+    "bundesliga": "soccer_germany_bundesliga",
+    "ligue-1": "soccer_france_ligue_one",
+    "champions": "soccer_uefa_champs_league",
+    "europa-league": "soccer_uefa_europa_league",
+    "nfl": "americanfootball_nfl",
+    "nba": "basketball_nba",
+    "mlb": "baseball_mlb",
+    "nhl": "icehockey_nhl",
+    "ufc": "mma_mixed_martial_arts",
+}
 
 
 # ── ESPN API ─────────────────────────────────────────────
@@ -560,3 +585,127 @@ async def get_league_standings(sport: str, league: str, limit: int = 10) -> list
     """Get top N standings for a league."""
     standings = await fetch_standings(sport, league)
     return standings[:limit]
+
+
+# ── Odds API Functions ──────────────────────────────────
+
+async def fetch_odds(league_slug: str) -> list[dict]:
+    """
+    Fetch odds from the-odds-api.com for a given league.
+    Returns list of games with odds from top bookmakers.
+    Requires ODDS_API_KEY env var.
+    Free tier: 500 requests/month — use caching aggressively.
+    """
+    if not ODDS_API_KEY:
+        return []
+
+    odds_sport = ODDS_SPORT_MAP.get(league_slug)
+    if not odds_sport:
+        return []
+
+    cache_key = f"odds:{odds_sport}"
+    if cache_key in _odds_cache:
+        return _odds_cache[cache_key]
+
+    url = f"{ODDS_API_BASE}/{odds_sport}/odds"
+    params = {
+        "apiKey": ODDS_API_KEY,
+        "regions": "us,eu",
+        "markets": "h2h",
+        "oddsFormat": "american",
+        "dateFormat": "iso",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            _odds_cache[cache_key] = data
+            return data
+    except Exception as e:
+        logger.warning(f"Odds API error for {odds_sport}: {e}")
+        return []
+
+
+def match_odds_to_game(game: dict, odds_list: list[dict]) -> dict | None:
+    """
+    Match a game (from ESPN) to odds data (from the-odds-api).
+    Returns dict with odds info or None if no match found.
+    Uses fuzzy team name matching.
+    """
+    if not odds_list:
+        return None
+
+    home_name = game["home"]["name"].lower()
+    away_name = game["away"]["name"].lower()
+
+    for odds_game in odds_list:
+        odds_home = odds_game.get("home_team", "").lower()
+        odds_away = odds_game.get("away_team", "").lower()
+
+        # Fuzzy match: check if any significant word matches
+        home_match = (
+            home_name in odds_home or odds_home in home_name or
+            any(w in odds_home for w in home_name.split() if len(w) > 3)
+        )
+        away_match = (
+            away_name in odds_away or odds_away in away_name or
+            any(w in odds_away for w in away_name.split() if len(w) > 3)
+        )
+
+        if home_match and away_match:
+            # Extract best odds from first bookmaker
+            bookmakers = odds_game.get("bookmakers", [])
+            if not bookmakers:
+                return None
+
+            # Try to find a well-known bookmaker first
+            preferred = ["draftkings", "fanduel", "betmgm", "pinnacle", "bet365"]
+            bookie = None
+            for pref in preferred:
+                bookie = next((b for b in bookmakers if pref in b["key"].lower()), None)
+                if bookie:
+                    break
+            if not bookie:
+                bookie = bookmakers[0]
+
+            markets = bookie.get("markets", [])
+            h2h = next((m for m in markets if m["key"] == "h2h"), None)
+            if not h2h:
+                return None
+
+            outcomes = h2h.get("outcomes", [])
+            result = {
+                "bookmaker": bookie.get("title", ""),
+                "home_odds": None,
+                "away_odds": None,
+                "draw_odds": None,
+            }
+            for outcome in outcomes:
+                name = outcome.get("name", "").lower()
+                price = outcome.get("price", 0)
+                if "draw" in name:
+                    result["draw_odds"] = _format_american_odds(price)
+                elif any(w in name for w in home_name.split() if len(w) > 3):
+                    result["home_odds"] = _format_american_odds(price)
+                elif any(w in name for w in away_name.split() if len(w) > 3):
+                    result["away_odds"] = _format_american_odds(price)
+
+            # Fallback: assign by position if name matching failed
+            if not result["home_odds"] and len(outcomes) >= 2:
+                result["home_odds"] = _format_american_odds(outcomes[0].get("price", 0))
+                result["away_odds"] = _format_american_odds(outcomes[1].get("price", 0))
+                if len(outcomes) >= 3:
+                    result["draw_odds"] = _format_american_odds(outcomes[2].get("price", 0))
+
+            return result
+
+    return None
+
+
+def _format_american_odds(price: int) -> str:
+    """Format american odds with + or - prefix."""
+    if price >= 0:
+        return f"+{price}"
+    return str(price)

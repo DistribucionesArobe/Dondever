@@ -472,19 +472,19 @@
 
 <!-- Betting Promo Banner -->
 {% for key, aff in affiliates.items() %}
-{% if loop.first %}
+{% if key == 'caliente' %}
 <div class="promo-banner">
     <div class="promo-banner-inner">
         <div class="promo-left">
-            <div class="promo-icon">&#9917;</div>
+            <div class="promo-icon">&#127873;</div>
             <div>
-                <div class="promo-title">Quieres apostar?</div>
-                <div class="promo-sub">Los mejores cuotas en {{ aff.name }}</div>
-                <div class="promo-tiny">Ahora desde +18 solo responsablemente</div>
+                <div class="promo-title">{{ aff.bonus }}</div>
+                <div class="promo-sub">{{ aff.name }} — Registrate y recibe tu bono de bienvenida</div>
+                <div class="promo-tiny">Solo nuevos usuarios +18. Aplican T&C.</div>
             </div>
         </div>
         <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="promo-cta">
-            Apostar ahora &#8599;
+            {{ aff.cta }} &#8599;
         </a>
     </div>
 </div>
@@ -632,9 +632,9 @@
     <div class="promo-banner-inner" style="border-radius:10px;padding:0.75rem 1rem;">
         <div>
             <div style="font-weight:700;font-size:0.85rem;">{{ aff.name }}</div>
-            <div style="font-size:0.6rem;opacity:0.6;">Publicidad</div>
+            <div style="font-size:0.65rem;opacity:0.8;">{{ aff.bonus }}</div>
         </div>
-        <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="promo-cta" style="padding:0.4rem 1rem;font-size:0.8rem;">{{ aff.cta }}</a>
+        <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="promo-cta" style="padding:0.4rem 1rem;font-size:0.8rem;">{{ aff.cta_short }} &rarr;</a>
     </div>
     {% endfor %}
 </div>

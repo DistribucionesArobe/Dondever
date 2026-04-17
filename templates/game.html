@@ -163,16 +163,65 @@
         {% if game.venue %}<div class="venue">Sede: {{ game.venue }}</div>{% endif %}
     </div>
 
+    {% if odds %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div style="background:linear-gradient(135deg,#1a1a2e,#2d2b55);border-radius:14px;padding:1.25rem;color:white;">
+            <div style="text-align:center;margin-bottom:1rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#10b981;font-weight:600;">Momios / Odds</div>
+                <div style="font-size:0.65rem;color:#9ca3af;margin-top:0.15rem;">via {{ odds.bookmaker }}</div>
+            </div>
+            <div style="display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;">
+                {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+                {% set left_name = game.home.name if home_left else game.away.name %}
+                {% set right_name = game.away.name if home_left else game.home.name %}
+                {% set left_odds = odds.home_odds if home_left else odds.away_odds %}
+                {% set right_odds = odds.away_odds if home_left else odds.home_odds %}
+                <a href="{{ affiliates.caliente.url }}" target="_blank" rel="noopener sponsored" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                    <div style="font-size:0.7rem;color:#9ca3af;">{{ left_name }}</div>
+                    <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ left_odds or '—' }}</div>
+                    <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
+                </a>
+                {% if odds.draw_odds %}
+                <a href="{{ affiliates.betsson.url }}" target="_blank" rel="noopener sponsored" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:80px;max-width:140px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
+                    <div style="font-size:0.7rem;color:#9ca3af;">Empate</div>
+                    <div style="font-size:1.4rem;font-weight:800;color:#f97316;margin:0.25rem 0;">{{ odds.draw_odds }}</div>
+                    <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
+                </a>
+                {% endif %}
+                <a href="{{ affiliates.caliente.url }}" target="_blank" rel="noopener sponsored" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                    <div style="font-size:0.7rem;color:#9ca3af;">{{ right_name }}</div>
+                    <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ right_odds or '—' }}</div>
+                    <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
+                </a>
+            </div>
+            <div style="text-align:center;margin-top:0.75rem;font-size:0.6rem;color:#6b7280;">
+                Momios de referencia. +18 apuesta responsablemente. Publicidad.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="affiliate-section">
         {% for key, aff in affiliates.items() %}
+        {% if key != 'cj' %}
         <div class="aff-card">
             <div>
                 <div class="name">{{ aff.name }}</div>
-                <div class="small">Publicidad</div>
+                <div class="small">{{ aff.bonus }} — Publicidad</div>
             </div>
-            <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="aff-cta">{{ aff.cta }}</a>
+            <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="aff-cta">{{ aff.cta }} &rarr;</a>
         </div>
+        {% endif %}
         {% endfor %}
+        {% if affiliates.cj %}
+        <div class="aff-card" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);">
+            <div>
+                <div class="name">{{ affiliates.cj.name }}</div>
+                <div class="small">{{ affiliates.cj.bonus }} — No te lo pierdas por region</div>
+            </div>
+            <a href="{{ affiliates.cj.url }}" target="_blank" rel="noopener sponsored" class="aff-cta" style="color:#1d4ed8;">{{ affiliates.cj.cta }} &rarr;</a>
+        </div>
+        {% endif %}
     </div>
 
     <div class="footer">

@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
 from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
-from sports_api import get_todays_games, search_games, get_team_stats
+from sports_api import get_todays_games, search_games, get_team_stats, fetch_odds, match_odds_to_game
 from whatsapp_bot import handle_whatsapp_message
 from tiktok_auth import (
     get_tiktok_auth_url, exchange_code_for_token, get_user_info,
@@ -262,8 +262,18 @@ async def game_detail(request: Request, event_id: str):
             context={"message": "Este juego ya termino. Ve los juegos de hoy en la home."}
         )
 
+    # Fetch odds if game hasn't started yet
+    odds = None
+    if game["status"]["state"] == "pre":
+        try:
+            league_slug = game.get("league_slug", "")
+            odds_list = await fetch_odds(league_slug)
+            odds = match_odds_to_game(game, odds_list)
+        except Exception as e:
+            logger.warning(f"Odds fetch failed for game {event_id}: {e}")
+
     return templates.TemplateResponse(
-        request, "game.html", context={"game": game}
+        request, "game.html", context={"game": game, "odds": odds}
     )
 
 
@@ -889,6 +899,7 @@ async def sitemap_xml():
         ("guia/donde-ver-nba-en-mexico", "weekly", "0.8"),
         ("guia/mejores-streaming-deportes-mexico", "weekly", "0.8"),
         ("guia/donde-ver-champions-league", "weekly", "0.8"),
+        ("guia/como-ver-tudn-en-usa", "weekly", "0.8"),
     ]
     for page, freq, priority in static_pages:
         urls.append(

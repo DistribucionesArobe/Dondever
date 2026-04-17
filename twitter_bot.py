@@ -82,7 +82,8 @@ def format_game_time_mx(date_str: str) -> str:
 def get_betting_affiliate_text() -> str:
     """
     Random BETTING affiliate CTA con link corto branded.
-    Ej: 'Apostar en Betsson 👉 dondever.app/go/betsson?s=twitter'
+    Usa cta_twitter con bono especifico para mayor conversion.
+    Ej: 'Bono $3,000 en Caliente 👉 dondever.app/go/caliente?s=twitter'
     """
     betting_keys = [k for k in AFFILIATES if k in ("caliente", "betsson")]
     if not betting_keys:
@@ -90,7 +91,8 @@ def get_betting_affiliate_text() -> str:
     key = random.choice(betting_keys)
     aff = AFFILIATES[key]
     short_url = get_short_affiliate_url(key, source="twitter")
-    return f"{aff['cta']} 👉 {short_url}"
+    cta_text = aff.get("cta_twitter", aff["cta"])
+    return f"🎁 {cta_text} 👉 {short_url}"
 
 
 def get_team_order(game: dict) -> tuple[str, str]:
@@ -116,12 +118,13 @@ HASHTAG_MAP = {
 # Rotate templates y decidir si incluir betting CTA (solo 1 de cada 3)
 
 PRE_GAME_OPENERS = [
-    "{emoji} Hoy se juega:\n{first} vs {second}",
-    "🔥 {first} vs {second}\nHoy a las {time} (MX)",
-    "{emoji} ¿Quién gana?\n{first} vs {second} — {time} MX",
+    # Pick-centric openers (lead with prediction, not just announcement)
+    "🎯 PICK: {pick}\n{first} vs {second} — {time} MX",
+    "🔥 {first} vs {second}\n¿Quién gana hoy? Mi pick: {pick}\n{time} MX",
+    "{emoji} {league} HOY\n{first} vs {second} — {time} MX\n🎯 Pick: {pick}",
     "Ojo al partidazo 👀\n{first} vs {second} hoy {time} MX",
     "📺 {first} vs {second}\n{time} MX — {channels}",
-    "{emoji} {league} HOY\n{first} vs {second} — {time} MX",
+    "{emoji} ¿Quién gana?\n{first} vs {second} — {time} MX",
 ]
 
 STARTED_OPENERS = [
@@ -162,16 +165,16 @@ def should_include_betting() -> bool:
 
 # CTAs suaves que se rotan — siempre sale UNO (WhatsApp, sitio o casa)
 SOFT_CTAS_WA = [
-    "📲 Picks GRATIS por WhatsApp: wa.me/15715463202",
-    "📲 Recibe picks diarios: wa.me/15715463202",
-    "💬 Picks gratis en WhatsApp 👉 wa.me/15715463202",
-    "📲 Alertas 1h antes del partido: wa.me/15715463202",
+    "📲 Picks GRATIS diarios por WhatsApp: wa.me/15715463202",
+    "📲 Alerta 1h antes + picks gratis: wa.me/15715463202",
+    "💬 Recibe el parlay del dia gratis 👉 wa.me/15715463202",
+    "📲 Gol alerts + picks en tu WhatsApp: wa.me/15715463202",
 ]
 
 SOFT_CTAS_SITE = [
-    "📺 Más juegos hoy: dondever.app",
-    "🔗 Agenda completa: dondever.app",
-    "👉 Ver todos los partidos: dondever.app",
+    "📺 Horarios + canales de hoy: dondever.app",
+    "🔗 Donde ver todos los partidos: dondever.app",
+    "👉 Comparar streaming deportivo: dondever.app/streaming",
 ]
 
 
@@ -220,13 +223,21 @@ def compose_game_tweet(game: dict) -> str:
     channels = format_broadcast_short(game["broadcasts"])
     hashtag = HASHTAG_MAP.get(league, "#DondeVer")
 
+    pick_team = get_pick_team(game)
+    reason = random.choice(PICK_REASONS)
+
     opener_tpl = random.choice(PRE_GAME_OPENERS)
     headline = opener_tpl.format(
         emoji=emoji, first=first, second=second,
         time=time_str, channels=channels, league=league,
+        pick=pick_team,
     )
 
-    pick_line = get_pick_line(game)
+    # Si el opener ya incluye el pick, no repetirlo
+    if "{pick}" in opener_tpl:
+        pick_line = f"({reason})"
+    else:
+        pick_line = f"🎯 Pick: {pick_team} ({reason})"
 
     parts = [headline, "", pick_line]
 
