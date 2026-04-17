@@ -12,7 +12,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from config import AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS, get_affiliate_url, get_short_affiliate_url
 from game_card import generate_game_card, generate_live_card
-from sports_api import get_todays_games
+from sports_api import get_todays_games, fetch_odds, match_odds_to_game
 
 logger = logging.getLogger("dondever.twitter")
 
@@ -163,6 +163,41 @@ def should_include_betting() -> bool:
     return random.random() < 0.33
 
 
+def should_include_odds() -> bool:
+    """~40% de tweets pre-game incluyen momios para variedad."""
+    return random.random() < 0.40
+
+
+async def get_odds_line(game: dict) -> str | None:
+    """
+    Fetch odds for a game and return a formatted line for tweets.
+    Returns None if no odds available or API not configured.
+    Ej: '📊 Momios: Hornets -162 | Magic +136'
+    """
+    try:
+        league_slug = game.get("league_slug", "")
+        odds_list = await fetch_odds(league_slug)
+        odds = match_odds_to_game(game, odds_list)
+        if not odds or not odds.get("home_odds"):
+            return None
+
+        first, second = get_team_order(game)
+        # Use short names (first word) to save chars
+        first_short = first.split()[-1] if len(first) > 12 else first
+        second_short = second.split()[-1] if len(second) > 12 else second
+
+        home_left = game.get("sport", "") in HOME_LEFT_SPORTS
+        left_odds = odds["home_odds"] if home_left else odds["away_odds"]
+        right_odds = odds["away_odds"] if home_left else odds["home_odds"]
+
+        if odds.get("draw_odds"):
+            return f"📊 {first_short} {left_odds} | Empate {odds['draw_odds']} | {second_short} {right_odds}"
+        return f"📊 {first_short} {left_odds} | {second_short} {right_odds}"
+    except Exception as e:
+        logger.debug(f"Odds fetch for tweet failed: {e}")
+        return None
+
+
 # CTAs suaves que se rotan — siempre sale UNO (WhatsApp, sitio o casa)
 SOFT_CTAS_WA = [
     "📲 Picks GRATIS diarios por WhatsApp: wa.me/15715463202",
@@ -210,11 +245,12 @@ def get_pick_line(game: dict) -> str:
     return f"🎯 Pick: {pick} ({reason})"
 
 
-def compose_game_tweet(game: dict) -> str:
+async def compose_game_tweet(game: dict) -> str:
     """
     Compose a tweet for a single game.
     Max 280 chars. Rotates templates, usa 1 hashtag, incluye pick con razón.
     Betting CTA solo 1 de cada 3 (evita shadowban por spam).
+    ~40% incluye momios para variedad.
     """
     emoji = game.get("emoji", "")
     league = game.get("league_name", "")
@@ -240,6 +276,12 @@ def compose_game_tweet(game: dict) -> str:
         pick_line = f"🎯 Pick: {pick_team} ({reason})"
 
     parts = [headline, "", pick_line]
+
+    # ~40% de las veces incluir momios (variedad)
+    if should_include_odds():
+        odds_line = await get_odds_line(game)
+        if odds_line:
+            parts.append(odds_line)
 
     # Agregar canales solo si el opener no los incluye
     if "{channels}" not in opener_tpl and channels and channels != "Por confirmar":
@@ -777,7 +819,7 @@ async def post_game_tweets(minutes_before: int = 60):
         # Post if game starts within the next `minutes_before` minutes
         diff = (game_time - now).total_seconds() / 60
         if 0 < diff <= minutes_before:
-            tweet_text = compose_game_tweet(game)
+            tweet_text = await compose_game_tweet(game)
             # Generate game card image
             pick = get_pick_team(game)
             reason = random.choice(PICK_REASONS)
@@ -844,7 +886,7 @@ async def post_next_top_game():
 
     upcoming.sort(key=lambda x: (x[0], x[1]))  # mejor liga + mas pronto
     _, _, best = upcoming[0]
-    tweet_text = compose_game_tweet(best)
+    tweet_text = await compose_game_tweet(best)
     pick = get_pick_team(best)
     reason = random.choice(PICK_REASONS)
     card = _make_game_card(best, pick_team=pick, pick_reason=reason)
