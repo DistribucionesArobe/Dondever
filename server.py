@@ -900,6 +900,8 @@ async def sitemap_xml():
         ("guia/mejores-streaming-deportes-mexico", "weekly", "0.8"),
         ("guia/donde-ver-champions-league", "weekly", "0.8"),
         ("guia/como-ver-tudn-en-usa", "weekly", "0.8"),
+        ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
+        ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
     ]
     for page, freq, priority in static_pages:
         urls.append(

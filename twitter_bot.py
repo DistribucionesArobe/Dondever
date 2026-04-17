@@ -928,6 +928,147 @@ async def post_pick_del_dia():
     return result
 
 
+# ── Value Threads (Hilos de valor) ──────────────────────
+
+THREAD_REASONS_TEMPLATES = [
+    [
+        "1/ {emoji} {first} vs {second} — {league}\n\n3 razones para apostar a {pick}:\n\n🔥 {reason1}",
+        "2/ {stat_line}\n\nAdemás, {reason2}",
+        "3/ {reason3}\n\n{odds_line}\n\n{betting_cta}\n\n{hashtag}",
+    ],
+    [
+        "1/ 🎯 ANÁLISIS: {first} vs {second}\n{league} — {time} MX\n\n¿Quién gana hoy? Aquí mi pick 👇",
+        "2/ Pick: {pick}\n\n{reason1}. {reason2}.\n\n📺 Donde verlo: {channels}",
+        "3/ {odds_line}\n\n{betting_cta}\n\n📲 Picks gratis diarios: wa.me/15715463202\n\n{hashtag}",
+    ],
+]
+
+THREAD_STAT_LINES = [
+    "En los últimos 5 partidos: 4 victorias como local",
+    "Lleva 3 partidos seguidos anotando",
+    "No ha perdido en casa en las últimas 6 fechas",
+    "Mejor defensa de la liga en los últimos 10 juegos",
+    "Promedio de 2.1 goles por partido esta temporada",
+    "Ha ganado 5 de los últimos 7 enfrentamientos directos",
+]
+
+THREAD_EXTRA_REASONS = [
+    "el rival viene con varias bajas importantes",
+    "juegan en casa con la afición a favor",
+    "están peleando por calificar y necesitan los 3 puntos",
+    "el DT tiene un excelente historial en este tipo de partidos",
+    "vienen de una racha positiva de 4 juegos sin perder",
+    "el rival ha tenido problemas defensivos toda la temporada",
+    "tienen el mejor ataque del torneo en los últimos 5 juegos",
+]
+
+
+async def post_value_thread(game: dict) -> dict | None:
+    """
+    Post a 3-tweet thread with analysis/reasons for a pick.
+    Solo para partidos de ligas top. ~1 hilo por día max.
+    """
+    sentinel = f"thread:{datetime.now(TZ_MX).strftime('%Y%m%d')}"
+    if _already_posted(sentinel):
+        return None
+
+    first, second = get_team_order(game)
+    pick_team = get_pick_team(game)
+    emoji = game.get("emoji", "")
+    league = game.get("league_name", "")
+    time_str = format_game_time_mx(game["date"])
+    channels = format_broadcast_short(game["broadcasts"])
+    hashtag = HASHTAG_MAP.get(league, "#DondeVer")
+    betting_cta = get_betting_affiliate_text()
+
+    # Get odds line if available
+    odds_line = ""
+    try:
+        odds_text = await get_odds_line(game)
+        if odds_text:
+            odds_line = odds_text
+    except Exception:
+        pass
+    if not odds_line:
+        odds_line = f"📊 Momios disponibles en dondever.app"
+
+    # Pick random reasons
+    reasons = random.sample(PICK_REASONS, min(3, len(PICK_REASONS)))
+    extra_reasons = random.sample(THREAD_EXTRA_REASONS, min(2, len(THREAD_EXTRA_REASONS)))
+    stat_line = random.choice(THREAD_STAT_LINES)
+
+    # Pick a thread template
+    tpl = random.choice(THREAD_REASONS_TEMPLATES)
+
+    tweets = []
+    for tweet_tpl in tpl:
+        tweet = tweet_tpl.format(
+            emoji=emoji, first=first, second=second,
+            league=league, pick=pick_team, time=time_str,
+            channels=channels, hashtag=hashtag,
+            reason1=reasons[0], reason2=extra_reasons[0],
+            reason3=extra_reasons[1] if len(extra_reasons) > 1 else reasons[-1],
+            stat_line=stat_line, odds_line=odds_line,
+            betting_cta=betting_cta,
+        )
+        # Trim if over 280
+        if len(tweet) > 280:
+            tweet = tweet[:277] + "..."
+        tweets.append(tweet)
+
+    # Post thread: first tweet, then replies
+    first_result = post_tweet(tweets[0])
+    if not first_result["success"]:
+        return first_result
+
+    last_id = first_result["tweet_id"]
+    for tweet in tweets[1:]:
+        import time as _t
+        _t.sleep(1)  # small delay between thread tweets
+        reply_result = post_tweet(tweet, reply_to=last_id)
+        if reply_result["success"]:
+            last_id = reply_result["tweet_id"]
+
+    _mark_posted(sentinel)
+    logger.info(f"Value thread posted for {first} vs {second} ({len(tweets)} tweets)")
+    return {"success": True, "thread_tweets": len(tweets), "game": game.get("name", "")}
+
+
+async def maybe_post_thread():
+    """
+    Check if there's a good game for a value thread today.
+    Solo ligas top, solo 1 hilo por día, ~50% de probabilidad.
+    """
+    # Solo 50% de los días para no saturar
+    if random.random() > 0.50:
+        return None
+
+    games = await get_todays_games()
+    top_leagues = ["liga-mx", "premier-league", "champions", "nba", "nfl", "la-liga"]
+
+    upcoming = [
+        g for g in games
+        if g["status"]["state"] == "pre"
+        and g["broadcasts"]
+        and g["league_slug"] in top_leagues
+    ]
+
+    if not upcoming:
+        return None
+
+    # Pick the best game (priority by league order)
+    best = None
+    for pl in top_leagues:
+        best = next((g for g in upcoming if g["league_slug"] == pl), None)
+        if best:
+            break
+
+    if not best:
+        return None
+
+    return await post_value_thread(best)
+
+
 # ── Live Game Monitor (Reactive Tweets) ─────────────────
 
 # Track scores to detect changes (goals, etc.)
@@ -1252,4 +1393,13 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    logger.info("Twitter bot scheduler configured (games, summary, pick, poll, live monitor)")
+    # 5) Value thread — 11:30 AM MX (17:30 UTC), ~50% de los dias, max 1 por dia
+    scheduler.add_job(
+        maybe_post_thread,
+        CronTrigger(hour=17, minute=30),
+        id="twitter_value_thread",
+        name="Value thread (3 razones para apostar)",
+        replace_existing=True,
+    )
+
+    logger.info("Twitter bot scheduler configured (games, summary, pick, poll, live monitor, threads)")
