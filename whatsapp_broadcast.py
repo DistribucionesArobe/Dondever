@@ -45,6 +45,16 @@ def get_twilio_client() -> TwilioClient | None:
     return TwilioClient(sid, token)
 
 
+def _ensure_wa_number(phone: str) -> str:
+    """Ensure phone has whatsapp:+XXX format, stripping spaces and adding prefix."""
+    phone = phone.strip()
+    if phone.startswith("whatsapp:"):
+        phone = phone[9:].strip()  # remove prefix to re-normalize
+    if not phone.startswith("+"):
+        phone = f"+{phone}"
+    return f"whatsapp:{phone}"
+
+
 def format_broadcast_channels(broadcasts: list[dict]) -> str:
     """Format channels for broadcast message."""
     if not broadcasts:
@@ -186,7 +196,7 @@ async def send_daily_broadcast():
     from_number = TWILIO_WA_NUMBER
 
     for phone in subscribers:
-        to_number = phone if phone.startswith("whatsapp:") else f"whatsapp:{phone}"
+        to_number = _ensure_wa_number(phone)
         try:
             if CONTENT_SID:
                 # Use pre-approved template (works outside 24h window)

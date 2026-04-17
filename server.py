@@ -656,7 +656,8 @@ async def whatsapp_broadcast_to(to: str):
         client = get_twilio_client()
         if not client:
             return {"ok": False, "error": "Twilio no configurado"}
-        to_num = to if to.startswith("whatsapp:") else f"whatsapp:{to}"
+        from whatsapp_broadcast import _ensure_wa_number
+        to_num = _ensure_wa_number(to)
 
         if CONTENT_SID:
             import json as _json
