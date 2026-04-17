@@ -602,6 +602,34 @@ async def whatsapp_test_send(to: str):
         return {"ok": False, "error": str(e), "type": type(e).__name__}
 
 
+@app.get("/whatsapp/debug")
+async def whatsapp_debug():
+    """Diagnostico completo del sistema WhatsApp: subscribers, twilio, scheduler."""
+    from subscribers import get_active_subscribers, _load, SUBSCRIBERS_FILE
+    from whatsapp_broadcast import get_twilio_client, CONTENT_SID
+    from config import TWILIO_WA_NUMBER
+
+    # Subscriber info
+    data = _load()
+    active = get_active_subscribers()
+
+    # Twilio check
+    client = get_twilio_client()
+    twilio_ok = client is not None
+
+    return {
+        "subscribers_file": SUBSCRIBERS_FILE,
+        "total_subscribers": len(data.get("subscribers", {})),
+        "active_subscribers": len(active),
+        "subscriber_numbers": active,  # remove in production if privacy concern
+        "all_data": data,
+        "twilio_configured": twilio_ok,
+        "twilio_from": TWILIO_WA_NUMBER,
+        "content_template_sid": CONTENT_SID or "NOT SET — broadcasts only work within 24h window",
+        "hint": "Si el broadcast falla, el usuario debe mandar un mensaje al bot dentro de las 24h previas, O configura TWILIO_CONTENT_SID con un template aprobado.",
+    }
+
+
 @app.post("/whatsapp/broadcast-now")
 async def whatsapp_broadcast_now(token: str = ""):
     """Disparar el broadcast diario ahora mismo a todos los suscriptores."""
@@ -620,7 +648,7 @@ async def whatsapp_broadcast_now(token: str = ""):
 async def whatsapp_broadcast_to(to: str):
     """Mandar el broadcast diario a un solo numero. ej: /whatsapp/broadcast-to?to=+521XXXXXXXXXX"""
     try:
-        from whatsapp_broadcast import compose_daily_broadcast, get_twilio_client
+        from whatsapp_broadcast import compose_daily_broadcast, get_twilio_client, CONTENT_SID
         from config import TWILIO_WA_NUMBER
         msg = await compose_daily_broadcast()
         if not msg:
@@ -629,10 +657,27 @@ async def whatsapp_broadcast_to(to: str):
         if not client:
             return {"ok": False, "error": "Twilio no configurado"}
         to_num = to if to.startswith("whatsapp:") else f"whatsapp:{to}"
-        m = client.messages.create(body=msg, from_=TWILIO_WA_NUMBER, to=to_num)
-        return {"ok": True, "sid": m.sid, "status": m.status, "to": to_num, "preview": msg[:200]}
+
+        if CONTENT_SID:
+            m = client.messages.create(content_sid=CONTENT_SID, from_=TWILIO_WA_NUMBER, to=to_num)
+        else:
+            m = client.messages.create(body=msg, from_=TWILIO_WA_NUMBER, to=to_num)
+
+        return {
+            "ok": True, "sid": m.sid, "status": m.status, "to": to_num,
+            "used_template": bool(CONTENT_SID),
+            "preview": msg[:200],
+        }
     except Exception as e:
-        return {"ok": False, "error": str(e), "type": type(e).__name__}
+        error_msg = str(e)
+        hint = ""
+        if "63016" in error_msg or "63032" in error_msg or "outside" in error_msg.lower():
+            hint = "El usuario esta fuera de la ventana de 24h. Necesitas un Content Template aprobado en Twilio."
+        elif "21408" in error_msg:
+            hint = "El numero no tiene sesion activa de WhatsApp. El usuario debe mandar un mensaje primero."
+        elif "credentials" in error_msg.lower() or "auth" in error_msg.lower():
+            hint = "Credenciales de Twilio invalidas. Revisa TWILIO_ACCOUNT_SID y TWILIO_AUTH_TOKEN."
+        return {"ok": False, "error": error_msg, "type": type(e).__name__, "hint": hint}
 
 
 # ── Twitter Bot Scheduler ────────────────────────────────

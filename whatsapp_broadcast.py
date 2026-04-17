@@ -1,9 +1,17 @@
 """
 WhatsApp broadcast for DondeVer.
 Sends daily picks + betting links to all subscribers via Twilio.
+
+NOTE on WhatsApp 24-hour window:
+  WhatsApp only allows freeform messages within 24h of the user's last message.
+  Outside that window, you MUST use a pre-approved Content Template.
+  Set TWILIO_CONTENT_SID env var with an approved template SID to enable
+  broadcasts outside the 24h window. Without it, only users who messaged
+  recently will receive the broadcast.
 """
 
 import logging
+import os
 import random
 from twilio.rest import Client as TwilioClient
 from config import (
@@ -16,6 +24,10 @@ from subscribers import get_active_subscribers, get_subscriber_count
 from datetime import datetime
 
 logger = logging.getLogger("dondever.broadcast")
+
+# Optional: Twilio Content Template SID for messages outside 24h window
+# Create one at https://console.twilio.com/content-editor
+CONTENT_SID = os.getenv("TWILIO_CONTENT_SID", "")
 
 
 def get_twilio_client() -> TwilioClient | None:
@@ -143,9 +155,16 @@ async def send_daily_broadcast():
     """
     Send the daily picks broadcast to all active subscribers.
     Called by scheduler every morning.
+
+    Strategy:
+    1. If TWILIO_CONTENT_SID is set → use template (works outside 24h window)
+    2. Otherwise → try freeform message (only works within 24h of user's last msg)
+    3. Log detailed errors so we can diagnose delivery failures
     """
     subscribers = get_active_subscribers()
     count = len(subscribers)
+
+    logger.info(f"Broadcast starting: {count} subscriber(s), content_sid={'set' if CONTENT_SID else 'NOT set'}")
 
     if count == 0:
         logger.info("No subscribers for broadcast")
@@ -158,27 +177,45 @@ async def send_daily_broadcast():
 
     client = get_twilio_client()
     if not client:
+        logger.error("Twilio client creation failed — broadcast aborted")
         return {"sent": 0, "failed": count, "error": "Twilio not configured"}
 
     sent = 0
     failed = 0
+    errors = []
     from_number = TWILIO_WA_NUMBER
 
     for phone in subscribers:
+        to_number = phone if phone.startswith("whatsapp:") else f"whatsapp:{phone}"
         try:
-            # Ensure phone has whatsapp: prefix
-            to_number = phone if phone.startswith("whatsapp:") else f"whatsapp:{phone}"
-
-            client.messages.create(
-                body=message_text,
-                from_=from_number,
-                to=to_number,
-            )
+            if CONTENT_SID:
+                # Use pre-approved template (works outside 24h window)
+                msg = client.messages.create(
+                    content_sid=CONTENT_SID,
+                    from_=from_number,
+                    to=to_number,
+                )
+            else:
+                # Freeform message (only works within 24h session window)
+                msg = client.messages.create(
+                    body=message_text,
+                    from_=from_number,
+                    to=to_number,
+                )
             sent += 1
-            logger.info(f"Broadcast sent to {to_number}")
+            logger.info(f"Broadcast sent to {to_number} — SID: {msg.sid}, status: {msg.status}")
         except Exception as e:
             failed += 1
-            logger.warning(f"Broadcast failed for {phone}: {e}")
+            error_detail = str(e)
+            errors.append({"phone": phone, "error": error_detail})
+            # Log the full Twilio error for diagnosis
+            logger.error(
+                f"Broadcast FAILED for {to_number}: {error_detail} "
+                f"(hint: if error 63016/63032, user is outside 24h window — need Content Template)"
+            )
 
+    result = {"sent": sent, "failed": failed, "total": count, "errors": errors}
     logger.info(f"Broadcast complete: {sent} sent, {failed} failed out of {count}")
-    return {"sent": sent, "failed": failed, "total": count}
+    if errors:
+        logger.warning(f"Broadcast errors detail: {errors}")
+    return result
