@@ -659,7 +659,8 @@ async def whatsapp_broadcast_to(to: str):
         to_num = to if to.startswith("whatsapp:") else f"whatsapp:{to}"
 
         if CONTENT_SID:
-            m = client.messages.create(content_sid=CONTENT_SID, from_=TWILIO_WA_NUMBER, to=to_num)
+            import json as _json
+            m = client.messages.create(content_sid=CONTENT_SID, content_variables=_json.dumps({"1": msg}), from_=TWILIO_WA_NUMBER, to=to_num)
         else:
             m = client.messages.create(body=msg, from_=TWILIO_WA_NUMBER, to=to_num)
 

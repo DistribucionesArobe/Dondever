@@ -190,8 +190,10 @@ async def send_daily_broadcast():
         try:
             if CONTENT_SID:
                 # Use pre-approved template (works outside 24h window)
+                import json as _json
                 msg = client.messages.create(
                     content_sid=CONTENT_SID,
+                    content_variables=_json.dumps({"1": message_text}),
                     from_=from_number,
                     to=to_number,
                 )
