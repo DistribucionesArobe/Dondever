@@ -267,21 +267,65 @@ async def game_detail(request: Request, event_id: str):
     )
 
 
+# ── Affiliate click tracking ──────────────────────────────
+import json as _json
+from pathlib import Path as _Path
+from datetime import date as _date
+
+_CLICKS_FILE = os.getenv("CLICKS_FILE", os.path.join(
+    os.path.dirname(os.getenv("SUBSCRIBERS_FILE", ".")), "affiliate_clicks.json"
+))
+
+
+def _track_click(affiliate: str, source: str):
+    """Persist affiliate click count by day/affiliate/source."""
+    try:
+        _Path(_CLICKS_FILE).parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(_CLICKS_FILE, "r") as f:
+                data = _json.load(f)
+        except (FileNotFoundError, _json.JSONDecodeError):
+            data = {}
+        today = _date.today().isoformat()
+        data.setdefault(today, {})
+        key = f"{affiliate}:{source}"
+        data[today][key] = data[today].get(key, 0) + 1
+        with open(_CLICKS_FILE, "w") as f:
+            _json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.warning(f"Click tracking failed: {e}")
+
+
+def get_click_stats(days: int = 7) -> dict:
+    """Get click stats for the last N days."""
+    try:
+        with open(_CLICKS_FILE, "r") as f:
+            data = _json.load(f)
+    except (FileNotFoundError, _json.JSONDecodeError):
+        data = {}
+    from datetime import timedelta
+    cutoff = (_date.today() - timedelta(days=days)).isoformat()
+    result = {}
+    for day, clicks in data.items():
+        if day >= cutoff:
+            for k, v in clicks.items():
+                result[k] = result.get(k, 0) + v
+    return result
+
+
 # Branded affiliate redirect — "dondever.app/go/betsson" en vez de links largos
 @app.get("/go/{key}")
 async def affiliate_redirect(key: str, s: str = "web"):
     """
     Redirige a la URL del afiliado con tracking de source.
     Uso: /go/betsson?s=twitter  →  link afiliado real + sub1=twitter
-    Beneficios: links cortos y con marca en tweets/WhatsApp + tracking de clicks.
     """
     from fastapi.responses import RedirectResponse
     from config import get_affiliate_url
+    _track_click(key, s)  # track antes de redirigir
     target = get_affiliate_url(key, source=s)
     if target == "#":
         return RedirectResponse(url="/", status_code=302)
-    # 302 (no permanente) para que podamos cambiar afiliado en el futuro sin que
-    # los navegadores cacheen la redirección.
     return RedirectResponse(url=target, status_code=302)
 
 
@@ -453,6 +497,75 @@ async def admin_subscribers(token: str = ""):
             for p, info in inactive
         ],
     }
+
+
+@app.get("/admin/dashboard", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, token: str = ""):
+    """Dashboard admin con métricas clave de DondeVer."""
+    admin_token = os.getenv("ADMIN_TOKEN", "")
+    if not admin_token or token != admin_token:
+        return HTMLResponse("<h1>Token inválido</h1><p>Usa ?token=TU_ADMIN_TOKEN</p>", status_code=403)
+
+    from subscribers import _load, get_subscriber_count, get_active_subscribers
+    from twitter_bot import _tweet_timestamps, _posted_games, MAX_TWEETS_PER_DAY
+
+    # Subscribers
+    subs_data = _load()
+    all_subs = subs_data.get("subscribers", {})
+    active_subs = [(p, i) for p, i in all_subs.items() if i.get("active", True)]
+    inactive_subs = [(p, i) for p, i in all_subs.items() if not i.get("active", True)]
+
+    # Today's tweets
+    now_ts = __import__("time").time()
+    tweets_today = len(_tweet_timestamps)
+    tweets_last_hour = sum(1 for t in _tweet_timestamps if t > now_ts - 3600)
+
+    # Games posted today
+    today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    games_posted = len(_posted_games.get(today_key, set()))
+
+    # Affiliate clicks
+    clicks_7d = get_click_stats(7)
+    clicks_today = get_click_stats(1)
+
+    # Group clicks by affiliate and source
+    def group_clicks(raw: dict) -> dict:
+        by_aff = {}
+        by_src = {}
+        total = 0
+        for k, v in raw.items():
+            aff, src = k.split(":", 1) if ":" in k else (k, "unknown")
+            by_aff[aff] = by_aff.get(aff, 0) + v
+            by_src[src] = by_src.get(src, 0) + v
+            total += v
+        return {"by_affiliate": by_aff, "by_source": by_src, "total": total}
+
+    clicks_7d_grouped = group_clicks(clicks_7d)
+    clicks_today_grouped = group_clicks(clicks_today)
+
+    # Today's games count
+    try:
+        games = await get_todays_games()
+        total_games = len(games)
+        live_games = sum(1 for g in games if g["status"]["state"] == "in")
+    except Exception:
+        total_games = 0
+        live_games = 0
+
+    return templates.TemplateResponse(request, "dashboard.html", {
+        "active_count": len(active_subs),
+        "inactive_count": len(inactive_subs),
+        "active_subs": active_subs,
+        "tweets_today": tweets_today,
+        "tweets_max": MAX_TWEETS_PER_DAY,
+        "tweets_last_hour": tweets_last_hour,
+        "games_posted": games_posted,
+        "total_games": total_games,
+        "live_games": live_games,
+        "clicks_today": clicks_today_grouped,
+        "clicks_7d": clicks_7d_grouped,
+        "token": token,
+    })
 
 
 @app.post("/whatsapp/test-send")
