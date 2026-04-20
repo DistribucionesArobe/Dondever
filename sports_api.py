@@ -22,29 +22,24 @@ logger = logging.getLogger("dondever.sports")
 _cache = TTLCache(maxsize=500, ttl=300)
 # TV cache: 30 min TTL (channels don't change often)
 _tv_cache = TTLCache(maxsize=1000, ttl=1800)
-# Odds cache: 10 min TTL (odds change frequently but we don't need real-time)
-_odds_cache = TTLCache(maxsize=200, ttl=600)
+# Odds cache: 4 hour TTL — free tier only has 500 req/month, must conserve
+_odds_cache = TTLCache(maxsize=200, ttl=14400)
 
 # ── Odds API (the-odds-api.com) ────────────────────────
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
 ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports"
 
 # Map our league slugs to the-odds-api sport keys
+# NOTE: Limited to high-traffic leagues to conserve free tier (500 req/month)
+# With 4h cache + 6 leagues ≈ ~6 req/day × 30 days = ~180 req/month (safe margin)
+# Add more leagues back when upgrading to paid plan
 ODDS_SPORT_MAP = {
     "liga-mx": "soccer_mexico_ligamx",
-    "mls": "soccer_usa_mls",
     "premier-league": "soccer_epl",
-    "la-liga": "soccer_spain_la_liga",
-    "serie-a": "soccer_italy_serie_a",
-    "bundesliga": "soccer_germany_bundesliga",
-    "ligue-1": "soccer_france_ligue_one",
     "champions": "soccer_uefa_champs_league",
-    "europa-league": "soccer_uefa_europa_league",
     "nfl": "americanfootball_nfl",
     "nba": "basketball_nba",
     "mlb": "baseball_mlb",
-    "nhl": "icehockey_nhl",
-    "ufc": "mma_mixed_martial_arts",
 }
 
 
