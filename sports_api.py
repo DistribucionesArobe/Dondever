@@ -311,24 +311,11 @@ async def parse_espn_events_enriched(
                     "info": CHANNEL_ALIASES.get(channel, {}),
                 })
 
-        # 2) Try TheSportsDB for better TV data
-        sportsdb_tv = await get_sportsdb_tv_for_teams(
-            home["name"], away["name"], league_slug, date_str
-        )
+        # 2) TheSportsDB disabled — free API key only returns 404s
+        # ESPN geoBroadcasts + CHANNEL_ALIASES is sufficient
+        # Re-enable if we get a premium TheSportsDB key in the future
 
-        # Merge: combine both sources, prefer TheSportsDB, supplement with ESPN
-        seen_channels = set()
-        broadcasts = []
-        for b in sportsdb_tv:
-            ch = b["channel"].lower()
-            if ch not in seen_channels:
-                seen_channels.add(ch)
-                broadcasts.append(b)
-        for b in espn_broadcasts:
-            ch = b["channel"].lower()
-            if ch not in seen_channels:
-                seen_channels.add(ch)
-                broadcasts.append(b)
+        broadcasts = espn_broadcasts
 
         # Status
         status_type = ev.get("status", {}).get("type", {})
