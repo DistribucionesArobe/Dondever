@@ -20,8 +20,10 @@ logger = logging.getLogger("dondever.sports")
 
 # Cache: 5 min TTL, max 500 entries
 _cache = TTLCache(maxsize=500, ttl=300)
-# TV cache: 30 min TTL (channels don't change often)
-_tv_cache = TTLCache(maxsize=1000, ttl=1800)
+# TV cache: 4 hour TTL — TheSportsDB free tier has aggressive rate limits (429)
+_tv_cache = TTLCache(maxsize=1000, ttl=14400)
+# Track when TheSportsDB is rate-limiting us to avoid flooding with 429s
+_sportsdb_blocked_until = 0  # timestamp when we can retry
 # Odds cache: 4 hour TTL — free tier only has 500 req/month, must conserve
 _odds_cache = TTLCache(maxsize=200, ttl=14400)
 
@@ -122,7 +124,15 @@ async def fetch_sportsdb_tv_by_event(event_id: str) -> list[dict]:
     """
     Lookup TV broadcast channels for a specific event ID.
     TheSportsDB Premium endpoint.
+    Includes rate-limit protection: if we get 429, back off for 30 min.
     """
+    import time as _time
+    global _sportsdb_blocked_until
+
+    # If we're rate-limited, don't even try
+    if _time.time() < _sportsdb_blocked_until:
+        return []
+
     cache_key = f"sportsdb:tv:{event_id}"
     if cache_key in _tv_cache:
         return _tv_cache[cache_key]
@@ -133,6 +143,11 @@ async def fetch_sportsdb_tv_by_event(event_id: str) -> list[dict]:
     async with httpx.AsyncClient(timeout=10) as client:
         try:
             resp = await client.get(url, params=params)
+            if resp.status_code == 429:
+                # Rate limited — back off for 30 minutes
+                _sportsdb_blocked_until = _time.time() + 1800
+                logger.warning("TheSportsDB rate limited (429) — backing off 30 min")
+                return []
             resp.raise_for_status()
             data = resp.json()
             tv_list = data.get("tvevent") or []
