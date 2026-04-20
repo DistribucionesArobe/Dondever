@@ -52,9 +52,10 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
         ga_id = os.getenv("GA_MEASUREMENT_ID", "").strip()
+        gads_id = os.getenv("GOOGLE_ADS_ID", "").strip()  # format: AW-XXXXXXXXXXX
         clarity_id = os.getenv("CLARITY_PROJECT_ID", "").strip()
         gtm_id = os.getenv("GTM_CONTAINER_ID", "").strip()
-        if not ga_id and not clarity_id and not gtm_id:
+        if not ga_id and not clarity_id and not gtm_id and not gads_id:
             return response
 
         ctype = response.headers.get("content-type", "")
@@ -85,7 +86,8 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                     f'  function gtag(){{dataLayer.push(arguments);}}\n'
                     f'  gtag("js", new Date());\n'
                     f'  gtag("config", "{ga_id}", {{ anonymize_ip: true }});\n'
-                    f'</script>\n'
+                    + (f'  gtag("config", "{gads_id}");\n' if gads_id else '')
+                    + f'</script>\n'
                 )
             if clarity_id:
                 snippet += (
