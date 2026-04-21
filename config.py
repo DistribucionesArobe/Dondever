@@ -56,6 +56,15 @@ AFFILIATES = {
         "cta_twitter": "Ve partidos bloqueados con VPN",
         "bonus": "Hasta 72% de descuento",
     },
+    "amazon": {
+        "name": "Amazon Prime Video",
+        "url": os.getenv("AFFILIATE_AMAZON", "") or "https://www.amazon.com/gp/video/offers?tag=dondever2000-20",
+        "logo": "/static/affiliates/amazon.svg",
+        "cta": "Ve deportes en Prime Video",
+        "cta_short": "Prueba gratis 30 dias",
+        "cta_twitter": "Ve deportes en Amazon Prime Video",
+        "bonus": "30 dias gratis",
+    },
 }
 
 # ── ESPN Sports & Leagues ────────────────────────────────

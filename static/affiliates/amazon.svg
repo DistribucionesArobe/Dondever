@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40">
+  <rect width="120" height="40" rx="6" fill="#232F3E"/>
+  <text x="60" y="20" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#FF9900" text-anchor="middle">amazon</text>
+  <text x="60" y="33" font-family="Arial,sans-serif" font-size="10" fill="white" text-anchor="middle">prime video</text>
+</svg>
