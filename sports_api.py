@@ -45,6 +45,63 @@ ODDS_SPORT_MAP = {
 }
 
 
+# ── Default TV channels per league (fallback when ESPN has no broadcast info) ──
+DEFAULT_LEAGUE_CHANNELS = {
+    "liga-mx-femenil": ["TUDN", "ViX"],
+    "liga-expansion": ["ESPN MX", "ViX"],
+    "mls": ["Apple TV+", "ViX"],
+    "premier-league": ["ESPN MX", "Paramount+"],
+    "la-liga": ["ESPN MX"],
+    "serie-a": ["ESPN MX", "Paramount+"],
+    "bundesliga": ["ESPN MX"],
+    "ligue-1": ["ESPN MX"],
+    "champions": ["TUDN", "Canal 5", "ViX", "Paramount+"],
+    "europa-league": ["ESPN MX", "ViX"],
+    "concacaf-cl": ["TUDN", "ViX"],
+    "nfl": ["ESPN MX", "Fox Sports MX", "TUDN"],
+    "nba": ["ESPN MX"],
+    "mlb": ["ESPN MX"],
+    "nhl": ["ESPN MX"],
+    "ufc": ["Fox Sports MX", "ESPN MX"],
+}
+
+# Liga MX Clausura 2026: broadcast rights per team (home matches)
+# Source: informador.mx Jan 2026
+LIGA_MX_TEAM_CHANNELS = {
+    # TUDN + ViX Premium
+    "america": ["TUDN", "ViX"],
+    "atlas": ["TUDN", "ViX"],
+    "cruz azul": ["TUDN", "ViX"],
+    "santos laguna": ["TUDN", "ViX"],
+    "santos": ["TUDN", "ViX"],
+    "monterrey": ["TUDN", "ViX"],
+    "rayados": ["TUDN", "ViX"],
+    "pumas": ["TUDN", "ViX"],
+    "unam": ["TUDN", "ViX"],
+    # TV Azteca + FOX One
+    "juarez": ["Azteca 7", "Fox Sports MX"],
+    "puebla": ["Azteca 7", "Fox Sports MX"],
+    "mazatlan": ["Azteca 7", "Fox Sports MX"],
+    "tigres uanl": ["Azteca 7", "Fox Sports MX"],
+    "tigres": ["Azteca 7", "Fox Sports MX"],
+    # FOX One exclusivo
+    "leon": ["Fox Sports MX"],
+    "pachuca": ["Fox Sports MX"],
+    "queretaro": ["Fox Sports MX"],
+    "tijuana": ["Fox Sports MX"],
+    "xolos": ["Fox Sports MX"],
+    # Necaxa: TV Azteca + ViX + Claro Sports
+    "necaxa": ["Azteca 7", "ViX", "Claro Sports"],
+    # ESPN + Disney+
+    "atletico san luis": ["ESPN MX", "Disney+"],
+    "san luis": ["ESPN MX", "Disney+"],
+    # Toluca: TUDN + FOX + Azteca
+    "toluca": ["TUDN", "Fox Sports MX", "Azteca 7"],
+    # Amazon Prime Video exclusivo
+    "guadalajara": ["Amazon Prime"],
+    "chivas": ["Amazon Prime"],
+}
+
 # ── ESPN API ─────────────────────────────────────────────
 
 async def fetch_espn_scoreboard(
@@ -312,10 +369,35 @@ async def parse_espn_events_enriched(
                 })
 
         # 2) TheSportsDB disabled — free API key only returns 404s
-        # ESPN geoBroadcasts + CHANNEL_ALIASES is sufficient
-        # Re-enable if we get a premium TheSportsDB key in the future
-
+        # If ESPN has no broadcast info, use default channels per league
         broadcasts = espn_broadcasts
+
+        if not broadcasts:
+            # For Liga MX, check team-specific channels first
+            if league_slug == "liga-mx":
+                home_lower = home["name"].lower()
+                away_lower = away["name"].lower()
+                team_channels = None
+                # Check home team first (home team usually determines broadcast)
+                for team_key, channels in LIGA_MX_TEAM_CHANNELS.items():
+                    if team_key in home_lower or home_lower in team_key:
+                        team_channels = channels
+                        break
+                if not team_channels:
+                    for team_key, channels in LIGA_MX_TEAM_CHANNELS.items():
+                        if team_key in away_lower or away_lower in team_key:
+                            team_channels = channels
+                            break
+                defaults = team_channels or ["TUDN", "ViX"]
+            else:
+                defaults = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
+
+            for ch in defaults:
+                broadcasts.append({
+                    "channel": ch,
+                    "market": "National",
+                    "info": CHANNEL_ALIASES.get(ch, {"name": ch, "type": "cable"}),
+                })
 
         # Status
         status_type = ev.get("status", {}).get("type", {})
