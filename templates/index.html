@@ -483,7 +483,7 @@
                 <div class="promo-tiny">Solo nuevos usuarios +18. Aplican T&C.</div>
             </div>
         </div>
-        <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="promo-cta">
+        <a href="/go/{{ key }}?s=web" target="_blank" rel="noopener sponsored" class="promo-cta" data-affiliate="{{ key }}">
             {{ aff.cta }} &#8599;
         </a>
     </div>
@@ -579,7 +579,7 @@
                     <div class="promo-tiny">Publicidad</div>
                 </div>
             </div>
-            <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="promo-cta">{{ aff.cta }} &#8599;</a>
+            <a href="/go/{{ key }}?s=web" target="_blank" rel="noopener sponsored" class="promo-cta" data-affiliate="{{ key }}">{{ aff.cta }} &#8599;</a>
         </div>
         {% endif %}
         {% endfor %}
@@ -619,7 +619,7 @@
 <div class="vpn-banner">
     <div class="vpn-banner-inner">
         <div style="font-weight:700;font-size:0.95rem;">Consultar opciones oficiales por region</div>
-        <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored">{{ aff.cta }} &#8599;</a>
+        <a href="/go/{{ key }}?s=web" target="_blank" rel="noopener sponsored" data-affiliate="{{ key }}">{{ aff.cta }} &#8599;</a>
         <p>La disponibilidad de transmisiones deportivas depende de licencias regionales. Una VPN puede ayudar. Publicidad.</p>
     </div>
 </div>
@@ -634,7 +634,7 @@
             <div style="font-weight:700;font-size:0.85rem;">{{ aff.name }}</div>
             <div style="font-size:0.65rem;opacity:0.8;">{{ aff.bonus }}</div>
         </div>
-        <a href="{{ aff.url }}" target="_blank" rel="noopener sponsored" class="promo-cta" style="padding:0.4rem 1rem;font-size:0.8rem;">{{ aff.cta_short }} &rarr;</a>
+        <a href="/go/{{ key }}?s=web" target="_blank" rel="noopener sponsored" class="promo-cta" data-affiliate="{{ key }}" style="padding:0.4rem 1rem;font-size:0.8rem;">{{ aff.cta_short }} &rarr;</a>
     </div>
     {% endfor %}
 </div>
@@ -784,10 +784,19 @@
         });
     });
 
-    // ── Affiliate click tracking ───────────
-    document.querySelectorAll('.promo-cta').forEach(btn => {
+    // ── Affiliate click tracking → GA4 events ───────────
+    document.querySelectorAll('[data-affiliate]').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
+            const affiliate = this.dataset.affiliate;
+            // Send GA4 event
+            if (typeof gtag === 'function') {
+                gtag('event', 'affiliate_click', {
+                    affiliate_name: affiliate,
+                    link_url: this.href,
+                    page_location: window.location.pathname,
+                });
+            }
         });
     });
 </script>
