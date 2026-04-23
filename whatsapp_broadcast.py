@@ -115,8 +115,13 @@ async def compose_daily_broadcast() -> str:
         except Exception:
             return ""
 
-    # Build message
-    lines = [f"*DONDE VER HOY {date_display}*\n"]
+    # Build message — WhatsApp template rules:
+    # - Max 10 emojis total
+    # - No more than 2 consecutive newlines
+    # - Must have some fixed text (not only variables)
+    lines = [f"*DONDE VER HOY {date_display}*"]
+    emojis_used = 0
+    max_emojis = 8  # leave room for template wrapper
 
     # Pick del dia section
     if pick:
@@ -126,37 +131,40 @@ async def compose_daily_broadcast() -> str:
         time_str = fmt_time(pick["date"])
         pick_team, pick_reason = _compute_pick(pick)
         extra = _compute_extra_market(pick)
-        lines.append(f"🎯 *PICK DEL DIA*")
-        lines.append(f"{pick.get('emoji', '')} {first} vs {second}")
-        lines.append(f"{pick['league_name']} — {time_str} MX")
-        lines.append(f"📺 {channels}")
-        lines.append(f"✅ Ganador: *{pick_team}* — _{pick_reason}_")
-        lines.append(f"💡 Mercado extra: {extra}\n")
+        lines.append("")
+        lines.append("*PICK DEL DIA*")
+        lines.append(f"{first} vs {second}")
+        lines.append(f"{pick['league_name']} - {time_str} MX")
+        lines.append(f"TV: {channels}")
+        lines.append(f"Ganador: *{pick_team}* - _{pick_reason}_")
+        lines.append(f"Mercado extra: {extra}")
 
     # Top games (up to 5, excluding pick)
     pick_id = pick["id"] if pick else None
     top_games = [g for g in upcoming if g["id"] != pick_id][:5]
 
     if top_games:
+        lines.append("")
         lines.append("*MAS JUEGOS HOY*")
         for g in top_games:
             first, second = team_order(g)
             time_str = fmt_time(g["date"])
             channels = format_broadcast_channels(g["broadcasts"])
-            lines.append(f"{g.get('emoji', '')} {first} vs {second} - {time_str}")
+            lines.append(f"{first} vs {second} - {time_str}")
             if g["broadcasts"]:
-                lines.append(f"   {channels}")
-        lines.append("")
+                lines.append(f"  {channels}")
 
     # Betting CTA
     aff = get_betting_link()
     if aff["url"]:
-        lines.append(f"{aff['cta']}: {aff['url']}\n")
+        lines.append("")
+        lines.append(f"{aff['cta']}: {aff['url']}")
 
     # Site link
+    lines.append("")
     lines.append(f"Todos los juegos: {APP_URL}")
-    lines.append(f"\n_Escribe *salir* para dejar de recibir._")
-    lines.append(f"_Solo entretenimiento. +18_")
+    lines.append("_Escribe salir para dejar de recibir._")
+    lines.append("_Solo entretenimiento. +18_")
 
     return "\n".join(lines)
 
