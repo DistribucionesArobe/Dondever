@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donde Ver Partidos Hoy - Canales y Horarios {{ now().strftime('%d/%m/%Y') }} | DondeVer</title>
+    <meta name="description" content="Consulta en que canal ver los partidos de hoy. Horarios actualizados para Mexico y USA. Liga MX, NBA, MLB, Champions y mas. Gratis.">
+    <link rel="canonical" href="{{ app_url }}/canales">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #f8f9fb;
+            color: #1a1a2e;
+            min-height: 100vh;
+        }
+        .header {
+            background: #1a1a2e;
+            padding: 0.6rem 0;
+        }
+        .header-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: white;
+            text-decoration: none;
+        }
+        .logo span { color: #10b981; }
+        .subtitle {
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+        .main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1rem 2rem;
+        }
+        .league-section { margin-bottom: 1.2rem; }
+        .league-header {
+            font-size: 0.9rem;
+            font-weight: 700;
+            padding: 0.5rem 0;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .league-count { font-size: 0.7rem; color: #9ca3af; font-weight: 400; }
+        .game-card {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            padding: 0.7rem 0.6rem;
+            border-bottom: 1px solid #f0f0f0;
+            text-decoration: none;
+            color: inherit;
+        }
+        .game-card:hover { background: #f0fdf4; }
+        .team { display: flex; align-items: center; gap: 0.5rem; }
+        .team.away { justify-content: flex-end; text-align: right; }
+        .team-name { font-size: 0.82rem; font-weight: 600; }
+        .team-logo { width: 24px; height: 24px; object-fit: contain; }
+        .team-score { font-size: 1.1rem; font-weight: 800; color: #1a1a2e; }
+        .game-center { text-align: center; min-width: 70px; }
+        .game-time { font-size: 0.8rem; font-weight: 700; color: #6d28d9; }
+        .live-badge { background: #ef4444; color: white; font-size: 0.6rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; display: inline-block; }
+        .final-badge { background: #6b7280; color: white; font-size: 0.6rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; display: inline-block; }
+        .game-channels { grid-column: 1 / -1; margin-top: 0.3rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+        .channel-tag {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .channel-tag.cable { background: #dbeafe; color: #1d4ed8; }
+        .channel-tag.broadcast { background: #dcfce7; color: #15803d; }
+        .channel-tag.streaming { background: #ede9fe; color: #6d28d9; }
+        .channel-tag.unknown { background: #f3f4f6; color: #6b7280; }
+        .no-games { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
+        .info-section {
+            max-width: 900px;
+            margin: 1rem auto;
+            padding: 0 1rem;
+        }
+        .info-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .info-card h3 { font-size: 0.95rem; margin-bottom: 0.5rem; }
+        .info-card p { font-size: 0.8rem; color: #4b5563; line-height: 1.5; }
+        .footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+        .footer a { color: #6d28d9; text-decoration: none; }
+        @media (max-width: 600px) {
+            .team-name { font-size: 0.75rem; }
+            .team-logo { width: 20px; height: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+    </div>
+</header>
+
+<div class="subtitle">
+    Partidos de hoy {{ now().strftime('%d de %B %Y') }} - Canales y horarios para Mexico y USA
+</div>
+
+<main class="main">
+    {% if not games %}
+    <div class="no-games">
+        <h2>No hay juegos programados</h2>
+        <p>No se encontraron juegos para hoy.</p>
+    </div>
+    {% endif %}
+
+    {% for league_name, league_data in sports_grouped.items() %}
+    <section class="league-section">
+        <h2 class="league-header">
+            {{ league_name }}
+            <span class="league-count">({{ league_data.games | length }})</span>
+        </h2>
+
+        {% for game in league_data.games %}
+        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+        {% set left_team = game.home if home_left else game.away %}
+        {% set right_team = game.away if home_left else game.home %}
+        <div class="game-card">
+            <div class="team away">
+                <div>
+                    <div class="team-name">{{ left_team.name }}</div>
+                    {% if game.status.state != 'pre' %}
+                    <div class="team-score">{{ left_team.score }}</div>
+                    {% endif %}
+                </div>
+                {% if left_team.logo %}
+                <img src="{{ left_team.logo }}" alt="{{ left_team.name }}" class="team-logo" loading="lazy">
+                {% endif %}
+            </div>
+
+            <div class="game-center">
+                {% if game.status.state == 'in' %}
+                    <div class="live-badge">EN VIVO</div>
+                {% elif game.status.state == 'post' %}
+                    <div class="final-badge">FINAL</div>
+                {% else %}
+                    <div class="game-time">{{ format_mx_time(game.date) }}</div>
+                {% endif %}
+            </div>
+
+            <div class="team">
+                {% if right_team.logo %}
+                <img src="{{ right_team.logo }}" alt="{{ right_team.name }}" class="team-logo" loading="lazy">
+                {% endif %}
+                <div>
+                    <div class="team-name">{{ right_team.name }}</div>
+                    {% if game.status.state != 'pre' %}
+                    <div class="team-score">{{ right_team.score }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="game-channels">
+                {% if game.broadcasts %}
+                    {% for b in game.broadcasts %}
+                    <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}">
+                        {{ b.channel }}
+                    </span>
+                    {% endfor %}
+                {% else %}
+                    <span class="channel-tag unknown">Por confirmar</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+    {% endfor %}
+</main>
+
+<div class="info-section">
+    <div class="info-card">
+        <h3>Tu guia de deportes en vivo</h3>
+        <p><strong>DondeVer.app</strong> te ayuda a encontrar en que canal ver partidos de futbol, basketball y mas deportes en Mexico y Estados Unidos. Cubrimos Liga MX, NBA, NFL, MLB, MLS, Premier League, La Liga, Champions League y mas.</p>
+        <p style="margin-top:0.5rem;">Horarios en hora centro de Mexico. Canales de TV abierta, cable y streaming actualizados diariamente.</p>
+    </div>
+</div>
+
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> - Tu guia de donde ver deportes en vivo</p>
+</footer>
+
+</body>
+</html>

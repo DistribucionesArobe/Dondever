@@ -250,6 +250,32 @@ async def home(
     )
 
 
+@app.get("/canales", response_class=HTMLResponse)
+async def canales_page(request: Request):
+    """Clean landing page for Google Ads — no betting/affiliate content."""
+    games = await get_todays_games()
+
+    sports_grouped = {}
+    for game in games:
+        league_name = game["league_name"]
+        if league_name not in sports_grouped:
+            sports_grouped[league_name] = {
+                "emoji": game["emoji"],
+                "games": [],
+            }
+        sports_grouped[league_name]["games"].append(game)
+
+    return templates.TemplateResponse(
+        request,
+        "canales.html",
+        context={
+            "games": games,
+            "sports_grouped": sports_grouped,
+            "total_games": len(games),
+        },
+    )
+
+
 @app.get("/juego/{event_id}", response_class=HTMLResponse)
 async def game_detail(request: Request, event_id: str):
     """Individual game page — good for SEO."""
