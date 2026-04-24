@@ -203,35 +203,54 @@ async def send_daily_broadcast():
     errors = []
     from_number = TWILIO_WA_NUMBER
 
+    # Build a short summary for template variable (max ~200 chars, no special formatting)
+    # Templates only accept short, plain text variables
+    template_summary = ""
+    if CONTENT_SID:
+        games = await get_todays_games()
+        upcoming = [g for g in games if g["status"]["state"] == "pre"]
+        now = datetime.now(TZ_MX)
+        game_count = len(upcoming)
+        if upcoming:
+            top = upcoming[0]
+            home, away = top["home"]["name"], top["away"]["name"]
+            template_summary = f"{game_count} juegos hoy. {home} vs {away} y mas."
+        else:
+            template_summary = f"{game_count} juegos programados para hoy."
+
     for phone in subscribers:
         to_number = _ensure_wa_number(phone)
         try:
-            if CONTENT_SID:
-                # Use pre-approved template (works outside 24h window)
-                import json as _json
-                msg = client.messages.create(
-                    content_sid=CONTENT_SID,
-                    content_variables=_json.dumps({"1": message_text}),
-                    from_=from_number,
-                    to=to_number,
-                )
-            else:
-                # Freeform message (only works within 24h session window)
+            # Strategy: try freeform first (richer message), fall back to template
+            try:
                 msg = client.messages.create(
                     body=message_text,
                     from_=from_number,
                     to=to_number,
                 )
+            except Exception as freeform_err:
+                freeform_detail = str(freeform_err)
+                # If freeform fails (outside 24h window), try template
+                if CONTENT_SID and ("63016" in freeform_detail or "63032" in freeform_detail or "21408" in freeform_detail):
+                    import json as _json
+                    logger.info(f"Freeform failed for {to_number}, trying template...")
+                    msg = client.messages.create(
+                        content_sid=CONTENT_SID,
+                        content_variables=_json.dumps({"1": template_summary}),
+                        from_=from_number,
+                        to=to_number,
+                    )
+                else:
+                    raise freeform_err  # re-raise if not a 24h window issue
+
             sent += 1
             logger.info(f"Broadcast sent to {to_number} — SID: {msg.sid}, status: {msg.status}")
         except Exception as e:
             failed += 1
             error_detail = str(e)
             errors.append({"phone": phone, "error": error_detail})
-            # Log the full Twilio error for diagnosis
             logger.error(
-                f"Broadcast FAILED for {to_number}: {error_detail} "
-                f"(hint: if error 63016/63032, user is outside 24h window — need Content Template)"
+                f"Broadcast FAILED for {to_number}: {error_detail}"
             )
 
     result = {"sent": sent, "failed": failed, "total": count, "errors": errors}
