@@ -717,6 +717,7 @@ try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
     from apscheduler.triggers.cron import CronTrigger
     from twitter_bot import setup_twitter_scheduler
+    from facebook_bot import setup_facebook_scheduler
     from whatsapp_broadcast import send_daily_broadcast
     from tiktok_generator import generate_daily_video, generate_daily_images
     from whatsapp_alerts import send_pregame_alerts
@@ -729,6 +730,10 @@ try:
         # Twitter bot (only if credentials set)
         if os.getenv("TWITTER_API_KEY"):
             setup_twitter_scheduler(scheduler)
+
+        # Facebook bot (only if credentials set)
+        if os.getenv("FB_PAGE_ACCESS_TOKEN"):
+            setup_facebook_scheduler(scheduler)
 
         # WhatsApp daily broadcast at 9:00 AM MX time (15:00 UTC)
         scheduler.add_job(
