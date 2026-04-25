@@ -95,90 +95,110 @@ def format_channels(broadcasts: list[dict]) -> str:
 
 async def compose_daily_post() -> str | None:
     """
-    Compose the daily Facebook post with all games of the day.
-    Facebook allows longer posts than Twitter, so we include more detail.
+    Compose a concise, engaging Facebook post with top games only.
+    Focus on Liga MX + top international leagues. Max ~10 games.
     """
     games = await get_todays_games()
     now = datetime.now(TZ_MX)
-    date_display = now.strftime("%d de %B %Y")
+    date_display = now.strftime("%d/%m/%Y")
 
     if not games:
         return None
 
     upcoming = [g for g in games if g["status"]["state"] == "pre"]
-    live = [g for g in games if g["status"]["state"] == "in"]
+    if not upcoming:
+        return None
 
-    lines = [f"PARTIDOS DE HOY - {date_display}"]
-    lines.append(f"Horarios en hora centro de Mexico")
+    # Priority leagues for Mexican audience
+    top_slugs = [
+        "liga-mx", "champions", "premier-league", "la-liga",
+        "nba", "nfl", "mlb", "serie-a", "bundesliga",
+        "europa-league", "concacaf-cl", "mls", "ligue-1",
+    ]
+
+    # Pick top games: all Liga MX + max 2 per other league, total max 12
+    top_games = []
+    league_counts: dict[str, int] = {}
+    # Sort by priority
+    slug_order = {s: i for i, s in enumerate(top_slugs)}
+    sorted_upcoming = sorted(upcoming, key=lambda g: slug_order.get(g.get("league_slug", ""), 99))
+
+    for g in sorted_upcoming:
+        slug = g.get("league_slug", "")
+        if slug not in slug_order:
+            continue
+        count = league_counts.get(slug, 0)
+        max_per_league = 6 if slug == "liga-mx" else 2
+        if count < max_per_league and len(top_games) < 12:
+            top_games.append(g)
+            league_counts[slug] = count + 1
+
+    if not top_games:
+        return None
+
+    # Openers rotativos
+    openers = [
+        f"Agenda deportiva del dia ({date_display})",
+        f"Lo que se juega hoy {date_display}",
+        f"Partidos de hoy {date_display}",
+        f"No te pierdas hoy ({date_display})",
+    ]
+
+    lines = [random.choice(openers)]
+    lines.append("Horarios en hora centro de Mexico")
     lines.append("")
 
-    # Group by league
+    # Group selected games by league
     leagues: dict[str, list] = {}
-    for g in upcoming:
+    for g in top_games:
         league = g.get("league_name", "Otros")
         leagues.setdefault(league, []).append(g)
 
     for league_name, league_games in leagues.items():
-        lines.append(f"--- {league_name} ---")
+        lines.append(f"{league_name}:")
         for g in league_games:
             first, second = get_team_order(g)
             time_str = format_time_mx(g["date"])
             channels = format_channels(g["broadcasts"])
-            lines.append(f"{first} vs {second}")
-            lines.append(f"   {time_str} | {channels}")
-        lines.append("")
-
-    if live:
-        lines.append("--- EN VIVO AHORA ---")
-        for g in live:
-            first, second = get_team_order(g)
-            hs = g["home"]["score"] or 0
-            as_ = g["away"]["score"] or 0
-            if g.get("sport") in HOME_LEFT_SPORTS:
-                lines.append(f"{first} {hs} - {as_} {second}")
-            else:
-                lines.append(f"{first} {as_} - {hs} {second}")
+            lines.append(f"  {first} vs {second} - {time_str}")
+            lines.append(f"  TV: {channels}")
         lines.append("")
 
     # Pick del dia
-    priority = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga", "mlb"]
+    priority = ["liga-mx", "premier-league", "champions", "nba", "nfl", "la-liga"]
     pick = None
     for pl in priority:
-        pick = next((g for g in upcoming if g.get("league_slug") == pl), None)
+        pick = next((g for g in top_games if g.get("league_slug") == pl), None)
         if pick:
             break
-    if not pick and upcoming:
-        pick = upcoming[0]
+    if not pick:
+        pick = top_games[0]
 
-    if pick:
-        first, second = get_team_order(pick)
-        pick_team = first if random.random() < 0.6 else second
-        reasons = [
-            "viene en racha positiva",
-            "juega de local",
-            "mejor forma reciente",
-            "favorito en momios",
-        ]
-        lines.append(f"PICK DEL DIA: {pick_team} en {first} vs {second}")
-        lines.append(f"({random.choice(reasons)})")
-        lines.append("")
-
-    # CTA
-    lines.append(f"Todos los horarios y canales en: {APP_URL}")
-    lines.append(f"Picks gratis por WhatsApp: {WA_PICKS_LINK}")
+    first, second = get_team_order(pick)
+    pick_team = first if random.random() < 0.6 else second
+    reasons = [
+        "viene en racha positiva",
+        "juega de local",
+        "mejor forma reciente",
+        "favorito en momios",
+    ]
+    lines.append(f"Pick del dia: {pick_team} en {first} vs {second} ({random.choice(reasons)})")
     lines.append("")
 
-    # Betting CTA (50% of the time)
-    if random.random() < 0.5:
-        betting_keys = [k for k in AFFILIATES if k in ("caliente", "betsson")]
-        if betting_keys:
-            key = random.choice(betting_keys)
-            aff = AFFILIATES[key]
-            url = get_short_affiliate_url(key, source="facebook")
-            lines.append(f"{aff.get('cta_twitter', aff['cta'])}: {url}")
-            lines.append("")
+    # Total games count
+    total = len(upcoming)
+    if total > len(top_games):
+        lines.append(f"+ {total - len(top_games)} juegos mas en {APP_URL}")
+    else:
+        lines.append(f"Todos los horarios en {APP_URL}")
 
-    lines.append("Solo entretenimiento. +18")
+    # Engagement question
+    questions = [
+        "Que partido van a ver hoy?",
+        "A quien le van hoy?",
+        "Cual es el partidazo de hoy para ustedes?",
+    ]
+    lines.append(random.choice(questions))
 
     return "\n".join(lines)
 
