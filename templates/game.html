@@ -163,6 +163,19 @@
         {% if game.venue %}<div class="venue">Sede: {{ game.venue }}</div>{% endif %}
     </div>
 
+    {% set has_amazon = game.broadcasts and 'Amazon' in (game.broadcasts|map(attribute='channel')|join(' ')) %}
+    {% if has_amazon %}
+    <div style="max-width:650px;margin:0 auto 1rem;padding:0 1rem;">
+        <a href="/go/amazon?s=game" target="_blank" rel="noopener sponsored" data-affiliate="amazon" style="display:block;background:linear-gradient(135deg,#00050d,#0f1923);border:2px solid #00a8e1;border-radius:14px;padding:1.25rem;text-decoration:none;text-align:center;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:#00a8e1;font-weight:600;margin-bottom:0.4rem;">Este partido se transmite en</div>
+            <div style="font-size:1.3rem;font-weight:800;color:white;margin-bottom:0.3rem;">Amazon Prime Video</div>
+            <div style="font-size:0.85rem;color:#10b981;font-weight:700;margin-bottom:0.5rem;">30 dias GRATIS de prueba</div>
+            <div style="display:inline-block;background:#00a8e1;color:white;font-weight:700;font-size:0.85rem;padding:0.5rem 1.5rem;border-radius:8px;">Activar prueba gratis &rarr;</div>
+            <div style="font-size:0.6rem;color:#6b7280;margin-top:0.5rem;">Cancela cuando quieras. Link de afiliado.</div>
+        </a>
+    </div>
+    {% endif %}
+
     {% if odds %}
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
         <div style="background:linear-gradient(135deg,#1a1a2e,#2d2b55);border-radius:14px;padding:1.25rem;color:white;">

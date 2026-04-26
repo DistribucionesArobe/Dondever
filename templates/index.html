@@ -554,9 +554,15 @@
             <div class="game-channels">
                 {% if game.broadcasts %}
                     {% for b in game.broadcasts %}
+                    {% if 'Amazon' in b.channel %}
+                    <a href="/go/amazon?s=channel" target="_blank" rel="noopener sponsored" data-affiliate="amazon" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:#00a8e1;color:white;" onclick="event.stopPropagation();">
+                        {{ b.channel }} - 30 dias gratis
+                    </a>
+                    {% else %}
                     <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}">
                         {{ b.channel }}
                     </span>
+                    {% endif %}
                     {% endfor %}
                 {% else %}
                     <span class="channel-tag unknown">Por confirmar</span>
