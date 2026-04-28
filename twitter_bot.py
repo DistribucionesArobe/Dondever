@@ -455,9 +455,9 @@ from collections import deque
 import time as _time
 
 _tweet_timestamps: deque = deque()  # stores unix timestamps of recent tweets
-MAX_TWEETS_PER_HOUR = 8  # conservador, muy por debajo de limites de X
-MAX_TWEETS_PER_DAY = 40  # conservador para cuenta automatizada
-MIN_SECONDS_BETWEEN_TWEETS = 180  # 3 min minimo entre tweets (evita burst posting)
+MAX_TWEETS_PER_HOUR = 5  # max 5 por hora para evitar ban
+MAX_TWEETS_PER_DAY = 20  # limite estricto diario
+MIN_SECONDS_BETWEEN_TWEETS = 300  # 5 min minimo entre tweets
 
 
 def _can_post_now() -> tuple[bool, str]:
@@ -795,14 +795,25 @@ def _post_result_quote(game_id: str, game: dict):
 async def post_game_tweets(minutes_before: int = 60):
     """
     Check for games starting soon and post tweets for them.
-    Uses dedup para no tuitear el mismo juego 2 veces el mismo dia.
+    Solo ligas relevantes para audiencia MX. Max ~8 pre-game tweets/dia.
     """
+    # Solo tuitear pre-game de ligas que importan
+    pregame_leagues = {
+        "liga-mx", "champions", "premier-league", "la-liga",
+        "nba", "nfl", "mlb", "serie-a", "europa-league",
+        "concacaf-cl", "bundesliga",
+    }
+
     games = await get_todays_games()
     now = datetime.now(timezone.utc)
 
     posted = []
     for game in games:
         if game["status"]["state"] != "pre":
+            continue
+
+        # Filtrar por liga relevante
+        if game.get("league_slug", "") not in pregame_leagues:
             continue
 
         gid = str(game.get("id", "")) or game.get("name", "")
@@ -1207,61 +1218,24 @@ async def monitor_live_games():
             _last_scores[game_id] = current
             continue
 
-        # Detect events
+        # Detect events — solo los más relevantes para no spammear
         event_type = None
 
-        # Game just started
-        if prev["state"] == "pre" and state == "in":
+        # Game just started (solo ligas top: liga-mx, champions, nba, nfl)
+        top_start_leagues = {"liga-mx", "champions", "nba", "nfl", "premier-league", "la-liga"}
+        if prev["state"] == "pre" and state == "in" and slug in top_start_leagues:
             event_type = "started"
 
-        # Game just ended
+        # Game just ended (todas las ligas priority)
         elif prev["state"] == "in" and state == "post":
             event_type = "final"
 
-        # Score changed (GOAL / TOUCHDOWN / etc.)
-        elif state == "in" and (
+        # Goles de soccer solamente (no score changes de otros deportes)
+        elif state == "in" and game.get("sport") == "soccer" and (
             prev["home_score"] != str(home_score) or
             prev["away_score"] != str(away_score)
         ):
-            sport = game.get("sport", "")
-            if sport == "soccer":
-                event_type = "goal"
-            else:
-                event_type = "score_change"
-
-        # Halftime detection (check detail string)
-        elif state == "in" and "half" in detail.lower() and "half" not in prev.get("detail", "").lower():
-            event_type = "halftime"
-
-        # Post tweet if event detected
-        if event_type:
-            # Don't tweet every score change in high-scoring sports — only big moments
-            if event_type == "score_change":
-                sport = game.get("sport", "")
-                # Basketball: solo cambios de 20+ puntos (cuartos básicamente)
-                if sport == "basketball":
-                    total_now = int(home_score or 0) + int(away_score or 0)
-                    total_prev = int(prev["home_score"] or 0) + int(prev["away_score"] or 0)
-                    if (total_now - total_prev) < 20:
-                        _last_scores[game_id] = current
-                        continue
-                # Baseball: solo cambios de 3+ carreras (innings grandes)
-                elif sport == "baseball":
-                    home_diff = abs(int(home_score or 0) - int(prev["home_score"] or 0))
-                    away_diff = abs(int(away_score or 0) - int(prev["away_score"] or 0))
-                    if max(home_diff, away_diff) < 3:
-                        _last_scores[game_id] = current
-                        continue
-                elif sport == "hockey":
-                    # Tweet every goal in hockey
-                    pass
-                # Football: tweet touchdowns (6+ point changes)
-                elif sport == "football":
-                    home_diff = abs(int(home_score or 0) - int(prev["home_score"] or 0))
-                    away_diff = abs(int(away_score or 0) - int(prev["away_score"] or 0))
-                    if max(home_diff, away_diff) < 6:
-                        _last_scores[game_id] = current
-                        continue
+            event_type = "goal"
 
             tweet_text = compose_live_tweet(game, event_type, detail)
             # Generate live card for important events (started, goal, final)
@@ -1323,23 +1297,14 @@ def setup_twitter_scheduler(scheduler):
         logger.warning("Twitter credentials incomplete — scheduler NOT started")
         return
 
-    # 1) Check for upcoming games every 15 min — ventana 60 min con dedup
+    # 1) Pre-game tweets cada 20 min — solo juegos en próxima hora, con dedup
     scheduler.add_job(
         post_game_tweets,
-        IntervalTrigger(minutes=15),
+        IntervalTrigger(minutes=20),
         id="twitter_game_posts",
         name="Post tweets for upcoming games",
         replace_existing=True,
         kwargs={"minutes_before": 60},
-    )
-
-    # 1b) Post next top game (1-4h away) — 1 vez al dia a las 12:00 MX (18:00 UTC)
-    scheduler.add_job(
-        post_next_top_game,
-        CronTrigger(hour=18, minute=0),
-        id="twitter_next_top_game",
-        name="Post next top game (1-4h ahead)",
-        replace_existing=True,
     )
 
     # 2) Daily summary at 8 AM MX time (14:00 UTC)
@@ -1366,7 +1331,7 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    # 3b) Encuesta diaria a las 9 AM MX (15:00 UTC) — alto engagement
+    # 4) Encuesta diaria a las 9 AM MX (15:00 UTC)
     scheduler.add_job(
         post_daily_poll,
         CronTrigger(hour=15, minute=0),
@@ -1375,23 +1340,16 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    # 3c) Promos del WhatsApp — 2 veces al día, 11:00 AM y 6:00 PM MX
+    # 5) Promo WhatsApp — 1 vez al día, 11 AM MX (17:00 UTC)
     scheduler.add_job(
         post_promo_tweet,
-        CronTrigger(hour=17, minute=0),  # 11 AM MX = 17 UTC
-        id="twitter_promo_am",
-        name="Promo WhatsApp (mañana)",
-        replace_existing=True,
-    )
-    scheduler.add_job(
-        post_promo_tweet,
-        CronTrigger(hour=0, minute=0),  # 6 PM MX = 00 UTC del dia siguiente
-        id="twitter_promo_pm",
-        name="Promo WhatsApp (tarde)",
+        CronTrigger(hour=17, minute=0),
+        id="twitter_promo",
+        name="Promo WhatsApp (diaria)",
         replace_existing=True,
     )
 
-    # 4) Live game monitor — every 5 min (suficiente para goles sin spammear)
+    # 6) Live game monitor — cada 5 min (solo goles soccer + inicio/final)
     scheduler.add_job(
         monitor_live_games,
         IntervalTrigger(minutes=5),
@@ -1400,7 +1358,7 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    # 5) Value thread — 11:30 AM MX (17:30 UTC), ~50% de los dias, max 1 por dia
+    # 7) Value thread — 11:30 AM MX (17:30 UTC), ~50% de los dias
     scheduler.add_job(
         maybe_post_thread,
         CronTrigger(hour=17, minute=30),
@@ -1409,4 +1367,4 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    logger.info("Twitter bot scheduler configured (games, summary, pick, poll, live monitor, threads)")
+    logger.info("Twitter bot scheduler configured (max 20/dia: games, summary, pick, poll, promo, live, thread)")
