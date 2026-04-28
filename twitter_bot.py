@@ -1238,11 +1238,18 @@ async def monitor_live_games():
             # Don't tweet every score change in high-scoring sports — only big moments
             if event_type == "score_change":
                 sport = game.get("sport", "")
-                # For basketball, only tweet every ~10 points; for baseball every run
+                # Basketball: solo cambios de 20+ puntos (cuartos básicamente)
                 if sport == "basketball":
                     total_now = int(home_score or 0) + int(away_score or 0)
                     total_prev = int(prev["home_score"] or 0) + int(prev["away_score"] or 0)
-                    if (total_now - total_prev) < 8:
+                    if (total_now - total_prev) < 20:
+                        _last_scores[game_id] = current
+                        continue
+                # Baseball: solo cambios de 3+ carreras (innings grandes)
+                elif sport == "baseball":
+                    home_diff = abs(int(home_score or 0) - int(prev["home_score"] or 0))
+                    away_diff = abs(int(away_score or 0) - int(prev["away_score"] or 0))
+                    if max(home_diff, away_diff) < 3:
                         _last_scores[game_id] = current
                         continue
                 elif sport == "hockey":
