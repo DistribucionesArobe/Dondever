@@ -1193,6 +1193,20 @@ async def team_page(request: Request, team_slug: str):
     if not team_logo and stats.get("team_logo"):
         team_logo = stats["team_logo"]
 
+    # Today's date in Spanish for dynamic SEO content
+    DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+    MONTHS_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+                 "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+    now_mx = datetime.now(TZ_MX)
+    today_date_str = f"{DAYS_ES[now_mx.weekday()]} {now_mx.day} de {MONTHS_ES[now_mx.month - 1]} de {now_mx.year}"
+
+    # Related teams: other teams from the same league for internal linking
+    final_league = team_league or team_league_seo
+    related_teams = []
+    for slug, info in POPULAR_TEAMS.items():
+        if slug != team_slug and info.get("league") == final_league:
+            related_teams.append({"slug": slug, "name": info["name"]})
+
     return templates.TemplateResponse(request, "team.html", {
         "team_name": team_name,
         "team_slug": team_slug,
@@ -1203,6 +1217,8 @@ async def team_page(request: Request, team_slug: str):
         "games": games,
         "stats": stats,
         "format_mx_time": format_mx_time,
+        "today_date_str": today_date_str,
+        "related_teams": related_teams,
     })
 
 

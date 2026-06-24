@@ -65,10 +65,88 @@
         .alert-box a { display:inline-block; background:#25d366; color:white; padding:0.5rem 1rem; border-radius:8px; font-weight:700; font-size:0.8rem; text-decoration:none; }
 
         .seo-text { font-size:0.85rem; color:#4b5563; line-height:1.6; margin:1rem 0; }
+        .seo-text h2 { font-size:1.05rem; margin-bottom:0.5rem; color:#1a1a2e; }
+        .seo-text h3 { font-size:0.95rem; margin:1rem 0 0.4rem; color:#1a1a2e; }
+        .seo-text p { margin-bottom:0.75rem; }
+
+        .como-ver-guide {
+            background:white; border:1px solid #e5e7eb; border-radius:12px;
+            padding:1.25rem; margin:1.25rem 0;
+        }
+        .como-ver-guide h2 { font-size:1.05rem; margin:0 0 0.75rem; }
+        .como-ver-guide h3 { font-size:0.9rem; color:#374151; margin:0.75rem 0 0.3rem; }
+        .como-ver-guide p, .como-ver-guide ul { font-size:0.85rem; color:#4b5563; line-height:1.6; }
+        .como-ver-guide ul { list-style:disc; padding-left:1.25rem; margin:0.3rem 0 0.5rem; }
+        .como-ver-guide li { margin-bottom:0.25rem; }
+
+        .faq-section { margin:1.5rem 0; }
+        .faq-section h2 { font-size:1.05rem; margin-bottom:0.75rem; }
+        .faq-item {
+            background:white; border:1px solid #e5e7eb; border-radius:10px;
+            margin-bottom:0.5rem; overflow:hidden;
+        }
+        .faq-question {
+            font-weight:700; font-size:0.9rem; padding:0.75rem 1rem;
+            cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+            user-select:none;
+        }
+        .faq-question::after { content:"▼"; font-size:0.6rem; color:#9ca3af; transition:transform 0.2s; }
+        .faq-item.open .faq-question::after { transform:rotate(180deg); }
+        .faq-answer {
+            font-size:0.85rem; color:#4b5563; line-height:1.6;
+            padding:0 1rem 0.75rem; display:none;
+        }
+        .faq-item.open .faq-answer { display:block; }
+
+        .related-teams { margin:1.5rem 0; }
+        .related-teams h2 { font-size:1.05rem; margin-bottom:0.5rem; }
+        .related-grid {
+            display:flex; flex-wrap:wrap; gap:0.4rem;
+        }
+        .related-grid a {
+            display:inline-block; background:white; border:1px solid #e5e7eb;
+            border-radius:8px; padding:0.4rem 0.75rem; font-size:0.8rem;
+            color:#1a1a2e; text-decoration:none; font-weight:600; transition:all 0.15s;
+        }
+        .related-grid a:hover { border-color:#10b981; color:#059669; }
 
         footer { text-align:center; padding:1.5rem; font-size:0.7rem; color:#9ca3af; }
         footer a { color:#10b981; text-decoration:none; }
     </style>
+
+    <!-- FAQPage Schema for rich results -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "¿En qué canal pasan a {{ team_name }} hoy?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "{% if games %}Hoy {{ team_name }} juega y se transmite por {% for game in games[:1] %}{% if game.broadcasts %}{% for b in game.broadcasts[:3] %}{{ b.channel }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}canales por confirmar{% endif %}{% endfor %}. Consulta esta página para ver los canales actualizados en tiempo real.{% else %}Hoy {{ team_name }} no tiene partidos programados. Visita DondeVer.app para consultar los próximos juegos y en qué canal se transmiten.{% endif %}"
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "¿Cómo ver a {{ team_name }} en vivo gratis?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "{% if team_sport == 'futbol' %}Algunos partidos de {{ team_name }} se transmiten en TV abierta por Canal 5 o Azteca 7 en México. También puedes ver juegos selectos gratis en ViX (versión gratuita) y en Univisión/TUDN si estás en Estados Unidos.{% elif team_sport == 'beisbol' %}Algunos juegos de {{ team_name }} se pueden ver en TV abierta. En streaming, revisa las opciones gratuitas de ESPN y las transmisiones locales disponibles sin costo.{% elif team_sport == 'basketball' %}Partidos selectos de {{ team_name }} se transmiten en TV abierta y por canales gratuitos. Revisa las opciones de streaming con prueba gratuita como NBA League Pass.{% elif team_sport == 'futbol americano' %}Juegos selectos de {{ team_name }} se transmiten por TV abierta en Canal 5 y Azteca 7. En USA, algunos juegos están disponibles gratis en las apps de NBC, CBS y Fox.{% else %}Consulta DondeVer.app para ver las opciones gratuitas de transmisión de {{ team_name }}.{% endif %}"
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "¿A qué hora juega {{ team_name }} hoy?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "{% if games %}{{ team_name }} juega hoy. {% for game in games[:2] %}{{ game.home.name }} vs {{ game.away.name }} — revisa el horario exacto en hora de México arriba en esta página.{% if not loop.last %} {% endif %}{% endfor %}{% else %}{{ team_name }} no juega hoy. Activa alertas por WhatsApp en DondeVer.app para recibir notificaciones antes de cada partido.{% endif %}"
+                }
+            }
+        ]
+    }
+    </script>
 </head>
 <body>
 <div class="header">
@@ -218,13 +296,262 @@
     </div>
     {% endif %}
 
+    <!-- ══ Rich SEO Content ══ -->
     <div class="seo-text">
-        <h2>Donde ver {{ team_name }} en vivo en Mexico</h2>
-        <p>En DondeVer.app te decimos en que canal pasan los partidos de {{ team_name }} en Mexico y Estados Unidos.
-        Cubrimos TV abierta, cable (TUDN, Fox Sports, ESPN) y streaming (ViX, ESPN+, Amazon Prime).
-        Activa alertas por WhatsApp para recibir un aviso 1 hora antes de cada partido de {{ team_name }}
-        y notificaciones de goles en tiempo real.</p>
+        <h2>Dónde ver a {{ team_name }} en vivo hoy — {{ today_date_str }}</h2>
+
+        {% if games %}
+        <p>Hoy {{ today_date_str }}, {{ team_name }} tiene {{ games|length }} partido{{ 's' if games|length > 1 else '' }} programado{{ 's' if games|length > 1 else '' }}. En esta página encuentras los canales de TV, horarios en hora de México y opciones de streaming actualizados en tiempo real para que no te pierdas ningún juego.</p>
+        {% else %}
+        <p>Hoy {{ today_date_str }}, {{ team_name }} no tiene partidos programados. Sin embargo, puedes activar alertas por WhatsApp para recibir una notificación 1 hora antes de su próximo juego, así como avisos de goles en tiempo real.</p>
+        {% endif %}
+
+        {% if team_sport == 'futbol' %}
+        <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
+        <p>{{ team_name }} compite en la {{ team_league }}, una de las ligas de fútbol con mayor audiencia entre los aficionados mexicanos y latinos en Estados Unidos. Los partidos de la {{ team_league }} se transmiten a través de múltiples plataformas tanto en México como en USA, incluyendo televisión abierta, cable y servicios de streaming. En DondeVer.app actualizamos la programación diariamente para que siempre sepas dónde y a qué hora ver a {{ team_name }}.</p>
+
+        {% elif team_sport == 'beisbol' %}
+        <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
+        <p>{{ team_name }} juega en la {{ team_league }}, la liga de béisbol más importante del mundo. La temporada regular de la MLB se extiende de abril a septiembre, con postemporada en octubre. Los juegos de {{ team_name }} se transmiten en diversas plataformas en México y Estados Unidos. En DondeVer.app te mostramos los canales y horarios actualizados para cada juego.</p>
+
+        {% elif team_sport == 'basketball' %}
+        <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
+        <p>{{ team_name }} es uno de los equipos de la {{ team_league }}, la liga de baloncesto más seguida del planeta. La temporada regular de la NBA va de octubre a abril, seguida por los playoffs y las Finales. Los partidos de {{ team_name }} se pueden ver en México y Estados Unidos a través de varios canales y plataformas de streaming que actualizamos a diario en DondeVer.app.</p>
+
+        {% elif team_sport == 'futbol americano' %}
+        <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
+        <p>{{ team_name }} compite en la {{ team_league }}, la liga de fútbol americano con mayor audiencia en el mundo. La temporada de la NFL inicia en septiembre y culmina con el Super Bowl en febrero. Los juegos de {{ team_name }} se transmiten en México por TV abierta y cable, además de plataformas de streaming. Aquí en DondeVer.app te decimos exactamente dónde verlos.</p>
+
+        {% elif team_sport == 'hockey' %}
+        <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
+        <p>{{ team_name }} juega en la {{ team_league }}, la principal liga de hockey sobre hielo. Los partidos de la NHL se transmiten en diversas plataformas. En DondeVer.app encontrarás los canales y horarios actualizados para seguir a {{ team_name }}.</p>
+
+        {% elif team_sport == 'MMA' %}
+        <h3>Próximas peleas de {{ team_name }}</h3>
+        <p>{{ team_name }} es la organización de artes marciales mixtas más importante del mundo. Las carteleras de la UFC incluyen eventos numerados (PPV), Fight Night y eventos especiales que se transmiten en México y Estados Unidos. Aquí te mostramos dónde ver cada evento actualizado al día de hoy.</p>
+
+        {% else %}
+        <p>En DondeVer.app te decimos en qué canal pasan los partidos de {{ team_name }} en México y Estados Unidos. Cubrimos TV abierta, cable y streaming para que siempre encuentres dónde verlo.</p>
+        {% endif %}
     </div>
+
+    <!-- ══ Cómo Ver Guide ══ -->
+    <div class="como-ver-guide">
+        {% if team_sport == 'futbol' %}
+        <h2>Guía: Cómo ver a {{ team_name }} ({{ team_league }}) en México y USA</h2>
+
+            {% if team_league == 'Liga MX' %}
+        <h3>TV abierta y cable en México</h3>
+        <p>Los partidos de la Liga MX se reparten entre varias televisoras. Dependiendo del equipo y la jornada, puedes encontrar juegos en:</p>
+        <ul>
+            <li><strong>TUDN / Canal 5</strong> — Transmite partidos selectos de la Liga MX en TV abierta y por cable.</li>
+            <li><strong>TV Azteca (Azteca 7)</strong> — Tiene derechos de transmisión de varios equipos de la Liga MX.</li>
+            <li><strong>Fox Sports México</strong> — Cubre partidos de equipos como Pumas, Atlas y más.</li>
+        </ul>
+        <h3>Streaming</h3>
+        <ul>
+            <li><strong>ViX Premium</strong> — Transmite la mayoría de los partidos de la Liga MX. Algunos juegos están disponibles gratis en ViX.</li>
+            <li><strong>TUDN app</strong> — Si tienes suscripción de cable, puedes acceder a los partidos por la app.</li>
+        </ul>
+        <h3>En Estados Unidos</h3>
+        <ul>
+            <li><strong>Univision / TUDN (USA)</strong> — Principal cadena para Liga MX en español.</li>
+            <li><strong>ViX Premium</strong> — Streaming con todos los juegos de la Liga MX.</li>
+            <li><strong>ESPN+</strong> — Algunos partidos selectos en inglés.</li>
+        </ul>
+
+            {% elif team_league in ('Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1') %}
+        <h3>TV y cable en México</h3>
+        <ul>
+            <li><strong>SKY Sports</strong> — Transmite partidos de la {{ team_league }} para suscriptores de SKY.</li>
+            <li><strong>ESPN México</strong> — Cubre partidos selectos del fútbol europeo.</li>
+        </ul>
+        <h3>Streaming</h3>
+        <ul>
+            <li><strong>Disney+ / ESPN</strong> — Partidos de la {{ team_league }} disponibles para suscriptores.</li>
+            <li><strong>ViX Premium</strong> — Algunos partidos de ligas europeas disponibles.</li>
+            <li><strong>Amazon Prime Video</strong> — Tiene derechos de partidos selectos de la {{ team_league }} en algunos mercados.</li>
+        </ul>
+        <h3>En Estados Unidos</h3>
+        <ul>
+            <li><strong>Peacock / NBC Sports</strong> — Transmite la Premier League en USA.</li>
+            <li><strong>ESPN+</strong> — Cubre La Liga, Bundesliga y Serie A.</li>
+            <li><strong>Paramount+</strong> — Partidos de Champions League y algunas ligas.</li>
+        </ul>
+
+            {% elif team_league == 'MLS' %}
+        <h3>TV y streaming</h3>
+        <ul>
+            <li><strong>Apple TV (MLS Season Pass)</strong> — Todos los partidos de la MLS en vivo y sin restricciones geográficas.</li>
+            <li><strong>Fox Sports México</strong> — Partidos selectos de la MLS.</li>
+            <li><strong>TUDN / Univision</strong> — Juegos selectos en español en USA.</li>
+        </ul>
+
+            {% endif %}
+
+        {% elif team_sport == 'beisbol' %}
+        <h2>Guía: Cómo ver a {{ team_name }} (MLB) en México y USA</h2>
+        <h3>TV y cable en México</h3>
+        <ul>
+            <li><strong>ESPN México</strong> — Transmite partidos selectos de la MLB, especialmente postemporada.</li>
+            <li><strong>Fox Sports México</strong> — Cubre juegos selectos durante la temporada regular.</li>
+        </ul>
+        <h3>Streaming</h3>
+        <ul>
+            <li><strong>ESPN (Disney+)</strong> — Partidos disponibles para suscriptores.</li>
+            <li><strong>MLB.TV</strong> — Servicio de streaming oficial de la MLB con todos los juegos fuera de mercado.</li>
+        </ul>
+        <h3>En Estados Unidos</h3>
+        <ul>
+            <li><strong>ESPN / TBS / Fox</strong> — Cadenas principales que transmiten la MLB.</li>
+            <li><strong>MLB.TV</strong> — Streaming oficial con la mayoría de los partidos.</li>
+            <li><strong>Apple TV+</strong> — Friday Night Baseball con juegos selectos cada viernes.</li>
+            <li><strong>Peacock</strong> — Sunday Leadoff con juegos selectos los domingos.</li>
+        </ul>
+
+        {% elif team_sport == 'basketball' %}
+        <h2>Guía: Cómo ver a {{ team_name }} (NBA) en México y USA</h2>
+        <h3>TV y cable en México</h3>
+        <ul>
+            <li><strong>ESPN México</strong> — Principal canal para ver la NBA en México.</li>
+            <li><strong>NBA TV</strong> — Disponible en algunos paquetes de cable.</li>
+        </ul>
+        <h3>Streaming</h3>
+        <ul>
+            <li><strong>Disney+ / ESPN</strong> — Partidos selectos para suscriptores.</li>
+            <li><strong>NBA League Pass</strong> — Todos los partidos de la temporada, disponible como suscripción independiente.</li>
+        </ul>
+        <h3>En Estados Unidos</h3>
+        <ul>
+            <li><strong>ESPN / ABC</strong> — Juegos estelares y playoffs.</li>
+            <li><strong>TNT / TBS</strong> — Partidos entre semana y playoffs.</li>
+            <li><strong>NBA League Pass</strong> — Todos los juegos fuera de mercado.</li>
+            <li><strong>Amazon Prime Video</strong> — Tiene derechos de paquetes selectos de la NBA.</li>
+        </ul>
+
+        {% elif team_sport == 'futbol americano' %}
+        <h2>Guía: Cómo ver a {{ team_name }} (NFL) en México y USA</h2>
+        <h3>TV abierta y cable en México</h3>
+        <ul>
+            <li><strong>Canal 5 / TUDN</strong> — Transmite partidos selectos de la NFL cada semana.</li>
+            <li><strong>TV Azteca (Azteca 7)</strong> — Tiene derechos de juegos selectos incluyendo el Super Bowl.</li>
+            <li><strong>ESPN México</strong> — Monday Night Football y partidos entre semana.</li>
+            <li><strong>Fox Sports México</strong> — Cubre la NFL con amplia programación.</li>
+        </ul>
+        <h3>Streaming</h3>
+        <ul>
+            <li><strong>NFL Game Pass</strong> — Plataforma oficial de la NFL con juegos en vivo y repeticiones.</li>
+            <li><strong>Disney+ / ESPN</strong> — Monday Night Football para suscriptores.</li>
+            <li><strong>ViX</strong> — Algunos juegos disponibles en la plataforma.</li>
+        </ul>
+        <h3>En Estados Unidos</h3>
+        <ul>
+            <li><strong>NBC (Sunday Night Football)</strong> — Partido principal de cada domingo.</li>
+            <li><strong>CBS / Fox</strong> — Juegos dominicales según la conferencia.</li>
+            <li><strong>ESPN / ABC (Monday Night Football)</strong> — Partido de lunes por la noche.</li>
+            <li><strong>Amazon Prime Video (Thursday Night Football)</strong> — Juego exclusivo cada jueves.</li>
+            <li><strong>NFL+ / Peacock</strong> — Streaming con juegos en vivo.</li>
+        </ul>
+
+        {% elif team_sport == 'hockey' %}
+        <h2>Guía: Cómo ver a {{ team_name }} (NHL) en México y USA</h2>
+        <h3>Opciones de transmisión</h3>
+        <ul>
+            <li><strong>ESPN / Disney+</strong> — Partidos selectos de la NHL.</li>
+            <li><strong>ESPN+ (USA)</strong> — Amplia cobertura de juegos de la NHL.</li>
+            <li><strong>TNT / TBS</strong> — Partidos selectos en USA.</li>
+            <li><strong>NHL Power Play on ESPN+</strong> — Paquete especial con más juegos.</li>
+        </ul>
+
+        {% elif team_sport == 'MMA' %}
+        <h2>Guía: Cómo ver {{ team_name }} en México y USA</h2>
+        <h3>Opciones de transmisión</h3>
+        <ul>
+            <li><strong>Fox Sports México</strong> — Transmite carteleras de UFC Fight Night.</li>
+            <li><strong>ESPN+ (USA)</strong> — Plataforma principal para eventos de UFC en Estados Unidos.</li>
+            <li><strong>PPV</strong> — Los eventos numerados de UFC se compran por separado en ESPN+ (USA) o en plataformas de PPV en México.</li>
+            <li><strong>Disney+ / ESPN</strong> — Algunas carteleras disponibles para suscriptores.</li>
+        </ul>
+        {% endif %}
+
+        <p style="font-size:0.8rem;color:#6b7280;margin-top:0.5rem;">Nota: la disponibilidad de canales puede variar según el partido y la fecha. En DondeVer.app actualizamos la información diariamente.</p>
+    </div>
+
+    <!-- ══ FAQ Section ══ -->
+    <div class="faq-section">
+        <h2>Preguntas frecuentes sobre {{ team_name }}</h2>
+
+        <div class="faq-item open">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+                ¿En qué canal pasan a {{ team_name }} hoy?
+            </div>
+            <div class="faq-answer">
+                {% if games %}
+                Hoy {{ team_name }} juega y se transmite por
+                {% for game in games[:1] %}
+                    {% if game.broadcasts %}
+                        {% for b in game.broadcasts[:3] %}{{ b.channel }}{% if not loop.last %}, {% endif %}{% endfor %}.
+                    {% else %}
+                        canales aún por confirmar.
+                    {% endif %}
+                {% endfor %}
+                Revisa la sección de partidos arriba para ver todos los canales actualizados. También puedes activar alertas por WhatsApp para recibir el canal y horario antes de cada juego.
+                {% else %}
+                Hoy {{ today_date_str }} no hay partidos de {{ team_name }} programados. Visita esta página el día que jueguen para ver los canales actualizados o activa alertas por WhatsApp para que te notifiquemos automáticamente.
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+                ¿Cómo ver a {{ team_name }} en vivo gratis?
+            </div>
+            <div class="faq-answer">
+                {% if team_sport == 'futbol' %}
+                Algunos partidos de {{ team_name }} se transmiten en TV abierta por Canal 5 (Televisa) o Azteca 7 en México, lo que significa que se pueden ver gratis con una antena de TV. También ViX ofrece algunos juegos en su versión gratuita. En Estados Unidos, partidos selectos se transmiten por Univision, que es gratuita con antena. Revisa la programación de cada juego en DondeVer.app para identificar las opciones gratuitas disponibles.
+                {% elif team_sport == 'beisbol' %}
+                Algunos juegos de {{ team_name }} se transmiten por TV abierta en México. Las opciones de streaming como MLB.TV y Apple TV+ ocasionalmente ofrecen juegos gratuitos. Consulta cada partido en DondeVer.app para ver si hay una opción gratuita disponible.
+                {% elif team_sport == 'basketball' %}
+                Partidos selectos de {{ team_name }} se transmiten en TV abierta. NBA League Pass ofrece periodos de prueba gratuita. En USA, juegos por ABC son gratuitos con antena. Revisa cada partido en DondeVer.app para identificar opciones sin costo.
+                {% elif team_sport == 'futbol americano' %}
+                Varios juegos de {{ team_name }} se transmiten en TV abierta en México por Canal 5 y Azteca 7. En Estados Unidos, los juegos por CBS, Fox y NBC son gratuitos con antena. Los juegos de Thursday Night Football están disponibles gratis en Amazon (con cuenta gratuita, partidos selectos). Consulta cada partido en DondeVer.app.
+                {% else %}
+                Consulta DondeVer.app para ver las opciones gratuitas de transmisión de {{ team_name }}. Actualizamos la información antes de cada evento.
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+                ¿A qué hora juega {{ team_name }} hoy?
+            </div>
+            <div class="faq-answer">
+                {% if games %}
+                {{ team_name }} tiene {{ games|length }} partido{{ 's' if games|length > 1 else '' }} hoy {{ today_date_str }}:
+                <ul style="margin:0.5rem 0 0 1.25rem;">
+                {% for game in games %}
+                    <li>{{ game.home.name }} vs {{ game.away.name }} — {{ format_mx_time(game.date) }} (hora del centro de México){% if game.broadcasts %} por {% for b in game.broadcasts[:2] %}{{ b.channel }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</li>
+                {% endfor %}
+                </ul>
+                {% else %}
+                Hoy {{ today_date_str }}, {{ team_name }} no tiene partidos programados. Para saber cuándo es su próximo juego, activa las alertas por WhatsApp y te enviaremos un mensaje 1 hora antes del partido con el horario exacto y el canal de transmisión.
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ Related Teams (internal linking) ══ -->
+    {% if related_teams %}
+    <div class="related-teams">
+        <h2>Otros equipos de la {{ team_league }}</h2>
+        <div class="related-grid">
+            {% for rt in related_teams %}
+            <a href="/equipo/{{ rt.slug }}">{{ rt.name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 
 <footer>
