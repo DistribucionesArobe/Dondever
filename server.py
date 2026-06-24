@@ -658,16 +658,71 @@ async def whatsapp_debug():
     }
 
 
-@app.post("/whatsapp/broadcast-now")
+# Store last broadcast result for diagnostics
+_last_broadcast = {"ran_at": None, "result": None, "error": None}
+
+
+@app.api_route("/whatsapp/broadcast-now", methods=["GET", "POST"])
 async def whatsapp_broadcast_now(token: str = ""):
-    """Disparar el broadcast diario ahora mismo a todos los suscriptores."""
+    """Disparar el broadcast diario ahora mismo a todos los suscriptores.
+    Acepta GET y POST para compatibilidad con cron externos (cron-job.org, etc.)."""
     admin_token = os.getenv("ADMIN_TOKEN", "")
     if not admin_token or token != admin_token:
         return {"ok": False, "error": "token invalido"}
     try:
         from whatsapp_broadcast import send_daily_broadcast
         result = await send_daily_broadcast()
+        _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
+        _last_broadcast["result"] = result
+        _last_broadcast["error"] = None
         return {"ok": True, "result": result}
+    except Exception as e:
+        _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
+        _last_broadcast["result"] = None
+        _last_broadcast["error"] = str(e)
+        return {"ok": False, "error": str(e), "type": type(e).__name__}
+
+
+@app.get("/whatsapp/broadcast-status")
+async def whatsapp_broadcast_status():
+    """Ver el resultado del ultimo broadcast (sin auth)."""
+    from subscribers import get_active_subscribers
+    from whatsapp_broadcast import CONTENT_SID
+    active = get_active_subscribers()
+    return {
+        "last_broadcast": _last_broadcast,
+        "active_subscribers": len(active),
+        "content_template_configured": bool(CONTENT_SID),
+        "hint": "Sin CONTENT_SID, los broadcasts solo llegan a usuarios que mandaron msg en las ultimas 24h."
+    }
+
+
+@app.get("/whatsapp/check-delivery")
+async def whatsapp_check_delivery():
+    """Verifica el estado de entrega de los ultimos mensajes enviados por Twilio."""
+    from whatsapp_broadcast import get_twilio_client
+    client = get_twilio_client()
+    if not client:
+        return {"ok": False, "error": "Twilio no configurado"}
+    try:
+        # Get last 10 outbound messages
+        messages = client.messages.list(
+            from_=TWILIO_WA_NUMBER if 'TWILIO_WA_NUMBER' in dir() else None,
+            limit=10
+        )
+        results = []
+        for m in messages:
+            results.append({
+                "sid": m.sid[:12] + "...",
+                "to": m.to,
+                "status": m.status,  # queued, sent, delivered, read, failed, undelivered
+                "error_code": m.error_code,
+                "error_message": m.error_message,
+                "date_sent": str(m.date_sent) if m.date_sent else None,
+                "date_created": str(m.date_created),
+                "direction": m.direction,
+            })
+        return {"ok": True, "messages": results}
     except Exception as e:
         return {"ok": False, "error": str(e), "type": type(e).__name__}
 
@@ -718,10 +773,35 @@ try:
     from apscheduler.triggers.cron import CronTrigger
     from twitter_bot import setup_twitter_scheduler
     from facebook_bot import setup_facebook_scheduler
-    from whatsapp_broadcast import send_daily_broadcast
+    from whatsapp_broadcast import send_daily_broadcast as _raw_broadcast
     from tiktok_generator import generate_daily_video, generate_daily_images
     from whatsapp_alerts import send_pregame_alerts
     from apscheduler.triggers.interval import IntervalTrigger
+
+    async def _tracked_broadcast():
+        """Wrapper that logs broadcast results for diagnostics."""
+        try:
+            result = await _raw_broadcast()
+            _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
+            _last_broadcast["result"] = result
+            _last_broadcast["error"] = None
+            _last_broadcast["source"] = "scheduler"
+            logger.info(f"Scheduled broadcast completed: {result}")
+        except Exception as e:
+            _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
+            _last_broadcast["result"] = None
+            _last_broadcast["error"] = str(e)
+            _last_broadcast["source"] = "scheduler"
+            logger.error(f"Scheduled broadcast FAILED: {e}")
+
+    async def _keep_alive_ping():
+        """Ping self every 13 min to prevent Render free-tier sleep."""
+        import urllib.request
+        try:
+            ping_url = os.getenv("RENDER_EXTERNAL_URL", "https://dondever.app")
+            urllib.request.urlopen(f"{ping_url}/health", timeout=10)
+        except Exception:
+            pass
 
     scheduler = AsyncIOScheduler()
 
@@ -737,7 +817,7 @@ try:
 
         # WhatsApp daily broadcast at 9:00 AM MX time (15:00 UTC)
         scheduler.add_job(
-            send_daily_broadcast,
+            _tracked_broadcast,
             CronTrigger(hour=15, minute=0),
             id="whatsapp_daily_broadcast",
             name="Daily WhatsApp picks broadcast",
@@ -771,6 +851,16 @@ try:
             replace_existing=True,
         )
         logger.info("TikTok video generation scheduled at 7:30 AM MX")
+
+        # Keep-alive ping every 13 min (prevents Render free-tier sleep at 15 min)
+        scheduler.add_job(
+            _keep_alive_ping,
+            IntervalTrigger(minutes=13),
+            id="keep_alive_ping",
+            name="Keep-alive self-ping",
+            replace_existing=True,
+        )
+        logger.info("Keep-alive ping scheduled every 13 min")
 
         scheduler.start()
         logger.info("Scheduler started")

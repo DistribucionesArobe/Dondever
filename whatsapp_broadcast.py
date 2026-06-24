@@ -221,27 +221,35 @@ async def send_daily_broadcast():
     for phone in subscribers:
         to_number = _ensure_wa_number(phone)
         try:
-            # Strategy: try freeform first (richer message), fall back to template
-            try:
-                msg = client.messages.create(
-                    body=message_text,
-                    from_=from_number,
-                    to=to_number,
-                )
-            except Exception as freeform_err:
-                freeform_detail = str(freeform_err)
-                # If freeform fails (outside 24h window), try template
-                if CONTENT_SID and ("63016" in freeform_detail or "63032" in freeform_detail or "21408" in freeform_detail):
-                    import json as _json
-                    logger.info(f"Freeform failed for {to_number}, trying template...")
+            # Strategy: use Content Template FIRST for broadcasts (works outside 24h window).
+            # Freeform messages get accepted by Twilio but silently fail delivery
+            # when the user hasn't messaged in 24h — the error is async and we never see it.
+            if CONTENT_SID:
+                import json as _json
+                try:
                     msg = client.messages.create(
                         content_sid=CONTENT_SID,
                         content_variables=_json.dumps({"1": template_summary}),
                         from_=from_number,
                         to=to_number,
                     )
-                else:
-                    raise freeform_err  # re-raise if not a 24h window issue
+                    logger.info(f"Template msg sent to {to_number}")
+                except Exception as tmpl_err:
+                    # Template failed — try freeform as fallback (user might be in 24h window)
+                    logger.warning(f"Template failed for {to_number}: {tmpl_err}, trying freeform...")
+                    msg = client.messages.create(
+                        body=message_text,
+                        from_=from_number,
+                        to=to_number,
+                    )
+                    logger.info(f"Freeform fallback sent to {to_number}")
+            else:
+                # No template configured — freeform only (works within 24h window)
+                msg = client.messages.create(
+                    body=message_text,
+                    from_=from_number,
+                    to=to_number,
+                )
 
             sent += 1
             logger.info(f"Broadcast sent to {to_number} — SID: {msg.sid}, status: {msg.status}")
