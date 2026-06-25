@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
 from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
-from sports_api import get_todays_games, search_games, get_team_stats, fetch_odds, match_odds_to_game
+from sports_api import get_todays_games, search_games, get_team_stats, get_league_standings, fetch_odds, match_odds_to_game
 from whatsapp_bot import handle_whatsapp_message
 from tiktok_auth import (
     get_tiktok_auth_url, exchange_code_for_token, get_user_info,
@@ -394,6 +394,19 @@ async def league_page(request: Request, league_slug: str):
     sport, league_id, display_name, emoji = ALL_LEAGUES[league_slug]
     games = await get_todays_games(league_filter=league_slug)
 
+    # Fetch standings (top 10) — fail gracefully
+    standings = []
+    try:
+        standings = await get_league_standings(sport, league_id, limit=10)
+    except Exception:
+        pass
+
+    # Related teams from POPULAR_TEAMS that play in this league
+    league_teams = {
+        slug: info for slug, info in POPULAR_TEAMS.items()
+        if info.get("league") == league_slug
+    }
+
     return templates.TemplateResponse(
         request, "league.html", context={
             "league_slug": league_slug,
@@ -402,8 +415,128 @@ async def league_page(request: Request, league_slug: str):
             "sport": sport,
             "games": games,
             "total_games": len(games),
+            "standings": standings,
+            "league_teams": league_teams,
         }
     )
+
+
+# ── Sport-Today Pages (SEO) ────────────────────────────────
+
+# Config: slug → (sport_key, display_name, emoji, seo_channels_mx, seo_channels_us, seo_streaming)
+SPORT_TODAY_PAGES = {
+    "futbol-hoy": (
+        "soccer", "Futbol", "⚽",
+        "Los partidos de futbol se transmiten en Mexico por TUDN, Canal 5, Azteca 7, Fox Sports Mexico, ESPN Mexico, y ViX Premium. Para ligas europeas como Premier League y La Liga, ESPN y Fox Sports tienen los derechos principales.",
+        "En Estados Unidos, el futbol se ve por ESPN, ESPN+, Fox Sports, Univision, TUDN USA, Peacock, Paramount+ y Apple TV (MLS Season Pass). Los partidos de Champions League se transmiten por CBS y Paramount+.",
+        "Las mejores opciones de streaming para futbol en vivo son ViX Premium (Liga MX y ligas europeas en Mexico), ESPN+ y Peacock (en USA), y Paramount+ para Champions League. Apple TV tiene los derechos exclusivos de la MLS.",
+    ),
+    "futbol-americano-hoy": (
+        "football", "Futbol Americano", "🏈",
+        "La NFL en Mexico se ve principalmente por ESPN Mexico, Fox Sports Mexico, y TV Azteca para los juegos en Mexico City. Los playoffs y Super Bowl tienen transmision en abierto por Canal 5 o Azteca 7.",
+        "En Estados Unidos, la NFL se transmite por CBS, Fox, NBC (Sunday Night Football), ESPN (Monday Night Football), Amazon Prime Video (Thursday Night Football), y NFL Network. College Football se ve en ESPN, ABC, Fox y CBS.",
+        "Para streaming de futbol americano, NFL+ es la opcion oficial. En USA tambien Peacock, Paramount+, y Amazon Prime Video tienen juegos. ESPN+ transmite College Football selecto.",
+    ),
+    "basquetbol-hoy": (
+        "basketball", "Basquetbol", "🏀",
+        "La NBA en Mexico se transmite por ESPN Mexico y NBA League Pass. Algunos juegos de temporada regular y playoffs se transmiten por TV Azteca o Canal 5 en acuerdos especiales.",
+        "En Estados Unidos, la NBA se ve por ESPN, ABC, TNT, NBA TV, y los canales regionales (RSN). Los playoffs y Finals se transmiten en ESPN, ABC y TNT.",
+        "NBA League Pass es la mejor opcion para ver todos los juegos de la NBA en streaming. En Mexico tambien esta disponible ESPN Play. La WNBA se transmite por ESPN, ABC, CBS, y ION Television.",
+    ),
+    "beisbol-hoy": (
+        "baseball", "Beisbol", "⚾",
+        "La MLB en Mexico se ve por ESPN Mexico y Fox Sports Mexico. Algunos juegos de postemporada se transmiten en abierto. La Liga Mexicana del Pacifico se transmite en canales regionales y Claro Sports.",
+        "En Estados Unidos, la MLB se transmite por ESPN, Fox, TBS, FS1, y los canales regionales de cada equipo. Los playoffs se ven en Fox, TBS y ESPN. Apple TV+ tiene Friday Night Baseball.",
+        "Para streaming de beisbol, MLB.TV es la opcion completa para todos los juegos fuera de mercado. ESPN+ tiene algunos juegos exclusivos. Apple TV+ transmite viernes de beisbol.",
+    ),
+    "hockey-hoy": (
+        "hockey", "Hockey", "🏒",
+        "La NHL tiene cobertura limitada en Mexico. ESPN Mexico transmite algunos juegos de playoffs y las Stanley Cup Finals.",
+        "En Estados Unidos, la NHL se ve por ESPN, ABC, TNT, y los canales regionales. Los playoffs se transmiten en ESPN, ABC y TNT.",
+        "ESPN+ y Hulu son las principales opciones de streaming para la NHL en Estados Unidos. NHL Center Ice ofrece cobertura de todos los juegos fuera de mercado.",
+    ),
+}
+
+
+async def _render_sport_today(request: Request, sport_slug: str):
+    """
+    Sport-specific landing page — /futbol-hoy, /beisbol-hoy, etc.
+    Always has content for Google to index (SEO text even with no games).
+    """
+    sport_key, sport_display, sport_emoji, seo_mx, seo_us, seo_stream = SPORT_TODAY_PAGES[sport_slug]
+
+    # Get today's games filtered by sport
+    games = await get_todays_games(sport_filter=sport_key)
+
+    # Group games by league for organized display
+    games_by_league = {}
+    for g in games:
+        ls = g["league_slug"]
+        if ls not in games_by_league:
+            league_info = ALL_LEAGUES.get(ls, (sport_key, ls, ls, ""))
+            games_by_league[ls] = {
+                "name": league_info[2],
+                "emoji": league_info[3],
+                "games": [],
+            }
+        games_by_league[ls]["games"].append(g)
+
+    # Related teams for this sport (from POPULAR_TEAMS)
+    related_teams = {
+        slug: info for slug, info in POPULAR_TEAMS.items()
+        if info.get("sport") == sport_key
+    }
+
+    # Leagues for this sport
+    sport_leagues = {
+        slug: {"name": info[2], "emoji": info[3]}
+        for slug, info in ALL_LEAGUES.items()
+        if info[0] == sport_key
+    }
+
+    total_games = len(games)
+
+    return templates.TemplateResponse(
+        request, "sport_today.html", context={
+            "page_slug": sport_slug,
+            "page_title": f"Donde ver {sport_display} en vivo hoy - Canales Mexico y USA",
+            "meta_description": f"{total_games} juegos de {sport_display} en vivo hoy. Horarios y canales de TV para Mexico y Estados Unidos. TUDN, ESPN, Fox Sports y mas.",
+            "hero_text": f"Todos los juegos de {sport_display} de hoy con horarios, canales de TV y opciones de streaming para Mexico y Estados Unidos.",
+            "sport_key": sport_key,
+            "sport_display": sport_display,
+            "sport_emoji": sport_emoji,
+            "games": games,
+            "games_by_league": games_by_league,
+            "total_games": total_games,
+            "related_teams": related_teams,
+            "sport_leagues": sport_leagues,
+            "seo_channels_mx": seo_mx,
+            "seo_channels_us": seo_us,
+            "seo_streaming": seo_stream,
+        }
+    )
+
+
+# Explicit routes for each sport page (avoids catch-all /{slug} conflicts)
+@app.get("/futbol-hoy", response_class=HTMLResponse)
+async def futbol_hoy(request: Request):
+    return await _render_sport_today(request, "futbol-hoy")
+
+@app.get("/futbol-americano-hoy", response_class=HTMLResponse)
+async def futbol_americano_hoy(request: Request):
+    return await _render_sport_today(request, "futbol-americano-hoy")
+
+@app.get("/basquetbol-hoy", response_class=HTMLResponse)
+async def basquetbol_hoy(request: Request):
+    return await _render_sport_today(request, "basquetbol-hoy")
+
+@app.get("/beisbol-hoy", response_class=HTMLResponse)
+async def beisbol_hoy(request: Request):
+    return await _render_sport_today(request, "beisbol-hoy")
+
+@app.get("/hockey-hoy", response_class=HTMLResponse)
+async def hockey_hoy(request: Request):
+    return await _render_sport_today(request, "hockey-hoy")
 
 
 # ── API Routes ───────────────────────────────────────────
@@ -1085,6 +1218,15 @@ async def sitemap_xml():
     for slug in LEAGUES:
         urls.append(
             f'  <url>\n    <loc>{APP_URL}/liga/{slug}</loc>\n'
+            f'    <lastmod>{today_str}</lastmod>\n'
+            f'    <changefreq>daily</changefreq>\n'
+            f'    <priority>0.9</priority>\n  </url>'
+        )
+
+    # Sport-today pages (high priority — always have SEO content)
+    for sport_slug in SPORT_TODAY_PAGES:
+        urls.append(
+            f'  <url>\n    <loc>{APP_URL}/{sport_slug}</loc>\n'
             f'    <lastmod>{today_str}</lastmod>\n'
             f'    <changefreq>daily</changefreq>\n'
             f'    <priority>0.9</priority>\n  </url>'

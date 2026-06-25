@@ -78,6 +78,33 @@
         .seo-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: #1a1a2e; }
         .seo-card h3 { font-size: 0.9rem; font-weight: 600; margin: 1rem 0 0.3rem; color: #374151; }
         .seo-card p { font-size: 0.8rem; color: #6b7280; line-height: 1.7; margin-bottom: 0.5rem; }
+        .seo-card a { color: #059669; text-decoration: none; font-weight: 600; }
+        /* Standings table */
+        .standings-section { max-width: 900px; margin: 1rem auto; padding: 0 1rem; }
+        .standings-section h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.6rem; color: #1a1a2e; }
+        .standings-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; font-size: 0.78rem; }
+        .standings-table th { background: #f9fafb; padding: 0.5rem 0.6rem; text-align: left; font-weight: 700; color: #6b7280; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e5e7eb; }
+        .standings-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid #f3f4f6; }
+        .standings-table tr:last-child td { border-bottom: none; }
+        .standings-table tr:hover { background: #f0fdf4; }
+        .st-team { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; }
+        .st-logo { width: 20px; height: 20px; border-radius: 50%; object-fit: contain; }
+        .st-num { text-align: center; font-weight: 700; color: #374151; }
+        /* Teams grid */
+        .teams-grid { max-width: 900px; margin: 1rem auto; padding: 0 1rem; }
+        .teams-grid h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.6rem; color: #1a1a2e; }
+        .teams-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .team-pill-link {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.3rem 0.7rem; border-radius: 2rem; border: 1px solid #e5e7eb;
+            background: white; color: #374151; font-size: 0.78rem; font-weight: 600;
+            text-decoration: none; transition: all 0.2s;
+        }
+        .team-pill-link:hover { border-color: #10b981; color: #059669; }
+        @media (max-width: 768px) {
+            .standings-table { font-size: 0.7rem; }
+            .standings-table th, .standings-table td { padding: 0.35rem 0.4rem; }
+        }
         .promo-banner { max-width: 900px; margin: 1rem auto; padding: 0 1rem; }
         .promo-banner-inner {
             background: linear-gradient(135deg, #059669 0%, #10b981 100%);
@@ -220,6 +247,65 @@
         </div>
     {% endif %}
 </main>
+
+<!-- Standings -->
+{% if standings %}
+<div class="standings-section">
+    <h2>{{ emoji }} Tabla de posiciones — {{ league_name }}</h2>
+    <table class="standings-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Equipo</th>
+                {% if sport == 'soccer' %}
+                <th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>Pts</th>
+                {% else %}
+                <th>G</th><th>P</th><th>Pct</th><th>Racha</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in standings %}
+            <tr>
+                <td class="st-num">{{ loop.index }}</td>
+                <td>
+                    <div class="st-team">
+                        {% if team.team_logo %}<img src="{{ team.team_logo }}" alt="{{ team.team_name }}" class="st-logo" loading="lazy">{% endif %}
+                        {{ team.team_short or team.team_name }}
+                    </div>
+                </td>
+                {% if sport == 'soccer' %}
+                <td>{{ team.games_played }}</td>
+                <td>{{ team.wins }}</td>
+                <td>{{ team.ties }}</td>
+                <td>{{ team.losses }}</td>
+                <td>{{ team.goals_for }}</td>
+                <td>{{ team.goals_against }}</td>
+                <td style="font-weight:700;color:#059669;">{{ team.points }}</td>
+                {% else %}
+                <td>{{ team.wins }}</td>
+                <td>{{ team.losses }}</td>
+                <td>{{ team.win_pct }}</td>
+                <td>{{ team.streak }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- League Teams -->
+{% if league_teams %}
+<div class="teams-grid">
+    <h2>Equipos de {{ league_name }} en DondeVer</h2>
+    <div class="teams-list">
+        {% for slug, team in league_teams.items() %}
+        <a href="/equipo/{{ slug }}" class="team-pill-link">{{ team.name }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <!-- SEO Content Block — permanent text Google can always index -->
 <div class="seo-content">
