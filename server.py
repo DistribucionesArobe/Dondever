@@ -55,7 +55,8 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
         gads_id = os.getenv("GOOGLE_ADS_ID", "").strip()  # format: AW-XXXXXXXXXXX
         clarity_id = os.getenv("CLARITY_PROJECT_ID", "").strip()
         gtm_id = os.getenv("GTM_CONTAINER_ID", "").strip()
-        if not ga_id and not clarity_id and not gtm_id and not gads_id:
+        adsense_id = os.getenv("ADSENSE_PUB_ID", "").strip()  # format: ca-pub-XXXXXXXXXXXXXXXX
+        if not ga_id and not clarity_id and not gtm_id and not gads_id and not adsense_id:
             return response
 
         ctype = response.headers.get("content-type", "")
@@ -98,6 +99,11 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                     f'    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);\n'
                     f'  }})(window, document, "clarity", "script", "{clarity_id}");\n'
                     f'</script>\n'
+                )
+            if adsense_id:
+                snippet += (
+                    f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={adsense_id}"\n'
+                    f'     crossorigin="anonymous"></script>\n'
                 )
             snippet = snippet.encode("utf-8")
 
