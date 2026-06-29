@@ -1026,6 +1026,13 @@ async def tiktok_verification_prod():
     return "tiktok-developers-site-verification=aCYk4BWSaFsTrBg1sjS4kQ1JZjaIpTRg"
 
 
+@app.get("/ads.txt", response_class=PlainTextResponse)
+async def ads_txt():
+    """Serve ads.txt for Google AdSense verification."""
+    pub_id = os.getenv("ADSENSE_PUB_ID", "ca-pub-2576227882415709")
+    return f"google.com, {pub_id}, DIRECT, f08c47fec0942fa0\n"
+
+
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots_txt():
     """Robots.txt for search engine crawlers."""
