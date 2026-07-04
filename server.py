@@ -184,6 +184,19 @@ templates.env.globals["app_url"] = APP_URL
 templates.env.globals["now"] = lambda: datetime.now(TZ_MX)
 
 
+# ── OneSignal Service Worker (must be at root scope) ─────
+from pathlib import Path as _Path
+
+@app.get("/OneSignalSDKWorker.js")
+async def onesignal_service_worker():
+    sw_path = _Path(__file__).parent / "OneSignalSDKWorker.js"
+    return Response(
+        content=sw_path.read_text(),
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/"},
+    )
+
+
 # ── Web Routes ───────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)

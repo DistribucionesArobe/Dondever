@@ -50,12 +50,12 @@ async def send_push(
         "headings": {"es": heading, "en": heading},
         "contents": {"es": message, "en": message},
         "url": url or APP_URL,
-        "chrome_web_icon": icon or f"{APP_URL}/static/icon-192.png",
+        "chrome_web_icon": icon or f"{APP_URL}/static/logo.png",
         "ttl": 3600,  # expire after 1 hour
     }
 
     headers = {
-        "Authorization": f"Basic {ONESIGNAL_API_KEY}",
+        "Authorization": f"Key {ONESIGNAL_API_KEY}",
         "Content-Type": "application/json",
     }
 
