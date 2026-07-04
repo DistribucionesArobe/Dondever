@@ -56,7 +56,8 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
         clarity_id = os.getenv("CLARITY_PROJECT_ID", "").strip()
         gtm_id = os.getenv("GTM_CONTAINER_ID", "").strip()
         adsense_id = os.getenv("ADSENSE_PUB_ID", "").strip()  # format: ca-pub-XXXXXXXXXXXXXXXX
-        if not ga_id and not clarity_id and not gtm_id and not gads_id and not adsense_id:
+        onesignal_id = os.getenv("ONESIGNAL_APP_ID", "").strip()
+        if not ga_id and not clarity_id and not gtm_id and not gads_id and not adsense_id and not onesignal_id:
             return response
 
         ctype = response.headers.get("content-type", "")
@@ -104,6 +105,16 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                 snippet += (
                     f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={adsense_id}"\n'
                     f'     crossorigin="anonymous"></script>\n'
+                )
+            if onesignal_id:
+                snippet += (
+                    f'<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>\n'
+                    f'<script>\n'
+                    f'  window.OneSignalDeferred = window.OneSignalDeferred || [];\n'
+                    f'  OneSignalDeferred.push(async function(OneSignal) {{\n'
+                    f'    await OneSignal.init({{ appId: "{onesignal_id}" }});\n'
+                    f'  }});\n'
+                    f'</script>\n'
                 )
             snippet = snippet.encode("utf-8")
 
@@ -915,6 +926,7 @@ try:
     from whatsapp_broadcast import send_daily_broadcast as _raw_broadcast
     from tiktok_generator import generate_daily_video, generate_daily_images
     from whatsapp_alerts import send_pregame_alerts
+    from push_notifications import check_and_send_pregame_pushes, send_daily_push_summary
     from apscheduler.triggers.interval import IntervalTrigger
 
     async def _tracked_broadcast():
@@ -973,6 +985,42 @@ try:
             replace_existing=True,
         )
         logger.info("Pre-game alerts scheduled every 5 min")
+
+        # Web Push notifications (only if OneSignal configured)
+        if os.getenv("ONESIGNAL_APP_ID") and os.getenv("ONESIGNAL_API_KEY"):
+            async def _push_pregame_check():
+                """Check for games starting soon and send push notifications."""
+                try:
+                    games = await get_todays_games()
+                    await check_and_send_pregame_pushes(games)
+                except Exception as e:
+                    logger.error(f"Push pre-game check failed: {e}")
+
+            async def _push_daily_summary():
+                """Send daily summary push at 8:00 AM MX."""
+                try:
+                    games = await get_todays_games()
+                    await send_daily_push_summary(games)
+                except Exception as e:
+                    logger.error(f"Push daily summary failed: {e}")
+
+            # Pre-game push alerts every 5 minutes
+            scheduler.add_job(
+                _push_pregame_check,
+                IntervalTrigger(minutes=5),
+                id="push_pregame_alerts",
+                name="Pre-game push notifications",
+                replace_existing=True,
+            )
+            # Daily push summary at 8:00 AM MX (14:00 UTC)
+            scheduler.add_job(
+                _push_daily_summary,
+                CronTrigger(hour=14, minute=0),
+                id="push_daily_summary",
+                name="Daily push summary",
+                replace_existing=True,
+            )
+            logger.info("Push notifications scheduled (pre-game every 5 min + daily at 8AM MX)")
 
         # TikTok/Reels daily video + images at 7:30 AM MX (13:30 UTC)
         scheduler.add_job(
@@ -1598,6 +1646,33 @@ async def tiktok_publish():
 async def tiktok_status(publish_id: str):
     """Check publishing status of a video."""
     result = await check_publish_status(publish_id)
+    return JSONResponse(result)
+
+
+# ── Push Notifications Admin ─────────────────────────────
+
+@app.get("/admin/push-test")
+async def push_test(token: str = ""):
+    """Send a test push notification."""
+    if token != os.getenv("ADMIN_TOKEN", "dondever2026"):
+        return JSONResponse({"error": "unauthorized"}, 401)
+    from push_notifications import send_push
+    result = await send_push(
+        heading="🏟️ DondeVer — Test",
+        message="Las notificaciones push funcionan correctamente",
+        url=APP_URL,
+    )
+    return JSONResponse(result)
+
+
+@app.get("/admin/push-summary")
+async def push_summary_now(token: str = ""):
+    """Trigger daily push summary now."""
+    if token != os.getenv("ADMIN_TOKEN", "dondever2026"):
+        return JSONResponse({"error": "unauthorized"}, 401)
+    from push_notifications import send_daily_push_summary
+    games = await get_todays_games()
+    result = await send_daily_push_summary(games)
     return JSONResponse(result)
 
 
