@@ -107,18 +107,46 @@
             max-width: 900px;
             margin: 0 auto;
         }
-        .hero-logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1rem;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(16,185,129,0.3);
+        .hero-logo-img {
+            max-width: 200px;
+            height: auto;
+            margin: 0 auto 0.75rem;
+            display: block;
+            filter: drop-shadow(0 4px 20px rgba(16,185,129,0.25));
         }
-        .hero-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .date-nav {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1.25rem;
+        }
+        .date-btn {
+            padding: 0.45rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .date-prev {
+            background: rgba(255,255,255,0.1);
+            color: #cbd5e1;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+        .date-prev:hover { background: rgba(255,255,255,0.2); color: white; }
+        .date-next {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            border: none;
+            box-shadow: 0 2px 8px rgba(16,185,129,0.3);
+        }
+        .date-next:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.4); }
+        .date-current {
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: white;
         }
         .hero h1 {
             font-size: 1.6rem;
@@ -139,7 +167,7 @@
         /* ── Search Bar ─────────────────────── */
         .search-wrap {
             max-width: 900px;
-            margin: -1rem auto 0;
+            margin: 1rem auto 0;
             padding: 0 1rem;
             position: relative;
             z-index: 10;
@@ -432,7 +460,7 @@
 <header class="header">
     <div class="header-inner">
         <a href="/" class="logo">
-            <img src="/static/logo.png" alt="DondeVer">
+            <img src="/static/logo-full.png" alt="DondeVer">
             <span class="logo-text"><span class="donde">Donde</span><span class="ver">Ver</span></span>
         </a>
         <div class="header-right">
@@ -445,17 +473,16 @@
 <!-- Hero -->
 <div class="hero">
     <div class="hero-inner">
-        <div class="hero-logo"><img src="/static/logo.png" alt="DondeVer.app"></div>
-        <h1>Donde ver el partido <span class="accent">hoy</span> en Mexico y Estados Unidos?</h1>
-        <p>Encuentra rapidamente donde ver NFL, NBA, MLB y futbol en vivo, con opciones para Mexico y para mexicanos que viven en USA.</p>
+        <img src="/static/logo-full.png" alt="DondeVer.app" class="hero-logo-img">
+        <h1>Donde ver el partido <span class="accent">hoy en vivo</span>?</h1>
+        <p>Horarios, canales TV y streaming para Mexico y Estados Unidos. Liga MX, NFL, NBA, MLB, Champions y mas.</p>
+        <!-- Date Navigation inside hero -->
+        <div class="date-nav">
+            <a href="/?date={{ prev_date }}" class="date-btn date-prev">&larr; Ayer</a>
+            <span class="date-current">{{ today_display }}</span>
+            <a href="/?date={{ next_date }}" class="date-btn date-next">Manana &rarr;</a>
+        </div>
     </div>
-</div>
-
-<!-- Date Navigation -->
-<div style="max-width:900px;margin:1rem auto 0;padding:0 1rem;display:flex;gap:0.4rem;align-items:center;justify-content:center;">
-    <a href="/?date={{ prev_date }}" style="padding:0.4rem 0.8rem;border-radius:8px;background:#1a1a2e;color:white;text-decoration:none;font-size:0.8rem;font-weight:600;">&larr; Ayer</a>
-    <span style="padding:0.4rem 1rem;font-size:0.85rem;font-weight:700;color:#1a1a2e;">{{ today_display }}</span>
-    <a href="/?date={{ next_date }}" style="padding:0.4rem 0.8rem;border-radius:8px;background:#10b981;color:white;text-decoration:none;font-size:0.8rem;font-weight:600;">Manana &rarr;</a>
 </div>
 
 <!-- Search -->
