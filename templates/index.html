@@ -273,6 +273,7 @@
         .channel-tag.cable { background: #dbeafe; color: #1d4ed8; }
         .channel-tag.streaming { background: #ede9fe; color: #6d28d9; }
         .channel-tag.broadcast { background: #d1fae5; color: #059669; }
+        .channel-tag.free-mx { background: #059669; color: white; font-weight: 700; }
         .channel-tag.unknown { background: #f3f4f6; color: #9ca3af; }
 
         /* ── Info Section ───────────────────── */
@@ -555,13 +556,13 @@
             <div class="game-channels">
                 {% if game.broadcasts %}
                     {% for b in game.broadcasts %}
-                    {% if 'Amazon' in b.channel %}
+                    {% if 'Amazon' in b.channel or 'Prime' in b.channel %}
                     <a href="/go/amazon?s=channel" target="_blank" rel="noopener sponsored" data-affiliate="amazon" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:#00a8e1;color:white;" onclick="event.stopPropagation();">
                         {{ b.channel }} - 30 dias gratis
                     </a>
                     {% else %}
-                    <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}">
-                        {{ b.channel }}
+                    <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
+                        {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
                     </span>
                     {% endif %}
                     {% endfor %}

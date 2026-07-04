@@ -111,7 +111,11 @@
         .aff-cta:hover { transform: scale(1.03); }
         .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
         .footer a { color: #059669; text-decoration: none; }
-    </style>
+    
+    .channel-group { display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem; margin-bottom:0.5rem; }
+    .country-label { display:inline-flex; align-items:center; font-size:0.7rem; font-weight:700; color:#6b7280; background:#f3f4f6; border-radius:4px; padding:0.15rem 0.5rem; letter-spacing:0.05em; min-width:2.2rem; justify-content:center; }
+    .free-label { background:#059669; color:white; min-width:auto; padding:0.2rem 0.6rem; font-size:0.65rem; }
+</style>
 </head>
 <body>
     <header class="header">
@@ -151,11 +155,65 @@
             {% endif %}
         </div>
         <div class="channels-section">
-            <h3>Donde verlo</h3>
+            <h3>DONDE VERLO</h3>
             {% if game.broadcasts %}
+                {% set mx_channels = [] %}
+                {% set us_channels = [] %}
+                {% set other_channels = [] %}
                 {% for b in game.broadcasts %}
-                <span class="channel-pill {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}">{{ b.channel }}</span>
+                    {% if b.info and b.info.get('country') == 'MX' %}
+                        {% if mx_channels.append(b) %}{% endif %}
+                    {% elif b.info and b.info.get('country') == 'US' %}
+                        {% if us_channels.append(b) %}{% endif %}
+                    {% else %}
+                        {% if other_channels.append(b) %}{% endif %}
+                    {% endif %}
                 {% endfor %}
+                {% if mx_channels %}
+                {% set mx_free = [] %}
+                {% set mx_paid = [] %}
+                {% for b in mx_channels %}
+                    {% if b.info.get('type') == 'broadcast' %}
+                        {% if mx_free.append(b) %}{% endif %}
+                    {% else %}
+                        {% if mx_paid.append(b) %}{% endif %}
+                    {% endif %}
+                {% endfor %}
+                {% if mx_free %}
+                <div class="channel-group">
+                    <span class="country-label free-label">TV ABIERTA</span>
+                    {% for b in mx_free %}
+                    <span class="channel-pill broadcast">{{ b.channel }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if mx_paid %}
+                <div class="channel-group">
+                    <span class="country-label">MX</span>
+                    {% for b in mx_paid %}
+                    <span class="channel-pill {{ b.info.get('type', 'unknown') }}">{{ b.channel }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if us_channels %}
+                <div class="channel-group">
+                    <span class="country-label">USA</span>
+                    {% for b in us_channels %}
+                    <span class="channel-pill {{ b.info.get('type', 'unknown') }}">{{ b.channel }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if other_channels %}
+                <div class="channel-group">
+                    {% for b in other_channels %}
+                    <span class="channel-pill unknown">{{ b.channel }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if not mx_channels and not us_channels and not other_channels %}
+                <span class="channel-pill unknown">Canales por confirmar</span>
+                {% endif %}
             {% else %}
                 <span class="channel-pill unknown">Canales por confirmar</span>
             {% endif %}

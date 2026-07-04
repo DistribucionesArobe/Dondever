@@ -13,10 +13,24 @@ from cachetools import TTLCache
 
 from config import (
     ESPN_BASE, SPORTSDB_BASE, SPORTSDB_KEY,
-    LEAGUES, ALL_LEAGUES, CHANNEL_ALIASES, TZ_MX, TEAM_ALIASES
+    LEAGUES, ALL_LEAGUES, CHANNEL_ALIASES, ESPN_CHANNEL_NORMALIZE, TZ_MX, TEAM_ALIASES
 )
 
 logger = logging.getLogger("dondever.sports")
+
+def _normalize_channel(raw: str) -> str:
+    """Normalize ESPN's truncated channel names to canonical form."""
+    raw = raw.strip()
+    # Direct lookup in normalize map
+    if raw in ESPN_CHANNEL_NORMALIZE:
+        return ESPN_CHANNEL_NORMALIZE[raw]
+    # Check if raw is a prefix of a known channel
+    for truncated, canonical in ESPN_CHANNEL_NORMALIZE.items():
+        if raw.lower() == truncated.lower():
+            return canonical
+    return raw
+
+
 
 # Cache: 5 min TTL, max 500 entries
 _cache = TTLCache(maxsize=500, ttl=300)
@@ -47,6 +61,7 @@ ODDS_SPORT_MAP = {
 
 # ── Default TV channels per league (fallback when ESPN has no broadcast info) ──
 DEFAULT_LEAGUE_CHANNELS = {
+    # Futbol
     "liga-mx-femenil": ["TUDN", "ViX"],
     "liga-expansion": ["ESPN MX", "ViX"],
     "mls": ["Apple TV+", "ViX"],
@@ -57,11 +72,21 @@ DEFAULT_LEAGUE_CHANNELS = {
     "ligue-1": ["ESPN MX"],
     "champions": ["TUDN", "Canal 5", "ViX", "Paramount+"],
     "europa-league": ["ESPN MX", "ViX"],
-    "concacaf-cl": ["TUDN", "ViX"],
-    "nfl": ["ESPN MX", "Fox Sports MX", "TUDN"],
+    "concacaf-cl": ["TUDN", "ViX", "Canal 5"],
+    "copa-america": ["TUDN", "Canal 5", "ViX"],
+    "world-cup": ["TUDN", "Canal 5", "Azteca 7", "ViX"],
+    "club-friendly": ["TUDN", "ViX"],
+    # Futbol americano
+    "nfl": ["ESPN MX", "Fox Sports MX", "TUDN", "Canal 5"],
+    "college-football": ["ESPN MX"],
+    # Basquetbol
     "nba": ["ESPN MX"],
+    "wnba": ["ESPN MX"],
+    # Beisbol
     "mlb": ["ESPN MX"],
+    # Hockey
     "nhl": ["ESPN MX"],
+    # Combate
     "ufc": ["Fox Sports MX", "ESPN MX"],
 }
 
@@ -355,48 +380,63 @@ async def parse_espn_events_enriched(
         if not away:
             away = {"name": "TBD", "short": "", "logo": "", "score": ""}
 
-        # 1) Get ESPN broadcast info
+        # 1) Get ESPN broadcast info (normalize truncated names)
         espn_broadcasts = []
+        seen_channels = set()
         for geo_broadcast in comp.get("geoBroadcasts", []):
             market = geo_broadcast.get("market", {}).get("type", "")
             media = geo_broadcast.get("media", {})
-            channel = media.get("shortName", "")
-            if channel:
-                espn_broadcasts.append({
-                    "channel": channel,
-                    "market": market,
-                    "info": CHANNEL_ALIASES.get(channel, {}),
-                })
+            raw_channel = media.get("shortName", "")
+            if not raw_channel:
+                continue
+            channel = _normalize_channel(raw_channel)
+            # Deduplicate (ESPN sometimes lists same channel twice)
+            if channel.lower() in seen_channels:
+                continue
+            seen_channels.add(channel.lower())
+            info = CHANNEL_ALIASES.get(channel, {})
+            espn_broadcasts.append({
+                "channel": info.get("name", channel),
+                "market": market,
+                "info": info,
+            })
 
-        # 2) TheSportsDB disabled — free API key only returns 404s
-        # If ESPN has no broadcast info, use default channels per league
-        broadcasts = espn_broadcasts
+        # 2) Always merge MX channels from our manual mapping
+        # ESPN is US-centric and rarely includes Mexican channels.
+        # Our LIGA_MX_TEAM_CHANNELS and DEFAULT_LEAGUE_CHANNELS have
+        # the actual MX broadcast data, so we always add them.
+        broadcasts = list(espn_broadcasts)
 
-        if not broadcasts:
-            # For Liga MX, check team-specific channels first
-            if league_slug == "liga-mx":
-                home_lower = home["name"].lower()
-                away_lower = away["name"].lower()
-                team_channels = None
-                # Check home team first (home team usually determines broadcast)
+        # Determine MX channels to add
+        mx_defaults = []
+        if league_slug == "liga-mx":
+            home_lower = home["name"].lower()
+            away_lower = away["name"].lower()
+            team_channels = None
+            # Check home team first (home team usually determines broadcast)
+            for team_key, channels in LIGA_MX_TEAM_CHANNELS.items():
+                if team_key in home_lower or home_lower in team_key:
+                    team_channels = channels
+                    break
+            if not team_channels:
                 for team_key, channels in LIGA_MX_TEAM_CHANNELS.items():
-                    if team_key in home_lower or home_lower in team_key:
+                    if team_key in away_lower or away_lower in team_key:
                         team_channels = channels
                         break
-                if not team_channels:
-                    for team_key, channels in LIGA_MX_TEAM_CHANNELS.items():
-                        if team_key in away_lower or away_lower in team_key:
-                            team_channels = channels
-                            break
-                defaults = team_channels or ["TUDN", "ViX"]
-            else:
-                defaults = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
+            mx_defaults = team_channels or ["TUDN", "ViX"]
+        else:
+            mx_defaults = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
 
-            for ch in defaults:
+        # Add MX channels that aren't already in ESPN data
+        for ch in mx_defaults:
+            info = CHANNEL_ALIASES.get(ch, {"name": ch, "type": "cable"})
+            display_name = info.get("name", ch)
+            if display_name.lower() not in seen_channels:
+                seen_channels.add(display_name.lower())
                 broadcasts.append({
-                    "channel": ch,
+                    "channel": display_name,
                     "market": "National",
-                    "info": CHANNEL_ALIASES.get(ch, {"name": ch, "type": "cable"}),
+                    "info": info,
                 })
 
         # Status
