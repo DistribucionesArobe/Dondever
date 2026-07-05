@@ -283,30 +283,77 @@
                 <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#10b981;font-weight:600;">Momios / Odds</div>
                 <div style="font-size:0.65rem;color:#9ca3af;margin-top:0.15rem;">via {{ odds.bookmaker }}</div>
             </div>
-            <div style="display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;">
-                {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
-                {% set left_name = game.home.name if home_left else game.away.name %}
-                {% set right_name = game.away.name if home_left else game.home.name %}
-                {% set left_odds = odds.home_odds if home_left else odds.away_odds %}
-                {% set right_odds = odds.away_odds if home_left else odds.home_odds %}
-                <a href="{{ affiliates.caliente.url }}" target="_blank" rel="noopener sponsored" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+
+            {# ── Ganador (Moneyline / h2h) ── #}
+            {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+            {% set left_name = game.home.name if home_left else game.away.name %}
+            {% set right_name = game.away.name if home_left else game.home.name %}
+            {% set left_odds = odds.home_odds if home_left else odds.away_odds %}
+            {% set right_odds = odds.away_odds if home_left else odds.home_odds %}
+
+            <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;font-weight:600;margin-bottom:0.5rem;text-align:center;">Ganador</div>
+            <div style="display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
+                <a href="/go/caliente?s=odds" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">{{ left_name }}</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ left_odds or '—' }}</div>
                     <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
                 </a>
                 {% if odds.draw_odds %}
-                <a href="{{ affiliates.betsson.url }}" target="_blank" rel="noopener sponsored" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:80px;max-width:140px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
+                <a href="/go/betsson?s=odds" target="_blank" rel="noopener sponsored" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:80px;max-width:140px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">Empate</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#f97316;margin:0.25rem 0;">{{ odds.draw_odds }}</div>
                     <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
                 </a>
                 {% endif %}
-                <a href="{{ affiliates.caliente.url }}" target="_blank" rel="noopener sponsored" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                <a href="/go/caliente?s=odds" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">{{ right_name }}</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ right_odds or '—' }}</div>
                     <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
                 </a>
             </div>
+
+            {# ── Spread (Handicap) ── #}
+            {% if odds.spread_home %}
+            {% set left_spread = odds.spread_home_point if home_left else odds.spread_away_point %}
+            {% set left_spread_odds = odds.spread_home if home_left else odds.spread_away %}
+            {% set right_spread = odds.spread_away_point if home_left else odds.spread_home_point %}
+            {% set right_spread_odds = odds.spread_away if home_left else odds.spread_home %}
+            <div style="margin-top:1rem;">
+                <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;font-weight:600;margin-bottom:0.5rem;text-align:center;">Spread / Handicap</div>
+                <div style="display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
+                    <a href="/go/caliente?s=odds-spread" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                        <div style="font-size:0.65rem;color:#9ca3af;">{{ left_name }}</div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#10b981;margin:0.15rem 0;">{{ left_spread or '' }}</div>
+                        <div style="font-size:0.75rem;color:#cbd5e1;">{{ left_spread_odds or '' }}</div>
+                    </a>
+                    <a href="/go/caliente?s=odds-spread" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                        <div style="font-size:0.65rem;color:#9ca3af;">{{ right_name }}</div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#10b981;margin:0.15rem 0;">{{ right_spread or '' }}</div>
+                        <div style="font-size:0.75rem;color:#cbd5e1;">{{ right_spread_odds or '' }}</div>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ── Over/Under (Total) ── #}
+            {% if odds.total_over %}
+            <div style="margin-top:1rem;">
+                <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;font-weight:600;margin-bottom:0.5rem;text-align:center;">Total (Over/Under) — {{ odds.total_point }}</div>
+                <div style="display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
+                    <a href="/go/betsson?s=odds-total" target="_blank" rel="noopener sponsored" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='#374151'">
+                        <div style="font-size:0.65rem;color:#9ca3af;">Over (Mas de)</div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#22c55e;margin:0.15rem 0;">↑ {{ odds.total_point }}</div>
+                        <div style="font-size:0.75rem;color:#cbd5e1;">{{ odds.total_over }}</div>
+                    </a>
+                    <a href="/go/betsson?s=odds-total" target="_blank" rel="noopener sponsored" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
+                        <div style="font-size:0.65rem;color:#9ca3af;">Under (Menos de)</div>
+                        <div style="font-size:1.1rem;font-weight:800;color:#f97316;margin:0.15rem 0;">↓ {{ odds.total_point }}</div>
+                        <div style="font-size:0.75rem;color:#cbd5e1;">{{ odds.total_under }}</div>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
             <div style="text-align:center;margin-top:0.75rem;font-size:0.6rem;color:#6b7280;">
                 Momios de referencia. +18 apuesta responsablemente. Publicidad.
             </div>

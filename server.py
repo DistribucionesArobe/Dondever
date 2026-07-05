@@ -15,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
 from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
-from sports_api import get_todays_games, search_games, get_team_stats, get_league_standings, fetch_odds, match_odds_to_game
+from sports_api import get_todays_games, search_games, get_team_stats, get_league_standings, fetch_odds, match_odds_to_game, match_full_odds_to_game
 from whatsapp_bot import handle_whatsapp_message
 from tiktok_auth import (
     get_tiktok_auth_url, exchange_code_for_token, get_user_info,
@@ -224,6 +224,29 @@ async def home(
             }
         sports_grouped[league_name]["games"].append(game)
 
+    # ── Fetch odds for homepage games ────────────────────
+    # Collect unique league slugs that have upcoming games
+    odds_leagues = set()
+    for g in games:
+        if g["status"]["state"] == "pre":
+            odds_leagues.add(g.get("league_slug", ""))
+    # Fetch odds for each league (cached, so cheap after first call)
+    odds_by_league: dict[str, list] = {}
+    for ls in odds_leagues:
+        try:
+            ol = await fetch_odds(ls)
+            if ol:
+                odds_by_league[ls] = ol
+        except Exception:
+            pass
+    # Attach odds to each game
+    for g in games:
+        ls = g.get("league_slug", "")
+        if g["status"]["state"] == "pre" and ls in odds_by_league:
+            g["odds"] = match_odds_to_game(g, odds_by_league[ls])
+        else:
+            g["odds"] = None
+
     # Pick del dia — choose most interesting upcoming game
     pick_game = None
     priority_leagues = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga", "mlb"]
@@ -320,13 +343,13 @@ async def game_detail(request: Request, event_id: str):
             context={"message": "Este juego ya termino. Ve los juegos de hoy en la home."}
         )
 
-    # Fetch odds if game hasn't started yet
+    # Fetch odds if game hasn't started yet (full detail: h2h + spreads + totals)
     odds = None
     if game["status"]["state"] == "pre":
         try:
             league_slug = game.get("league_slug", "")
-            odds_list = await fetch_odds(league_slug)
-            odds = match_odds_to_game(game, odds_list)
+            odds_list = await fetch_odds(league_slug, markets="h2h,spreads,totals")
+            odds = match_full_odds_to_game(game, odds_list)
         except Exception as e:
             logger.warning(f"Odds fetch failed for game {event_id}: {e}")
 
@@ -1279,6 +1302,18 @@ async def sitemap_xml():
         ("guia/como-ver-tudn-en-usa", "weekly", "0.8"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
+        # New "Como ver" guides
+        ("guia/como-ver-premier-league-en-mexico", "weekly", "0.8"),
+        ("guia/como-ver-la-liga-en-mexico", "weekly", "0.8"),
+        ("guia/como-ver-serie-a-en-mexico", "weekly", "0.8"),
+        ("guia/como-ver-bundesliga-en-mexico", "weekly", "0.8"),
+        ("guia/como-ver-ligue-1-en-mexico", "weekly", "0.8"),
+        ("guia/como-ver-mlb-en-mexico", "weekly", "0.8"),
+        ("guia/como-ver-nhl-en-mexico", "weekly", "0.8"),
+        ("guia/como-ver-mls-en-mexico", "weekly", "0.8"),
+        ("guia/como-ver-ufc-en-mexico", "weekly", "0.8"),
+        ("guia/como-ver-liga-mx-femenil", "weekly", "0.8"),
+        ("guia/como-ver-europa-league-en-mexico", "weekly", "0.8"),
     ]
     for page, freq, priority in static_pages:
         urls.append(

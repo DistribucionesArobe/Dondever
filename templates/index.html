@@ -361,6 +361,46 @@
         .channel-tag.free-mx { background: #059669; color: white; font-weight: 700; }
         .channel-tag.unknown { background: #f3f4f6; color: #9ca3af; }
 
+        /* ── Mini Odds on Game Card ────────── */
+        .odds-mini {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0 0;
+            border-top: 1px solid #f3f4f6;
+            margin-top: 0.2rem;
+        }
+        .odds-mini-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .odds-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: #f0fdf4;
+            border: 1px solid #d1fae5;
+            border-radius: 6px;
+            padding: 0.15rem 0.5rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #059669;
+        }
+        .odds-chip .team-abbr {
+            color: #6b7280;
+            font-weight: 600;
+        }
+        .odds-chip.draw {
+            background: #fff7ed;
+            border-color: #fed7aa;
+            color: #ea580c;
+        }
+
         /* ── Info Section ───────────────────── */
         .info-section {
             max-width: 900px;
@@ -522,6 +562,22 @@
                 <div style="font-size:1.1rem;font-weight:800;margin:0.25rem 0;">{{ pick_game.emoji }} {% if pick_home_left %}{{ pick_game.home.name }} vs {{ pick_game.away.name }}{% else %}{{ pick_game.away.name }} vs {{ pick_game.home.name }}{% endif %}</div>
                 <div style="font-size:0.8rem;opacity:0.8;">{{ pick_game.league_name }} &middot; {{ format_mx_time(pick_game.date) }} hrs</div>
                 <div style="font-size:0.75rem;margin-top:0.4rem;color:#10b981;">Donde verlo: {% if pick_game.broadcasts %}{{ pick_game.broadcasts[0].channel }}{% else %}Por confirmar{% endif %}</div>
+                {% if pick_game.odds %}
+                <div style="display:flex;gap:0.4rem;margin-top:0.5rem;">
+                    {% set pl = pick_game.sport in ('soccer', 'boxing', 'mma') %}
+                    <span style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:0.2rem 0.6rem;font-size:0.7rem;font-weight:700;color:#10b981;">
+                        {{ pick_game.home.name[:3]|upper if pl else pick_game.away.name[:3]|upper }} {{ pick_game.odds.home_odds if pl else pick_game.odds.away_odds }}
+                    </span>
+                    {% if pick_game.odds.draw_odds %}
+                    <span style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:0.2rem 0.6rem;font-size:0.7rem;font-weight:700;color:#f97316;">
+                        EMP {{ pick_game.odds.draw_odds }}
+                    </span>
+                    {% endif %}
+                    <span style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:0.2rem 0.6rem;font-size:0.7rem;font-weight:700;color:#10b981;">
+                        {{ pick_game.away.name[:3]|upper if pl else pick_game.home.name[:3]|upper }} {{ pick_game.odds.away_odds if pl else pick_game.odds.home_odds }}
+                    </span>
+                </div>
+                {% endif %}
             </div>
             <div style="text-align:center;">
                 <a href="https://wa.me/15715463202?text=picks" style="display:inline-block;background:#25d366;color:white;padding:0.6rem 1.25rem;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;">Recibe picks gratis</a>
@@ -660,6 +716,27 @@
                     <span class="channel-tag unknown">Por confirmar</span>
                 {% endif %}
             </div>
+
+            {# ── Mini Odds Preview ── #}
+            {% if game.odds %}
+            <div class="odds-mini">
+                <span class="odds-mini-label">Momios</span>
+                <span class="odds-chip">
+                    <span class="team-abbr">{{ left_team.name[:3]|upper }}</span>
+                    {{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}
+                </span>
+                {% if game.odds.draw_odds %}
+                <span class="odds-chip draw">
+                    <span class="team-abbr">EMP</span>
+                    {{ game.odds.draw_odds }}
+                </span>
+                {% endif %}
+                <span class="odds-chip">
+                    <span class="team-abbr">{{ right_team.name[:3]|upper }}</span>
+                    {{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}
+                </span>
+            </div>
+            {% endif %}
         </a>
         {% endfor %}
     </section>
@@ -744,6 +821,29 @@
         <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.555 4.126 1.528 5.869L.06 23.897l6.171-1.617A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.94 0-3.75-.58-5.264-1.573l-.378-.224-3.91 1.025 1.043-3.811-.247-.393A9.777 9.777 0 012.182 12 9.818 9.818 0 0112 2.182 9.818 9.818 0 0121.818 12 9.818 9.818 0 0112 21.818z"/>
     </svg>
 </a>
+
+<div style="max-width:900px;margin:1.5rem auto 0;padding:0 1rem;">
+    <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;">
+        <h3 style="font-size:0.85rem;font-weight:700;color:#059669;margin-bottom:0.75rem;">Guias: Como ver en Mexico y USA</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+            <a href="/guia/donde-ver-liga-mx" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Liga MX</a>
+            <a href="/guia/como-ver-premier-league-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Premier League</a>
+            <a href="/guia/como-ver-la-liga-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">La Liga</a>
+            <a href="/guia/como-ver-serie-a-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Serie A</a>
+            <a href="/guia/como-ver-bundesliga-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Bundesliga</a>
+            <a href="/guia/como-ver-ligue-1-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Ligue 1</a>
+            <a href="/guia/donde-ver-champions-league" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Champions</a>
+            <a href="/guia/como-ver-europa-league-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Europa League</a>
+            <a href="/guia/donde-ver-nfl-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">NFL</a>
+            <a href="/guia/donde-ver-nba-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">NBA</a>
+            <a href="/guia/como-ver-mlb-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">MLB</a>
+            <a href="/guia/como-ver-nhl-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">NHL</a>
+            <a href="/guia/como-ver-mls-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">MLS</a>
+            <a href="/guia/como-ver-ufc-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">UFC</a>
+            <a href="/guia/como-ver-liga-mx-femenil" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Liga MX Femenil</a>
+        </div>
+    </div>
+</div>
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Tu guia de donde ver deportes en vivo</p>
