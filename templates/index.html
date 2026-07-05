@@ -663,7 +663,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set left_team = game.home if home_left else game.away %}
         {% set right_team = game.away if home_left else game.home %}
-        <a href="/juego/{{ game.id }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}" data-date="{{ game.date }}" data-teams="{{ left_team.name|lower }},{{ right_team.name|lower }}">
+        <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="game-card {% if game.status.state == 'in' %}live{% endif %}" data-date="{{ game.date }}" data-teams="{{ left_team.name|lower }},{{ right_team.name|lower }}">
             <div class="team away">
                 <div>
                     <div class="team-name">{{ left_team.name }}</div>

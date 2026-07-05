@@ -334,10 +334,26 @@ async def canales_page(request: Request):
 
 
 @app.get("/juego/{event_id}", response_class=HTMLResponse)
-async def game_detail(request: Request, event_id: str):
+async def game_detail(request: Request, event_id: str, date: Optional[str] = Query(None)):
     """Individual game page — good for SEO."""
-    all_games = await get_todays_games()
+    # Try the requested date first, then today, then nearby dates
+    all_games = await get_todays_games(date_str=date)
     game = next((g for g in all_games if g["id"] == event_id), None)
+
+    # If not found with the given date, try today (in case date param is stale)
+    if not game and date:
+        all_games = await get_todays_games()
+        game = next((g for g in all_games if g["id"] == event_id), None)
+
+    # Still not found — try yesterday and tomorrow as fallback
+    if not game:
+        now = datetime.now(TZ_MX)
+        for delta in [1, -1, 2, -2]:
+            try_date = (now + timedelta(days=delta)).strftime("%Y%m%d")
+            fallback_games = await get_todays_games(date_str=try_date)
+            game = next((g for g in fallback_games if g["id"] == event_id), None)
+            if game:
+                break
 
     if not game:
         # 410 Gone: le dice a Google que la URL existio pero ya no.
