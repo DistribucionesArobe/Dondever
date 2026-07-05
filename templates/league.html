@@ -295,6 +295,68 @@
 </div>
 {% endif %}
 
+<!-- Recent Results -->
+{% if recent_results %}
+<div class="standings-section">
+    <h2>Resultados recientes de {{ league_name }}</h2>
+    <table class="standings-table">
+        <thead>
+            <tr>
+                <th>Local</th>
+                <th style="text-align:center">Marcador</th>
+                <th style="text-align:right">Visitante</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in recent_results %}
+            <tr>
+                <td style="display:flex;align-items:center;gap:0.4rem;">
+                    {% if r.home_logo %}<img src="{{ r.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                    {{ r.home }}
+                </td>
+                <td style="text-align:center;font-weight:800;color:#059669;">{{ r.home_score }} - {{ r.away_score }}</td>
+                <td style="text-align:right;">
+                    {{ r.away }}
+                    {% if r.away_logo %}<img src="{{ r.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;margin-left:0.4rem;">{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Upcoming Games -->
+{% if upcoming_games %}
+<div class="standings-section">
+    <h2>Proximos partidos de {{ league_name }}</h2>
+    <table class="standings-table">
+        <thead>
+            <tr>
+                <th>Local</th>
+                <th style="text-align:center">Fecha</th>
+                <th style="text-align:right">Visitante</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in upcoming_games %}
+            <tr>
+                <td style="display:flex;align-items:center;gap:0.4rem;">
+                    {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                    {{ u.home }}
+                </td>
+                <td style="text-align:center;font-weight:600;color:#f97316;">{{ format_mx_time(u.date) }}</td>
+                <td style="text-align:right;">
+                    {{ u.away }}
+                    {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;margin-left:0.4rem;">{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
 <!-- League Teams -->
 {% if league_teams %}
 <div class="teams-grid">

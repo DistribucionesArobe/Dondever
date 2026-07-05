@@ -540,6 +540,50 @@
         </div>
     </div>
 
+    <!-- ══ Recent Results ══ -->
+    {% if recent_results %}
+    <div style="margin-top:1.5rem;">
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Ultimos resultados</h2>
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            {% for r in recent_results %}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
+                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;">
+                    {% if r.home_logo %}<img src="{{ r.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                    <span style="font-size:0.8rem;font-weight:600;">{{ r.home }}</span>
+                </div>
+                <div style="font-weight:800;color:#059669;font-size:0.85rem;padding:0 0.5rem;">{{ r.home_score }} - {{ r.away_score }}</div>
+                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;justify-content:flex-end;">
+                    <span style="font-size:0.8rem;font-weight:600;">{{ r.away }}</span>
+                    {% if r.away_logo %}<img src="{{ r.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ══ Upcoming Games ══ -->
+    {% if upcoming_games %}
+    <div style="margin-top:1.5rem;">
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Proximos partidos</h2>
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            {% for u in upcoming_games %}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
+                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;">
+                    {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                    <span style="font-size:0.8rem;font-weight:600;">{{ u.home }}</span>
+                </div>
+                <div style="font-weight:700;color:#f97316;font-size:0.78rem;padding:0 0.5rem;">{{ format_mx_time(u.date) }}</div>
+                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;justify-content:flex-end;">
+                    <span style="font-size:0.8rem;font-weight:600;">{{ u.away }}</span>
+                    {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- ══ Related Teams (internal linking) ══ -->
     {% if related_teams %}
     <div class="related-teams">

@@ -15,7 +15,11 @@ from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
 from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
-from sports_api import get_todays_games, search_games, get_team_stats, get_league_standings, fetch_odds, match_odds_to_game, match_full_odds_to_game
+from sports_api import (
+    get_todays_games, search_games, get_team_stats, get_league_standings,
+    fetch_odds, match_odds_to_game, match_full_odds_to_game,
+    get_recent_league_results, get_upcoming_league_games,
+)
 from whatsapp_bot import handle_whatsapp_message
 from tiktok_auth import (
     get_tiktok_auth_url, exchange_code_for_token, get_user_info,
@@ -454,6 +458,18 @@ async def league_page(request: Request, league_slug: str):
     except Exception:
         pass
 
+    # Fetch recent results and upcoming games (enriched content for SEO)
+    recent_results = []
+    upcoming_games = []
+    try:
+        recent_results = await get_recent_league_results(sport, league_id, days=5, limit=5)
+    except Exception:
+        pass
+    try:
+        upcoming_games = await get_upcoming_league_games(sport, league_id, days=7, limit=5)
+    except Exception:
+        pass
+
     # Related teams from POPULAR_TEAMS that play in this league
     league_teams = {
         slug: info for slug, info in POPULAR_TEAMS.items()
@@ -470,6 +486,8 @@ async def league_page(request: Request, league_slug: str):
             "total_games": len(games),
             "standings": standings,
             "league_teams": league_teams,
+            "recent_results": recent_results,
+            "upcoming_games": upcoming_games,
         }
     )
 
@@ -1341,6 +1359,28 @@ async def sitemap_xml():
             f'    <priority>0.9</priority>\n  </url>'
         )
 
+    # Channel pages (SEO: "que pasan hoy en ESPN")
+    for ch_slug in CHANNEL_PAGES:
+        urls.append(
+            f'  <url>\n    <loc>{APP_URL}/canal/{ch_slug}</loc>\n'
+            f'    <lastmod>{today_str}</lastmod>\n'
+            f'    <changefreq>daily</changefreq>\n'
+            f'    <priority>0.8</priority>\n  </url>'
+        )
+
+    # Matchup pages (SEO: "donde ver america vs chivas")
+    for game in games:
+        home_slug = _slugify_team(game["home"]["name"])
+        away_slug = _slugify_team(game["away"]["name"])
+        if home_slug and away_slug:
+            matchup = f"{away_slug}-vs-{home_slug}"
+            urls.append(
+                f'  <url>\n    <loc>{APP_URL}/donde-ver/{matchup}</loc>\n'
+                f'    <lastmod>{today_str}</lastmod>\n'
+                f'    <changefreq>daily</changefreq>\n'
+                f'    <priority>0.7</priority>\n  </url>'
+            )
+
     # Streaming comparator
     urls.append(
         f'  <url>\n    <loc>{APP_URL}/streaming</loc>\n'
@@ -1413,6 +1453,149 @@ async def guide_page(request: Request, guide_slug: str):
         return templates.TemplateResponse(request, template_name)
     except Exception:
         return templates.TemplateResponse(request, "404.html", status_code=404)
+
+
+# ── Channel Pages (SEO: "que pasan hoy en ESPN") ────────
+
+CHANNEL_PAGES = {
+    # Mexico
+    "tudn":          {"name": "TUDN",          "country": "MX", "type": "cable",     "desc": "TUDN es el canal deportivo mas importante de Mexico. Transmite Liga MX, Champions League, Liga de Naciones y mas."},
+    "canal-5":       {"name": "Canal 5",       "country": "MX", "type": "broadcast", "desc": "Canal 5 de Televisa transmite partidos selectos de Liga MX en television abierta, gratis para toda Mexico."},
+    "azteca-7":      {"name": "Azteca 7",      "country": "MX", "type": "broadcast", "desc": "Azteca 7 transmite partidos de futbol mexicano y eventos de la Seleccion Mexicana en TV abierta."},
+    "fox-sports-mx": {"name": "Fox Sports MX", "country": "MX", "type": "cable",     "desc": "Fox Sports Mexico cubre Liga MX, MLB, NFL y UFC. Disponible en los principales sistemas de cable."},
+    "vix":           {"name": "ViX",           "country": "MX", "type": "streaming", "desc": "ViX es la plataforma de streaming de TelevisaUnivision. Ofrece partidos de Liga MX, MLS, Champions y mas."},
+    "espn-mx":       {"name": "ESPN MX",       "country": "MX", "type": "cable",     "desc": "ESPN Mexico transmite Premier League, La Liga, Serie A, NBA, NFL y mas deportes internacionales."},
+    "claro-sports":  {"name": "Claro Sports",  "country": "MX", "type": "cable",     "desc": "Claro Sports cubre eventos deportivos selectos incluyendo Juegos Olimpicos y liga mexicana."},
+    # USA
+    "espn":          {"name": "ESPN",          "country": "US", "type": "cable",     "desc": "ESPN es el canal deportivo numero uno en Estados Unidos. Transmite NFL, NBA, MLB, MLS y mas."},
+    "espn-plus":     {"name": "ESPN+",         "country": "US", "type": "streaming", "desc": "ESPN+ es el servicio de streaming deportivo de Disney. Incluye La Liga, Bundesliga, UFC y mas."},
+    "fox":           {"name": "FOX",           "country": "US", "type": "broadcast", "desc": "FOX transmite NFL, MLB World Series, NASCAR y eventos deportivos premium en TV abierta en EE.UU."},
+    "fs1":           {"name": "FS1",           "country": "US", "type": "cable",     "desc": "Fox Sports 1 cubre MLB, NASCAR, USFL y eventos de UFC en cable."},
+    "nbc":           {"name": "NBC",           "country": "US", "type": "broadcast", "desc": "NBC transmite Sunday Night Football de la NFL, Premier League y Juegos Olimpicos."},
+    "peacock":       {"name": "Peacock",       "country": "US", "type": "streaming", "desc": "Peacock de NBCUniversal ofrece Premier League, Sunday Night Football y eventos en vivo."},
+    "paramount-plus":{"name": "Paramount+",    "country": "US", "type": "streaming", "desc": "Paramount+ transmite Champions League, Europa League, Serie A, NWSL y CBS Sports."},
+    "tnt":           {"name": "TNT",           "country": "US", "type": "cable",     "desc": "TNT transmite NBA, NHL y AEW Wrestling en Estados Unidos."},
+    "abc":           {"name": "ABC",           "country": "US", "type": "broadcast", "desc": "ABC transmite NBA Finals, College Football Playoff y Saturday Night Football."},
+    "prime-video":   {"name": "Prime Video",   "country": "US", "type": "streaming", "desc": "Amazon Prime Video tiene Thursday Night Football de la NFL y partidos selectos de MLS."},
+    "apple-tv":      {"name": "Apple TV+",     "country": "US", "type": "streaming", "desc": "Apple TV+ tiene MLS Season Pass con todos los partidos de la MLS y Friday Night Baseball de MLB."},
+    "univision":     {"name": "Univision",     "country": "US", "type": "broadcast", "desc": "Univision transmite Liga MX, Concacaf y la Seleccion Mexicana para la audiencia hispana en EE.UU."},
+    "telemundo":     {"name": "Telemundo",     "country": "US", "type": "broadcast", "desc": "Telemundo cubre Premier League, Copa del Mundo y eventos deportivos en espanol en EE.UU."},
+}
+
+
+@app.get("/canal/{channel_slug}", response_class=HTMLResponse)
+async def channel_page(request: Request, channel_slug: str):
+    """Channel page — what's on today for a specific channel. SEO goldmine."""
+    channel = CHANNEL_PAGES.get(channel_slug)
+    if not channel:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404,
+            context={"message": "Canal no encontrado."}
+        )
+
+    all_games = await get_todays_games()
+
+    # Filter games that broadcast on this channel
+    channel_name = channel["name"]
+    channel_games = []
+    for g in all_games:
+        if g.get("broadcasts"):
+            for b in g["broadcasts"]:
+                # Match by normalized name or raw name
+                raw = b.get("channel", "")
+                info = b.get("info", {})
+                norm = info.get("name", raw) if info else raw
+                if norm == channel_name or raw == channel_name:
+                    channel_games.append(g)
+                    break
+
+    today = datetime.now(TZ_MX)
+    return templates.TemplateResponse(
+        request, "canal.html",
+        context={
+            "channel": channel,
+            "channel_slug": channel_slug,
+            "games": channel_games,
+            "total_games": len(channel_games),
+            "today_display": today.strftime("%A %d de %B, %Y"),
+        },
+    )
+
+
+# ── Matchup Pages (SEO: "donde ver america vs chivas") ──
+
+def _slugify_team(name: str) -> str:
+    """Convert team name to URL slug."""
+    import unicodedata, re
+    s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    s = re.sub(r"[^\w\s-]", "", s.lower().strip())
+    return re.sub(r"[-\s]+", "-", s)
+
+
+@app.get("/donde-ver/{matchup_slug}", response_class=HTMLResponse)
+async def matchup_page(request: Request, matchup_slug: str):
+    """
+    SEO matchup page: /donde-ver/america-vs-chivas
+    Finds today's game matching the team names in the slug and renders it.
+    """
+    parts = matchup_slug.split("-vs-")
+    if len(parts) != 2:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404,
+            context={"message": "Formato invalido. Usa /donde-ver/equipo1-vs-equipo2"}
+        )
+
+    slug_a, slug_b = parts[0].strip(), parts[1].strip()
+    all_games = await get_todays_games()
+
+    # Find the matching game
+    matched_game = None
+    for g in all_games:
+        home_slug = _slugify_team(g["home"]["name"])
+        away_slug = _slugify_team(g["away"]["name"])
+        # Match in either order
+        if (slug_a in home_slug and slug_b in away_slug) or \
+           (slug_b in home_slug and slug_a in away_slug) or \
+           (slug_a in away_slug and slug_b in home_slug) or \
+           (slug_b in away_slug and slug_a in home_slug):
+            matched_game = g
+            break
+
+    if not matched_game:
+        # Try fuzzy: check if any word matches
+        for g in all_games:
+            h = _slugify_team(g["home"]["name"])
+            a = _slugify_team(g["away"]["name"])
+            a_in = any(w in h or w in a for w in slug_a.split("-") if len(w) > 3)
+            b_in = any(w in h or w in a for w in slug_b.split("-") if len(w) > 3)
+            if a_in and b_in:
+                matched_game = g
+                break
+
+    if not matched_game:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=410,
+            context={"message": f"No encontramos el partido de hoy. Revisa los juegos de hoy en la home."}
+        )
+
+    # Fetch odds for the game
+    odds = None
+    if matched_game["status"]["state"] == "pre":
+        try:
+            league_slug = matched_game.get("league_slug", "")
+            odds_list = await fetch_odds(league_slug)
+            odds = match_odds_to_game(matched_game, odds_list)
+        except Exception:
+            pass
+
+    return templates.TemplateResponse(
+        request, "matchup.html",
+        context={
+            "game": matched_game,
+            "odds": odds,
+            "matchup_slug": matchup_slug,
+        },
+    )
 
 
 # ── Streaming Comparator ────────────────────────────────
@@ -1548,6 +1731,35 @@ async def team_page(request: Request, team_slug: str):
         if slug != team_slug and info.get("league") == final_league:
             related_teams.append({"slug": slug, "name": info["name"]})
 
+    # Fetch recent results and upcoming games for the team's league
+    recent_results = []
+    upcoming_games = []
+    from sports_api import TEAM_LEAGUE_MAP
+    league_info_map = TEAM_LEAGUE_MAP.get(team_slug)
+    if league_info_map:
+        t_sport, t_league = league_info_map
+        try:
+            all_recent = await get_recent_league_results(t_sport, t_league, days=7, limit=20)
+            # Filter for this team
+            for r in all_recent:
+                if (search_term.lower() in r["home"].lower() or
+                    search_term.lower() in r["away"].lower()):
+                    recent_results.append(r)
+                if len(recent_results) >= 5:
+                    break
+        except Exception:
+            pass
+        try:
+            all_upcoming = await get_upcoming_league_games(t_sport, t_league, days=10, limit=30)
+            for u in all_upcoming:
+                if (search_term.lower() in u["home"].lower() or
+                    search_term.lower() in u["away"].lower()):
+                    upcoming_games.append(u)
+                if len(upcoming_games) >= 5:
+                    break
+        except Exception:
+            pass
+
     return templates.TemplateResponse(request, "team.html", {
         "team_name": team_name,
         "team_slug": team_slug,
@@ -1560,6 +1772,8 @@ async def team_page(request: Request, team_slug: str):
         "format_mx_time": format_mx_time,
         "today_date_str": today_date_str,
         "related_teams": related_teams,
+        "recent_results": recent_results,
+        "upcoming_games": upcoming_games,
     })
 
 

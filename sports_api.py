@@ -706,6 +706,97 @@ async def get_league_standings(sport: str, league: str, limit: int = 10) -> list
     return standings[:limit]
 
 
+# ── Recent & Upcoming Games (for enriched pages) ──────
+
+async def get_recent_league_results(sport: str, league: str, days: int = 5, limit: int = 10) -> list[dict]:
+    """
+    Get completed games from the past N days for a league.
+    Returns a list of simplified game dicts sorted by date desc.
+    """
+    now = datetime.now(TZ_MX)
+    results = []
+
+    tasks = []
+    for d in range(1, days + 1):
+        past_date = (now - timedelta(days=d)).strftime("%Y%m%d")
+        tasks.append(fetch_espn_scoreboard(sport, league, past_date))
+
+    scoreboards = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for sb in scoreboards:
+        if isinstance(sb, Exception):
+            continue
+        for event in sb.get("events", []):
+            status = event.get("status", {}).get("type", {}).get("state", "")
+            if status != "post":
+                continue
+            comp = event.get("competitions", [{}])[0]
+            competitors = comp.get("competitors", [])
+            if len(competitors) < 2:
+                continue
+
+            home_c = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
+            away_c = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
+
+            results.append({
+                "id": event.get("id", ""),
+                "home": home_c.get("team", {}).get("displayName", ""),
+                "away": away_c.get("team", {}).get("displayName", ""),
+                "home_score": home_c.get("score", "0"),
+                "away_score": away_c.get("score", "0"),
+                "home_logo": home_c.get("team", {}).get("logo", ""),
+                "away_logo": away_c.get("team", {}).get("logo", ""),
+                "date": event.get("date", ""),
+            })
+
+    # Sort by date descending (most recent first)
+    results.sort(key=lambda x: x.get("date", ""), reverse=True)
+    return results[:limit]
+
+
+async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limit: int = 10) -> list[dict]:
+    """
+    Get upcoming (not started) games for the next N days for a league.
+    Returns simplified game dicts sorted by date asc.
+    """
+    now = datetime.now(TZ_MX)
+    upcoming = []
+
+    tasks = []
+    for d in range(1, days + 1):
+        future_date = (now + timedelta(days=d)).strftime("%Y%m%d")
+        tasks.append(fetch_espn_scoreboard(sport, league, future_date))
+
+    scoreboards = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for sb in scoreboards:
+        if isinstance(sb, Exception):
+            continue
+        for event in sb.get("events", []):
+            status = event.get("status", {}).get("type", {}).get("state", "")
+            if status != "pre":
+                continue
+            comp = event.get("competitions", [{}])[0]
+            competitors = comp.get("competitors", [])
+            if len(competitors) < 2:
+                continue
+
+            home_c = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
+            away_c = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
+
+            upcoming.append({
+                "id": event.get("id", ""),
+                "home": home_c.get("team", {}).get("displayName", ""),
+                "away": away_c.get("team", {}).get("displayName", ""),
+                "home_logo": home_c.get("team", {}).get("logo", ""),
+                "away_logo": away_c.get("team", {}).get("logo", ""),
+                "date": event.get("date", ""),
+            })
+
+    upcoming.sort(key=lambda x: x.get("date", ""))
+    return upcoming[:limit]
+
+
 # ── Odds API Functions ──────────────────────────────────
 
 async def fetch_odds(league_slug: str, markets: str = "h2h") -> list[dict]:
