@@ -1348,6 +1348,10 @@ async def sitemap_xml():
         ("guia/como-ver-ufc-en-mexico", "weekly", "0.8"),
         ("guia/como-ver-liga-mx-femenil", "weekly", "0.8"),
         ("guia/como-ver-europa-league-en-mexico", "weekly", "0.8"),
+        # Caribbean / LatAm MLB guides
+        ("guia/donde-ver-mlb-en-venezuela", "weekly", "0.8"),
+        ("guia/donde-ver-mlb-en-republica-dominicana", "weekly", "0.8"),
+        ("guia/donde-ver-mlb-en-panama", "weekly", "0.8"),
     ]
     for page, freq, priority in static_pages:
         urls.append(
@@ -1683,6 +1687,30 @@ POPULAR_TEAMS = {
     "astros": {"name": "Houston Astros", "sport": "beisbol", "league": "MLB", "aka": "Astros, Houston"},
     "mets": {"name": "New York Mets", "sport": "beisbol", "league": "MLB", "aka": "Mets, NY Mets"},
     "padres": {"name": "San Diego Padres", "sport": "beisbol", "league": "MLB", "aka": "Padres, San Diego"},
+    "angels": {"name": "Los Angeles Angels", "sport": "beisbol", "league": "MLB", "aka": "Angels, Angelinos, LA Angels"},
+    "athletics": {"name": "Athletics", "sport": "beisbol", "league": "MLB", "aka": "Athletics, A's, Atléticos"},
+    "blue-jays": {"name": "Toronto Blue Jays", "sport": "beisbol", "league": "MLB", "aka": "Blue Jays, Azulejos, Toronto"},
+    "braves": {"name": "Atlanta Braves", "sport": "beisbol", "league": "MLB", "aka": "Braves, Atlanta"},
+    "brewers": {"name": "Milwaukee Brewers", "sport": "beisbol", "league": "MLB", "aka": "Brewers, Cerveceros, Milwaukee"},
+    "cardinals": {"name": "St. Louis Cardinals", "sport": "beisbol", "league": "MLB", "aka": "Cardinals, Cardenales, St. Louis"},
+    "cubs": {"name": "Chicago Cubs", "sport": "beisbol", "league": "MLB", "aka": "Cubs, Cachorros, Chicago Cubs"},
+    "diamondbacks": {"name": "Arizona Diamondbacks", "sport": "beisbol", "league": "MLB", "aka": "Diamondbacks, D-backs, Arizona"},
+    "giants": {"name": "San Francisco Giants", "sport": "beisbol", "league": "MLB", "aka": "Giants, Gigantes, San Francisco"},
+    "guardians": {"name": "Cleveland Guardians", "sport": "beisbol", "league": "MLB", "aka": "Guardians, Guardianes, Cleveland"},
+    "mariners": {"name": "Seattle Mariners", "sport": "beisbol", "league": "MLB", "aka": "Mariners, Marineros, Seattle"},
+    "marlins": {"name": "Miami Marlins", "sport": "beisbol", "league": "MLB", "aka": "Marlins, Miami"},
+    "nationals": {"name": "Washington Nationals", "sport": "beisbol", "league": "MLB", "aka": "Nationals, Nacionales, Washington"},
+    "orioles": {"name": "Baltimore Orioles", "sport": "beisbol", "league": "MLB", "aka": "Orioles, Baltimore"},
+    "phillies": {"name": "Philadelphia Phillies", "sport": "beisbol", "league": "MLB", "aka": "Phillies, Filis, Philadelphia"},
+    "pirates": {"name": "Pittsburgh Pirates", "sport": "beisbol", "league": "MLB", "aka": "Pirates, Piratas, Pittsburgh"},
+    "rangers": {"name": "Texas Rangers", "sport": "beisbol", "league": "MLB", "aka": "Rangers, Texas"},
+    "rays": {"name": "Tampa Bay Rays", "sport": "beisbol", "league": "MLB", "aka": "Rays, Rayas, Tampa Bay"},
+    "reds": {"name": "Cincinnati Reds", "sport": "beisbol", "league": "MLB", "aka": "Reds, Rojos, Cincinnati"},
+    "rockies": {"name": "Colorado Rockies", "sport": "beisbol", "league": "MLB", "aka": "Rockies, Colorado"},
+    "royals": {"name": "Kansas City Royals", "sport": "beisbol", "league": "MLB", "aka": "Royals, Reales, Kansas City"},
+    "tigers": {"name": "Detroit Tigers", "sport": "beisbol", "league": "MLB", "aka": "Tigers, Tigres de Detroit, Detroit"},
+    "twins": {"name": "Minnesota Twins", "sport": "beisbol", "league": "MLB", "aka": "Twins, Gemelos, Minnesota"},
+    "white-sox": {"name": "Chicago White Sox", "sport": "beisbol", "league": "MLB", "aka": "White Sox, Medias Blancas, Chicago White Sox"},
     # NHL
     "bruins": {"name": "Boston Bruins", "sport": "hockey", "league": "NHL", "aka": "Bruins, Boston"},
     # UFC

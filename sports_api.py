@@ -586,6 +586,19 @@ TEAM_LEAGUE_MAP = {
     # MLB
     "dodgers": ("baseball", "mlb"), "yankees": ("baseball", "mlb"),
     "red-sox": ("baseball", "mlb"), "astros": ("baseball", "mlb"),
+    "mets": ("baseball", "mlb"), "padres": ("baseball", "mlb"),
+    "angels": ("baseball", "mlb"), "athletics": ("baseball", "mlb"),
+    "blue-jays": ("baseball", "mlb"), "braves": ("baseball", "mlb"),
+    "brewers": ("baseball", "mlb"), "cardinals": ("baseball", "mlb"),
+    "cubs": ("baseball", "mlb"), "diamondbacks": ("baseball", "mlb"),
+    "giants": ("baseball", "mlb"), "guardians": ("baseball", "mlb"),
+    "mariners": ("baseball", "mlb"), "marlins": ("baseball", "mlb"),
+    "nationals": ("baseball", "mlb"), "orioles": ("baseball", "mlb"),
+    "phillies": ("baseball", "mlb"), "pirates": ("baseball", "mlb"),
+    "rangers": ("baseball", "mlb"), "rays": ("baseball", "mlb"),
+    "reds": ("baseball", "mlb"), "rockies": ("baseball", "mlb"),
+    "royals": ("baseball", "mlb"), "tigers": ("baseball", "mlb"),
+    "twins": ("baseball", "mlb"), "white-sox": ("baseball", "mlb"),
 }
 
 # Standings cache: 1 hour TTL
