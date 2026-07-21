@@ -67,6 +67,15 @@ AFFILIATES = {
     },
 }
 
+# ── MercadoLibre Afiliados (Mexico / LATAM) ──────────────
+# Profile: AROBE — generates tracked links via "Generador de links"
+# Once we have the affiliate URL format, update MELI_AFF_PARAM below.
+# Commissions: up to 24% (ropa/calzado 20%, electrónica 10%)
+# Cookie window: 30 days from click
+MELI_TAG = "arobe"                       # affiliate label / etiqueta
+MELI_AFF_PARAM = ""                      # e.g. "?matt_source=arobe" — TBD once format is confirmed
+MELI_BASE = "https://listado.mercadolibre.com.mx"  # search results base URL
+
 # ── Curated Amazon Products per team ─────────────────────
 # Featured products with real ASINs for top teams.
 # Teams not listed fall back to search URL in the template.

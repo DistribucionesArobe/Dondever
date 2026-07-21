@@ -469,14 +469,15 @@
         <a href="https://wa.me/15715463202?text=alerta%20{{ team_slug }}">Activar alertas</a>
     </div>
 
-    {# ══ TIENDA DEL EQUIPO (Amazon Affiliate) ══ #}
+    {# ══ TIENDA DEL EQUIPO (Amazon + MercadoLibre) ══ #}
     {% set amz_tag = "dondever2000-20" %}
     {% set amz_team = team_name|replace("á","a")|replace("é","e")|replace("í","i")|replace("ó","o")|replace("ú","u")|replace("ñ","n")|replace("ü","u") %}
+    {% set meli_team = amz_team|lower|replace(' ', '-') %}
     {% set curated = team_shop.get(team_slug, {}) %}
     <div class="shop-section">
         <h2>Tienda de {{ team_name }}</h2>
         <div class="shop-grid">
-            {# ── FEATURED: Curated product with direct link (if available) ── #}
+            {# ── AMAZON: Curated product with direct link (if available) ── #}
             {% if curated.get('jersey') %}
             {% set prod = curated.jersey %}
             <a href="https://www.amazon.com/dp/{{ prod.asin }}?tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey-curated" style="grid-column: span 2; border-color:#ff9900;">
@@ -495,7 +496,7 @@
                 <span class="shop-badge">Comprar en Amazon &#8599;</span>
             </a>
             {% endif %}
-            {# ── Generic search-based cards (always shown) ── #}
+            {# ── AMAZON: Generic search-based cards ── #}
             {% if not curated.get('jersey') %}
             <a href="https://www.amazon.com/s?k=jersey+{{ amz_team|urlencode }}+oficial&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey">
                 <span class="shop-icon">&#128085;</span>
@@ -518,8 +519,21 @@
                 <span class="shop-sub">Todo de {{ team_name }}</span>
                 <span class="shop-badge">Ver en Amazon &#8599;</span>
             </a>
+            {# ── MERCADOLIBRE MEXICO: Search-based cards (precios en MXN, envío local) ── #}
+            <a href="https://listado.mercadolibre.com.mx/jersey-{{ meli_team }}{{ meli_aff }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-jersey-meli" style="border-color:#3483FA;">
+                <span class="shop-icon">&#128085;</span>
+                <span class="shop-label">Jerseys en MercadoLibre</span>
+                <span class="shop-sub">Precios en pesos &middot; Envio gratis</span>
+                <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>
+            </a>
+            <a href="https://listado.mercadolibre.com.mx/gorra-{{ meli_team }}{{ meli_aff }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-cap-meli" style="border-color:#3483FA;">
+                <span class="shop-icon">&#129506;</span>
+                <span class="shop-label">Gorras en MercadoLibre</span>
+                <span class="shop-sub">{{ team_name }} &middot; Mexico</span>
+                <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>
+            </a>
         </div>
-        <div style="font-size:0.6rem;color:#9ca3af;margin-top:0.5rem;text-align:right;">Publicidad &middot; Amazon Associates</div>
+        <div style="font-size:0.6rem;color:#9ca3af;margin-top:0.5rem;text-align:right;">Publicidad &middot; Amazon Associates &middot; MercadoLibre Afiliados</div>
     </div>
 
     {# ══ RESULTADOS RECIENTES ══ #}
