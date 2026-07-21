@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
-from config import AFFILIATES, STREAMING_AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
+from config import AFFILIATES, STREAMING_AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES, TEAM_SHOP
 from sports_api import (
     get_todays_games, search_games, get_team_stats, get_league_standings,
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
@@ -199,6 +199,7 @@ templates.env.globals["affiliates"] = AFFILIATES
 templates.env.globals["streaming_aff"] = STREAMING_AFFILIATES
 templates.env.globals["app_url"] = APP_URL
 templates.env.globals["now"] = lambda: datetime.now(TZ_MX)
+templates.env.globals["team_shop"] = TEAM_SHOP
 
 
 def _team_name_to_slug(team_name: str) -> str | None:

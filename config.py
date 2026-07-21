@@ -67,6 +67,69 @@ AFFILIATES = {
     },
 }
 
+# ── Curated Amazon Products per team ─────────────────────
+# Featured products with real ASINs for top teams.
+# Teams not listed fall back to search URL in the template.
+# tag is appended in the template: amazon.com/dp/{asin}?tag=dondever2000-20
+# To update: search the product on Amazon, copy ASIN from URL.
+TEAM_SHOP = {
+    # ── Liga MX ──
+    "america": {
+        "jersey": {"asin": "B0FH7M43MM", "name": "Jersey Local 25/26", "brand": "adidas"},
+        "gorra":  {"asin": "B08BMJ5F8Y", "name": "Gorra oficial", "brand": "Fan Ink"},
+    },
+    "chivas": {
+        "jersey": {"asin": "B0F1DSZR1C", "name": "Jersey Réplica 25/26", "brand": "Puma"},
+        "gorra":  {"asin": "B0FJQ7GT33", "name": "Gorra oficial", "brand": "Icon Sports"},
+    },
+    "cruz-azul": {
+        "jersey": {"asin": "B0H7M99NVQ", "name": "Jersey Local 26/27", "brand": "Pirma"},
+    },
+    "tigres": {
+        "jersey": {"asin": "B0FKCZYXZR", "name": "Jersey Visitante 25/26", "brand": "adidas"},
+    },
+    "pumas": {
+        "jersey": {"asin": "B0FP2RZ263", "name": "Jersey Visitante 25/26", "brand": "Puma"},
+    },
+    "monterrey": {
+        "jersey": {"asin": "B0GL7DXJZC", "name": "Jersey Local", "brand": "Puma"},
+    },
+    # ── MLB ──
+    "dodgers": {
+        "jersey": {"asin": "B0D9KPCKDH", "name": "Jersey Ohtani Alt.", "brand": "Outerstuff"},
+    },
+    "yankees": {
+        "jersey": {"asin": "B0D9MTYCRX", "name": "Jersey Aaron Judge", "brand": "Outerstuff"},
+    },
+    # ── NFL ──
+    "cowboys": {
+        "jersey": {"asin": "B0F45WPRLY", "name": "Camiseta oficial", "brand": "FOCO"},
+    },
+    "chiefs": {
+        "jersey": {"asin": "B0FY7NNM3Y", "name": "Jersey Mahomes", "brand": "NFL Pro Line"},
+    },
+    "raiders": {
+        "jersey": {"asin": "B0FTTNDCNH", "name": "Jersey Raiders", "brand": "NFL Pro Line"},
+    },
+    # ── NBA ──
+    "lakers": {
+        "jersey": {"asin": "B0CKCZF66D", "name": "Jersey LeBron James", "brand": "Nike"},
+    },
+    "warriors": {
+        "jersey": {"asin": "B0CKD6LX56", "name": "Jersey Stephen Curry", "brand": "Nike"},
+    },
+    # ── Europa ──
+    "real-madrid": {
+        "jersey": {"asin": "B0FH7CJT1C", "name": "Jersey Local 25/26", "brand": "adidas"},
+    },
+    "barcelona": {
+        "jersey": {"asin": "B0FP2QD1QM", "name": "Jersey 25/26", "brand": "Nike"},
+    },
+    "inter-miami": {
+        "jersey": {"asin": "B0D6Z3918S", "name": "Jersey Messi 25/26", "brand": "adidas"},
+    },
+}
+
 # ── Streaming Providers (central config) ─────────────────
 # Single source of truth for streaming platforms. Maps channel display
 # names → provider info for contextual monetization: when a game
