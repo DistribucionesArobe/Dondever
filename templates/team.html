@@ -230,6 +230,89 @@
     </div>
     {% endif %}
 
+    {% if stats and stats.sport_type == 'baseball' and stats.all_stats %}
+    <!-- ══ Detailed Baseball Stats ══ -->
+    <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+        <h2 style="font-size:1rem;font-weight:700;margin:0 0 0.75rem;color:#1a1a2e;">Estadisticas de temporada</h2>
+
+        <!-- Offense / Defense -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-bottom:0.6rem;">
+            <div style="background:#f0fdf4;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1.15rem;font-weight:800;color:#059669;">{{ stats.all_stats.get('pointsFor', '—') }}</div>
+                <div style="font-size:0.65rem;color:#6b7280;font-weight:600;">Carreras anotadas</div>
+                {% if stats.all_stats.get('avgPointsFor') %}
+                <div style="font-size:0.6rem;color:#059669;margin-top:2px;">{{ stats.all_stats.avgPointsFor }} por juego</div>
+                {% endif %}
+            </div>
+            <div style="background:#fef2f2;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1.15rem;font-weight:800;color:#ef4444;">{{ stats.all_stats.get('pointsAgainst', '—') }}</div>
+                <div style="font-size:0.65rem;color:#6b7280;font-weight:600;">Carreras recibidas</div>
+                {% if stats.all_stats.get('avgPointsAgainst') %}
+                <div style="font-size:0.6rem;color:#ef4444;margin-top:2px;">{{ stats.all_stats.avgPointsAgainst }} por juego</div>
+                {% endif %}
+            </div>
+            <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
+                {% set diff_val = stats.all_stats.get('pointDifferential', '0') %}
+                <div style="font-size:1.15rem;font-weight:800;color:{% if diff_val|string|first == '+' %}#059669{% elif diff_val|string|first == '-' %}#ef4444{% else %}#6b7280{% endif %};">{{ diff_val }}</div>
+                <div style="font-size:0.65rem;color:#6b7280;font-weight:600;">Diferencial</div>
+            </div>
+        </div>
+
+        <!-- Home / Away / Last 10 -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-bottom:0.6rem;">
+            <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#1a1a2e;">{{ stats.all_stats.get('Home', (stats.all_stats.get('homeWins', '0') ~ '-' ~ stats.all_stats.get('homeLosses', '0'))) }}</div>
+                <div style="font-size:0.65rem;color:#6b7280;">En casa</div>
+            </div>
+            <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#1a1a2e;">{{ stats.all_stats.get('Road', (stats.all_stats.get('roadWins', '0') ~ '-' ~ stats.all_stats.get('roadLosses', '0'))) }}</div>
+                <div style="font-size:0.65rem;color:#6b7280;">De visitante</div>
+            </div>
+            <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#6366f1;">{{ stats.all_stats.get('Last Ten Games', '—') }}</div>
+                <div style="font-size:0.65rem;color:#6b7280;">Ultimos 10</div>
+            </div>
+        </div>
+
+        <!-- Playoff Probabilities + GB + Seed + Division Record -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:0.5rem;">
+            {% if stats.all_stats.get('playoffPercent') %}
+            <div style="background:linear-gradient(135deg,#064e3b,#065f46);border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#34d399;">{{ stats.all_stats.playoffPercent }}</div>
+                <div style="font-size:0.6rem;color:#a7f3d0;">Playoffs</div>
+            </div>
+            {% endif %}
+            {% if stats.all_stats.get('wildCardPercent') %}
+            <div style="background:linear-gradient(135deg,#312e81,#3730a3);border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#a5b4fc;">{{ stats.all_stats.wildCardPercent }}</div>
+                <div style="font-size:0.6rem;color:#c7d2fe;">Wild Card</div>
+            </div>
+            {% endif %}
+            {% set gb = stats.all_stats.get('gamesBehind', '-') %}
+            {% if gb and gb != '-' %}
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#ea580c;">{{ gb }}</div>
+                <div style="font-size:0.6rem;color:#9a3412;">Games Behind</div>
+            </div>
+            {% endif %}
+            {% if stats.all_stats.get('playoffSeed') %}
+            <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#1a1a2e;">#{{ stats.all_stats.playoffSeed }}</div>
+                <div style="font-size:0.6rem;color:#6b7280;">Seed</div>
+            </div>
+            {% endif %}
+            {% if stats.all_stats.get('Intradivision') %}
+            <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#1a1a2e;">{{ stats.all_stats.Intradivision }}</div>
+                <div style="font-size:0.6rem;color:#6b7280;">En la division</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div style="font-size:0.6rem;color:#9ca3af;margin-top:0.6rem;text-align:right;">Fuente: ESPN · Actualizado cada hora</div>
+    </div>
+    {% endif %}
+
     <div class="alert-box">
         <div>
             <div style="font-weight:700;font-size:0.9rem;">Recibe alertas de {{ team_name }}</div>
