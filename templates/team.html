@@ -230,35 +230,39 @@
     </div>
     {% endif %}
 
-    {% if stats and stats.sport_type == 'baseball' and stats.all_stats %}
-    <!-- ══ Detailed Baseball Stats ══ -->
+    {% if stats and stats.all_stats %}
+    <!-- ══ Detailed Stats (all sports) ══ -->
+    {% set st = stats.sport_type %}
     <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
         <h2 style="font-size:1rem;font-weight:700;margin:0 0 0.75rem;color:#1a1a2e;">Estadisticas de temporada</h2>
 
         <!-- Offense / Defense -->
+        {% if stats.all_stats.get('pointsFor') or stats.all_stats.get('goalsFor') %}
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-bottom:0.6rem;">
             <div style="background:#f0fdf4;border-radius:8px;padding:0.6rem;text-align:center;">
-                <div style="font-size:1.15rem;font-weight:800;color:#059669;">{{ stats.all_stats.get('pointsFor', '—') }}</div>
-                <div style="font-size:0.65rem;color:#6b7280;font-weight:600;">Carreras anotadas</div>
+                <div style="font-size:1.15rem;font-weight:800;color:#059669;">{{ stats.all_stats.get('pointsFor', stats.all_stats.get('goalsFor', '—')) }}</div>
+                <div style="font-size:0.65rem;color:#6b7280;font-weight:600;">{% if st == 'baseball' %}Carreras anotadas{% elif st == 'soccer' or st == 'hockey' %}Goles a favor{% else %}Puntos anotados{% endif %}</div>
                 {% if stats.all_stats.get('avgPointsFor') %}
                 <div style="font-size:0.6rem;color:#059669;margin-top:2px;">{{ stats.all_stats.avgPointsFor }} por juego</div>
                 {% endif %}
             </div>
             <div style="background:#fef2f2;border-radius:8px;padding:0.6rem;text-align:center;">
-                <div style="font-size:1.15rem;font-weight:800;color:#ef4444;">{{ stats.all_stats.get('pointsAgainst', '—') }}</div>
-                <div style="font-size:0.65rem;color:#6b7280;font-weight:600;">Carreras recibidas</div>
+                <div style="font-size:1.15rem;font-weight:800;color:#ef4444;">{{ stats.all_stats.get('pointsAgainst', stats.all_stats.get('goalsAgainst', '—')) }}</div>
+                <div style="font-size:0.65rem;color:#6b7280;font-weight:600;">{% if st == 'baseball' %}Carreras recibidas{% elif st == 'soccer' or st == 'hockey' %}Goles en contra{% else %}Puntos recibidos{% endif %}</div>
                 {% if stats.all_stats.get('avgPointsAgainst') %}
                 <div style="font-size:0.6rem;color:#ef4444;margin-top:2px;">{{ stats.all_stats.avgPointsAgainst }} por juego</div>
                 {% endif %}
             </div>
             <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
-                {% set diff_val = stats.all_stats.get('pointDifferential', '0') %}
+                {% set diff_val = stats.all_stats.get('pointDifferential', stats.all_stats.get('goalDifference', '0')) %}
                 <div style="font-size:1.15rem;font-weight:800;color:{% if diff_val|string|first == '+' %}#059669{% elif diff_val|string|first == '-' %}#ef4444{% else %}#6b7280{% endif %};">{{ diff_val }}</div>
                 <div style="font-size:0.65rem;color:#6b7280;font-weight:600;">Diferencial</div>
             </div>
         </div>
+        {% endif %}
 
         <!-- Home / Away / Last 10 -->
+        {% if stats.all_stats.get('Home') or stats.all_stats.get('homeWins') %}
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-bottom:0.6rem;">
             <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
                 <div style="font-size:1rem;font-weight:800;color:#1a1a2e;">{{ stats.all_stats.get('Home', (stats.all_stats.get('homeWins', '0') ~ '-' ~ stats.all_stats.get('homeLosses', '0'))) }}</div>
@@ -268,13 +272,45 @@
                 <div style="font-size:1rem;font-weight:800;color:#1a1a2e;">{{ stats.all_stats.get('Road', (stats.all_stats.get('roadWins', '0') ~ '-' ~ stats.all_stats.get('roadLosses', '0'))) }}</div>
                 <div style="font-size:0.65rem;color:#6b7280;">De visitante</div>
             </div>
+            {% if stats.all_stats.get('Last Ten Games') %}
             <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
-                <div style="font-size:1rem;font-weight:800;color:#6366f1;">{{ stats.all_stats.get('Last Ten Games', '—') }}</div>
+                <div style="font-size:1rem;font-weight:800;color:#6366f1;">{{ stats.all_stats.get('Last Ten Games') }}</div>
                 <div style="font-size:0.65rem;color:#6b7280;">Ultimos 10</div>
             </div>
+            {% endif %}
         </div>
+        {% endif %}
 
-        <!-- Playoff Probabilities + GB + Seed + Division Record -->
+        <!-- Soccer-specific: points, draws -->
+        {% if st == 'soccer' and stats.all_stats.get('points') %}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:0.5rem;margin-bottom:0.6rem;">
+            <div style="background:linear-gradient(135deg,#064e3b,#065f46);border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1.15rem;font-weight:800;color:#34d399;">{{ stats.all_stats.points }}</div>
+                <div style="font-size:0.6rem;color:#a7f3d0;">Puntos</div>
+            </div>
+            {% if stats.all_stats.get('draws') or stats.all_stats.get('ties') %}
+            <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#6b7280;">{{ stats.all_stats.get('draws', stats.all_stats.get('ties', '0')) }}</div>
+                <div style="font-size:0.6rem;color:#6b7280;">Empates</div>
+            </div>
+            {% endif %}
+            {% if stats.all_stats.get('gamesPlayed') %}
+            <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#1a1a2e;">{{ stats.all_stats.gamesPlayed }}</div>
+                <div style="font-size:0.6rem;color:#6b7280;">Jugados</div>
+            </div>
+            {% endif %}
+            {% if stats.all_stats.get('rank') %}
+            <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
+                <div style="font-size:1rem;font-weight:800;color:#1a1a2e;">#{{ stats.all_stats.rank }}</div>
+                <div style="font-size:0.6rem;color:#6b7280;">Posicion</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Playoff Probabilities + GB + Seed + Division Record (US sports) -->
+        {% if stats.all_stats.get('playoffPercent') or stats.all_stats.get('playoffSeed') or stats.all_stats.get('gamesBehind') %}
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:0.5rem;">
             {% if stats.all_stats.get('playoffPercent') %}
             <div style="background:linear-gradient(135deg,#064e3b,#065f46);border-radius:8px;padding:0.6rem;text-align:center;">
@@ -308,6 +344,7 @@
             </div>
             {% endif %}
         </div>
+        {% endif %}
 
         <div style="font-size:0.6rem;color:#9ca3af;margin-top:0.6rem;text-align:right;">Fuente: ESPN · Actualizado cada hora</div>
     </div>

@@ -563,6 +563,8 @@ TEAM_LEAGUE_MAP = {
     "leon": ("soccer", "mex.1"), "pachuca": ("soccer", "mex.1"),
     "atlas": ("soccer", "mex.1"), "necaxa": ("soccer", "mex.1"),
     "puebla": ("soccer", "mex.1"), "queretaro": ("soccer", "mex.1"),
+    "mazatlan": ("soccer", "mex.1"), "tijuana": ("soccer", "mex.1"),
+    "juarez": ("soccer", "mex.1"),
     # Premier League
     "liverpool": ("soccer", "eng.1"), "manchester-city": ("soccer", "eng.1"),
     "manchester-united": ("soccer", "eng.1"), "arsenal": ("soccer", "eng.1"),
@@ -575,14 +577,19 @@ TEAM_LEAGUE_MAP = {
     "bayern": ("soccer", "ger.1"),
     # Ligue 1
     "psg": ("soccer", "fra.1"),
+    # MLS
+    "lafc": ("soccer", "usa.1"), "la-galaxy": ("soccer", "usa.1"),
     # NBA
     "lakers": ("basketball", "nba"), "celtics": ("basketball", "nba"),
     "warriors": ("basketball", "nba"), "bulls": ("basketball", "nba"),
     "heat": ("basketball", "nba"), "knicks": ("basketball", "nba"),
+    "nuggets": ("basketball", "nba"), "bucks": ("basketball", "nba"),
     # NFL
     "cowboys": ("football", "nfl"), "chiefs": ("football", "nfl"),
     "49ers": ("football", "nfl"), "eagles": ("football", "nfl"),
-    "packers": ("football", "nfl"),
+    "packers": ("football", "nfl"), "steelers": ("football", "nfl"),
+    # NHL
+    "bruins": ("hockey", "nhl"),
     # MLB
     "dodgers": ("baseball", "mlb"), "yankees": ("baseball", "mlb"),
     "red-sox": ("baseball", "mlb"), "astros": ("baseball", "mlb"),
