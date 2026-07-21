@@ -519,14 +519,24 @@
                 <span class="shop-sub">Todo de {{ team_name }}</span>
                 <span class="shop-badge">Ver en Amazon &#8599;</span>
             </a>
-            {# ── MERCADOLIBRE MEXICO: Search-based cards (precios en MXN, envío local) ── #}
-            <a href="https://listado.mercadolibre.com.mx/jersey-{{ meli_team }}{{ meli_aff }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-jersey-meli" style="border-color:#3483FA;">
+            {# ── MERCADOLIBRE MEXICO: Curated affiliate links or search fallback ── #}
+            {% set meli_curated = team_shop_meli.get(team_slug) %}
+            {% if meli_curated %}
+            <a href="{{ meli_curated }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-jersey-meli-curated" style="grid-column: span 2; border-color:#3483FA;">
+                <span class="shop-icon">&#128085;</span>
+                <span class="shop-label">Jerseys {{ team_name }} en MercadoLibre</span>
+                <span class="shop-sub">Precios en pesos &middot; Envio gratis &middot; Link verificado</span>
+                <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>
+            </a>
+            {% else %}
+            <a href="https://listado.mercadolibre.com.mx/jersey-{{ meli_team }}" target="_blank" rel="nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-jersey-meli" style="border-color:#3483FA;">
                 <span class="shop-icon">&#128085;</span>
                 <span class="shop-label">Jerseys en MercadoLibre</span>
                 <span class="shop-sub">Precios en pesos &middot; Envio gratis</span>
                 <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>
             </a>
-            <a href="https://listado.mercadolibre.com.mx/gorra-{{ meli_team }}{{ meli_aff }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-cap-meli" style="border-color:#3483FA;">
+            {% endif %}
+            <a href="https://listado.mercadolibre.com.mx/gorra-{{ meli_team }}" target="_blank" rel="nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-cap-meli" style="border-color:#3483FA;">
                 <span class="shop-icon">&#129506;</span>
                 <span class="shop-label">Gorras en MercadoLibre</span>
                 <span class="shop-sub">{{ team_name }} &middot; Mexico</span>

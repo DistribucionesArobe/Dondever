@@ -68,13 +68,40 @@ AFFILIATES = {
 }
 
 # ── MercadoLibre Afiliados (Mexico / LATAM) ──────────────
-# Profile: AROBE — generates tracked links via "Generador de links"
-# Once we have the affiliate URL format, update MELI_AFF_PARAM below.
+# Profile: AROBE — tracked short links via meli.la
 # Commissions: up to 24% (ropa/calzado 20%, electrónica 10%)
 # Cookie window: 30 days from click
-MELI_TAG = "arobe"                       # affiliate label / etiqueta
-MELI_AFF_PARAM = ""                      # e.g. "?matt_source=arobe" — TBD once format is confirmed
-MELI_BASE = "https://listado.mercadolibre.com.mx"  # search results base URL
+# Links generated via "Generador de links" in Central de Afiliados
+MELI_TAG = "arobe"
+MELI_AFF_PARAM = ""                      # not used — ML uses meli.la short links instead
+MELI_BASE = "https://listado.mercadolibre.com.mx"
+
+# Curated MercadoLibre affiliate links per team (meli.la tracked URLs)
+# Teams not listed fall back to direct search URL in the template.
+# To add a team: go to Central de Afiliados > Generador de links,
+# paste https://listado.mercadolibre.com.mx/jersey-{slug}, click Generar.
+TEAM_SHOP_MELI = {
+    # ── Liga MX ──
+    "america":    "https://meli.la/265TtD8",
+    "chivas":     "https://meli.la/1e3h6rd",
+    "cruz-azul":  "https://meli.la/13fFWJx",
+    "tigres":     "https://meli.la/2AjxYLm",
+    "pumas":      "https://meli.la/1XFGfjK",
+    "monterrey":  "https://meli.la/2a6KrCN",
+    # ── MLB ──
+    "dodgers":    "https://meli.la/273g4UL",
+    "yankees":    "https://meli.la/1eKDu4x",
+    # ── NFL ──
+    "cowboys":    "https://meli.la/33gJrzJ",
+    "chiefs":     "https://meli.la/1iXmNSE",
+    "raiders":    "https://meli.la/1ACweLo",
+    # ── NBA ──
+    "lakers":     "https://meli.la/1qdujuB",
+    "warriors":   "https://meli.la/14ZdCEN",
+    # ── Europa ──
+    "real-madrid": "https://meli.la/1vhc3GL",
+    "barcelona":  "https://meli.la/2kPdyug",
+}
 
 # ── Curated Amazon Products per team ─────────────────────
 # Featured products with real ASINs for top teams.
