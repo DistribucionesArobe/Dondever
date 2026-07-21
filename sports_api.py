@@ -720,6 +720,60 @@ async def get_team_stats(team_slug: str) -> dict:
     return {}
 
 
+async def fetch_team_news(sport: str, league: str, team_name: str, limit: int = 6) -> list[dict]:
+    """
+    Fetch recent news articles for a team from ESPN.
+    Returns list of dicts with headline, description, link, image, published.
+    """
+    # ESPN news endpoint — search by league
+    url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/news"
+    articles = []
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        try:
+            resp = await client.get(url, params={"limit": 30})
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"News fetch error for {sport}/{league}: {e}")
+            return []
+
+    team_lower = team_name.lower()
+    team_words = [w for w in team_lower.split() if len(w) > 3]
+
+    for item in data.get("articles", []):
+        headline = item.get("headline", "")
+        description = item.get("description", "")
+        text_check = (headline + " " + description).lower()
+
+        # Check if article mentions this team
+        matched = any(word in text_check for word in team_words)
+        if not matched:
+            # Also check categories
+            for cat in item.get("categories", []):
+                if cat.get("description", "").lower() in team_lower or team_lower in cat.get("description", "").lower():
+                    matched = True
+                    break
+
+        if matched:
+            img = ""
+            for image in item.get("images", []):
+                img = image.get("url", "")
+                break
+
+            articles.append({
+                "headline": headline,
+                "description": description[:120] + "..." if len(description) > 120 else description,
+                "link": item.get("links", {}).get("web", {}).get("href", ""),
+                "image": img,
+                "published": item.get("published", ""),
+            })
+            if len(articles) >= limit:
+                break
+
+    return articles
+
+
 async def get_league_standings(sport: str, league: str, limit: int = 10) -> list[dict]:
     """Get top N standings for a league."""
     standings = await fetch_standings(sport, league)

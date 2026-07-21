@@ -18,7 +18,7 @@ from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM
 from sports_api import (
     get_todays_games, search_games, get_team_stats, get_league_standings,
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
-    get_recent_league_results, get_upcoming_league_games,
+    get_recent_league_results, get_upcoming_league_games, fetch_team_news,
 )
 from whatsapp_bot import handle_whatsapp_message
 from tiktok_auth import (
@@ -1840,6 +1840,15 @@ async def team_page(request: Request, team_slug: str):
         except Exception:
             pass
 
+    # Fetch team news from ESPN
+    team_news = []
+    if league_info_map:
+        t_sport, t_league = league_info_map
+        try:
+            team_news = await fetch_team_news(t_sport, t_league, team_name, limit=5)
+        except Exception:
+            pass
+
     return templates.TemplateResponse(request, "team.html", {
         "team_name": team_name,
         "team_slug": team_slug,
@@ -1854,6 +1863,7 @@ async def team_page(request: Request, team_slug: str):
         "related_teams": related_teams,
         "recent_results": recent_results,
         "upcoming_games": upcoming_games,
+        "team_news": team_news,
     })
 
 
