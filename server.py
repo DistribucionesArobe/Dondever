@@ -9,7 +9,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, Request, Form, Query
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
@@ -1381,7 +1381,7 @@ async def sitemap_xml():
         ("guia/donde-ver-nfl-en-mexico", "weekly", "0.8"),
         ("guia/donde-ver-nba-en-mexico", "weekly", "0.8"),
         ("guia/mejores-streaming-deportes-mexico", "weekly", "0.8"),
-        ("guia/donde-ver-champions-league", "weekly", "0.8"),
+        # donde-ver-champions-league redirects 301 → donde-ver-champions-en-mexico
         ("guia/como-ver-tudn-en-usa", "weekly", "0.8"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
@@ -1523,9 +1523,19 @@ async def casinos_page(request: Request):
         "betsson_url": get_affiliate_url("betsson", source="casinos"),
     })
 
+GUIDE_REDIRECTS = {
+    # Consolidate duplicate Champions League guides — avoid keyword cannibalization
+    "donde-ver-champions-league": "donde-ver-champions-en-mexico",
+}
+
 @app.get("/guia/{guide_slug}", response_class=HTMLResponse)
 async def guide_page(request: Request, guide_slug: str):
     """Original content guides for SEO + AdSense."""
+    if guide_slug in GUIDE_REDIRECTS:
+        return RedirectResponse(
+            url=f"/guia/{GUIDE_REDIRECTS[guide_slug]}",
+            status_code=301,
+        )
     template_name = f"guides/{guide_slug}.html"
     try:
         return templates.TemplateResponse(request, template_name)
