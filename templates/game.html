@@ -201,7 +201,7 @@
                     {% for b in mx_paid %}
                     {% set saff = streaming_aff.get(b.channel) %}
                     {% if saff %}
-                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="noopener sponsored" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} - {{ saff.cta }}</a>
+                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
                     {% else %}
                     <span class="channel-pill {{ b.info.get('type', 'unknown') }}">{{ b.channel }}</span>
                     {% endif %}
@@ -215,7 +215,7 @@
                     {% for b in us_channels %}
                     {% set saff = streaming_aff.get(b.channel) %}
                     {% if saff %}
-                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="noopener sponsored" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} - {{ saff.cta }}</a>
+                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
                     {% else %}
                     <span class="channel-pill {{ b.info.get('type', 'unknown') }}">{{ b.channel }}</span>
                     {% endif %}
@@ -379,7 +379,7 @@
 
     {# 1. Featured streaming service CTA #}
     {% if featured_saff.found %}
-        <a href="/go/{{ featured_saff.key }}?s=game-cta" target="_blank" rel="noopener sponsored" data-affiliate="{{ featured_saff.key }}" style="display:block;background:linear-gradient(135deg,#00050d,#0f1923);border:2px solid {{ featured_saff.bg }};border-radius:14px;padding:1.25rem;text-decoration:none;text-align:center;">
+        <a href="/go/{{ featured_saff.key }}?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ featured_saff.key }}" style="display:block;background:linear-gradient(135deg,#00050d,#0f1923);border:2px solid {{ featured_saff.bg }};border-radius:14px;padding:1.25rem;text-decoration:none;text-align:center;">
             <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:{{ featured_saff.bg }};font-weight:600;margin-bottom:0.4rem;">Este partido se transmite en</div>
             <div style="font-size:1.3rem;font-weight:800;color:white;margin-bottom:0.3rem;">{{ featured_saff.name }}</div>
             <div style="font-size:0.85rem;color:#10b981;font-weight:700;margin-bottom:0.5rem;">{{ featured_saff.cta }}</div>
@@ -390,7 +390,7 @@
 
     {# 2. VPN fallback — si tiene cable pero no streaming afiliado #}
     {% if has_cable and not has_streaming %}
-        <a href="/go/cj?s=game-cta-cable" target="_blank" rel="noopener sponsored" data-affiliate="cj" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid #4f46e5;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
+        <a href="/go/cj?s=game-cta-cable" target="_blank" rel="sponsored nofollow noopener" data-affiliate="cj" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid #4f46e5;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
             <div style="flex:1;">
                 <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:#818cf8;font-weight:600;">¿No tienes cable?</div>
                 <div style="font-size:0.95rem;font-weight:700;color:white;margin:0.2rem 0;">Accede a canales de USA con VPN</div>
@@ -404,7 +404,7 @@
     {% set home_left_bet = game.sport in ('soccer', 'boxing', 'mma') %}
     {% set team1 = game.home.name if home_left_bet else game.away.name %}
     {% set team2 = game.away.name if home_left_bet else game.home.name %}
-        <a href="/go/caliente?s=game-cta" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #059669;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
+        <a href="/go/caliente?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="caliente" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #059669;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
             <div style="flex:1;">
                 <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:#34d399;font-weight:600;">¿Quieres apostar este partido?</div>
                 <div style="font-size:0.95rem;font-weight:700;color:white;margin:0.2rem 0;">{{ team1 }} vs {{ team2 }}</div>
@@ -432,19 +432,19 @@
 
             <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;font-weight:600;margin-bottom:0.5rem;text-align:center;">Ganador</div>
             <div style="display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
-                <a href="/go/caliente?s=odds" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                <a href="/go/caliente?s=odds" target="_blank" rel="sponsored nofollow noopener" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">{{ left_name }}</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ left_odds or '—' }}</div>
                     <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
                 </a>
                 {% if odds.draw_odds %}
-                <a href="/go/betsson?s=odds" target="_blank" rel="noopener sponsored" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:80px;max-width:140px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
+                <a href="/go/betsson?s=odds" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:80px;max-width:140px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">Empate</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#f97316;margin:0.25rem 0;">{{ odds.draw_odds }}</div>
                     <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
                 </a>
                 {% endif %}
-                <a href="/go/caliente?s=odds" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                <a href="/go/caliente?s=odds" target="_blank" rel="sponsored nofollow noopener" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">{{ right_name }}</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ right_odds or '—' }}</div>
                     <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
@@ -460,12 +460,12 @@
             <div style="margin-top:1rem;">
                 <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;font-weight:600;margin-bottom:0.5rem;text-align:center;">Spread / Handicap</div>
                 <div style="display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
-                    <a href="/go/caliente?s=odds-spread" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                    <a href="/go/caliente?s=odds-spread" target="_blank" rel="sponsored nofollow noopener" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                         <div style="font-size:0.65rem;color:#9ca3af;">{{ left_name }}</div>
                         <div style="font-size:1.1rem;font-weight:800;color:#10b981;margin:0.15rem 0;">{{ left_spread or '' }}</div>
                         <div style="font-size:0.75rem;color:#cbd5e1;">{{ left_spread_odds or '' }}</div>
                     </a>
-                    <a href="/go/caliente?s=odds-spread" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                    <a href="/go/caliente?s=odds-spread" target="_blank" rel="sponsored nofollow noopener" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                         <div style="font-size:0.65rem;color:#9ca3af;">{{ right_name }}</div>
                         <div style="font-size:1.1rem;font-weight:800;color:#10b981;margin:0.15rem 0;">{{ right_spread or '' }}</div>
                         <div style="font-size:0.75rem;color:#cbd5e1;">{{ right_spread_odds or '' }}</div>
@@ -479,12 +479,12 @@
             <div style="margin-top:1rem;">
                 <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;font-weight:600;margin-bottom:0.5rem;text-align:center;">Total (Over/Under) — {{ odds.total_point }}</div>
                 <div style="display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
-                    <a href="/go/betsson?s=odds-total" target="_blank" rel="noopener sponsored" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='#374151'">
+                    <a href="/go/betsson?s=odds-total" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='#374151'">
                         <div style="font-size:0.65rem;color:#9ca3af;">Over (Mas de)</div>
                         <div style="font-size:1.1rem;font-weight:800;color:#22c55e;margin:0.15rem 0;">↑ {{ odds.total_point }}</div>
                         <div style="font-size:0.75rem;color:#cbd5e1;">{{ odds.total_over }}</div>
                     </a>
-                    <a href="/go/betsson?s=odds-total" target="_blank" rel="noopener sponsored" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
+                    <a href="/go/betsson?s=odds-total" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
                         <div style="font-size:0.65rem;color:#9ca3af;">Under (Menos de)</div>
                         <div style="font-size:1.1rem;font-weight:800;color:#f97316;margin:0.15rem 0;">↓ {{ odds.total_point }}</div>
                         <div style="font-size:0.75rem;color:#cbd5e1;">{{ odds.total_under }}</div>
@@ -623,7 +623,7 @@
             {% endif %}
 
             <div style="text-align:center;margin-top:0.75rem;">
-                <a href="/go/caliente?s=pick" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="display:inline-block;background:#10b981;color:white;font-size:0.75rem;font-weight:700;padding:0.5rem 1.5rem;border-radius:8px;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                <a href="/go/caliente?s=pick" target="_blank" rel="sponsored nofollow noopener" data-affiliate="caliente" style="display:inline-block;background:#10b981;color:white;font-size:0.75rem;font-weight:700;padding:0.5rem 1.5rem;border-radius:8px;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
                     Apostar en Caliente &rarr;
                 </a>
             </div>
@@ -636,7 +636,7 @@
 
     {# Betsson secondary CTA — más pequeño, debajo de odds o al final #}
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
-        <a href="/go/betsson?s=game-cta" target="_blank" rel="noopener sponsored" data-affiliate="betsson" style="display:flex;align-items:center;gap:0.75rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;">
+        <a href="/go/betsson?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" style="display:flex;align-items:center;gap:0.75rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;">
             <div style="flex:1;">
                 <div style="font-size:0.8rem;font-weight:700;color:white;">Betsson</div>
                 <div style="font-size:0.65rem;color:#9ca3af;">{{ affiliates.betsson.bonus }}</div>
@@ -648,18 +648,30 @@
     <div class="footer">
         <p>&copy; 2026 <a href="/">DondeVer.app</a> | Apuesta responsablemente. Solo mayores de 18.</p>
     </div>
+<script>window.DV_CTX = {game: "{{ first_team }}-vs-{{ second_team }}"|lower|replace(" ","-"), league: "{{ game.league_slug }}"};</script>
 <script>
-    document.querySelectorAll('[data-affiliate]').forEach(btn => {
-        btn.addEventListener('click', function() {
-            if (typeof gtag === 'function') {
-                gtag('event', 'affiliate_click', {
-                    affiliate_name: this.dataset.affiliate,
-                    link_url: this.href,
-                    page_location: window.location.pathname,
-                });
-            }
-        });
+/* DondeVer — GA4 affiliate_click estandarizado.
+   Params: provider, game, league, country, page, placement.
+   Placement viene del query ?s= del link /go/ o de data-placement. */
+(function(){
+  var ctx = window.DV_CTX || {};
+  document.addEventListener('click', function(e){
+    var a = e.target.closest ? e.target.closest('a[data-affiliate]') : null;
+    if (!a || typeof gtag !== 'function') return;
+    var placement = a.dataset.placement || '';
+    if (!placement) {
+      try { placement = new URL(a.href, location.origin).searchParams.get('s') || ''; } catch(err) {}
+    }
+    gtag('event', 'affiliate_click', {
+      provider: a.dataset.affiliate,
+      game: a.dataset.game || ctx.game || '',
+      league: a.dataset.league || ctx.league || '',
+      country: a.dataset.country || ctx.country || 'mx',
+      page: location.pathname,
+      placement: placement || 'unknown'
     });
+  }, true);
+})();
 </script>
 </body>
 </html>

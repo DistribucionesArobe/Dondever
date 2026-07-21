@@ -258,19 +258,19 @@
 
             <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;font-weight:600;margin-bottom:0.5rem;text-align:center;">Ganador</div>
             <div style="display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
-                <a href="/go/caliente?s=matchup-odds" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                <a href="/go/caliente?s=matchup-odds" target="_blank" rel="sponsored nofollow noopener" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">{{ left_name }}</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ left_odds or '—' }}</div>
                     <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
                 </a>
                 {% if odds.draw_odds %}
-                <a href="/go/betsson?s=matchup-odds" target="_blank" rel="noopener sponsored" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:80px;max-width:140px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
+                <a href="/go/betsson?s=matchup-odds" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:80px;max-width:140px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">Empate</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#f97316;margin:0.25rem 0;">{{ odds.draw_odds }}</div>
                     <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
                 </a>
                 {% endif %}
-                <a href="/go/caliente?s=matchup-odds" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
+                <a href="/go/caliente?s=matchup-odds" target="_blank" rel="sponsored nofollow noopener" data-affiliate="caliente" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">{{ right_name }}</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ right_odds or '—' }}</div>
                     <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
@@ -286,7 +286,7 @@
 
     <!-- Betting CTA (Caliente) -->
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;display:grid;gap:0.6rem;">
-        <a href="/go/caliente?s=matchup-cta" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #059669;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
+        <a href="/go/caliente?s=matchup-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="caliente" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #059669;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
             <div style="flex:1;">
                 <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:#34d399;font-weight:600;">Apuesta en {{ first_team }} vs {{ second_team }}</div>
                 <div style="font-size:0.95rem;font-weight:700;color:white;margin:0.2rem 0;">{{ affiliates.caliente.name }}</div>
@@ -375,18 +375,30 @@
         <p style="margin-top:0.5rem;">Apuesta responsablemente. Solo mayores de 18.</p>
     </div>
 
+<script>window.DV_CTX = {game: "{{ matchup_slug }}"};</script>
 <script>
-    document.querySelectorAll('[data-affiliate]').forEach(btn => {
-        btn.addEventListener('click', function() {
-            if (typeof gtag === 'function') {
-                gtag('event', 'affiliate_click', {
-                    affiliate_name: this.dataset.affiliate,
-                    link_url: this.href,
-                    page_location: window.location.pathname,
-                });
-            }
-        });
+/* DondeVer — GA4 affiliate_click estandarizado.
+   Params: provider, game, league, country, page, placement.
+   Placement viene del query ?s= del link /go/ o de data-placement. */
+(function(){
+  var ctx = window.DV_CTX || {};
+  document.addEventListener('click', function(e){
+    var a = e.target.closest ? e.target.closest('a[data-affiliate]') : null;
+    if (!a || typeof gtag !== 'function') return;
+    var placement = a.dataset.placement || '';
+    if (!placement) {
+      try { placement = new URL(a.href, location.origin).searchParams.get('s') || ''; } catch(err) {}
+    }
+    gtag('event', 'affiliate_click', {
+      provider: a.dataset.affiliate,
+      game: a.dataset.game || ctx.game || '',
+      league: a.dataset.league || ctx.league || '',
+      country: a.dataset.country || ctx.country || 'mx',
+      page: location.pathname,
+      placement: placement || 'unknown'
     });
+  }, true);
+})();
 </script>
 </body>
 </html>

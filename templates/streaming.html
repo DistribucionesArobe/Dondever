@@ -72,7 +72,7 @@
 <div class="container">
     <p class="intro">
         Guia actualizada de todas las plataformas de streaming donde puedes ver deportes en vivo en Mexico.
-        Comparamos precios, deportes disponibles y pruebas gratis para que elijas la mejor opcion.
+        Comparamos precios y deportes disponibles para que elijas la mejor opcion.
     </p>
 
     <h2>Plataformas de Streaming Deportivo en Mexico</h2>
@@ -91,7 +91,7 @@
             <span class="sport-tag">NFL</span>
             <span class="sport-tag">UFC</span>
         </div>
-        <div class="platform-notes"><span class="trial">7 dias gratis de prueba.</span> La opcion mas economica para Liga MX. Incluye toda la programacion de TUDN.</div>
+        <div class="platform-notes">La opcion mas economica para Liga MX. Incluye toda la programacion de TUDN.</div>
     </div>
 
     <div class="platform-card">
@@ -151,7 +151,7 @@
             <span class="sport-tag">Ligue 1</span>
             <span class="sport-tag">NFL (Thursday Night)</span>
         </div>
-        <div class="platform-notes"><span class="trial">30 dias gratis de prueba.</span> Partidos selectos de Champions los martes. Incluye Prime shipping.</div>
+        <div class="platform-notes">Partidos selectos de Champions los martes. Incluye Prime shipping.</div>
     </div>
 
     <div class="platform-card">
@@ -260,7 +260,7 @@
             <span class="sport-tag">Peacock desde MX</span>
         </div>
         <div style="margin-top:0.75rem;">
-            <a href="{{ affiliates.cj.url }}" target="_blank" rel="sponsored noopener" style="display:inline-block;background:#1d4ed8;color:white;padding:0.5rem 1.25rem;border-radius:8px;font-weight:700;font-size:0.85rem;text-decoration:none;">{{ affiliates.cj.bonus }} — Ver oferta &rarr;</a>
+            <a href="/go/cj?s=streaming-vpn" target="_blank" rel="sponsored nofollow noopener" data-affiliate="cj" style="display:inline-block;background:#1d4ed8;color:white;padding:0.5rem 1.25rem;border-radius:8px;font-weight:700;font-size:0.85rem;text-decoration:none;">{{ affiliates.cj.bonus }} — Ver oferta &rarr;</a>
             <span style="font-size:0.65rem;color:#6b7280;margin-left:0.5rem;">Publicidad</span>
         </div>
     </div>
@@ -294,7 +294,7 @@
         </div>
         <div class="faq-item">
             <div class="faq-q">Cual plataforma de streaming deportivo tiene prueba gratis?</div>
-            <div class="faq-a">Amazon Prime Video ofrece 30 dias gratis, ViX Premium 7 dias gratis. ESPN+ y DAZN no ofrecen prueba gratuita actualmente.</div>
+            <div class="faq-a">Algunas plataformas ofrecen periodos de prueba que cambian con frecuencia. Consulta el sitio oficial de cada servicio para ver las condiciones vigentes en tu region.</div>
         </div>
     </div>
 </div>
@@ -303,5 +303,29 @@
     <p><a href="/">DondeVer.app</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a> &middot; <a href="/privacidad">Privacidad</a></p>
     <p style="margin-top:0.3rem;">Precios verificados en abril 2026. Pueden variar. DondeVer no vende suscripciones.</p>
 </footer>
+<script>
+/* DondeVer — GA4 affiliate_click estandarizado.
+   Params: provider, game, league, country, page, placement.
+   Placement viene del query ?s= del link /go/ o de data-placement. */
+(function(){
+  var ctx = window.DV_CTX || {};
+  document.addEventListener('click', function(e){
+    var a = e.target.closest ? e.target.closest('a[data-affiliate]') : null;
+    if (!a || typeof gtag !== 'function') return;
+    var placement = a.dataset.placement || '';
+    if (!placement) {
+      try { placement = new URL(a.href, location.origin).searchParams.get('s') || ''; } catch(err) {}
+    }
+    gtag('event', 'affiliate_click', {
+      provider: a.dataset.affiliate,
+      game: a.dataset.game || ctx.game || '',
+      league: a.dataset.league || ctx.league || '',
+      country: a.dataset.country || ctx.country || 'mx',
+      page: location.pathname,
+      placement: placement || 'unknown'
+    });
+  }, true);
+})();
+</script>
 </body>
 </html>

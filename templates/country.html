@@ -125,16 +125,31 @@
         </tbody>
     </table>
 
+    <p style="font-size:0.7rem;color:#9ca3af;margin:-1rem 0 1.5rem;line-height:1.5;">La disponibilidad de canales puede variar según tu proveedor y región. Si un canal no aparece en tu paquete, consulta las opciones disponibles para tu región directamente con el servicio.</p>
+
     <!-- Tip -->
     <div class="tip-card">
         <h3>&#128161; Consejo para {{ country.name }}</h3>
         <p>{{ country.tip }}</p>
     </div>
 
+    {% if sport_links %}
+    <!-- Per-sport guides for this country -->
+    <div class="cta-section" style="margin-top:1.5rem;">
+        <h2 style="font-size:1rem;font-weight:800;margin-bottom:0.75rem;">Guías por deporte en {{ country.name }}</h2>
+        {% for link in sport_links %}
+        <a href="{{ link.url }}" class="cta-card">
+            <div class="cta-title">{{ link.label }}</div>
+            <span class="cta-arrow">&rarr;</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Today's Games -->
     {% if games %}
     <div class="games-today">
-        <h2>&#127936; {{ total_games }} juegos hoy ({{ today_display }})</h2>
+        <h2>&#127936; Partidos de hoy relevantes en {{ country.name }} ({{ today_display }})</h2>
         {% for game in games[:15] %}
         <a href="/juego/{{ game.id }}" class="game-link">
             <span class="game-emoji">{{ game.emoji }}</span>

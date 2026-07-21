@@ -175,7 +175,7 @@
                     </ul>
                 </div>
             </div>
-            <a href="/go/caliente?s=casinos" target="_blank" rel="sponsored noopener" class="cta-button" data-affiliate="caliente">
+            <a href="/go/caliente?s=casinos" target="_blank" rel="sponsored nofollow noopener" class="cta-button" data-affiliate="caliente">
                 OBTENER BONO EN CALIENTE
                 <small>Registrate y deposita. Bono se acredita automatico.</small>
             </a>
@@ -220,7 +220,7 @@
                     </ul>
                 </div>
             </div>
-            <a href="/go/betsson?s=casinos" target="_blank" rel="sponsored noopener" class="cta-button" data-affiliate="betsson">
+            <a href="/go/betsson?s=casinos" target="_blank" rel="sponsored nofollow noopener" class="cta-button" data-affiliate="betsson">
                 OBTENER BONO EN BETSSON
                 <small>Registrate y reclama tu bono + freebet.</small>
             </a>
@@ -262,5 +262,29 @@
         <br><br>
         &copy; 2026 DondeVer.app &middot; Solo entretenimiento &middot; +18
     </footer>
+<script>
+/* DondeVer — GA4 affiliate_click estandarizado.
+   Params: provider, game, league, country, page, placement.
+   Placement viene del query ?s= del link /go/ o de data-placement. */
+(function(){
+  var ctx = window.DV_CTX || {};
+  document.addEventListener('click', function(e){
+    var a = e.target.closest ? e.target.closest('a[data-affiliate]') : null;
+    if (!a || typeof gtag !== 'function') return;
+    var placement = a.dataset.placement || '';
+    if (!placement) {
+      try { placement = new URL(a.href, location.origin).searchParams.get('s') || ''; } catch(err) {}
+    }
+    gtag('event', 'affiliate_click', {
+      provider: a.dataset.affiliate,
+      game: a.dataset.game || ctx.game || '',
+      league: a.dataset.league || ctx.league || '',
+      country: a.dataset.country || ctx.country || 'mx',
+      page: location.pathname,
+      placement: placement || 'unknown'
+    });
+  }, true);
+})();
+</script>
 </body>
 </html>

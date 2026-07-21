@@ -171,6 +171,18 @@ def format_mx_time(iso_date: str) -> str:
         return ""
 
 
+_DAYS_ES_FMT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+def format_mx_day_time(iso_date: str) -> str:
+    """'Domingo 26 · 7:20 PM' in Mexico City time (Spanish, DST-aware)."""
+    try:
+        dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
+        mx = dt.astimezone(TZ_MX)
+        return f"{_DAYS_ES_FMT[mx.weekday()]} {mx.day} · {mx.strftime('%I:%M %p').lstrip('0')}"
+    except Exception:
+        return ""
+
+
 def format_us_time(iso_date: str) -> str:
     """Convert ISO date to US Eastern time (DST-aware)."""
     try:
@@ -1702,6 +1714,77 @@ COUNTRY_PAGES = {
 }
 
 
+# Per-country sport priorities + internal SEO links.
+# Games from priority leagues are shown FIRST on the country page.
+COUNTRY_SPORT_PRIORITY = {
+    "mexico": {
+        "leagues": ["liga-mx", "liga-expansion", "mls", "mlb", "nfl", "nba", "champions"],
+        "links": [
+            {"label": "⚽ Dónde ver Liga MX", "url": "/guia/donde-ver-liga-mx"},
+            {"label": "⚾ Dónde ver MLB", "url": "/guia/como-ver-mlb-en-mexico"},
+            {"label": "🏈 Dónde ver NFL", "url": "/guia/donde-ver-nfl-en-mexico"},
+            {"label": "🏀 Dónde ver NBA", "url": "/guia/donde-ver-nba-en-mexico"},
+            {"label": "🏆 Dónde ver Champions League", "url": "/guia/donde-ver-champions-en-mexico"},
+            {"label": "🏎️ Dónde ver F1", "url": "/liga/f1"},
+        ],
+    },
+    "venezuela": {
+        "leagues": ["mlb", "champions", "la-liga", "premier-league", "serie-a", "europa-league"],
+        "links": [
+            {"label": "⚾ Dónde ver MLB en Venezuela", "url": "/guia/donde-ver-mlb-en-venezuela"},
+            {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
+            {"label": "⚽ Dónde ver La Liga", "url": "/liga/la-liga"},
+            {"label": "⚽ Dónde ver Premier League", "url": "/liga/premier-league"},
+        ],
+    },
+    "republica-dominicana": {
+        "leagues": ["mlb", "nba", "champions"],
+        "links": [
+            {"label": "⚾ Dónde ver MLB en República Dominicana", "url": "/guia/donde-ver-mlb-en-republica-dominicana"},
+            {"label": "🏀 Dónde ver NBA", "url": "/liga/nba"},
+            {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
+        ],
+    },
+    "panama": {
+        "leagues": ["mlb", "nba", "champions"],
+        "links": [
+            {"label": "⚾ Dónde ver MLB en Panamá", "url": "/guia/donde-ver-mlb-en-panama"},
+            {"label": "🏀 Dónde ver NBA", "url": "/liga/nba"},
+            {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
+        ],
+    },
+    "estados-unidos": {
+        "leagues": ["liga-mx", "nfl", "mlb", "nba", "mls", "champions"],
+        "links": [
+            {"label": "⚽ Cómo ver TUDN en USA", "url": "/guia/como-ver-tudn-en-usa"},
+            {"label": "⚽ Dónde ver Liga MX", "url": "/guia/donde-ver-liga-mx"},
+            {"label": "🏈 NFL hoy", "url": "/liga/nfl"},
+            {"label": "⚾ MLB hoy", "url": "/liga/mlb"},
+        ],
+    },
+    "colombia": {
+        "leagues": ["champions", "la-liga", "premier-league", "mlb", "nba"],
+        "links": [
+            {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
+            {"label": "⚽ Dónde ver La Liga", "url": "/liga/la-liga"},
+            {"label": "⚽ Dónde ver Premier League", "url": "/liga/premier-league"},
+        ],
+    },
+    "argentina": {
+        "leagues": ["champions", "la-liga", "premier-league", "serie-a", "nba"],
+        "links": [
+            {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
+            {"label": "⚽ Dónde ver La Liga", "url": "/liga/la-liga"},
+            {"label": "⚽ Dónde ver Serie A", "url": "/liga/serie-a"},
+        ],
+    },
+}
+
+_DAYS_ES_FULL = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+_MONTHS_ES_FULL = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
+                   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+
 @app.get("/donde-ver-en-{country_slug}", response_class=HTMLResponse)
 async def country_page(request: Request, country_slug: str):
     """Country-specific guide — where to watch sports from each country."""
@@ -1715,14 +1798,32 @@ async def country_page(request: Request, country_slug: str):
     all_games = await get_todays_games()
     today = datetime.now(TZ_MX)
 
+    # Prioritize games by the country's sport interests
+    prio = COUNTRY_SPORT_PRIORITY.get(country_slug, {})
+    prio_leagues = prio.get("leagues", [])
+
+    def _game_sort_key(g):
+        slug = g.get("league_slug", "")
+        try:
+            rank = prio_leagues.index(slug)
+        except ValueError:
+            rank = len(prio_leagues) + 1
+        return (rank, g.get("date", ""))
+
+    sorted_games = sorted(all_games, key=_game_sort_key) if prio_leagues else all_games
+
+    # Spanish date (server locale is English — never use %A/%B directly)
+    today_display = f"{_DAYS_ES_FULL[today.weekday()]} {today.day} de {_MONTHS_ES_FULL[today.month]}, {today.year}"
+
     return templates.TemplateResponse(
         request, "country.html",
         context={
             "country": country,
             "country_slug": country_slug,
-            "games": all_games,
+            "games": sorted_games,
             "total_games": len(all_games),
-            "today_display": today.strftime("%A %d de %B, %Y"),
+            "today_display": today_display,
+            "sport_links": prio.get("links", []),
         },
     )
 
@@ -2062,6 +2163,7 @@ async def team_page(request: Request, team_slug: str):
         "games": games,
         "stats": stats,
         "format_mx_time": format_mx_time,
+        "format_mx_day_time": format_mx_day_time,
         "today_date_str": today_date_str,
         "related_teams": related_teams,
         "recent_results": recent_results,

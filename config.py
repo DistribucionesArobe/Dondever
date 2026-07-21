@@ -61,78 +61,141 @@ AFFILIATES = {
         "url": os.getenv("AFFILIATE_AMAZON", "") or "https://www.amazon.com/gp/video/offers?tag=dondever2000-20",
         "logo": "/static/affiliates/amazon.svg",
         "cta": "Ve deportes en Prime Video",
-        "cta_short": "Prueba gratis 30 dias",
+        "cta_short": "Ver en Prime Video",
         "cta_twitter": "Ve deportes en Amazon Prime Video",
-        "bonus": "30 dias gratis",
+        "bonus": "Deportes en vivo en Prime Video",
     },
 }
 
-# ── Streaming Affiliate Map ──────────────────────────────
-# Maps channel display names → affiliate link + CTA for contextual monetization.
-# When a game broadcasts on one of these channels, the channel tag becomes a link.
+# ── Streaming Providers (central config) ─────────────────
+# Single source of truth for streaming platforms. Maps channel display
+# names → provider info for contextual monetization: when a game
+# broadcasts on one of these channels, the channel tag becomes a link.
 # Keys must match the CHANNEL_ALIASES display name (after normalization).
+#
+# IMPORTANT (policy):
+# - "is_affiliate": True ONLY when we have a REAL affiliate program
+#   (tracked URL). Otherwise False and "affiliate_url" stays None.
+# - CTAs must be NEUTRAL ("Ver en X"). NO invented promos ("30 días
+#   gratis", "prueba gratis", "descuento") unless the deal is confirmed —
+#   then set "cta_promo" explicitly along with the affiliate program.
+# - When an affiliate deal lands: set AFFILIATE_<KEY> env var (or
+#   affiliate_url here) and flip is_affiliate=True. Nothing else changes.
 STREAMING_AFFILIATES = {
     "Prime Video": {
         "key": "amazon",
+        "name": "Prime Video",
+        "aliases": ["prime video", "amazon prime", "amazon"],
         "url": os.getenv("AFFILIATE_AMAZON", "") or "https://www.amazon.com/gp/video/offers?tag=dondever2000-20",
-        "cta": "30 dias gratis",
+        "affiliate_url": os.getenv("AFFILIATE_AMAZON", "") or None,
+        "cta": "Ver en Prime Video",
+        "countries": ["MX", "US"],
+        "is_affiliate": True,  # Amazon Associates tag activo (dondever2000-20)
         "bg": "#00a8e1", "color": "white",
     },
     "ViX": {
         "key": "vix",
+        "name": "ViX",
+        "aliases": ["vix", "vix premium"],
         "url": os.getenv("AFFILIATE_VIX", "") or "https://www.vix.com/es-es/on-demand",
-        "cta": "Prueba ViX",
+        "affiliate_url": os.getenv("AFFILIATE_VIX", "") or None,
+        "cta": "Ver en ViX",
+        "countries": ["MX", "US"],
+        "is_affiliate": False,
         "bg": "#6d28d9", "color": "white",
     },
     "ESPN+": {
         "key": "espnplus",
+        "name": "ESPN+",
+        "aliases": ["espn+", "espn plus"],
         "url": os.getenv("AFFILIATE_ESPNPLUS", "") or "https://plus.espn.com/",
+        "affiliate_url": os.getenv("AFFILIATE_ESPNPLUS", "") or None,
         "cta": "Ver en ESPN+",
+        "countries": ["US"],
+        "is_affiliate": False,
         "bg": "#d00", "color": "white",
     },
     "Peacock": {
         "key": "peacock",
+        "name": "Peacock",
+        "aliases": ["peacock", "peacock tv"],
         "url": os.getenv("AFFILIATE_PEACOCK", "") or "https://www.peacocktv.com/sports",
+        "affiliate_url": os.getenv("AFFILIATE_PEACOCK", "") or None,
         "cta": "Ver en Peacock",
+        "countries": ["US"],
+        "is_affiliate": False,
         "bg": "#000", "color": "#c8ff00",
     },
     "Paramount+": {
         "key": "paramount",
+        "name": "Paramount+",
+        "aliases": ["paramount+", "paramount plus"],
         "url": os.getenv("AFFILIATE_PARAMOUNT", "") or "https://www.paramountplus.com/sports/",
+        "affiliate_url": os.getenv("AFFILIATE_PARAMOUNT", "") or None,
         "cta": "Ver en Paramount+",
+        "countries": ["MX", "US"],
+        "is_affiliate": False,
         "bg": "#0064ff", "color": "white",
     },
     "Apple TV+": {
         "key": "appletv",
+        "name": "Apple TV+",
+        "aliases": ["apple tv+", "apple tv"],
         "url": os.getenv("AFFILIATE_APPLETV", "") or "https://tv.apple.com/",
+        "affiliate_url": os.getenv("AFFILIATE_APPLETV", "") or None,
         "cta": "Ver en Apple TV+",
+        "countries": ["MX", "US"],
+        "is_affiliate": False,
         "bg": "#1d1d1f", "color": "white",
     },
     "MLS Season Pass": {
         "key": "appletv",
+        "name": "MLS Season Pass",
+        "aliases": ["mls season pass"],
         "url": os.getenv("AFFILIATE_APPLETV", "") or "https://tv.apple.com/channel/tvs.sbd.7000",
-        "cta": "MLS en Apple TV",
+        "affiliate_url": os.getenv("AFFILIATE_APPLETV", "") or None,
+        "cta": "Ir a MLS Season Pass",
+        "countries": ["MX", "US"],
+        "is_affiliate": False,
         "bg": "#1d1d1f", "color": "white",
     },
     "MLB.TV": {
         "key": "mlbtv",
+        "name": "MLB.TV",
+        "aliases": ["mlb.tv", "mlb tv"],
         "url": os.getenv("AFFILIATE_MLBTV", "") or "https://www.mlb.com/tv",
-        "cta": "Ver en MLB.TV",
+        "affiliate_url": os.getenv("AFFILIATE_MLBTV", "") or None,
+        "cta": "Ir a MLB.TV",
+        "countries": ["MX", "US", "VE", "DO"],
+        "is_affiliate": False,
         "bg": "#002d72", "color": "white",
     },
     "NFL+": {
         "key": "nflplus",
+        "name": "NFL+",
+        "aliases": ["nfl+", "nfl plus"],
         "url": os.getenv("AFFILIATE_NFLPLUS", "") or "https://www.nfl.com/plus/",
-        "cta": "Ver en NFL+",
+        "affiliate_url": os.getenv("AFFILIATE_NFLPLUS", "") or None,
+        "cta": "Ir a NFL+",
+        "countries": ["US"],
+        "is_affiliate": False,
         "bg": "#013369", "color": "white",
     },
     "Max": {
         "key": "max",
+        "name": "Max",
+        "aliases": ["max", "hbo max"],
         "url": os.getenv("AFFILIATE_MAX", "") or "https://www.max.com/",
+        "affiliate_url": os.getenv("AFFILIATE_MAX", "") or None,
         "cta": "Ver en Max",
+        "countries": ["MX", "US"],
+        "is_affiliate": False,
         "bg": "#002be7", "color": "white",
     },
 }
+
+# Alias for new code — same object, clearer name
+PROVIDERS = STREAMING_AFFILIATES
 
 # ── ESPN Sports & Leagues ────────────────────────────────
 # slug -> (sport, league, display_name, emoji)

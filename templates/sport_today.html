@@ -191,7 +191,7 @@
                 <div class="promo-tiny">+18 solo responsablemente</div>
             </div>
         </div>
-        <a href="/go/{{ key }}?s=web" target="_blank" rel="noopener sponsored" class="promo-cta" data-affiliate="{{ key }}">Apostar ahora &#8599;</a>
+        <a href="/go/{{ key }}?s=web" target="_blank" rel="sponsored nofollow noopener" class="promo-cta" data-affiliate="{{ key }}">Apostar ahora &#8599;</a>
     </div>
 </div>
 {% endif %}
@@ -314,6 +314,30 @@
 
 <script>
     if (document.querySelector('.live-badge')) { setTimeout(() => location.reload(), 60000); }
+</script>
+<script>
+/* DondeVer — GA4 affiliate_click estandarizado.
+   Params: provider, game, league, country, page, placement.
+   Placement viene del query ?s= del link /go/ o de data-placement. */
+(function(){
+  var ctx = window.DV_CTX || {};
+  document.addEventListener('click', function(e){
+    var a = e.target.closest ? e.target.closest('a[data-affiliate]') : null;
+    if (!a || typeof gtag !== 'function') return;
+    var placement = a.dataset.placement || '';
+    if (!placement) {
+      try { placement = new URL(a.href, location.origin).searchParams.get('s') || ''; } catch(err) {}
+    }
+    gtag('event', 'affiliate_click', {
+      provider: a.dataset.affiliate,
+      game: a.dataset.game || ctx.game || '',
+      league: a.dataset.league || ctx.league || '',
+      country: a.dataset.country || ctx.country || 'mx',
+      page: location.pathname,
+      placement: placement || 'unknown'
+    });
+  }, true);
+})();
 </script>
 </body>
 </html>

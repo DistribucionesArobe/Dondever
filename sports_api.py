@@ -886,6 +886,20 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
             home_c = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
             away_c = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
 
+            # Extract broadcast channels (normalized display names)
+            channels = []
+            seen_ch = set()
+            for geo in comp.get("geoBroadcasts", []):
+                raw = geo.get("media", {}).get("shortName", "")
+                if not raw:
+                    continue
+                ch = _normalize_channel(raw)
+                info = CHANNEL_ALIASES.get(ch, {})
+                display = info.get("name", ch)
+                if display.lower() not in seen_ch:
+                    seen_ch.add(display.lower())
+                    channels.append(display)
+
             upcoming.append({
                 "id": event.get("id", ""),
                 "home": home_c.get("team", {}).get("displayName", ""),
@@ -893,6 +907,7 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
                 "home_logo": home_c.get("team", {}).get("logo", ""),
                 "away_logo": away_c.get("team", {}).get("logo", ""),
                 "date": event.get("date", ""),
+                "channels": channels[:4],
             })
 
     upcoming.sort(key=lambda x: x.get("date", ""))

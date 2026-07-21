@@ -694,8 +694,8 @@
                     {% for b in game.broadcasts %}
                     {% set saff = streaming_aff.get(b.channel) %}
                     {% if saff %}
-                    <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="noopener sponsored" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
-                        {{ b.channel }} - {{ saff.cta }}
+                    <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
+                        {{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span>
                     </a>
                     {% else %}
                     <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
@@ -770,7 +770,7 @@
     {% for key, aff in affiliates.items() %}
     {% if loop.first %}
     <div class="ad-slot">
-        <a href="/go/{{ key }}?s=web" target="_blank" rel="noopener sponsored" data-affiliate="{{ key }}" class="ad-slot-link">
+        <a href="/go/{{ key }}?s=web" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ key }}" class="ad-slot-link">
             <span class="ad-slot-title">{{ aff.name }} &middot; {{ aff.bonus }}</span>
             <span class="ad-slot-tag">Publicidad</span>
         </a>
@@ -890,7 +890,7 @@
 {% for key, aff in affiliates.items() %}
 {% if loop.index == 2 %}
 <div class="ad-slot" style="max-width:900px;margin:1rem auto 0;padding:0 1rem;">
-    <a href="/go/{{ key }}?s=web" target="_blank" rel="noopener sponsored" data-affiliate="{{ key }}" class="ad-slot-link">
+    <a href="/go/{{ key }}?s=web" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ key }}" class="ad-slot-link">
         <span class="ad-slot-title">{{ aff.name }} &middot; {{ aff.bonus }}</span>
         <span class="ad-slot-tag">Publicidad</span>
     </a>
@@ -1047,20 +1047,28 @@
     });
 
     // ── Affiliate click tracking → GA4 events ───────────
-    document.querySelectorAll('[data-affiliate]').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const affiliate = this.dataset.affiliate;
-            // Send GA4 event
-            if (typeof gtag === 'function') {
-                gtag('event', 'affiliate_click', {
-                    affiliate_name: affiliate,
-                    link_url: this.href,
-                    page_location: window.location.pathname,
-                });
-            }
-        });
+    /* DondeVer — GA4 affiliate_click estandarizado.
+   Params: provider, game, league, country, page, placement.
+   Placement viene del query ?s= del link /go/ o de data-placement. */
+(function(){
+  var ctx = window.DV_CTX || {};
+  document.addEventListener('click', function(e){
+    var a = e.target.closest ? e.target.closest('a[data-affiliate]') : null;
+    if (!a || typeof gtag !== 'function') return;
+    var placement = a.dataset.placement || '';
+    if (!placement) {
+      try { placement = new URL(a.href, location.origin).searchParams.get('s') || ''; } catch(err) {}
+    }
+    gtag('event', 'affiliate_click', {
+      provider: a.dataset.affiliate,
+      game: a.dataset.game || ctx.game || '',
+      league: a.dataset.league || ctx.league || '',
+      country: a.dataset.country || ctx.country || 'mx',
+      page: location.pathname,
+      placement: placement || 'unknown'
     });
+  }, true);
+})();
 </script>
 </body>
 </html>
