@@ -68,39 +68,157 @@ AFFILIATES = {
 }
 
 # ── MercadoLibre Afiliados (Mexico / LATAM) ──────────────
-# Profile: AROBE — tracked short links via meli.la
+# Profile: Distribuciones Arobe — tracked short links via meli.la
+# Etiqueta: du20260520124652  (contacto@arobegroup.com)
 # Commissions: up to 24% (ropa/calzado 20%, electrónica 10%)
 # Cookie window: 30 days from click
-# Links generated via "Generador de links" in Central de Afiliados
-MELI_TAG = "arobe"
+# Links generated via "Generador de productos recomendados" in Central de Afiliados
+MELI_TAG = "du20260520124652"
 MELI_AFF_PARAM = ""                      # not used — ML uses meli.la short links instead
 MELI_BASE = "https://listado.mercadolibre.com.mx"
 
 # Curated MercadoLibre affiliate links per team (meli.la tracked URLs)
+# ALL links generated with account "Distribuciones Arobe" (du20260520124652)
 # Teams not listed fall back to direct search URL in the template.
-# To add a team: go to Central de Afiliados > Generador de links,
+# To add a team: go to Central de Afiliados > Generador de productos recomendados,
 # paste https://listado.mercadolibre.com.mx/jersey-{slug}, click Generar.
 TEAM_SHOP_MELI = {
-    # ── Liga MX ──
-    "america":    "https://meli.la/265TtD8",
-    "chivas":     "https://meli.la/1e3h6rd",
-    "cruz-azul":  "https://meli.la/13fFWJx",
-    "tigres":     "https://meli.la/2AjxYLm",
-    "pumas":      "https://meli.la/1XFGfjK",
-    "monterrey":  "https://meli.la/2a6KrCN",
-    # ── MLB ──
-    "dodgers":    "https://meli.la/273g4UL",
-    "yankees":    "https://meli.la/1eKDu4x",
-    # ── NFL ──
-    "cowboys":    "https://meli.la/33gJrzJ",
-    "chiefs":     "https://meli.la/1iXmNSE",
-    "raiders":    "https://meli.la/1ACweLo",
-    # ── NBA ──
-    "lakers":     "https://meli.la/1qdujuB",
-    "warriors":   "https://meli.la/14ZdCEN",
-    # ── Europa ──
-    "real-madrid": "https://meli.la/1vhc3GL",
-    "barcelona":  "https://meli.la/2kPdyug",
+    # ── Liga MX (17) ──
+    "chivas":           "https://meli.la/2WwgT8Y",
+    "america":          "https://meli.la/27sRtKY",
+    "cruz-azul":        "https://meli.la/2w5ZTWB",
+    "pumas":            "https://meli.la/2wT43sv",
+    "tigres":           "https://meli.la/1AvBrRh",
+    "monterrey":        "https://meli.la/2SunN3R",
+    "toluca":           "https://meli.la/2XE7pBU",
+    "santos":           "https://meli.la/1PyuVpY",
+    "leon":             "https://meli.la/1VHy586",
+    "pachuca":          "https://meli.la/2SJBpA1",
+    "atlas":            "https://meli.la/2ruFZc7",
+    "necaxa":           "https://meli.la/2aV1G75",
+    "puebla":           "https://meli.la/1skuqJp",
+    "queretaro":        "https://meli.la/33L4r7T",
+    "mazatlan":         "https://meli.la/2MG5BTN",
+    "tijuana":          "https://meli.la/2mwWWdZ",
+    "juarez":           "https://meli.la/162PcPo",
+    # ── Europa (12) ──
+    "real-madrid":      "https://meli.la/1cDyGUy",
+    "barcelona":        "https://meli.la/2uRtp8K",
+    "manchester-city":  "https://meli.la/1aHvoBY",
+    "liverpool":        "https://meli.la/2cnCHuQ",
+    "manchester-united":"https://meli.la/2VMYG2C",
+    "chelsea":          "https://meli.la/2YazxNT",
+    "arsenal":          "https://meli.la/29UQkiU",
+    "juventus":         "https://meli.la/2rhDp3G",
+    "inter-milan":      "https://meli.la/1PMUtvH",
+    "ac-milan":         "https://meli.la/2kuJvFe",
+    "psg":              "https://meli.la/1enphi7",
+    "bayern":           "https://meli.la/1F2c9cp",
+    # ── Europa extra (5) ──
+    "atletico-madrid":  "https://meli.la/2vu6tt2",
+    "napoli":           "https://meli.la/29PaRB5",
+    "borussia-dortmund":"https://meli.la/1F8oZTg",
+    "tottenham":        "https://meli.la/18Jwx83",
+    "aston-villa":      "https://meli.la/2pGNmZt",
+    # ── MLS (6) ──
+    "lafc":             "https://meli.la/1ji6svF",
+    "la-galaxy":        "https://meli.la/1vYyUFr",
+    "inter-miami":      "https://meli.la/2Gzbo7V",
+    "austin-fc":        "https://meli.la/2A1VXN7",
+    "houston-dynamo":   "https://meli.la/1vz12NL",
+    "fc-dallas":        "https://meli.la/1owWiQj",
+    # ── NBA (16) ──
+    "lakers":           "https://meli.la/1QEtPnz",
+    "celtics":          "https://meli.la/2M1VQwg",
+    "warriors":         "https://meli.la/24C9hL2",
+    "bulls":            "https://meli.la/1qYTcGE",
+    "heat":             "https://meli.la/16S6CPe",
+    "knicks":           "https://meli.la/16ozTqe",
+    "nuggets":          "https://meli.la/2vgWwDr",
+    "bucks":            "https://meli.la/1dMT8oE",
+    "mavericks":        "https://meli.la/1SGgBx3",
+    "clippers":         "https://meli.la/1h8CKav",
+    "suns":             "https://meli.la/1zNB3ew",
+    "spurs-nba":        "https://meli.la/1Uf1qC7",
+    "76ers":            "https://meli.la/2ENrkk5",
+    "thunder":          "https://meli.la/2WybVXk",
+    "timberwolves":     "https://meli.la/25FMuG8",
+    "cavaliers":        "https://meli.la/1kdP7vQ",
+    # ── NFL (31) ──
+    "cowboys":          "https://meli.la/33kNJNh",
+    "chiefs":           "https://meli.la/1AgNcTW",
+    "49ers":            "https://meli.la/1v9FDCT",
+    "eagles":           "https://meli.la/1gMCii8",
+    "packers":          "https://meli.la/1LVgMLT",
+    "steelers":         "https://meli.la/2TTzdea",
+    "raiders":          "https://meli.la/1ujxEz3",
+    "dolphins":         "https://meli.la/322VVA8",
+    "patriots":         "https://meli.la/324Rcko",
+    "texans":           "https://meli.la/2xK4sS4",
+    "ravens":           "https://meli.la/2ukPPPy",
+    "bears":            "https://meli.la/2y1zvMn",
+    "rams":             "https://meli.la/2kaYQoh",
+    "chargers":         "https://meli.la/2TGms1j",
+    "broncos":          "https://meli.la/2mpYPSE",
+    "bills":            "https://meli.la/32BvBKS",
+    "lions":            "https://meli.la/1NFXqyv",
+    "vikings":          "https://meli.la/2R4fu4N",
+    "bengals":          "https://meli.la/1H4Df7B",
+    "giants-nfl":       "https://meli.la/15V9Wfb",
+    "jets":             "https://meli.la/2C55cAK",
+    "saints":           "https://meli.la/1RvY3tM",
+    "seahawks":         "https://meli.la/2wRcXdi",
+    "commanders":       "https://meli.la/2jdfYeT",
+    "cardinals-nfl":    "https://meli.la/176Fch4",
+    "buccaneers":       "https://meli.la/1oeAzda",
+    "falcons":          "https://meli.la/1zsMaG1",
+    "panthers-nfl":     "https://meli.la/1Xbkeva",
+    "colts":            "https://meli.la/2eLcA88",
+    "jaguars":          "https://meli.la/1sEdZ6V",
+    "titans":           "https://meli.la/2xqwFZb",
+    # ── MLB (30) ──
+    "dodgers":          "https://meli.la/2aNHaUL",
+    "yankees":          "https://meli.la/2v9wmgE",
+    "red-sox":          "https://meli.la/1QECfNR",
+    "astros":           "https://meli.la/1jukqoN",
+    "mets":             "https://meli.la/2ai8mnK",
+    "padres":           "https://meli.la/2cy2smF",
+    "angels":           "https://meli.la/2UVw9pr",
+    "athletics":        "https://meli.la/2hVGZpm",
+    "blue-jays":        "https://meli.la/1ehJrAc",
+    "braves":           "https://meli.la/2BVAosa",
+    "brewers":          "https://meli.la/32pPJJ5",
+    "cardinals":        "https://meli.la/2HupbyX",
+    "cubs":             "https://meli.la/16Gy7xd",
+    "diamondbacks":     "https://meli.la/1sSLofH",
+    "giants":           "https://meli.la/2ySr7LU",
+    "guardians":        "https://meli.la/21S595B",
+    "mariners":         "https://meli.la/1xWMFHe",
+    "marlins":          "https://meli.la/1nwtUst",
+    "nationals":        "https://meli.la/2Nb1L7F",
+    "orioles":          "https://meli.la/1uzr9dr",
+    "phillies":         "https://meli.la/2PdgDH4",
+    "pirates":          "https://meli.la/1QBfXF2",
+    "rangers":          "https://meli.la/2bgk6FG",
+    "rays":             "https://meli.la/1AC66Wv",
+    "reds":             "https://meli.la/2WDoMQi",
+    "rockies":          "https://meli.la/2z2Qs25",
+    "royals":           "https://meli.la/2k91vkf",
+    "tigers":           "https://meli.la/1y6JK25",
+    "twins":            "https://meli.la/2gpDasW",
+    "white-sox":        "https://meli.la/29nnWB5",
+    # ── NHL (11) ──
+    "bruins":           "https://meli.la/2k2SQ2b",
+    "golden-knights":   "https://meli.la/1K3rSQm",
+    "avalanche":        "https://meli.la/2SnqL1v",
+    "panthers-nhl":     "https://meli.la/2pjCi1H",
+    "rangers-nhl":      "https://meli.la/1WYX4XV",
+    "maple-leafs":      "https://meli.la/2ejK5p1",
+    "oilers":           "https://meli.la/2kJEQPg",
+    "stars":            "https://meli.la/26Njw89",
+    "blackhawks":       "https://meli.la/2VLRRdt",
+    "penguins":         "https://meli.la/2ZANL9u",
+    "capitals":         "https://meli.la/2nG9nSn",
 }
 
 # ── Curated Amazon Products per team ─────────────────────
