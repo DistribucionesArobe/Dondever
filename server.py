@@ -188,6 +188,23 @@ templates.env.globals["app_url"] = APP_URL
 templates.env.globals["now"] = lambda: datetime.now(TZ_MX)
 
 
+def _team_name_to_slug(team_name: str) -> str | None:
+    """Reverse lookup: ESPN team display name → DondeVer slug."""
+    if not team_name:
+        return None
+    name_lower = team_name.lower()
+    # Exact match first
+    for slug, info in POPULAR_TEAMS.items():
+        if info["name"].lower() == name_lower:
+            return slug
+    # Slug appears in team name (e.g. "yankees" in "new york yankees")
+    for slug, info in POPULAR_TEAMS.items():
+        slug_clean = slug.replace("-", " ")
+        if slug_clean in name_lower:
+            return slug
+    return None
+
+
 # ── OneSignal Service Worker (must be at root scope) ─────
 from pathlib import Path as _Path
 
@@ -363,9 +380,9 @@ async def game_detail(request: Request, event_id: str, date: Optional[str] = Que
             context={"message": "Este juego ya termino. Ve los juegos de hoy en la home."}
         )
 
-    # Fetch odds if game hasn't started yet (full detail: h2h + spreads + totals)
+    # Fetch odds (show for pre-game and in-progress)
     odds = None
-    if game["status"]["state"] == "pre":
+    if game["status"]["state"] in ("pre", "in"):
         try:
             league_slug = game.get("league_slug", "")
             odds_list = await fetch_odds(league_slug, markets="h2h,spreads,totals")
@@ -373,8 +390,27 @@ async def game_detail(request: Request, event_id: str, date: Optional[str] = Que
         except Exception as e:
             logger.warning(f"Odds fetch failed for game {event_id}: {e}")
 
+    # Find team slugs for clickable logos
+    home_slug = _team_name_to_slug(game["home"]["name"])
+    away_slug = _team_name_to_slug(game["away"]["name"])
+
+    # Fetch stats for both teams (standings, record, etc.)
+    home_stats = {}
+    away_stats = {}
+    try:
+        if home_slug:
+            home_stats = await get_team_stats(home_slug)
+        if away_slug:
+            away_stats = await get_team_stats(away_slug)
+    except Exception as e:
+        logger.warning(f"Stats fetch failed for game {event_id}: {e}")
+
     return templates.TemplateResponse(
-        request, "game.html", context={"game": game, "odds": odds}
+        request, "game.html", context={
+            "game": game, "odds": odds,
+            "home_slug": home_slug, "away_slug": away_slug,
+            "home_stats": home_stats, "away_stats": away_stats,
+        }
     )
 
 

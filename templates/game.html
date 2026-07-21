@@ -131,16 +131,24 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set left_team = game.home if home_left else game.away %}
         {% set right_team = game.away if home_left else game.home %}
+        {% set left_slug = home_slug if home_left else away_slug %}
+        {% set right_slug = away_slug if home_left else home_slug %}
+        {% set left_stats = home_stats if home_left else away_stats %}
+        {% set right_stats = away_stats if home_left else home_stats %}
         <div class="matchup">
             <div class="team-block">
-                {% if left_team.logo %}<img src="{{ left_team.logo }}" alt="{{ left_team.name }}">{% endif %}
+                {% if left_slug %}<a href="/equipo/{{ left_slug }}" style="text-decoration:none;color:inherit;">{% endif %}
+                {% if left_team.logo %}<img src="{{ left_team.logo }}" alt="{{ left_team.name }}" style="cursor:pointer;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">{% endif %}
                 <div class="name">{{ left_team.name }}</div>
+                {% if left_slug %}</a>{% endif %}
                 {% if game.status.state != 'pre' %}<div class="score">{{ left_team.score }}</div>{% endif %}
             </div>
             <div class="vs">vs</div>
             <div class="team-block">
-                {% if right_team.logo %}<img src="{{ right_team.logo }}" alt="{{ right_team.name }}">{% endif %}
+                {% if right_slug %}<a href="/equipo/{{ right_slug }}" style="text-decoration:none;color:inherit;">{% endif %}
+                {% if right_team.logo %}<img src="{{ right_team.logo }}" alt="{{ right_team.name }}" style="cursor:pointer;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">{% endif %}
                 <div class="name">{{ right_team.name }}</div>
+                {% if right_slug %}</a>{% endif %}
                 {% if game.status.state != 'pre' %}<div class="score">{{ right_team.score }}</div>{% endif %}
             </div>
         </div>
@@ -220,6 +228,83 @@
         </div>
         {% if game.venue %}<div class="venue">Sede: {{ game.venue }}</div>{% endif %}
     </div>
+
+    {# ── Stats Comparison ── #}
+    {% if left_stats and right_stats and left_stats.record and right_stats.record %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#059669;font-weight:600;">Comparacion de equipos</div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+                <thead>
+                    <tr style="color:#9ca3af;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;">
+                        <th style="text-align:left;padding:0.4rem 0;font-weight:600;">{{ left_team.name.split(' ')[-1] }}</th>
+                        <th style="text-align:center;padding:0.4rem 0;font-weight:600;">STAT</th>
+                        <th style="text-align:right;padding:0.4rem 0;font-weight:600;">{{ right_team.name.split(' ')[-1] }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;">{{ left_stats.record }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Record</td>
+                        <td style="text-align:right;font-weight:700;">{{ right_stats.record }}</td>
+                    </tr>
+                    {% if left_stats.win_pct and right_stats.win_pct %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;color:{% if left_stats.win_pct > right_stats.win_pct %}#059669{% else %}#1a1a2e{% endif %};">{{ left_stats.win_pct }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Win %</td>
+                        <td style="text-align:right;font-weight:700;color:{% if right_stats.win_pct > left_stats.win_pct %}#059669{% else %}#1a1a2e{% endif %};">{{ right_stats.win_pct }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if left_stats.streak and right_stats.streak %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;color:{% if left_stats.streak|string|first == 'W' %}#059669{% else %}#ef4444{% endif %};">{{ left_stats.streak }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Racha</td>
+                        <td style="text-align:right;font-weight:700;color:{% if right_stats.streak|string|first == 'W' %}#059669{% else %}#ef4444{% endif %};">{{ right_stats.streak }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if left_stats.all_stats and right_stats.all_stats %}
+                        {% if left_stats.all_stats.get('avgPointsFor') and right_stats.all_stats.get('avgPointsFor') %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;">{{ left_stats.all_stats.avgPointsFor }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">{% if game.sport == 'baseball' %}Carr/juego{% elif game.sport == 'soccer' %}Goles/juego{% else %}Pts/juego{% endif %}</td>
+                        <td style="text-align:right;font-weight:700;">{{ right_stats.all_stats.avgPointsFor }}</td>
+                    </tr>
+                        {% endif %}
+                        {% if left_stats.all_stats.get('avgPointsAgainst') and right_stats.all_stats.get('avgPointsAgainst') %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;">{{ left_stats.all_stats.avgPointsAgainst }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">{% if game.sport == 'baseball' %}Carr recib/j{% elif game.sport == 'soccer' %}Goles recib{% else %}Pts recib/j{% endif %}</td>
+                        <td style="text-align:right;font-weight:700;">{{ right_stats.all_stats.avgPointsAgainst }}</td>
+                    </tr>
+                        {% endif %}
+                        {% if left_stats.all_stats.get('Home') and right_stats.all_stats.get('Road') %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;">{{ left_stats.all_stats.get('Home', '') if home_left else left_stats.all_stats.get('Road', '') }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Casa / Visit</td>
+                        <td style="text-align:right;font-weight:700;">{{ right_stats.all_stats.get('Road', '') if home_left else right_stats.all_stats.get('Home', '') }}</td>
+                    </tr>
+                        {% endif %}
+                        {% if left_stats.all_stats.get('Last Ten Games') and right_stats.all_stats.get('Last Ten Games') %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;color:#6366f1;">{{ left_stats.all_stats.get('Last Ten Games') }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Ult. 10</td>
+                        <td style="text-align:right;font-weight:700;color:#6366f1;">{{ right_stats.all_stats.get('Last Ten Games') }}</td>
+                    </tr>
+                        {% endif %}
+                    {% endif %}
+                </tbody>
+            </table>
+            {% if left_slug or right_slug %}
+            <div style="display:flex;justify-content:space-between;margin-top:0.75rem;padding-top:0.5rem;border-top:1px solid #f3f4f6;">
+                {% if left_slug %}<a href="/equipo/{{ left_slug }}" style="font-size:0.7rem;color:#059669;text-decoration:none;font-weight:600;">Ver stats {{ left_team.name.split(' ')[-1] }} &rarr;</a>{% endif %}
+                {% if right_slug %}<a href="/equipo/{{ right_slug }}" style="font-size:0.7rem;color:#059669;text-decoration:none;font-weight:600;">Ver stats {{ right_team.name.split(' ')[-1] }} &rarr;</a>{% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 
     {# ── CTAs contextuales basados en los canales del partido ── #}
     {% set all_channels = game.broadcasts|map(attribute='channel')|join(' ')|lower if game.broadcasts else '' %}
@@ -356,6 +441,140 @@
 
             <div style="text-align:center;margin-top:0.75rem;font-size:0.6rem;color:#6b7280;">
                 Momios de referencia. +18 apuesta responsablemente. Publicidad.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Pick del dia / Prediccion ── #}
+    {% if odds and game.status.state == 'pre' %}
+    {% set left_odds_val = odds.home_odds if home_left else odds.away_odds %}
+    {% set right_odds_val = odds.away_odds if home_left else odds.home_odds %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div style="background:linear-gradient(135deg,#1a1a2e 0%,#0f2027 100%);border-radius:14px;padding:1.25rem;border:1px solid #374151;">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
+                <div style="font-size:1.1rem;">🎯</div>
+                <div style="font-size:0.85rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.05em;">Pick DondeVer</div>
+            </div>
+
+            {# Determine pick based on available data #}
+            {% set pick_team = None %}
+            {% set pick_reason = '' %}
+            {% set pick_confidence = '' %}
+
+            {% if left_stats and right_stats and left_stats.win_pct and right_stats.win_pct %}
+                {% set l_wp = left_stats.win_pct|float %}
+                {% set r_wp = right_stats.win_pct|float %}
+                {% set diff = (l_wp - r_wp)|abs %}
+
+                {% if diff >= 0.08 %}
+                    {% if l_wp > r_wp %}
+                        {% set pick_side = 'left' %}
+                    {% else %}
+                        {% set pick_side = 'right' %}
+                    {% endif %}
+                {% endif %}
+
+                {% if pick_side == 'left' %}
+                <div style="display:flex;align-items:center;gap:0.75rem;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem;">
+                    {% if left_team.logo %}<img src="{{ left_team.logo }}" alt="" style="width:32px;height:32px;">{% endif %}
+                    <div style="flex:1;">
+                        <div style="font-size:0.85rem;font-weight:700;color:white;">{{ left_team.name }}</div>
+                        <div style="font-size:0.7rem;color:#9ca3af;">Record: {{ left_stats.record }} ({{ left_stats.win_pct }}) · Racha: {{ left_stats.streak or 'N/A' }}</div>
+                    </div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#10b981;">{{ left_odds_val or '' }}</div>
+                </div>
+                <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
+                    📊 <strong style="color:white;">{{ left_team.name.split(' ')[-1] }}</strong> tiene mejor porcentaje de victorias
+                    ({{ left_stats.win_pct }} vs {{ right_stats.win_pct }}).
+                    {% if left_stats.all_stats and left_stats.all_stats.get('Last Ten Games') %}
+                    En los ultimos 10 juegos: {{ left_stats.all_stats.get('Last Ten Games') }}.
+                    {% endif %}
+                    {% if diff >= 0.12 %}
+                    <span style="color:#10b981;">Ventaja clara.</span>
+                    {% else %}
+                    <span style="color:#f59e0b;">Ventaja moderada — juego competitivo.</span>
+                    {% endif %}
+                </div>
+                {% elif pick_side == 'right' %}
+                <div style="display:flex;align-items:center;gap:0.75rem;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem;">
+                    {% if right_team.logo %}<img src="{{ right_team.logo }}" alt="" style="width:32px;height:32px;">{% endif %}
+                    <div style="flex:1;">
+                        <div style="font-size:0.85rem;font-weight:700;color:white;">{{ right_team.name }}</div>
+                        <div style="font-size:0.7rem;color:#9ca3af;">Record: {{ right_stats.record }} ({{ right_stats.win_pct }}) · Racha: {{ right_stats.streak or 'N/A' }}</div>
+                    </div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#10b981;">{{ right_odds_val or '' }}</div>
+                </div>
+                <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
+                    📊 <strong style="color:white;">{{ right_team.name.split(' ')[-1] }}</strong> tiene mejor porcentaje de victorias
+                    ({{ right_stats.win_pct }} vs {{ left_stats.win_pct }}).
+                    {% if right_stats.all_stats and right_stats.all_stats.get('Last Ten Games') %}
+                    En los ultimos 10 juegos: {{ right_stats.all_stats.get('Last Ten Games') }}.
+                    {% endif %}
+                    {% if diff >= 0.12 %}
+                    <span style="color:#10b981;">Ventaja clara.</span>
+                    {% else %}
+                    <span style="color:#f59e0b;">Ventaja moderada — juego competitivo.</span>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div style="display:flex;align-items:center;gap:0.75rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem;">
+                    <div style="flex:1;text-align:center;">
+                        <div style="font-size:0.85rem;font-weight:700;color:#f59e0b;">Juego parejo</div>
+                        <div style="font-size:0.7rem;color:#9ca3af;">{{ left_stats.record }} ({{ left_stats.win_pct }}) vs {{ right_stats.record }} ({{ right_stats.win_pct }})</div>
+                    </div>
+                </div>
+                <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
+                    ⚖️ Equipos con rendimiento similar. Considera el factor local y rachas recientes antes de decidir.
+                    {% if left_stats.all_stats and left_stats.all_stats.get('Last Ten Games') %}
+                    {{ left_team.name.split(' ')[-1] }} ultimos 10: {{ left_stats.all_stats.get('Last Ten Games') }}.
+                    {% endif %}
+                    {% if right_stats.all_stats and right_stats.all_stats.get('Last Ten Games') %}
+                    {{ right_team.name.split(' ')[-1] }} ultimos 10: {{ right_stats.all_stats.get('Last Ten Games') }}.
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% elif odds %}
+                {# No stats, but we have odds — show the favorite based on odds #}
+                <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
+                    Las momios sugieren
+                    {% if left_odds_val and right_odds_val %}
+                        {% if left_odds_val|string|first == '-' and right_odds_val|string|first == '+' %}
+                        a <strong style="color:white;">{{ left_team.name }}</strong> como favorito ({{ left_odds_val }}).
+                        {% elif right_odds_val|string|first == '-' and left_odds_val|string|first == '+' %}
+                        a <strong style="color:white;">{{ right_team.name }}</strong> como favorito ({{ right_odds_val }}).
+                        {% else %}
+                        un juego competitivo.
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% if odds.total_point %}
+            <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:8px;padding:0.5rem 0.75rem;text-align:center;">
+                    <div style="font-size:0.6rem;color:#9ca3af;text-transform:uppercase;">Total</div>
+                    <div style="font-size:0.95rem;font-weight:700;color:white;">{{ odds.total_point }}</div>
+                    <div style="font-size:0.6rem;color:#9ca3af;">Over/Under</div>
+                </div>
+                {% if left_stats and left_stats.all_stats and right_stats and right_stats.all_stats %}
+                {% set avg_runs = ((left_stats.all_stats.get('avgPointsFor', '0')|float) + (right_stats.all_stats.get('avgPointsAgainst', '0')|float) + (right_stats.all_stats.get('avgPointsFor', '0')|float) + (left_stats.all_stats.get('avgPointsAgainst', '0')|float)) / 2 %}
+                <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:8px;padding:0.5rem 0.75rem;text-align:center;">
+                    <div style="font-size:0.6rem;color:#9ca3af;text-transform:uppercase;">Prom. combinado</div>
+                    <div style="font-size:0.95rem;font-weight:700;color:{% if avg_runs > odds.total_point|float %}#22c55e{% else %}#f97316{% endif %};">{{ '%.1f'|format(avg_runs) }}</div>
+                    <div style="font-size:0.6rem;color:#9ca3af;">{% if avg_runs > odds.total_point|float %}Tendencia Over{% else %}Tendencia Under{% endif %}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div style="text-align:center;margin-top:0.75rem;">
+                <a href="/go/caliente?s=pick" target="_blank" rel="noopener sponsored" data-affiliate="caliente" style="display:inline-block;background:#10b981;color:white;font-size:0.75rem;font-weight:700;padding:0.5rem 1.5rem;border-radius:8px;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+                    Apostar en Caliente &rarr;
+                </a>
+            </div>
+            <div style="text-align:center;margin-top:0.5rem;font-size:0.55rem;color:#6b7280;">
+                Solo entretenimiento. No garantiza resultados. +18 apuesta responsablemente. Publicidad.
             </div>
         </div>
     </div>
