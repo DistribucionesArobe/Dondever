@@ -67,6 +67,73 @@ AFFILIATES = {
     },
 }
 
+# ── Streaming Affiliate Map ──────────────────────────────
+# Maps channel display names → affiliate link + CTA for contextual monetization.
+# When a game broadcasts on one of these channels, the channel tag becomes a link.
+# Keys must match the CHANNEL_ALIASES display name (after normalization).
+STREAMING_AFFILIATES = {
+    "Prime Video": {
+        "key": "amazon",
+        "url": os.getenv("AFFILIATE_AMAZON", "") or "https://www.amazon.com/gp/video/offers?tag=dondever2000-20",
+        "cta": "30 dias gratis",
+        "bg": "#00a8e1", "color": "white",
+    },
+    "ViX": {
+        "key": "vix",
+        "url": os.getenv("AFFILIATE_VIX", "") or "https://www.vix.com/es-es/on-demand",
+        "cta": "Prueba ViX",
+        "bg": "#6d28d9", "color": "white",
+    },
+    "ESPN+": {
+        "key": "espnplus",
+        "url": os.getenv("AFFILIATE_ESPNPLUS", "") or "https://plus.espn.com/",
+        "cta": "Ver en ESPN+",
+        "bg": "#d00", "color": "white",
+    },
+    "Peacock": {
+        "key": "peacock",
+        "url": os.getenv("AFFILIATE_PEACOCK", "") or "https://www.peacocktv.com/sports",
+        "cta": "Ver en Peacock",
+        "bg": "#000", "color": "#c8ff00",
+    },
+    "Paramount+": {
+        "key": "paramount",
+        "url": os.getenv("AFFILIATE_PARAMOUNT", "") or "https://www.paramountplus.com/sports/",
+        "cta": "Ver en Paramount+",
+        "bg": "#0064ff", "color": "white",
+    },
+    "Apple TV+": {
+        "key": "appletv",
+        "url": os.getenv("AFFILIATE_APPLETV", "") or "https://tv.apple.com/",
+        "cta": "Ver en Apple TV+",
+        "bg": "#1d1d1f", "color": "white",
+    },
+    "MLS Season Pass": {
+        "key": "appletv",
+        "url": os.getenv("AFFILIATE_APPLETV", "") or "https://tv.apple.com/channel/tvs.sbd.7000",
+        "cta": "MLS en Apple TV",
+        "bg": "#1d1d1f", "color": "white",
+    },
+    "MLB.TV": {
+        "key": "mlbtv",
+        "url": os.getenv("AFFILIATE_MLBTV", "") or "https://www.mlb.com/tv",
+        "cta": "Ver en MLB.TV",
+        "bg": "#002d72", "color": "white",
+    },
+    "NFL+": {
+        "key": "nflplus",
+        "url": os.getenv("AFFILIATE_NFLPLUS", "") or "https://www.nfl.com/plus/",
+        "cta": "Ver en NFL+",
+        "bg": "#013369", "color": "white",
+    },
+    "Max": {
+        "key": "max",
+        "url": os.getenv("AFFILIATE_MAX", "") or "https://www.max.com/",
+        "cta": "Ver en Max",
+        "bg": "#002be7", "color": "white",
+    },
+}
+
 # ── ESPN Sports & Leagues ────────────────────────────────
 # slug -> (sport, league, display_name, emoji)
 LEAGUES = {
@@ -124,6 +191,12 @@ def get_affiliate_url(key: str, source: str = "web") -> str:
     """
     aff = AFFILIATES.get(key, {})
     url = aff.get("url", "")
+    # Also check streaming affiliates by key
+    if not url or url == "#":
+        for _ch, saff in STREAMING_AFFILIATES.items():
+            if saff["key"] == key:
+                url = saff["url"]
+                break
     if not url or url == "#":
         return "#"
     separator = "&" if "?" in url else "?"

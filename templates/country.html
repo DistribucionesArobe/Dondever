@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donde ver deportes en {{ country.name }} {{ country.flag }} - Canales TV y Streaming | DondeVer</title>
+    <meta name="description" content="{{ country.desc }} Guia actualizada {{ now().strftime('%d/%m/%Y') }}.">
+    <meta property="og:title" content="Donde ver deportes en {{ country.name }} {{ country.flag }}">
+    <meta property="og:description" content="{{ country.desc }}">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{ app_url }}/donde-ver-en-{{ country_slug }}">
+    <link rel="canonical" href="{{ app_url }}/donde-ver-en-{{ country_slug }}">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: #f8f9fb; color: #0f172a; }
+        .header { background: #0f172a; padding: 0.55rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; }
+        .logo { text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+        .logo img { height: 28px; width: auto; }
+        .logo-text { font-weight: 800; font-size: 1.1rem; }
+        .donde { color: white; }
+        .ver { color: #10b981; }
+        .main { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+        .hero-country { text-align: center; margin-bottom: 2rem; }
+        .hero-country .flag { font-size: 3rem; margin-bottom: 0.5rem; }
+        .hero-country h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.3rem; }
+        .hero-country p { font-size: 0.85rem; color: #6b7280; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+
+        .channels-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; }
+        .channels-table th { background: #0f172a; color: white; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem 1rem; text-align: left; }
+        .channels-table td { padding: 0.75rem 1rem; font-size: 0.82rem; border-bottom: 1px solid #f3f4f6; }
+        .channels-table tr:last-child td { border-bottom: none; }
+        .channels-table tr:hover { background: #f8fdfb; }
+        .ch-name { font-weight: 700; color: #0f172a; }
+        .ch-type { font-size: 0.7rem; font-weight: 600; display: inline-block; padding: 2px 8px; border-radius: 4px; }
+        .ch-type.cable { background: #dbeafe; color: #1d4ed8; }
+        .ch-type.streaming { background: #ede9fe; color: #6d28d9; }
+        .ch-type.free { background: #d1fae5; color: #059669; }
+        .ch-type.satellite { background: #fef3c7; color: #b45309; }
+        .ch-sports { color: #6b7280; font-size: 0.78rem; }
+
+        .tip-card { background: white; border: 1px solid #e5e7eb; border-left: 3px solid #10b981; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+        .tip-card h3 { font-size: 0.85rem; font-weight: 700; color: #059669; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.4rem; }
+        .tip-card p { font-size: 0.8rem; color: #374151; line-height: 1.6; }
+
+        .games-today { margin-top: 2rem; }
+        .games-today h2 { font-size: 1rem; font-weight: 800; margin-bottom: 0.75rem; }
+        .game-link { display: flex; align-items: center; gap: 0.75rem; background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; text-decoration: none; color: inherit; transition: border-color 0.15s; }
+        .game-link:hover { border-color: #10b981; }
+        .game-emoji { font-size: 1.2rem; }
+        .game-info { flex: 1; }
+        .game-teams { font-weight: 700; font-size: 0.82rem; }
+        .game-meta { font-size: 0.7rem; color: #9ca3af; margin-top: 0.15rem; }
+        .game-arrow { color: #10b981; font-weight: 700; }
+
+        .cta-section { margin-top: 2rem; }
+        .cta-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.25rem; text-decoration: none; color: inherit; margin-bottom: 0.6rem; }
+        .cta-card:hover { border-color: #10b981; }
+        .cta-title { font-size: 0.85rem; font-weight: 700; }
+        .cta-sub { font-size: 0.72rem; color: #6b7280; margin-top: 0.1rem; }
+        .cta-arrow { color: #059669; font-weight: 700; font-size: 1.2rem; }
+
+        .related { margin-top: 2rem; }
+        .related h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.6rem; }
+        .related-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .related-link { font-size: 0.72rem; color: #374151; text-decoration: none; background: #f8f9fb; padding: 0.3rem 0.65rem; border-radius: 6px; border: 1px solid #e5e7eb; transition: border-color 0.15s; }
+        .related-link:hover { border-color: #10b981; color: #059669; }
+
+        .footer { max-width: 900px; margin: 2rem auto 1rem; padding: 1.5rem 1rem; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 0.7rem; }
+        .footer a { color: #059669; text-decoration: none; }
+
+        @media (max-width: 640px) {
+            .channels-table th, .channels-table td { padding: 0.6rem 0.65rem; font-size: 0.75rem; }
+            .ch-sports { display: none; }
+        }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">
+            <img src="/static/logo-full.png" alt="DondeVer">
+            <span class="logo-text"><span class="donde">Donde</span><span class="ver">Ver</span></span>
+        </a>
+    </div>
+</header>
+
+<main class="main">
+    <div class="hero-country">
+        <div class="flag">{{ country.flag }}</div>
+        <h1>Donde ver deportes en {{ country.name }}</h1>
+        <p>{{ country.desc }}</p>
+    </div>
+
+    <!-- Channel Guide Table -->
+    <table class="channels-table">
+        <thead>
+            <tr>
+                <th>Canal / Plataforma</th>
+                <th>Tipo</th>
+                <th>Deportes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ch in country.channels %}
+            <tr>
+                <td class="ch-name">{{ ch.name }}</td>
+                <td>
+                    {% if 'gratis' in ch.type|lower or 'abierta' in ch.type|lower %}
+                    <span class="ch-type free">{{ ch.type }}</span>
+                    {% elif 'streaming' in ch.type|lower %}
+                    <span class="ch-type streaming">{{ ch.type }}</span>
+                    {% elif 'sat' in ch.type|lower %}
+                    <span class="ch-type satellite">{{ ch.type }}</span>
+                    {% else %}
+                    <span class="ch-type cable">{{ ch.type }}</span>
+                    {% endif %}
+                </td>
+                <td class="ch-sports">{{ ch.sports }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Tip -->
+    <div class="tip-card">
+        <h3>&#128161; Consejo para {{ country.name }}</h3>
+        <p>{{ country.tip }}</p>
+    </div>
+
+    <!-- Today's Games -->
+    {% if games %}
+    <div class="games-today">
+        <h2>&#127936; {{ total_games }} juegos hoy ({{ today_display }})</h2>
+        {% for game in games[:15] %}
+        <a href="/juego/{{ game.id }}" class="game-link">
+            <span class="game-emoji">{{ game.emoji }}</span>
+            <div class="game-info">
+                <div class="game-teams">{{ game.home.name }} vs {{ game.away.name }}</div>
+                <div class="game-meta">{{ game.league_name }} &middot; {{ format_mx_time(game.date) }} hrs</div>
+            </div>
+            <span class="game-arrow">&rarr;</span>
+        </a>
+        {% endfor %}
+        {% if games|length > 15 %}
+        <a href="/" style="display:block;text-align:center;font-size:0.8rem;color:#059669;font-weight:600;padding:0.75rem;text-decoration:none;">Ver los {{ total_games }} juegos de hoy &rarr;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Useful Links -->
+    <div class="cta-section">
+        <a href="/" class="cta-card">
+            <div>
+                <div class="cta-title">&#128250; Ver todos los juegos de hoy</div>
+                <div class="cta-sub">Horarios, canales y streaming para {{ country.name }}</div>
+            </div>
+            <span class="cta-arrow">&rarr;</span>
+        </a>
+        <a href="/streaming" class="cta-card">
+            <div>
+                <div class="cta-title">&#128247; Comparar plataformas de streaming</div>
+                <div class="cta-sub">&#191;Cual servicio tiene los deportes que buscas?</div>
+            </div>
+            <span class="cta-arrow">&rarr;</span>
+        </a>
+        <a href="/equipos" class="cta-card">
+            <div>
+                <div class="cta-title">&#9917; Ver equipos por deporte</div>
+                <div class="cta-sub">Encuentra tu equipo y ve donde juega</div>
+            </div>
+            <span class="cta-arrow">&rarr;</span>
+        </a>
+    </div>
+
+    <!-- Related country pages -->
+    <div class="related">
+        <h3>Ver deportes en otros paises</h3>
+        <div class="related-links">
+            {% if country_slug != 'mexico' %}<a href="/donde-ver-en-mexico" class="related-link">&#127474;&#127485; Mexico</a>{% endif %}
+            {% if country_slug != 'estados-unidos' %}<a href="/donde-ver-en-estados-unidos" class="related-link">&#127482;&#127480; Estados Unidos</a>{% endif %}
+            {% if country_slug != 'venezuela' %}<a href="/donde-ver-en-venezuela" class="related-link">&#127483;&#127466; Venezuela</a>{% endif %}
+            {% if country_slug != 'republica-dominicana' %}<a href="/donde-ver-en-republica-dominicana" class="related-link">&#127465;&#127476; Rep. Dominicana</a>{% endif %}
+            {% if country_slug != 'panama' %}<a href="/donde-ver-en-panama" class="related-link">&#127477;&#127462; Panama</a>{% endif %}
+            {% if country_slug != 'colombia' %}<a href="/donde-ver-en-colombia" class="related-link">&#127464;&#127476; Colombia</a>{% endif %}
+            {% if country_slug != 'argentina' %}<a href="/donde-ver-en-argentina" class="related-link">&#127462;&#127479; Argentina</a>{% endif %}
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Tu guia de donde ver deportes en vivo</p>
+    <p style="margin-top:0.3rem;">
+        <a href="/">Hoy</a> &middot;
+        <a href="/equipos">Equipos</a> &middot;
+        <a href="/streaming">Streaming</a> &middot;
+        <a href="https://wa.me/15715463202?text=hoy">WhatsApp</a>
+    </p>
+</footer>
+</body>
+</html>

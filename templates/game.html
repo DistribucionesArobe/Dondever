@@ -199,7 +199,12 @@
                 <div class="channel-group">
                     <span class="country-label">MX</span>
                     {% for b in mx_paid %}
+                    {% set saff = streaming_aff.get(b.channel) %}
+                    {% if saff %}
+                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="noopener sponsored" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} - {{ saff.cta }}</a>
+                    {% else %}
                     <span class="channel-pill {{ b.info.get('type', 'unknown') }}">{{ b.channel }}</span>
+                    {% endif %}
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -208,7 +213,12 @@
                 <div class="channel-group">
                     <span class="country-label">USA</span>
                     {% for b in us_channels %}
+                    {% set saff = streaming_aff.get(b.channel) %}
+                    {% if saff %}
+                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="noopener sponsored" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} - {{ saff.cta }}</a>
+                    {% else %}
                     <span class="channel-pill {{ b.info.get('type', 'unknown') }}">{{ b.channel }}</span>
+                    {% endif %}
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -344,35 +354,42 @@
     {% endif %}
 
     {# ── CTAs contextuales basados en los canales del partido ── #}
+    {# Find the first streaming affiliate that matches a broadcast channel #}
+    {% set featured_saff = namespace(found=false, key='', name='', cta='', bg='', color='') %}
+    {% if game.broadcasts %}
+        {% for b in game.broadcasts %}
+            {% if not featured_saff.found %}
+                {% set saff = streaming_aff.get(b.channel) %}
+                {% if saff %}
+                    {% set featured_saff.found = true %}
+                    {% set featured_saff.key = saff.key %}
+                    {% set featured_saff.name = b.channel %}
+                    {% set featured_saff.cta = saff.cta %}
+                    {% set featured_saff.bg = saff.bg %}
+                    {% set featured_saff.color = saff.color %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
     {% set all_channels = game.broadcasts|map(attribute='channel')|join(' ')|lower if game.broadcasts else '' %}
-    {% set has_streaming = 'vix' in all_channels or 'espn+' in all_channels or 'peacock' in all_channels or 'paramount' in all_channels or 'apple' in all_channels or 'prime' in all_channels or 'amazon' in all_channels or 'max' in all_channels or 'mls season' in all_channels %}
-    {% set has_amazon = 'amazon' in all_channels or 'prime' in all_channels %}
-    {% set has_cable = 'tudn' in all_channels or 'espn mx' in all_channels or 'fox sports' in all_channels or 'espn' in all_channels or 'tnt' in all_channels %}
+    {% set has_streaming = featured_saff.found %}
+    {% set has_cable = 'tudn' in all_channels or 'espn mx' in all_channels or 'fox sports' in all_channels or 'tnt' in all_channels %}
 
     <div style="max-width:650px;margin:0 auto 1rem;padding:0 1rem;display:grid;gap:0.6rem;">
 
-    {# 1. Amazon Prime — si el partido pasa por Prime/Amazon #}
-    {% if has_amazon %}
-        <a href="/go/amazon?s=game-cta" target="_blank" rel="noopener sponsored" data-affiliate="amazon" style="display:block;background:linear-gradient(135deg,#00050d,#0f1923);border:2px solid #00a8e1;border-radius:14px;padding:1.25rem;text-decoration:none;text-align:center;">
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:#00a8e1;font-weight:600;margin-bottom:0.4rem;">Este partido se transmite en</div>
-            <div style="font-size:1.3rem;font-weight:800;color:white;margin-bottom:0.3rem;">Amazon Prime Video</div>
-            <div style="font-size:0.85rem;color:#10b981;font-weight:700;margin-bottom:0.5rem;">30 dias GRATIS de prueba</div>
-            <div style="display:inline-block;background:#00a8e1;color:white;font-weight:700;font-size:0.85rem;padding:0.5rem 1.5rem;border-radius:8px;">Activar prueba gratis &rarr;</div>
-            <div style="font-size:0.6rem;color:#6b7280;margin-top:0.5rem;">Cancela cuando quieras. Link de afiliado.</div>
+    {# 1. Featured streaming service CTA #}
+    {% if featured_saff.found %}
+        <a href="/go/{{ featured_saff.key }}?s=game-cta" target="_blank" rel="noopener sponsored" data-affiliate="{{ featured_saff.key }}" style="display:block;background:linear-gradient(135deg,#00050d,#0f1923);border:2px solid {{ featured_saff.bg }};border-radius:14px;padding:1.25rem;text-decoration:none;text-align:center;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:{{ featured_saff.bg }};font-weight:600;margin-bottom:0.4rem;">Este partido se transmite en</div>
+            <div style="font-size:1.3rem;font-weight:800;color:white;margin-bottom:0.3rem;">{{ featured_saff.name }}</div>
+            <div style="font-size:0.85rem;color:#10b981;font-weight:700;margin-bottom:0.5rem;">{{ featured_saff.cta }}</div>
+            <div style="display:inline-block;background:{{ featured_saff.bg }};color:{{ featured_saff.color }};font-weight:700;font-size:0.85rem;padding:0.5rem 1.5rem;border-radius:8px;">Ver ahora &rarr;</div>
+            <div style="font-size:0.6rem;color:#6b7280;margin-top:0.5rem;">Link de afiliado.</div>
         </a>
     {% endif %}
 
-    {# 2. Streaming sin cable — si tiene canales de streaming o solo cable #}
-    {% if has_streaming and not has_amazon %}
-        <a href="/go/cj?s=game-cta" target="_blank" rel="noopener sponsored" data-affiliate="cj" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid #4f46e5;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
-            <div style="flex:1;">
-                <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:#818cf8;font-weight:600;">¿Bloqueado por region?</div>
-                <div style="font-size:0.95rem;font-weight:700;color:white;margin:0.2rem 0;">Desbloquea cualquier canal con VPN</div>
-                <div style="font-size:0.75rem;color:#a5b4fc;">{{ affiliates.cj.bonus }}</div>
-            </div>
-            <div style="background:#4f46e5;color:white;font-weight:700;font-size:0.75rem;padding:0.5rem 1rem;border-radius:8px;white-space:nowrap;">Ver oferta &rarr;</div>
-        </a>
-    {% elif has_cable and not has_streaming %}
+    {# 2. VPN fallback — si tiene cable pero no streaming afiliado #}
+    {% if has_cable and not has_streaming %}
         <a href="/go/cj?s=game-cta-cable" target="_blank" rel="noopener sponsored" data-affiliate="cj" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid #4f46e5;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
             <div style="flex:1;">
                 <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:#818cf8;font-weight:600;">¿No tienes cable?</div>

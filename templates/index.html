@@ -692,9 +692,10 @@
                 <span class="gc-channels-icon">&#128250;</span>
                 {% if game.broadcasts %}
                     {% for b in game.broadcasts %}
-                    {% if 'Amazon' in b.channel or 'Prime' in b.channel %}
-                    <a href="/go/amazon?s=channel" target="_blank" rel="noopener sponsored" data-affiliate="amazon" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:#00a8e1;color:white;" onclick="event.stopPropagation();">
-                        {{ b.channel }} - 30 dias gratis
+                    {% set saff = streaming_aff.get(b.channel) %}
+                    {% if saff %}
+                    <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="noopener sponsored" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
+                        {{ b.channel }} - {{ saff.cta }}
                     </a>
                     {% else %}
                     <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
@@ -795,14 +796,22 @@
 <div class="teams-section">
     <h2>Equipos populares</h2>
     <div class="teams-grid">
+        <a href="/equipo/america" class="team-chip">America</a>
+        <a href="/equipo/chivas" class="team-chip">Chivas</a>
+        <a href="/equipo/cruz-azul" class="team-chip">Cruz Azul</a>
+        <a href="/equipo/tigres" class="team-chip">Tigres</a>
         <a href="/equipo/dodgers" class="team-chip">Dodgers</a>
         <a href="/equipo/yankees" class="team-chip">Yankees</a>
-        <a href="/equipo/chivas" class="team-chip">Chivas</a>
-        <a href="/equipo/america" class="team-chip">America</a>
-        <a href="/equipo/cruz-azul" class="team-chip">Cruz Azul</a>
-        <a href="/equipo/pumas-unam" class="team-chip">Pumas</a>
-        <a href="/equipo/red-sox" class="team-chip">Red Sox</a>
-        <a href="/equipo/tigres" class="team-chip">Tigres</a>
+        <a href="/equipo/cowboys" class="team-chip">Cowboys</a>
+        <a href="/equipo/lakers" class="team-chip">Lakers</a>
+        <a href="/equipo/pumas" class="team-chip">Pumas</a>
+        <a href="/equipo/monterrey" class="team-chip">Rayados</a>
+        <a href="/equipo/real-madrid" class="team-chip">Real Madrid</a>
+        <a href="/equipo/barcelona" class="team-chip">Barcelona</a>
+        <a href="/equipo/inter-miami" class="team-chip">Inter Miami</a>
+        <a href="/equipo/raiders" class="team-chip">Raiders</a>
+        <a href="/equipo/chiefs" class="team-chip">Chiefs</a>
+        <a href="/equipo/warriors" class="team-chip">Warriors</a>
     </div>
 </div>
 
@@ -861,6 +870,18 @@
             <a href="/guia/donde-ver-mlb-en-venezuela" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#fff7ed;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #fed7aa;">MLB Venezuela</a>
             <a href="/guia/donde-ver-mlb-en-republica-dominicana" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#fff7ed;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #fed7aa;">MLB Rep. Dominicana</a>
             <a href="/guia/donde-ver-mlb-en-panama" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#fff7ed;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #fed7aa;">MLB Panama</a>
+        </div>
+        <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f3f4f6;">
+            <div style="font-size:0.72rem;font-weight:700;color:#6b7280;margin-bottom:0.4rem;">Por pais:</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+                <a href="/donde-ver-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f0fdf4;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #bbf7d0;">&#127474;&#127485; Mexico</a>
+                <a href="/donde-ver-en-estados-unidos" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f0fdf4;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #bbf7d0;">&#127482;&#127480; USA</a>
+                <a href="/donde-ver-en-venezuela" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f0fdf4;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #bbf7d0;">&#127483;&#127466; Venezuela</a>
+                <a href="/donde-ver-en-republica-dominicana" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f0fdf4;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #bbf7d0;">&#127465;&#127476; Rep. Dominicana</a>
+                <a href="/donde-ver-en-panama" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f0fdf4;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #bbf7d0;">&#127477;&#127462; Panama</a>
+                <a href="/donde-ver-en-colombia" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f0fdf4;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #bbf7d0;">&#127464;&#127476; Colombia</a>
+                <a href="/donde-ver-en-argentina" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f0fdf4;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #bbf7d0;">&#127462;&#127479; Argentina</a>
+            </div>
         </div>
     </div>
 </div>

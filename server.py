@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
-from config import AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
+from config import AFFILIATES, STREAMING_AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES
 from sports_api import (
     get_todays_games, search_games, get_team_stats, get_league_standings,
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
@@ -184,6 +184,7 @@ def format_us_time(iso_date: str) -> str:
 templates.env.globals["format_mx_time"] = format_mx_time
 templates.env.globals["format_us_time"] = format_us_time
 templates.env.globals["affiliates"] = AFFILIATES
+templates.env.globals["streaming_aff"] = STREAMING_AFFILIATES
 templates.env.globals["app_url"] = APP_URL
 templates.env.globals["now"] = lambda: datetime.now(TZ_MX)
 
@@ -1437,6 +1438,15 @@ async def sitemap_xml():
                 f'    <priority>0.7</priority>\n  </url>'
             )
 
+    # Country pages (SEO: "donde ver deportes en venezuela")
+    for c_slug in COUNTRY_PAGES:
+        urls.append(
+            f'  <url>\n    <loc>{APP_URL}/donde-ver-en-{c_slug}</loc>\n'
+            f'    <lastmod>{today_str}</lastmod>\n'
+            f'    <changefreq>monthly</changefreq>\n'
+            f'    <priority>0.8</priority>\n  </url>'
+        )
+
     # Streaming comparator
     urls.append(
         f'  <url>\n    <loc>{APP_URL}/streaming</loc>\n'
@@ -1578,6 +1588,145 @@ async def channel_page(request: Request, channel_slug: str):
     )
 
 
+# ── Country Pages (SEO: "donde ver deportes en venezuela") ──
+
+COUNTRY_PAGES = {
+    "mexico": {
+        "name": "México",
+        "flag": "🇲🇽",
+        "desc": "Guía completa de dónde ver deportes en vivo en México. Canales de TV abierta, cable y streaming disponibles.",
+        "channels": [
+            {"name": "Canal 5 / Las Estrellas", "type": "TV Abierta (gratis)", "sports": "Liga MX selectos, Selección Mexicana"},
+            {"name": "Azteca 7", "type": "TV Abierta (gratis)", "sports": "Liga MX, Selección Mexicana"},
+            {"name": "TUDN", "type": "Cable", "sports": "Liga MX, Champions, Selección, Liga de Naciones"},
+            {"name": "ESPN MX", "type": "Cable", "sports": "Premier League, La Liga, Serie A, NBA, NFL"},
+            {"name": "Fox Sports MX", "type": "Cable", "sports": "Liga MX, MLB, NFL, UFC"},
+            {"name": "Claro Sports", "type": "Cable", "sports": "Eventos selectos, Olímpicos"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX, MLS, Champions, Selección"},
+            {"name": "ESPN+ (con VPN)", "type": "Streaming", "sports": "La Liga, Bundesliga, UFC, MLB"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
+            {"name": "NFL Game Pass", "type": "Streaming", "sports": "Todos los juegos de NFL"},
+        ],
+        "tip": "La mayoría de partidos de Liga MX se transmiten por TUDN (cable) y ViX (streaming). Los partidos de la Selección Mexicana se pasan por TV abierta en Canal 5 o Azteca 7.",
+    },
+    "venezuela": {
+        "name": "Venezuela",
+        "flag": "🇻🇪",
+        "desc": "Dónde ver deportes en vivo desde Venezuela. Canales disponibles, streaming y opciones gratuitas para béisbol, fútbol y más.",
+        "channels": [
+            {"name": "ESPN Caribe/Latam", "type": "Cable", "sports": "MLB, NBA, NFL, Premier League, La Liga"},
+            {"name": "DirecTV Sports", "type": "Cable/Satélite", "sports": "Liga MX, Premier League, Champions"},
+            {"name": "IVC (Inter)", "type": "Cable", "sports": "Béisbol LVBP, eventos locales"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
+            {"name": "Star+/Disney+", "type": "Streaming", "sports": "ESPN content, La Liga, Serie A"},
+            {"name": "Paramount+", "type": "Streaming", "sports": "Champions League, Europa League"},
+        ],
+        "tip": "Para MLB, la opción más completa es MLB.TV. Los juegos de la LVBP (liga venezolana) se transmiten por IVC y canales locales. Para fútbol europeo, Disney+ (ex Star+) tiene la mayoría de ligas.",
+    },
+    "republica-dominicana": {
+        "name": "República Dominicana",
+        "flag": "🇩🇴",
+        "desc": "Guía de dónde ver deportes en vivo en República Dominicana. Canales de TV y streaming para béisbol, fútbol y más.",
+        "channels": [
+            {"name": "ESPN Caribe", "type": "Cable", "sports": "MLB, NBA, NFL, fútbol europeo"},
+            {"name": "CDN Deportes", "type": "Cable/TV", "sports": "LIDOM (béisbol dominicano)"},
+            {"name": "Sky/Claro TV", "type": "Cable/Satélite", "sports": "Liga MX, Champions, NBA"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
+            {"name": "Star+/Disney+", "type": "Streaming", "sports": "ESPN content, La Liga, Serie A"},
+            {"name": "Paramount+", "type": "Streaming", "sports": "Champions League, Europa League"},
+        ],
+        "tip": "La LIDOM se transmite por CDN y canales locales. Para MLB, la mejor opción es MLB.TV que incluye todos los juegos. Para fútbol europeo y NBA, Disney+ (ESPN) tiene la cobertura más amplia.",
+    },
+    "panama": {
+        "name": "Panamá",
+        "flag": "🇵🇦",
+        "desc": "Dónde ver deportes en vivo en Panamá. TV, cable y streaming disponibles para béisbol, fútbol y más.",
+        "channels": [
+            {"name": "ESPN Centroamérica", "type": "Cable", "sports": "MLB, NBA, NFL, fútbol europeo"},
+            {"name": "RPC / TVN", "type": "TV Abierta", "sports": "Selección de Panamá, eventos locales"},
+            {"name": "Cable & Wireless", "type": "Cable", "sports": "Liga MX, Champions, NBA"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
+            {"name": "Star+/Disney+", "type": "Streaming", "sports": "ESPN content, LaLiga, Serie A"},
+            {"name": "Paramount+", "type": "Streaming", "sports": "Champions League, Europa League"},
+        ],
+        "tip": "El béisbol profesional panameño (Probeis) se transmite por canales locales. Para MLB y deportes internacionales, ESPN Centroamérica y MLB.TV son las mejores opciones.",
+    },
+    "estados-unidos": {
+        "name": "Estados Unidos",
+        "flag": "🇺🇸",
+        "desc": "Guía completa de dónde ver deportes en vivo en Estados Unidos en español. Canales hispanos, streaming y opciones para ver Liga MX, MLB y más.",
+        "channels": [
+            {"name": "Univision / UniMás", "type": "TV Abierta (gratis)", "sports": "Liga MX, Selección Mexicana, MLS"},
+            {"name": "Telemundo", "type": "TV Abierta (gratis)", "sports": "Premier League, Copa del Mundo"},
+            {"name": "TUDN", "type": "Cable", "sports": "Liga MX, Champions, Liga de Naciones"},
+            {"name": "ESPN / ESPN2", "type": "Cable", "sports": "NFL, NBA, MLB, MLS, fútbol europeo"},
+            {"name": "FOX / FS1", "type": "Cable/TV", "sports": "MLB, NFL, NASCAR, UFC"},
+            {"name": "NBC / Peacock", "type": "Cable/Streaming", "sports": "Premier League, SNF, NHL"},
+            {"name": "ESPN+", "type": "Streaming", "sports": "La Liga, Bundesliga, UFC, MLB extra"},
+            {"name": "Paramount+", "type": "Streaming", "sports": "Champions, Europa League, NWSL"},
+            {"name": "Prime Video", "type": "Streaming", "sports": "Thursday Night Football (NFL)"},
+            {"name": "Apple TV+ / MLS Season Pass", "type": "Streaming", "sports": "MLS (todos los partidos)"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
+            {"name": "NFL+", "type": "Streaming", "sports": "Juegos de NFL en vivo (móvil)"},
+        ],
+        "tip": "Para ver Liga MX en EE.UU., las opciones principales son TUDN (cable), Univision (TV abierta gratis) y ViX (streaming). Para NFL, la mayoría de juegos están en FOX, CBS, NBC y ESPN, con Thursday Night Football exclusivo en Amazon Prime Video.",
+    },
+    "colombia": {
+        "name": "Colombia",
+        "flag": "🇨🇴",
+        "desc": "Dónde ver deportes en vivo en Colombia. Canales de TV, cable y streaming para fútbol, béisbol y más deportes.",
+        "channels": [
+            {"name": "Win Sports", "type": "Streaming/Cable", "sports": "Liga BetPlay (fútbol colombiano)"},
+            {"name": "ESPN Latam", "type": "Cable", "sports": "Premier League, La Liga, NBA, NFL"},
+            {"name": "DirecTV Sports", "type": "Cable/Satélite", "sports": "Liga MX, Champions, fútbol sudamericano"},
+            {"name": "Star+/Disney+", "type": "Streaming", "sports": "ESPN content, La Liga, Serie A"},
+            {"name": "Paramount+", "type": "Streaming", "sports": "Champions League, Europa League"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
+        ],
+        "tip": "El fútbol colombiano (Liga BetPlay) se ve exclusivamente en Win Sports. Para fútbol europeo y deportes americanos, Disney+ (ESPN) tiene la cobertura más amplia.",
+    },
+    "argentina": {
+        "name": "Argentina",
+        "flag": "🇦🇷",
+        "desc": "Guía de dónde ver deportes en vivo en Argentina. Canales, streaming y opciones para fútbol, NBA, NFL y más.",
+        "channels": [
+            {"name": "ESPN Latam", "type": "Cable", "sports": "Premier League, La Liga, NBA, NFL, fútbol argentino"},
+            {"name": "TNT Sports Argentina", "type": "Cable", "sports": "Liga Profesional, Copa Argentina"},
+            {"name": "TV Pública", "type": "TV Abierta (gratis)", "sports": "Selección Argentina, eventos selectos"},
+            {"name": "Star+/Disney+", "type": "Streaming", "sports": "ESPN content, La Liga, Serie A, fútbol argentino"},
+            {"name": "Paramount+", "type": "Streaming", "sports": "Champions League, Europa League"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
+        ],
+        "tip": "El fútbol argentino (Liga Profesional) se transmite por TNT Sports y Disney+ (Star+). Para fútbol europeo, Disney+ tiene la mayoría de ligas. La Selección Argentina se pasa por TV Pública cuando juega de local.",
+    },
+}
+
+
+@app.get("/donde-ver-en-{country_slug}", response_class=HTMLResponse)
+async def country_page(request: Request, country_slug: str):
+    """Country-specific guide — where to watch sports from each country."""
+    country = COUNTRY_PAGES.get(country_slug)
+    if not country:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404,
+            context={"message": "País no encontrado."}
+        )
+
+    all_games = await get_todays_games()
+    today = datetime.now(TZ_MX)
+
+    return templates.TemplateResponse(
+        request, "country.html",
+        context={
+            "country": country,
+            "country_slug": country_slug,
+            "games": all_games,
+            "total_games": len(all_games),
+            "today_display": today.strftime("%A %d de %B, %Y"),
+        },
+    )
+
+
 # ── Matchup Pages (SEO: "donde ver america vs chivas") ──
 
 def _slugify_team(name: str) -> str:
@@ -1700,6 +1849,17 @@ POPULAR_TEAMS = {
     # MLS
     "lafc": {"name": "Los Angeles FC", "sport": "futbol", "league": "MLS", "aka": "LAFC, Los Angeles FC"},
     "la-galaxy": {"name": "LA Galaxy", "sport": "futbol", "league": "MLS", "aka": "Galaxy, LA Galaxy"},
+    "inter-miami": {"name": "Inter Miami CF", "sport": "futbol", "league": "MLS", "aka": "Inter Miami, Miami CF, Messi Miami"},
+    "austin-fc": {"name": "Austin FC", "sport": "futbol", "league": "MLS", "aka": "Austin FC, Austin"},
+    "houston-dynamo": {"name": "Houston Dynamo FC", "sport": "futbol", "league": "MLS", "aka": "Dynamo, Houston Dynamo"},
+    "fc-dallas": {"name": "FC Dallas", "sport": "futbol", "league": "MLS", "aka": "FC Dallas, Dallas FC"},
+    # Europa extra
+    "atletico-madrid": {"name": "Atlético de Madrid", "sport": "futbol", "league": "La Liga", "aka": "Atlético, Atleti, Colchoneros"},
+    "ac-milan": {"name": "AC Milan", "sport": "futbol", "league": "Serie A", "aka": "Milan, AC Milan, Rossoneri"},
+    "napoli": {"name": "SSC Napoli", "sport": "futbol", "league": "Serie A", "aka": "Napoli, Nápoles"},
+    "borussia-dortmund": {"name": "Borussia Dortmund", "sport": "futbol", "league": "Bundesliga", "aka": "Dortmund, BVB, Borussia"},
+    "tottenham": {"name": "Tottenham Hotspur", "sport": "futbol", "league": "Premier League", "aka": "Tottenham, Spurs, Hotspur"},
+    "aston-villa": {"name": "Aston Villa", "sport": "futbol", "league": "Premier League", "aka": "Aston Villa, Villa, Villans"},
     # NBA
     "lakers": {"name": "Los Angeles Lakers", "sport": "basketball", "league": "NBA", "aka": "Lakers, LA Lakers"},
     "celtics": {"name": "Boston Celtics", "sport": "basketball", "league": "NBA", "aka": "Celtics, Boston"},
@@ -1709,6 +1869,14 @@ POPULAR_TEAMS = {
     "knicks": {"name": "New York Knicks", "sport": "basketball", "league": "NBA", "aka": "Knicks, NY Knicks"},
     "nuggets": {"name": "Denver Nuggets", "sport": "basketball", "league": "NBA", "aka": "Nuggets, Denver"},
     "bucks": {"name": "Milwaukee Bucks", "sport": "basketball", "league": "NBA", "aka": "Bucks, Milwaukee"},
+    "mavericks": {"name": "Dallas Mavericks", "sport": "basketball", "league": "NBA", "aka": "Mavericks, Mavs, Dallas Mavs"},
+    "clippers": {"name": "LA Clippers", "sport": "basketball", "league": "NBA", "aka": "Clippers, LA Clippers"},
+    "suns": {"name": "Phoenix Suns", "sport": "basketball", "league": "NBA", "aka": "Suns, Phoenix"},
+    "spurs-nba": {"name": "San Antonio Spurs", "sport": "basketball", "league": "NBA", "aka": "Spurs SA, San Antonio, Wemby"},
+    "76ers": {"name": "Philadelphia 76ers", "sport": "basketball", "league": "NBA", "aka": "76ers, Sixers, Philadelphia"},
+    "thunder": {"name": "Oklahoma City Thunder", "sport": "basketball", "league": "NBA", "aka": "Thunder, OKC"},
+    "timberwolves": {"name": "Minnesota Timberwolves", "sport": "basketball", "league": "NBA", "aka": "Timberwolves, Wolves, Minnesota"},
+    "cavaliers": {"name": "Cleveland Cavaliers", "sport": "basketball", "league": "NBA", "aka": "Cavaliers, Cavs, Cleveland"},
     # NFL
     "cowboys": {"name": "Dallas Cowboys", "sport": "futbol americano", "league": "NFL", "aka": "Cowboys, Vaqueros, Dallas"},
     "chiefs": {"name": "Kansas City Chiefs", "sport": "futbol americano", "league": "NFL", "aka": "Chiefs, Kansas City"},
@@ -1716,6 +1884,31 @@ POPULAR_TEAMS = {
     "eagles": {"name": "Philadelphia Eagles", "sport": "futbol americano", "league": "NFL", "aka": "Eagles, Philadelphia, Águilas"},
     "packers": {"name": "Green Bay Packers", "sport": "futbol americano", "league": "NFL", "aka": "Packers, Green Bay"},
     "steelers": {"name": "Pittsburgh Steelers", "sport": "futbol americano", "league": "NFL", "aka": "Steelers, Pittsburgh, Acereros"},
+    "raiders": {"name": "Las Vegas Raiders", "sport": "futbol americano", "league": "NFL", "aka": "Raiders, Las Vegas, Oakland Raiders"},
+    "dolphins": {"name": "Miami Dolphins", "sport": "futbol americano", "league": "NFL", "aka": "Dolphins, Delfines, Miami"},
+    "patriots": {"name": "New England Patriots", "sport": "futbol americano", "league": "NFL", "aka": "Patriots, Patriotas, New England"},
+    "texans": {"name": "Houston Texans", "sport": "futbol americano", "league": "NFL", "aka": "Texans, Houston, Tejanos"},
+    "ravens": {"name": "Baltimore Ravens", "sport": "futbol americano", "league": "NFL", "aka": "Ravens, Cuervos, Baltimore"},
+    "bears": {"name": "Chicago Bears", "sport": "futbol americano", "league": "NFL", "aka": "Bears, Osos, Chicago Bears"},
+    "rams": {"name": "Los Angeles Rams", "sport": "futbol americano", "league": "NFL", "aka": "Rams, LA Rams, Carneros"},
+    "chargers": {"name": "Los Angeles Chargers", "sport": "futbol americano", "league": "NFL", "aka": "Chargers, LA Chargers, Cargadores"},
+    "broncos": {"name": "Denver Broncos", "sport": "futbol americano", "league": "NFL", "aka": "Broncos, Denver"},
+    "bills": {"name": "Buffalo Bills", "sport": "futbol americano", "league": "NFL", "aka": "Bills, Buffalo"},
+    "lions": {"name": "Detroit Lions", "sport": "futbol americano", "league": "NFL", "aka": "Lions, Leones, Detroit"},
+    "vikings": {"name": "Minnesota Vikings", "sport": "futbol americano", "league": "NFL", "aka": "Vikings, Vikingos, Minnesota"},
+    "bengals": {"name": "Cincinnati Bengals", "sport": "futbol americano", "league": "NFL", "aka": "Bengals, Bengalíes, Cincinnati"},
+    "giants-nfl": {"name": "New York Giants", "sport": "futbol americano", "league": "NFL", "aka": "Giants NY, Gigantes, NY Giants"},
+    "jets": {"name": "New York Jets", "sport": "futbol americano", "league": "NFL", "aka": "Jets, NY Jets"},
+    "saints": {"name": "New Orleans Saints", "sport": "futbol americano", "league": "NFL", "aka": "Saints, Santos, New Orleans"},
+    "seahawks": {"name": "Seattle Seahawks", "sport": "futbol americano", "league": "NFL", "aka": "Seahawks, Seattle"},
+    "commanders": {"name": "Washington Commanders", "sport": "futbol americano", "league": "NFL", "aka": "Commanders, Washington"},
+    "cardinals-nfl": {"name": "Arizona Cardinals", "sport": "futbol americano", "league": "NFL", "aka": "Cardinals AZ, Cardenales, Arizona Cardinals"},
+    "buccaneers": {"name": "Tampa Bay Buccaneers", "sport": "futbol americano", "league": "NFL", "aka": "Buccaneers, Bucs, Tampa Bay"},
+    "falcons": {"name": "Atlanta Falcons", "sport": "futbol americano", "league": "NFL", "aka": "Falcons, Halcones, Atlanta"},
+    "panthers-nfl": {"name": "Carolina Panthers", "sport": "futbol americano", "league": "NFL", "aka": "Panthers, Panteras, Carolina"},
+    "colts": {"name": "Indianapolis Colts", "sport": "futbol americano", "league": "NFL", "aka": "Colts, Potros, Indianapolis"},
+    "jaguars": {"name": "Jacksonville Jaguars", "sport": "futbol americano", "league": "NFL", "aka": "Jaguars, Jaguares, Jacksonville"},
+    "titans": {"name": "Tennessee Titans", "sport": "futbol americano", "league": "NFL", "aka": "Titans, Titanes, Tennessee"},
     # MLB
     "dodgers": {"name": "Los Angeles Dodgers", "sport": "beisbol", "league": "MLB", "aka": "Dodgers, LA Dodgers"},
     "yankees": {"name": "New York Yankees", "sport": "beisbol", "league": "MLB", "aka": "Yankees, Yanquis, NY Yankees"},
@@ -1749,6 +1942,16 @@ POPULAR_TEAMS = {
     "white-sox": {"name": "Chicago White Sox", "sport": "beisbol", "league": "MLB", "aka": "White Sox, Medias Blancas, Chicago White Sox"},
     # NHL
     "bruins": {"name": "Boston Bruins", "sport": "hockey", "league": "NHL", "aka": "Bruins, Boston"},
+    "golden-knights": {"name": "Vegas Golden Knights", "sport": "hockey", "league": "NHL", "aka": "Golden Knights, Vegas, VGK"},
+    "avalanche": {"name": "Colorado Avalanche", "sport": "hockey", "league": "NHL", "aka": "Avalanche, Avs, Colorado"},
+    "panthers-nhl": {"name": "Florida Panthers", "sport": "hockey", "league": "NHL", "aka": "Panthers Florida, Florida"},
+    "rangers-nhl": {"name": "New York Rangers", "sport": "hockey", "league": "NHL", "aka": "Rangers NY, NY Rangers"},
+    "maple-leafs": {"name": "Toronto Maple Leafs", "sport": "hockey", "league": "NHL", "aka": "Maple Leafs, Toronto, Leafs"},
+    "oilers": {"name": "Edmonton Oilers", "sport": "hockey", "league": "NHL", "aka": "Oilers, Edmonton"},
+    "stars": {"name": "Dallas Stars", "sport": "hockey", "league": "NHL", "aka": "Stars, Dallas Stars, Estrellas"},
+    "blackhawks": {"name": "Chicago Blackhawks", "sport": "hockey", "league": "NHL", "aka": "Blackhawks, Hawks, Chicago"},
+    "penguins": {"name": "Pittsburgh Penguins", "sport": "hockey", "league": "NHL", "aka": "Penguins, Pinguinos, Pittsburgh"},
+    "capitals": {"name": "Washington Capitals", "sport": "hockey", "league": "NHL", "aka": "Capitals, Caps, Washington"},
     # UFC
     "ufc": {"name": "UFC", "sport": "MMA", "league": "UFC", "aka": "UFC, Ultimate Fighting"},
 }
