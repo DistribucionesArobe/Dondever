@@ -264,6 +264,43 @@
                         <td style="text-align:right;font-weight:700;color:{% if right_stats.streak|string|first == 'W' %}#059669{% else %}#ef4444{% endif %};">{{ right_stats.streak }}</td>
                     </tr>
                     {% endif %}
+                    {# Soccer-specific: points, rank, goal diff #}
+                    {% if left_stats.points and right_stats.points %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;color:{% if left_stats.points|int > right_stats.points|int %}#059669{% else %}#1a1a2e{% endif %};">{{ left_stats.points }} pts</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Puntos</td>
+                        <td style="text-align:right;font-weight:700;color:{% if right_stats.points|int > left_stats.points|int %}#059669{% else %}#1a1a2e{% endif %};">{{ right_stats.points }} pts</td>
+                    </tr>
+                    {% endif %}
+                    {% if left_stats.rank and right_stats.rank %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;color:{% if left_stats.rank|int < right_stats.rank|int %}#059669{% else %}#1a1a2e{% endif %};">#{{ left_stats.rank }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Posicion</td>
+                        <td style="text-align:right;font-weight:700;color:{% if right_stats.rank|int < left_stats.rank|int %}#059669{% else %}#1a1a2e{% endif %};">#{{ right_stats.rank }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if left_stats.goals_for and right_stats.goals_for %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;">{{ left_stats.goals_for }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">{% if game.sport == 'soccer' %}GF{% else %}PF{% endif %}</td>
+                        <td style="text-align:right;font-weight:700;">{{ right_stats.goals_for }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if left_stats.goals_against and right_stats.goals_against %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;">{{ left_stats.goals_against }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">{% if game.sport == 'soccer' %}GC{% else %}PC{% endif %}</td>
+                        <td style="text-align:right;font-weight:700;">{{ right_stats.goals_against }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if left_stats.goal_diff and right_stats.goal_diff %}
+                    <tr style="border-top:1px solid #f3f4f6;">
+                        <td style="padding:0.5rem 0;font-weight:700;color:{% if left_stats.goal_diff|int > 0 %}#059669{% elif left_stats.goal_diff|int < 0 %}#ef4444{% else %}#6b7280{% endif %};">{{ left_stats.goal_diff }}</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Dif.</td>
+                        <td style="text-align:right;font-weight:700;color:{% if right_stats.goal_diff|int > 0 %}#059669{% elif right_stats.goal_diff|int < 0 %}#ef4444{% else %}#6b7280{% endif %};">{{ right_stats.goal_diff }}</td>
+                    </tr>
+                    {% endif %}
+                    {# US sports + universal stats #}
                     {% if left_stats.all_stats and right_stats.all_stats %}
                         {% if left_stats.all_stats.get('avgPointsFor') and right_stats.all_stats.get('avgPointsFor') %}
                     <tr style="border-top:1px solid #f3f4f6;">
@@ -279,11 +316,11 @@
                         <td style="text-align:right;font-weight:700;">{{ right_stats.all_stats.avgPointsAgainst }}</td>
                     </tr>
                         {% endif %}
-                        {% if left_stats.all_stats.get('Home') and right_stats.all_stats.get('Road') %}
+                        {% if left_stats.all_stats.get('Home') or left_stats.all_stats.get('homeWins') %}
                     <tr style="border-top:1px solid #f3f4f6;">
-                        <td style="padding:0.5rem 0;font-weight:700;">{{ left_stats.all_stats.get('Home', '') if home_left else left_stats.all_stats.get('Road', '') }}</td>
+                        <td style="padding:0.5rem 0;font-weight:700;">{{ left_stats.all_stats.get('Home', (left_stats.all_stats.get('homeWins','0')~'-'~left_stats.all_stats.get('homeLosses','0'))) if home_left else left_stats.all_stats.get('Road', (left_stats.all_stats.get('roadWins','0')~'-'~left_stats.all_stats.get('roadLosses','0'))) }}</td>
                         <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Casa / Visit</td>
-                        <td style="text-align:right;font-weight:700;">{{ right_stats.all_stats.get('Road', '') if home_left else right_stats.all_stats.get('Home', '') }}</td>
+                        <td style="text-align:right;font-weight:700;">{{ right_stats.all_stats.get('Road', (right_stats.all_stats.get('roadWins','0')~'-'~right_stats.all_stats.get('roadLosses','0'))) if home_left else right_stats.all_stats.get('Home', (right_stats.all_stats.get('homeWins','0')~'-'~right_stats.all_stats.get('homeLosses','0'))) }}</td>
                     </tr>
                         {% endif %}
                         {% if left_stats.all_stats.get('Last Ten Games') and right_stats.all_stats.get('Last Ten Games') %}
