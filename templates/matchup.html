@@ -7,10 +7,10 @@
     {% set first_team = game.home.name if home_left else game.away.name %}
     {% set second_team = game.away.name if home_left else game.home.name %}
     <title>Donde ver {{ first_team }} vs {{ second_team }} hoy en vivo - {{ game.league_name }} | DondeVer</title>
-    <meta name="description" content="Donde ver {{ first_team }} vs {{ second_team }} en vivo hoy. {{ game.league_name }}{% if game.status.state == 'pre' %}, {{ format_mx_time(game.date) }} hora Mexico{% endif %}. Canales de TV y streaming para Mexico y USA. {% if game.broadcasts %}Transmite: {{ game.broadcasts[:3]|map(attribute='channel')|join(', ') }}{% endif %}">
+    <meta name="description" content="Donde ver {{ first_team }} vs {{ second_team }} en vivo hoy. {{ game.league_name }}{% if game.status.state == 'pre' %}, {{ format_mx_time(game.date) }} hora Mexico{% endif %}. Canales de TV y streaming para Mexico, USA y Latinoamerica. {% if game.broadcasts %}Transmite: {{ game.broadcasts[:3]|map(attribute='channel')|join(', ') }}{% endif %}">
     <!-- Open Graph -->
     <meta property="og:title" content="Donde ver {{ first_team }} vs {{ second_team }} hoy en vivo">
-    <meta property="og:description" content="{{ game.league_name }} en vivo. Canales de TV y streaming en Mexico y USA.">
+    <meta property="og:description" content="{{ game.league_name }} en vivo. Canales de TV y streaming en Mexico, USA y Latinoamerica.">
     <meta property="og:type" content="article">
     <meta property="og:url" content="{{ app_url }}/donde-ver/{{ matchup_slug }}">
     <meta property="og:site_name" content="DondeVer.app">
@@ -23,7 +23,7 @@
     <meta name="twitter:image" content="{{ app_url }}/static/og-image.png">
     <meta name="twitter:site" content="@dondeverapp">
     <meta name="twitter:title" content="Donde ver {{ first_team }} vs {{ second_team }} hoy">
-    <meta name="twitter:description" content="{{ game.league_name }} - Canales de TV y streaming en Mexico y USA">
+    <meta name="twitter:description" content="{{ game.league_name }} - Canales de TV y streaming en Mexico, USA y Latinoamerica">
     <link rel="canonical" href="{{ app_url }}/donde-ver/{{ matchup_slug }}">
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -44,7 +44,7 @@
         "@type": "SportsTeam",
         "name": "{{ game.away.name }}"
       },
-      "description": "Donde ver {{ first_team }} vs {{ second_team }} de {{ game.league_name }} en vivo en Mexico y Estados Unidos",
+      "description": "Donde ver {{ first_team }} vs {{ second_team }} de {{ game.league_name }} en vivo en Mexico, Estados Unidos y Latinoamerica",
       "url": "{{ app_url }}/donde-ver/{{ matchup_slug }}",
       {% if game.broadcasts %}"broadcastEvent": {
         "@type": "BroadcastEvent",

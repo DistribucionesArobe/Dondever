@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="-6JcmjpKcn306QaeaKG9f58SoBw6hq6_QBGUCjLxFVw" />
-    <title>Donde ver el partido hoy en vivo {{ now().strftime('%d/%m') }} - Mexico y USA | DondeVer</title>
-    <meta name="description" content="Hoy {{ total_games }} juegos en vivo. Donde ver Liga MX, NFL, NBA, MLB, Champions en Mexico y Estados Unidos. Horarios, canales TV y streaming. Actualizado.">
+    <title>Donde ver el partido hoy en vivo {{ now().strftime('%d/%m') }} - Mexico, USA y Latinoamerica | DondeVer</title>
+    <meta name="description" content="Hoy {{ total_games }} juegos en vivo. Donde ver Liga MX, NFL, NBA, MLB, Champions en Mexico, USA y Latinoamerica. Horarios, canales TV y streaming. Actualizado.">
     <meta property="og:title" content="DondeVer.app - Donde ver juegos deportivos hoy">
     <meta property="og:description" content="Guia completa de donde ver deportes en vivo. Liga MX, NFL, NBA, MLB, Champions League y mas.">
     <meta property="og:type" content="website">
@@ -20,7 +20,7 @@
     <meta name="twitter:image" content="{{ app_url }}/static/og-image.png">
     <meta name="twitter:site" content="@dondeverapp">
     <meta name="twitter:title" content="DondeVer.app - Donde ver el partido hoy">
-    <meta name="twitter:description" content="Encuentra donde ver {{ total_games }} juegos de hoy en Mexico y USA. Liga MX, NFL, NBA, MLB y mas.">
+    <meta name="twitter:description" content="Encuentra donde ver {{ total_games }} juegos de hoy en Mexico, USA y Latinoamerica. Liga MX, NFL, NBA, MLB y mas.">
     <link rel="canonical" href="{{ app_url }}">
     <link rel="icon" type="image/png" href="/static/logo.png">
     <link rel="apple-touch-icon" href="/static/logo.png">
@@ -515,7 +515,7 @@
     <div class="hero-inner">
         <img src="/static/logo-full.png" alt="DondeVer.app" class="hero-logo-img">
         <h1>Donde ver el partido <span class="accent">hoy en vivo</span>?</h1>
-        <p>Horarios, canales TV y streaming para Mexico y Estados Unidos. Liga MX, NFL, NBA, MLB, Champions y mas.</p>
+        <p>Horarios, canales TV y streaming para Mexico, USA y toda Latinoamerica. Liga MX, NFL, NBA, MLB, Champions y mas.</p>
         <!-- Date Navigation inside hero -->
         <div class="date-nav">
             <a href="/?date={{ prev_date }}" class="date-btn date-prev">&larr; Ayer</a>
@@ -767,7 +767,7 @@
 <div class="info-section">
     <div class="info-card">
         <h3>&#128250; Tu guia para ver deportes en vivo</h3>
-        <p><strong>DondeVer.app</strong> te ayuda a encontrar donde ver partidos de futbol, basketball y mas deportes en Mexico y Estados Unidos.</p>
+        <p><strong>DondeVer.app</strong> te ayuda a encontrar donde ver partidos de futbol, basketball y mas deportes en Mexico, Estados Unidos y toda Latinoamerica.</p>
         <p style="margin-top:0.4rem">Cubrimos Liga MX, NBA, NFL, MLB, MLS, Premier League, La Liga, Champions League y mas.</p>
         <div class="info-grid">
             <div class="info-item">
@@ -782,6 +782,13 @@
                 <div>
                     <div class="info-label">Estados Unidos</div>
                     <div class="info-sub">Cable y Hora del Este</div>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-dot" style="background:#f59e0b;"></div>
+                <div>
+                    <div class="info-label">Latinoamerica</div>
+                    <div class="info-sub">Venezuela, RD, Panama y mas</div>
                 </div>
             </div>
         </div>
@@ -824,7 +831,7 @@
 
 <div style="max-width:900px;margin:1.5rem auto 0;padding:0 1rem;">
     <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;">
-        <h3 style="font-size:0.85rem;font-weight:700;color:#059669;margin-bottom:0.75rem;">Guias: Como ver en Mexico y USA</h3>
+        <h3 style="font-size:0.85rem;font-weight:700;color:#059669;margin-bottom:0.75rem;">Guias: Como ver en Mexico, USA y Latinoamerica</h3>
         <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
             <a href="/guia/donde-ver-liga-mx" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Liga MX</a>
             <a href="/guia/como-ver-premier-league-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Premier League</a>
@@ -841,6 +848,9 @@
             <a href="/guia/como-ver-mls-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">MLS</a>
             <a href="/guia/como-ver-ufc-en-mexico" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">UFC</a>
             <a href="/guia/como-ver-liga-mx-femenil" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#f8f9fb;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #e5e7eb;">Liga MX Femenil</a>
+            <a href="/guia/donde-ver-mlb-en-venezuela" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#fff7ed;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #fed7aa;">MLB Venezuela</a>
+            <a href="/guia/donde-ver-mlb-en-republica-dominicana" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#fff7ed;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #fed7aa;">MLB Rep. Dominicana</a>
+            <a href="/guia/donde-ver-mlb-en-panama" style="font-size:0.72rem;color:#374151;text-decoration:none;background:#fff7ed;padding:0.3rem 0.6rem;border-radius:6px;border:1px solid #fed7aa;">MLB Panama</a>
         </div>
     </div>
 </div>
