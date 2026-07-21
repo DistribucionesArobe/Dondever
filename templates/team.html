@@ -110,6 +110,21 @@
         }
         .related-grid a:hover { border-color:#10b981; color:#059669; }
 
+        .shop-section { margin:1.25rem 0; }
+        .shop-section h2 { font-size:1rem; font-weight:700; margin-bottom:0.6rem; }
+        .shop-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:0.5rem; }
+        .shop-card {
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            background:white; border:1px solid #e5e7eb; border-radius:10px;
+            padding:0.9rem 0.6rem; text-decoration:none; color:#1a1a2e; transition:all 0.15s;
+            text-align:center;
+        }
+        .shop-card:hover { border-color:#ff9900; box-shadow:0 2px 8px rgba(255,153,0,0.12); }
+        .shop-icon { font-size:1.5rem; margin-bottom:0.35rem; }
+        .shop-label { font-size:0.78rem; font-weight:700; line-height:1.3; }
+        .shop-sub { font-size:0.65rem; color:#9ca3af; margin-top:0.15rem; }
+        .shop-badge { display:inline-block; font-size:0.6rem; color:#ff9900; font-weight:700; margin-top:0.3rem; }
+
         footer { text-align:center; padding:1.5rem; font-size:0.7rem; color:#9ca3af; }
         footer a { color:#10b981; text-decoration:none; }
 
@@ -452,6 +467,143 @@
             <div style="font-size:0.75rem;opacity:0.8;">1 hora antes del partido + notificacion de goles</div>
         </div>
         <a href="https://wa.me/15715463202?text=alerta%20{{ team_slug }}">Activar alertas</a>
+    </div>
+
+    {# ══ TIENDA DEL EQUIPO (Amazon Affiliate) ══ #}
+    {% set amz_tag = "dondever2000-20" %}
+    {% set amz_team = team_name|replace("á","a")|replace("é","e")|replace("í","i")|replace("ó","o")|replace("ú","u")|replace("ñ","n")|replace("ü","u") %}
+    <div class="shop-section">
+        <h2>Tienda de {{ team_name }}</h2>
+        <div class="shop-grid">
+            {% if team_sport == 'futbol' %}
+            <a href="https://www.amazon.com/s?k=jersey+{{ amz_team|urlencode }}+oficial&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey">
+                <span class="shop-icon">&#128085;</span>
+                <span class="shop-label">Jersey {{ team_name }}</span>
+                <span class="shop-sub">Temporada actual</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=playera+{{ amz_team|urlencode }}&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-tshirt">
+                <span class="shop-icon">&#128084;</span>
+                <span class="shop-label">Playeras</span>
+                <span class="shop-sub">Casual y entrenamiento</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=gorra+{{ amz_team|urlencode }}&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-cap">
+                <span class="shop-icon">&#129506;</span>
+                <span class="shop-label">Gorras</span>
+                <span class="shop-sub">New Era y mas</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=balon+{{ amz_team|urlencode }}&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-ball">
+                <span class="shop-icon">&#9917;</span>
+                <span class="shop-label">Balones</span>
+                <span class="shop-sub">Oficial y replica</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            {% elif team_sport == 'beisbol' %}
+            <a href="https://www.amazon.com/s?k=gorra+{{ amz_team|urlencode }}+new+era&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-cap">
+                <span class="shop-icon">&#129506;</span>
+                <span class="shop-label">Gorras {{ team_name }}</span>
+                <span class="shop-sub">New Era 59FIFTY</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=jersey+{{ amz_team|urlencode }}+mlb&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey">
+                <span class="shop-icon">&#128085;</span>
+                <span class="shop-label">Jersey</span>
+                <span class="shop-sub">Replica y autentico</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=guante+beisbol+{{ amz_team|urlencode }}&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-glove">
+                <span class="shop-icon">&#129351;</span>
+                <span class="shop-label">Guantes</span>
+                <span class="shop-sub">Rawlings, Wilson y mas</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=playera+{{ amz_team|urlencode }}+mlb&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-tshirt">
+                <span class="shop-icon">&#128084;</span>
+                <span class="shop-label">Playeras</span>
+                <span class="shop-sub">Casual y fan</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            {% elif team_sport == 'basketball' %}
+            <a href="https://www.amazon.com/s?k=jersey+{{ amz_team|urlencode }}+nba&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey">
+                <span class="shop-icon">&#128085;</span>
+                <span class="shop-label">Jersey {{ team_name }}</span>
+                <span class="shop-sub">Swingman y replica</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=gorra+{{ amz_team|urlencode }}+nba&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-cap">
+                <span class="shop-icon">&#129506;</span>
+                <span class="shop-label">Gorras</span>
+                <span class="shop-sub">New Era y Mitchell</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=balon+basquetbol+{{ amz_team|urlencode }}&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-ball">
+                <span class="shop-icon">&#127936;</span>
+                <span class="shop-label">Balones</span>
+                <span class="shop-sub">Spalding y Wilson</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=sudadera+{{ amz_team|urlencode }}+nba&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-hoodie">
+                <span class="shop-icon">&#129509;</span>
+                <span class="shop-label">Sudaderas</span>
+                <span class="shop-sub">Hoodie oficial</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            {% elif team_sport == 'futbol americano' %}
+            <a href="https://www.amazon.com/s?k=jersey+{{ amz_team|urlencode }}+nfl&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey">
+                <span class="shop-icon">&#128085;</span>
+                <span class="shop-label">Jersey {{ team_name }}</span>
+                <span class="shop-sub">Nike Game y Limited</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=gorra+{{ amz_team|urlencode }}+nfl+new+era&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-cap">
+                <span class="shop-icon">&#129506;</span>
+                <span class="shop-label">Gorras</span>
+                <span class="shop-sub">New Era y 47 Brand</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=balon+futbol+americano+{{ amz_team|urlencode }}&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-ball">
+                <span class="shop-icon">&#127944;</span>
+                <span class="shop-label">Balones</span>
+                <span class="shop-sub">Wilson oficial NFL</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=sudadera+{{ amz_team|urlencode }}+nfl&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-hoodie">
+                <span class="shop-icon">&#129509;</span>
+                <span class="shop-label">Sudaderas</span>
+                <span class="shop-sub">Nike y Fanatics</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            {% elif team_sport == 'hockey' %}
+            <a href="https://www.amazon.com/s?k=jersey+{{ amz_team|urlencode }}+nhl&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey">
+                <span class="shop-icon">&#128085;</span>
+                <span class="shop-label">Jersey {{ team_name }}</span>
+                <span class="shop-sub">Adidas Authentic</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=gorra+{{ amz_team|urlencode }}+nhl&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-cap">
+                <span class="shop-icon">&#129506;</span>
+                <span class="shop-label">Gorras</span>
+                <span class="shop-sub">Fanatics y 47</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            <a href="https://www.amazon.com/s?k=puck+{{ amz_team|urlencode }}+nhl&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-puck">
+                <span class="shop-icon">&#127954;</span>
+                <span class="shop-label">Pucks</span>
+                <span class="shop-sub">Oficial y coleccion</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            {% else %}
+            <a href="https://www.amazon.com/s?k={{ amz_team|urlencode }}+oficial&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-general">
+                <span class="shop-icon">&#127941;</span>
+                <span class="shop-label">Productos {{ team_name }}</span>
+                <span class="shop-sub">Oficial y fan</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span>
+            </a>
+            {% endif %}
+        </div>
+        <div style="font-size:0.6rem;color:#9ca3af;margin-top:0.5rem;text-align:right;">Publicidad &middot; Amazon Associates</div>
     </div>
 
     {# ══ RESULTADOS RECIENTES ══ #}
