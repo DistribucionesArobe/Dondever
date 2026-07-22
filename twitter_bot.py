@@ -455,9 +455,9 @@ from collections import deque
 import time as _time
 
 _tweet_timestamps: deque = deque()  # stores unix timestamps of recent tweets
-MAX_TWEETS_PER_HOUR = 5  # max 5 por hora para evitar ban
-MAX_TWEETS_PER_DAY = 20  # limite estricto diario
-MIN_SECONDS_BETWEEN_TWEETS = 300  # 5 min minimo entre tweets
+MAX_TWEETS_PER_HOUR = 2   # max 2 por hora — conservador anti-ban
+MAX_TWEETS_PER_DAY = 5    # max 5 al dia — evita shadowban
+MIN_SECONDS_BETWEEN_TWEETS = 1800  # 30 min minimo entre tweets
 
 
 def _can_post_now() -> tuple[bool, str]:
@@ -792,10 +792,11 @@ def _post_result_quote(game_id: str, game: dict):
         logger.warning(f"Result quote-tweet failed: {e}")
 
 
-async def post_game_tweets(minutes_before: int = 60):
+async def post_game_tweets(minutes_before: int = 60, max_tweets: int = 8):
     """
     Check for games starting soon and post tweets for them.
-    Solo ligas relevantes para audiencia MX. Max ~8 pre-game tweets/dia.
+    Solo ligas relevantes para audiencia MX.
+    max_tweets: cuántos tweets postear como máximo en esta corrida.
     """
     # Solo tuitear pre-game de ligas que importan
     pregame_leagues = {
@@ -848,6 +849,9 @@ async def post_game_tweets(minutes_before: int = 60):
                 })
                 # Reply thread: pregunta de engagement
                 _post_engagement_reply(result["tweet_id"], game)
+                # Respetar max_tweets
+                if len(posted) >= max_tweets:
+                    break
 
     return posted
 
@@ -1289,25 +1293,21 @@ def setup_twitter_scheduler(scheduler):
     """
     Add Twitter bot jobs to APScheduler (AsyncIOScheduler).
     Call this from server.py on startup.
+
+    MODO CONSERVADOR (anti-ban):
+    - Max 3-4 tweets/dia
+    - Sin monitor en vivo (genera demasiados tweets)
+    - Sin promos agresivas
+    - Gaps largos entre posts
     """
-    from apscheduler.triggers.interval import IntervalTrigger
     from apscheduler.triggers.cron import CronTrigger
 
     if not twitter_credentials_valid():
         logger.warning("Twitter credentials incomplete — scheduler NOT started")
         return
 
-    # 1) Pre-game tweets cada 20 min — solo juegos en próxima hora, con dedup
-    scheduler.add_job(
-        post_game_tweets,
-        IntervalTrigger(minutes=20),
-        id="twitter_game_posts",
-        name="Post tweets for upcoming games",
-        replace_existing=True,
-        kwargs={"minutes_before": 60},
-    )
-
-    # 2) Daily summary at 8 AM MX time (14:00 UTC)
+    # 1) Daily summary at 9 AM MX time (15:00 UTC)
+    #    Resumen de los juegos del dia — 1 tweet
     async def post_daily():
         games = await get_todays_games()
         if games:
@@ -1316,55 +1316,37 @@ def setup_twitter_scheduler(scheduler):
 
     scheduler.add_job(
         post_daily,
-        CronTrigger(hour=14, minute=0),
+        CronTrigger(hour=15, minute=0),
         id="twitter_daily_summary",
-        name="Daily game summary tweet",
+        name="Daily game summary tweet (9AM MX)",
         replace_existing=True,
     )
 
-    # 3) Pick del dia at 10 AM MX time (16:00 UTC)
+    # 2) Pick del dia at 12 PM MX time (18:00 UTC)
+    #    El partido más importante del día — 1 tweet
     scheduler.add_job(
         post_pick_del_dia,
-        CronTrigger(hour=16, minute=0),
+        CronTrigger(hour=18, minute=0),
         id="twitter_pick_del_dia",
-        name="Pick del dia tweet",
+        name="Pick del dia tweet (12PM MX)",
         replace_existing=True,
     )
 
-    # 4) Encuesta diaria a las 9 AM MX (15:00 UTC)
+    # 3) Pre-game tweet at 5 PM MX (23:00 UTC)
+    #    Preview del partidazo de la noche — 1 tweet
     scheduler.add_job(
-        post_daily_poll,
-        CronTrigger(hour=15, minute=0),
-        id="twitter_daily_poll",
-        name="Encuesta diaria (quién gana)",
+        post_game_tweets,
+        CronTrigger(hour=23, minute=0),
+        id="twitter_evening_preview",
+        name="Evening game preview (5PM MX)",
         replace_existing=True,
+        kwargs={"minutes_before": 180, "max_tweets": 1},
     )
 
-    # 5) Promo WhatsApp — 1 vez al día, 11 AM MX (17:00 UTC)
-    scheduler.add_job(
-        post_promo_tweet,
-        CronTrigger(hour=17, minute=0),
-        id="twitter_promo",
-        name="Promo WhatsApp (diaria)",
-        replace_existing=True,
-    )
+    # DESACTIVADOS para evitar ban:
+    # - monitor_live_games (generaba tweets cada 5 min)
+    # - post_promo_tweet (spam de WhatsApp)
+    # - maybe_post_thread (contenido excesivo)
+    # - post_daily_poll (se puede reactivar cuando la cuenta crezca)
 
-    # 6) Live game monitor — cada 5 min (solo goles soccer + inicio/final)
-    scheduler.add_job(
-        monitor_live_games,
-        IntervalTrigger(minutes=5),
-        id="twitter_live_monitor",
-        name="Live game monitor (goals, starts, finals)",
-        replace_existing=True,
-    )
-
-    # 7) Value thread — 11:30 AM MX (17:30 UTC), ~50% de los dias
-    scheduler.add_job(
-        maybe_post_thread,
-        CronTrigger(hour=17, minute=30),
-        id="twitter_value_thread",
-        name="Value thread (3 razones para apostar)",
-        replace_existing=True,
-    )
-
-    logger.info("Twitter bot scheduler configured (max 20/dia: games, summary, pick, poll, promo, live, thread)")
+    logger.info("Twitter bot scheduler configured — MODO CONSERVADOR (3 tweets/dia: summary 9AM, pick 12PM, preview 5PM)")
