@@ -1294,11 +1294,11 @@ def setup_twitter_scheduler(scheduler):
     Add Twitter bot jobs to APScheduler (AsyncIOScheduler).
     Call this from server.py on startup.
 
-    MODO CONSERVADOR (anti-ban):
-    - Max 3-4 tweets/dia
-    - Sin monitor en vivo (genera demasiados tweets)
-    - Sin promos agresivas
-    - Gaps largos entre posts
+    MODO BALANCEADO (anti-ban pero activo):
+    - 5-7 tweets/dia — suficiente para crecer, no tanto para parecer bot
+    - Sin monitor en vivo cada 5 min (eso causó el ban anterior)
+    - Pre-game tweets solo 2x al dia en horarios fijos
+    - Contenido variado: resumen, pick, previews, encuesta
     """
     from apscheduler.triggers.cron import CronTrigger
 
@@ -1306,8 +1306,7 @@ def setup_twitter_scheduler(scheduler):
         logger.warning("Twitter credentials incomplete — scheduler NOT started")
         return
 
-    # 1) Daily summary at 9 AM MX time (15:00 UTC)
-    #    Resumen de los juegos del dia — 1 tweet
+    # 1) Daily summary at 9 AM MX (15:00 UTC) — "Juegos de hoy"
     async def post_daily():
         games = await get_todays_games()
         if games:
@@ -1318,35 +1317,52 @@ def setup_twitter_scheduler(scheduler):
         post_daily,
         CronTrigger(hour=15, minute=0),
         id="twitter_daily_summary",
-        name="Daily game summary tweet (9AM MX)",
+        name="Daily game summary (9AM MX)",
         replace_existing=True,
     )
 
-    # 2) Pick del dia at 12 PM MX time (18:00 UTC)
-    #    El partido más importante del día — 1 tweet
+    # 2) Encuesta at 10 AM MX (16:00 UTC) — engagement
+    scheduler.add_job(
+        post_daily_poll,
+        CronTrigger(hour=16, minute=0),
+        id="twitter_daily_poll",
+        name="Encuesta diaria (10AM MX)",
+        replace_existing=True,
+    )
+
+    # 3) Pick del dia at 12 PM MX (18:00 UTC) — el tweet principal
     scheduler.add_job(
         post_pick_del_dia,
         CronTrigger(hour=18, minute=0),
         id="twitter_pick_del_dia",
-        name="Pick del dia tweet (12PM MX)",
+        name="Pick del dia (12PM MX)",
         replace_existing=True,
     )
 
-    # 3) Pre-game tweet at 5 PM MX (23:00 UTC)
-    #    Preview del partidazo de la noche — 1 tweet
+    # 4) Pre-game tweets at 3 PM MX (21:00 UTC) — max 2 juegos de la tarde
     scheduler.add_job(
         post_game_tweets,
-        CronTrigger(hour=23, minute=0),
-        id="twitter_evening_preview",
-        name="Evening game preview (5PM MX)",
+        CronTrigger(hour=21, minute=0),
+        id="twitter_afternoon_games",
+        name="Afternoon game previews (3PM MX)",
         replace_existing=True,
-        kwargs={"minutes_before": 180, "max_tweets": 1},
+        kwargs={"minutes_before": 240, "max_tweets": 2},
     )
 
-    # DESACTIVADOS para evitar ban:
-    # - monitor_live_games (generaba tweets cada 5 min)
-    # - post_promo_tweet (spam de WhatsApp)
-    # - maybe_post_thread (contenido excesivo)
-    # - post_daily_poll (se puede reactivar cuando la cuenta crezca)
+    # 5) Pre-game tweets at 7 PM MX (01:00 UTC+1) — max 2 juegos de la noche
+    scheduler.add_job(
+        post_game_tweets,
+        CronTrigger(hour=1, minute=0),
+        id="twitter_evening_games",
+        name="Evening game previews (7PM MX)",
+        replace_existing=True,
+        kwargs={"minutes_before": 240, "max_tweets": 2},
+    )
 
-    logger.info("Twitter bot scheduler configured — MODO CONSERVADOR (3 tweets/dia: summary 9AM, pick 12PM, preview 5PM)")
+    # DESACTIVADOS (causaron el ban anterior):
+    # - monitor_live_games — tweeteaba cada 5 min, parecía bot
+    # - post_promo_tweet — spam de WhatsApp en cada tweet
+    # - maybe_post_thread — contenido excesivo
+    # Reactivar cuando la cuenta tenga +500 followers
+
+    logger.info("Twitter bot scheduler: MODO BALANCEADO (5-7 tweets/dia: summary 9AM, poll 10AM, pick 12PM, previews 3PM+7PM)")
