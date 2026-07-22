@@ -155,7 +155,7 @@
             <span class="game-emoji">{{ game.emoji }}</span>
             <div class="game-info">
                 <div class="game-teams">{{ game.home.name }} vs {{ game.away.name }}</div>
-                <div class="game-meta">{{ game.league_name }} &middot; {{ format_mx_time(game.date) }} hrs</div>
+                <div class="game-meta">{{ game.league_name }} &middot; <span data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</span> hrs</div>
             </div>
             <span class="game-arrow">&rarr;</span>
         </a>
@@ -215,5 +215,6 @@
         <a href="https://wa.me/15715463202?text=hoy">WhatsApp</a>
     </p>
 </footer>
+<script src="/static/timezone.js" defer></script>
 </body>
 </html>

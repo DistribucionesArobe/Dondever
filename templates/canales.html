@@ -165,7 +165,7 @@
                 {% elif game.status.state == 'post' %}
                     <div class="final-badge">FINAL</div>
                 {% else %}
-                    <div class="game-time">{{ format_mx_time(game.date) }}</div>
+                    <div class="game-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</div>
                 {% endif %}
             </div>
 
@@ -210,5 +210,6 @@
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> - Tu guia de donde ver deportes en vivo</p>
 </footer>
 
+<script src="/static/timezone.js" defer></script>
 </body>
 </html>

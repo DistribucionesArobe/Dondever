@@ -169,7 +169,7 @@
             {% elif game.status.state == 'post' %}
                 <div style="font-size:1.5rem;font-weight:700;color:#6b7280">FINAL</div>
             {% else %}
-                <div class="time">{{ format_mx_time(game.date) }}</div>
+                <div class="time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</div>
                 <div class="tz">Hora centro de Mexico | {{ format_us_time(game.date) }}</div>
             {% endif %}
         </div>
@@ -400,5 +400,6 @@
   }, true);
 })();
 </script>
+<script src="/static/timezone.js" defer></script>
 </body>
 </html>

@@ -239,7 +239,7 @@
                 {% elif game.status.state == 'post' %}
                     <div class="final-badge">FINAL</div>
                 {% else %}
-                    <div class="game-time">{{ format_mx_time(game.date) }}</div>
+                    <div class="game-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</div>
                     <div class="game-status">{{ format_us_time(game.date) }}</div>
                 {% endif %}
             </div>
@@ -366,7 +366,7 @@
                     {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
                     {{ u.home }}
                 </td>
-                <td style="text-align:center;font-weight:600;color:#f97316;">{{ format_mx_time(u.date) }}</td>
+                <td style="text-align:center;font-weight:600;color:#f97316;" data-utc="{{ u.date }}">{{ format_mx_time(u.date) }}</td>
                 <td style="text-align:right;">
                     {{ u.away }}
                     {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;margin-left:0.4rem;">{% endif %}
@@ -448,5 +448,6 @@
   }, true);
 })();
 </script>
+<script src="/static/timezone.js" defer></script>
 </body>
 </html>

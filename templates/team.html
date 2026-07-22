@@ -423,7 +423,7 @@
             {% elif game.status.state == 'post' %}
                 <div class="final-badge">FINAL</div>
             {% else %}
-                <div class="game-time">{{ format_mx_time(game.date) }}</div>
+                <div class="game-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</div>
                 <div class="countdown" data-kickoff="{{ game.date }}"></div>
             {% endif %}
             <div class="game-meta">{{ game.league_name }}</div>
@@ -607,7 +607,7 @@
                     {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
                     <span style="font-size:0.8rem;font-weight:600;">{{ u.home }}</span>
                 </div>
-                <div style="font-weight:700;color:#f97316;font-size:0.78rem;padding:0 0.5rem;">{{ format_mx_time(u.date) }}</div>
+                <div style="font-weight:700;color:#f97316;font-size:0.78rem;padding:0 0.5rem;" data-utc="{{ u.date }}">{{ format_mx_time(u.date) }}</div>
                 <div style="display:flex;align-items:center;gap:0.4rem;flex:1;justify-content:flex-end;">
                     <span style="font-size:0.8rem;font-weight:600;">{{ u.away }}</span>
                     {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
@@ -825,5 +825,6 @@ updateCountdowns(); setInterval(updateCountdowns, 60000);
   }, true);
 })();
 </script>
+<script src="/static/timezone.js" defer></script>
 </body>
 </html>

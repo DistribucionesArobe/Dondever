@@ -691,7 +691,7 @@
                 <span class="team-name">{{ top_team.name }}</span>
                 <span class="gc-right">
                     {% if state == 'pre' %}
-                        <span class="gc-time">{{ format_mx_time(game.date) }}</span>
+                        <span class="gc-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</span>
                         <div class="countdown" data-kickoff="{{ game.date }}"></div>
                     {% else %}
                         <span class="team-score">{{ top_team.score }}</span>
@@ -766,7 +766,7 @@
     <a href="/juego/{{ pick_game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="pick-card">
         <div class="pick-label">&#128293; Partido destacado</div>
         <div class="pick-teams">{{ pick_game.emoji }} {% if pick_home_left %}{{ pick_game.home.name }} vs {{ pick_game.away.name }}{% else %}{{ pick_game.away.name }} vs {{ pick_game.home.name }}{% endif %}</div>
-        <div class="pick-meta">{{ pick_game.league_name }} &middot; {{ format_mx_time(pick_game.date) }} hrs</div>
+        <div class="pick-meta">{{ pick_game.league_name }} &middot; <span data-utc="{{ pick_game.date }}">{{ format_mx_time(pick_game.date) }}</span> hrs</div>
         <div class="pick-channel">&#128250; {% if pick_game.broadcasts %}{{ pick_game.broadcasts[0].channel }}{% else %}Por confirmar{% endif %}</div>
         {% if pick_game.odds %}
         <div class="pick-odds">
@@ -1096,5 +1096,6 @@
   }, true);
 })();
 </script>
+<script src="/static/timezone.js" defer></script>
 </body>
 </html>

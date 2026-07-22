@@ -583,7 +583,7 @@
             {% elif game.status.state == 'post' %}
                 <div class="final-badge">FINAL</div>
             {% else %}
-                <div class="game-time">{{ format_mx_time(game.date) }}</div>
+                <div class="game-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</div>
                 <div class="game-status">{{ format_us_time(game.date) }}</div>
             {% endif %}
         </div>
@@ -791,5 +791,6 @@
   }, true);
 })();
 </script>
+<script src="/static/timezone.js" defer></script>
 </body>
 </html>
