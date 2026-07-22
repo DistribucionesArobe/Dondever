@@ -435,6 +435,42 @@
         .pick-odds .team-abbr { color: #94a3b8; }
         .pick-disclaimer { font-size: 0.55rem; opacity: 0.4; margin-top: 0.5rem; line-height: 1.4; }
 
+        /* ── Team Quick Panel (search) ──────── */
+        .team-panel {
+            max-width: 900px; margin: 0.75rem auto 0; padding: 0 1rem;
+        }
+        .tp-card {
+            background: white; border: 2px solid #10b981; border-radius: 14px;
+            padding: 1rem 1.2rem; box-shadow: 0 4px 12px rgba(16,185,129,0.1);
+            animation: tpSlide 0.25s ease-out;
+        }
+        @keyframes tpSlide { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+        .tp-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .tp-logo { width: 48px; height: 48px; border-radius: 50%; object-fit: contain; background: #f3f4f6; }
+        .tp-name { font-size: 1.1rem; font-weight: 800; }
+        .tp-league { font-size: 0.75rem; color: #6b7280; }
+        .tp-record { font-size: 0.75rem; color: #059669; font-weight: 700; background: #d1fae5; padding: 0.15rem 0.5rem; border-radius: 1rem; margin-left: 0.5rem; }
+        .tp-next { background: #f8fafc; border-radius: 10px; padding: 0.75rem; margin-bottom: 0.6rem; }
+        .tp-next-label { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: #059669; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+        .tp-matchup { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.9rem; }
+        .tp-matchup img { width: 28px; height: 28px; border-radius: 50%; object-fit: contain; background: #f3f4f6; }
+        .tp-time { font-size: 1.3rem; font-weight: 800; color: #f97316; }
+        .tp-meta { font-size: 0.7rem; color: #6b7280; margin-top: 0.2rem; }
+        .tp-channels { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.35rem; }
+        .tp-ch { font-size: 0.65rem; padding: 0.2rem 0.5rem; background: #dbeafe; color: #1d4ed8; border-radius: 4px; font-weight: 600; }
+        .tp-odds { display: flex; gap: 0.3rem; margin-top: 0.5rem; }
+        .tp-odds-chip { font-size: 0.7rem; padding: 0.25rem 0.6rem; background: #f3f4f6; border-radius: 6px; font-weight: 700; color: #374151; }
+        .tp-odds-chip .abbr { color: #9ca3af; font-weight: 600; margin-right: 0.2rem; }
+        .tp-odds-chip.draw { color: #ea580c; }
+        .tp-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
+        .tp-btn { font-size: 0.7rem; padding: 0.4rem 0.8rem; border-radius: 8px; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; }
+        .tp-btn-primary { background: #10b981; color: white; }
+        .tp-btn-shop { background: #ff9900; color: white; }
+        .tp-btn-bet { background: #1a1a2e; color: #10b981; }
+        .tp-live { display: inline-block; background: #ef4444; color: white; padding: 3px 10px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; animation: pulse 2s infinite; }
+        .tp-score { font-size: 1.3rem; font-weight: 800; color: #059669; }
+        .tp-jersey { width: 60px; height: 60px; object-fit: contain; border-radius: 6px; margin-left: auto; }
+
         /* ── Ad Slot (subtle) ───────────────── */
         .ad-slot {
             margin-bottom: 1.4rem;
@@ -615,9 +651,11 @@
 <!-- Search -->
 <div class="search-wrap">
     <div class="search-box">
-        <input type="text" class="search-input" placeholder="Buscar equipo, liga..." id="searchInput">
+        <input type="text" class="search-input" placeholder="Buscar equipo, liga..." id="searchInput" autocomplete="off">
     </div>
 </div>
+<!-- Team Quick Panel (populated by JS when searching a known team) -->
+<div id="teamPanel" class="team-panel" style="display:none;"></div>
 
 <!-- Sport Filters -->
 {% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions'] %}
@@ -1062,15 +1100,142 @@
     // ── Auto-refresh for live games ────────
     if (document.querySelector('.live-badge')) { setTimeout(() => location.reload(), 60000); }
 
-    // ── Client-side search ─────────────────
-    const searchInput = document.getElementById('searchInput');
+    // ── Smart search with team panel ─────────────────
+    var TEAM_MAP = {
+        {% for slug, info in popular_teams.items() %}
+        "{{ info.name|lower }}": "{{ slug }}",
+        {% endfor %}
+    };
+    // Build alias map: common names → slug
+    var TEAM_ALIASES_JS = {};
+    for (var slug in TEAM_MAP) { TEAM_ALIASES_JS[slug] = TEAM_MAP[slug]; }
+    // Add slug itself as alias
+    {% for slug, info in popular_teams.items() %}
+    TEAM_ALIASES_JS["{{ slug }}"] = "{{ slug }}";
+    {% endfor %}
+
+    var searchInput = document.getElementById('searchInput');
+    var teamPanel = document.getElementById('teamPanel');
+    var _tpTimeout = null;
+    var _tpLastSlug = '';
+
     searchInput?.addEventListener('input', function() {
-        const q = this.value.toLowerCase();
-        document.querySelectorAll('.game-card').forEach(card => {
-            const text = card.textContent.toLowerCase();
-            card.style.display = text.includes(q) ? '' : 'none';
+        var q = this.value.trim().toLowerCase();
+
+        // Filter game cards
+        document.querySelectorAll('.game-card').forEach(function(card) {
+            card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
         });
+
+        // Clear panel if search is empty
+        if (q.length < 2) {
+            teamPanel.style.display = 'none';
+            _tpLastSlug = '';
+            return;
+        }
+
+        // Debounce team lookup (300ms)
+        clearTimeout(_tpTimeout);
+        _tpTimeout = setTimeout(function() {
+            // Find matching team
+            var matchedSlug = null;
+            for (var name in TEAM_ALIASES_JS) {
+                if (name.includes(q) || q.includes(name)) {
+                    matchedSlug = TEAM_ALIASES_JS[name];
+                    break;
+                }
+            }
+            if (!matchedSlug || matchedSlug === _tpLastSlug) return;
+            _tpLastSlug = matchedSlug;
+
+            // Fetch team data
+            fetch('/api/team/' + matchedSlug)
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (!d.found) { teamPanel.style.display = 'none'; return; }
+                    teamPanel.innerHTML = _buildTeamPanel(d);
+                    teamPanel.style.display = 'block';
+                })
+                .catch(function() { teamPanel.style.display = 'none'; });
+        }, 300);
     });
+
+    function _buildTeamPanel(d) {
+        var html = '<div class="tp-card">';
+
+        // Header: logo + name + league + record
+        html += '<div class="tp-header">';
+        if (d.logo) html += '<img src="' + d.logo + '" alt="' + d.name + '" class="tp-logo">';
+        html += '<div><div class="tp-name">' + d.name + '</div>';
+        html += '<span class="tp-league">' + d.league + '</span>';
+        if (d.record) html += '<span class="tp-record">' + d.record + '</span>';
+        html += '</div>';
+        if (d.jersey_img) html += '<img src="' + d.jersey_img + '" alt="Jersey" class="tp-jersey">';
+        html += '</div>';
+
+        // Live game
+        if (d.live_game) {
+            var lg = d.live_game;
+            html += '<div class="tp-next" style="border-left:3px solid #ef4444;">';
+            html += '<div class="tp-next-label"><span class="tp-live">EN VIVO</span> ' + lg.status + '</div>';
+            html += '<div class="tp-matchup">' + lg.first + ' <span class="tp-score">' + lg.score_first + '</span>';
+            html += ' - <span class="tp-score">' + lg.score_second + '</span> ' + lg.second + '</div>';
+            if (lg.channels && lg.channels.length) {
+                html += '<div class="tp-channels">';
+                lg.channels.forEach(function(ch) { html += '<span class="tp-ch">' + ch + '</span>'; });
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+
+        // Next game
+        if (d.next_game) {
+            var ng = d.next_game;
+            html += '<div class="tp-next">';
+            html += '<div class="tp-next-label">Proximo juego</div>';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+            html += '<div class="tp-matchup">';
+            if (ng.first_logo) html += '<img src="' + ng.first_logo + '" alt="">';
+            html += ng.first + ' <span style="color:#9ca3af;margin:0 0.3rem;">vs</span> ';
+            if (ng.second_logo) html += '<img src="' + ng.second_logo + '" alt="">';
+            html += ng.second + '</div>';
+            html += '<div style="text-align:right;"><div class="tp-time" data-utc="' + ng.date + '">' + ng.time_mx + '</div>';
+            html += '<div class="tp-meta">HORA MX &middot; ' + ng.league + '</div></div>';
+            html += '</div>';
+
+            // Channels
+            if (ng.channels && ng.channels.length) {
+                html += '<div class="tp-channels">';
+                ng.channels.forEach(function(ch) { html += '<span class="tp-ch">' + ch + '</span>'; });
+                html += '</div>';
+            }
+
+            // Odds
+            if (ng.odds) {
+                html += '<div class="tp-odds">';
+                var o = ng.odds;
+                if (o.home_odds) html += '<span class="tp-odds-chip"><span class="abbr">' + ng.first.substring(0,3).toUpperCase() + '</span>' + o.home_odds + '</span>';
+                if (o.draw_odds) html += '<span class="tp-odds-chip draw"><span class="abbr">EMP</span>' + o.draw_odds + '</span>';
+                if (o.away_odds) html += '<span class="tp-odds-chip"><span class="abbr">' + ng.second.substring(0,3).toUpperCase() + '</span>' + o.away_odds + '</span>';
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+
+        if (!d.next_game && !d.live_game) {
+            html += '<div class="tp-next"><div class="tp-meta">Sin juegos programados para hoy</div></div>';
+        }
+
+        // Action buttons
+        html += '<div class="tp-actions">';
+        html += '<a href="/equipo/' + d.slug + '" class="tp-btn tp-btn-primary">Ver equipo &#8599;</a>';
+        if (d.has_shop) html += '<a href="/equipo/' + d.slug + '#tienda" class="tp-btn tp-btn-shop">Tienda &#128085;</a>';
+        html += '<a href="https://www.strendus.com.mx/sports" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="strendus" data-placement="search-panel">Momios en Strendus &#8599;</a>';
+        html += '</div>';
+
+        html += '</div>';
+        return html;
+    }
 
     // ── Affiliate click tracking → GA4 events ───────────
     /* DondeVer — GA4 affiliate_click estandarizado.

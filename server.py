@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
-from config import AFFILIATES, STREAMING_AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES, TEAM_SHOP, MELI_AFF_PARAM, TEAM_SHOP_MELI
+from config import AFFILIATES, STREAMING_AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES, TEAM_SHOP, MELI_AFF_PARAM, TEAM_SHOP_MELI, POPULAR_TEAMS
 from sports_api import (
     get_todays_games, search_games, get_team_stats, get_league_standings,
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
@@ -204,6 +204,7 @@ templates.env.globals["now"] = lambda: datetime.now(TZ_MX)
 templates.env.globals["team_shop"] = TEAM_SHOP
 templates.env.globals["meli_aff"] = MELI_AFF_PARAM
 templates.env.globals["team_shop_meli"] = TEAM_SHOP_MELI
+templates.env.globals["popular_teams"] = POPULAR_TEAMS
 
 
 def _team_name_to_slug(team_name: str) -> str | None:
@@ -707,6 +708,121 @@ async def api_leagues():
             {"slug": slug, "sport": sport, "league": league, "name": name, "emoji": emoji}
             for slug, (sport, league, name, emoji) in LEAGUES.items()
         ]
+    })
+
+
+@app.get("/api/team/{team_slug}")
+async def api_team_quick(team_slug: str):
+    """
+    Quick team info for the smart search panel.
+    Returns: team info, next game, odds, record, affiliate links.
+    """
+    from config import HOME_LEFT_SPORTS
+    from sports_api import TEAM_LEAGUE_MAP
+
+    team_info = POPULAR_TEAMS.get(team_slug)
+    if not team_info:
+        return JSONResponse({"found": False})
+
+    team_name = team_info["name"]
+    search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
+
+    # Fetch games, stats, and odds in parallel
+    games_task = search_games(search_term)
+    stats_task = get_team_stats(team_slug)
+
+    games, stats = await asyncio.gather(games_task, stats_task, return_exceptions=True)
+    if isinstance(games, Exception): games = []
+    if isinstance(stats, Exception): stats = {}
+
+    # Find team logo
+    team_logo = ""
+    team_league = team_info.get("league", "")
+    for g in games:
+        if search_term.lower() in g["home"]["name"].lower():
+            team_logo = g["home"].get("logo", "")
+            if not team_league: team_league = g.get("league_name", "")
+            break
+        elif search_term.lower() in g["away"]["name"].lower():
+            team_logo = g["away"].get("logo", "")
+            if not team_league: team_league = g.get("league_name", "")
+            break
+
+    # Next upcoming game
+    upcoming = [g for g in games if g["status"]["state"] == "pre"]
+    next_game = None
+    if upcoming:
+        g = upcoming[0]
+        sport = g.get("sport", "")
+        home_left = sport in HOME_LEFT_SPORTS
+        first = g["home"]["name"] if home_left else g["away"]["name"]
+        second = g["away"]["name"] if home_left else g["home"]["name"]
+        channels = [b["channel"] for b in g.get("broadcasts", [])[:3]]
+
+        # Try to get odds
+        odds_data = None
+        try:
+            ls = g.get("league_slug", "")
+            odds_list = await fetch_odds(ls)
+            odds_data = match_odds_to_game(g, odds_list)
+        except Exception:
+            pass
+
+        next_game = {
+            "id": g["id"],
+            "first": first,
+            "second": second,
+            "first_logo": g["home"].get("logo", "") if home_left else g["away"].get("logo", ""),
+            "second_logo": g["away"].get("logo", "") if home_left else g["home"].get("logo", ""),
+            "date": g["date"],
+            "time_mx": format_mx_time(g["date"]),
+            "league": g.get("league_name", ""),
+            "channels": channels,
+            "odds": odds_data,
+        }
+
+    # Live game
+    live = [g for g in games if g["status"]["state"] == "in"]
+    live_game = None
+    if live:
+        g = live[0]
+        sport = g.get("sport", "")
+        home_left = sport in HOME_LEFT_SPORTS
+        live_game = {
+            "id": g["id"],
+            "first": g["home"]["name"] if home_left else g["away"]["name"],
+            "second": g["away"]["name"] if home_left else g["home"]["name"],
+            "score_first": g["home"].get("score", "") if home_left else g["away"].get("score", ""),
+            "score_second": g["away"].get("score", "") if home_left else g["home"].get("score", ""),
+            "status": g["status"].get("display", ""),
+            "channels": [b["channel"] for b in g.get("broadcasts", [])[:3]],
+        }
+
+    # Record from stats
+    record = ""
+    if stats:
+        wins = stats.get("wins", "")
+        losses = stats.get("losses", "")
+        if wins and losses:
+            record = f"{wins}-{losses}"
+
+    # Affiliate shop link
+    shop = TEAM_SHOP.get(team_slug, {})
+    jersey_img = ""
+    if shop.get("jersey", {}).get("img"):
+        jersey_img = shop["jersey"]["img"]
+
+    return JSONResponse({
+        "found": True,
+        "slug": team_slug,
+        "name": team_name,
+        "logo": team_logo,
+        "league": team_league,
+        "record": record,
+        "next_game": next_game,
+        "live_game": live_game,
+        "jersey_img": jersey_img,
+        "has_shop": bool(shop),
     })
 
 
