@@ -18,6 +18,27 @@
     <meta name="twitter:title" content="{{ page_title }}">
     <meta name="twitter:description" content="{{ meta_description }}">
     <link rel="canonical" href="{{ app_url }}/{{ page_slug }}">
+    <!-- JSON-LD: BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Inicio",
+          "item": "{{ app_url }}/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "{{ sport_display }}",
+          "item": "{{ app_url }}/{{ page_slug }}"
+        }
+      ]
+    }
+    </script>
     <!-- JSON-LD -->
     <script type="application/ld+json">
     {

@@ -12,6 +12,34 @@
     <meta property="og:url" content="https://dondever.app/equipo/{{ team_slug }}">
     <meta property="og:type" content="website">
     <link rel="canonical" href="https://dondever.app/equipo/{{ team_slug }}">
+    <!-- JSON-LD: SportsTeam -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SportsTeam",
+      "name": "{{ team_name }}",
+      "alternateName": "{{ team_aka }}",
+      "sport": "{% if team_sport == 'futbol' %}Fútbol{% elif team_sport == 'basketball' %}Basketball{% elif team_sport == 'futbol americano' %}American Football{% elif team_sport == 'beisbol' %}Baseball{% elif team_sport == 'hockey' %}Ice Hockey{% elif team_sport == 'MMA' %}Mixed Martial Arts{% else %}{{ team_sport }}{% endif %}",
+      "url": "https://dondever.app/equipo/{{ team_slug }}"{% if team_logo %},
+      "logo": "{{ team_logo }}"{% endif %},
+      "memberOf": {
+        "@type": "SportsOrganization",
+        "name": "{{ team_league }}"
+      }
+    }
+    </script>
+    <!-- JSON-LD: BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "DondeVer", "item": "https://dondever.app/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ team_league }}", "item": "https://dondever.app/liga/{{ team_league|lower|replace(' ', '-') }}"},
+        {"@type": "ListItem", "position": 3, "name": "{{ team_name }}"}
+      ]
+    }
+    </script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f8fafc; color:#1a1a2e; }

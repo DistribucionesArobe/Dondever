@@ -25,36 +25,72 @@
     <meta name="twitter:title" content="Donde ver {{ game.away.name }} vs {{ game.home.name }}">
     <meta name="twitter:description" content="{{ game.league_name }} - Canales de TV y streaming en Mexico, USA y Latinoamerica">
     <link rel="canonical" href="{{ app_url }}/juego/{{ game.id }}">
-    <!-- JSON-LD Structured Data -->
+    <!-- JSON-LD Structured Data: SportsEvent -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "SportsEvent",
       "name": "{{ game.away.name }} vs {{ game.home.name }}",
+      "description": "Donde ver {{ game.away.name }} vs {{ game.home.name }} de {{ game.league_name }} en vivo. Canales de TV y streaming para Mexico, USA y Latinoamerica.",
       "startDate": "{{ game.date }}",
-      "location": {
+      "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.display == 'Postponed' %}EventPostponed{% elif game.status.display == 'Cancelled' %}EventCancelled{% else %}EventScheduled{% endif %}",
+      "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
+      "url": "{{ app_url }}/juego/{{ game.id }}",
+      "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport == 'football' %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% elif game.sport == 'mma' %}Mixed Martial Arts{% else %}{{ game.sport }}{% endif %}",
+      {% if game.venue %}"location": {
         "@type": "Place",
-        "name": "{{ game.venue or 'Por confirmar' }}"
-      },
+        "name": "{{ game.venue }}"
+      },{% endif %}
       "homeTeam": {
         "@type": "SportsTeam",
-        "name": "{{ game.home.name }}"
+        "name": "{{ game.home.name }}"{% if game.home.logo %},
+        "logo": "{{ game.home.logo }}"{% endif %}
       },
       "awayTeam": {
         "@type": "SportsTeam",
-        "name": "{{ game.away.name }}"
+        "name": "{{ game.away.name }}"{% if game.away.logo %},
+        "logo": "{{ game.away.logo }}"{% endif %}
       },
-      "description": "Donde ver {{ game.away.name }} vs {{ game.home.name }} de {{ game.league_name }} en vivo en Mexico, Estados Unidos y Latinoamerica",
-      "url": "{{ app_url }}/juego/{{ game.id }}",
-      {% if game.broadcasts %}"broadcastEvent": {
-        "@type": "BroadcastEvent",
-        "isLiveBroadcast": true,
-        "videoFormat": "HD"
-      },{% endif %}
+      "competitor": [
+        {
+          "@type": "SportsTeam",
+          "name": "{{ game.home.name }}"{% if game.home.logo %},
+          "logo": "{{ game.home.logo }}"{% endif %}
+        },
+        {
+          "@type": "SportsTeam",
+          "name": "{{ game.away.name }}"{% if game.away.logo %},
+          "logo": "{{ game.away.logo }}"{% endif %}
+        }
+      ],
+      {% if game.broadcasts %}"broadcast": [{% for bc in game.broadcasts %}
+        {
+          "@type": "BroadcastEvent",
+          "isLiveBroadcast": true,
+          "videoFormat": "HD",
+          "publishedOn": {
+            "@type": "BroadcastService",
+            "name": "{{ bc.channel }}"
+          }
+        }{% if not loop.last %},{% endif %}{% endfor %}
+      ],{% endif %}
       "organizer": {
-        "@type": "Organization",
+        "@type": "SportsOrganization",
         "name": "{{ game.league_name }}"
-      }
+      },
+      "inLanguage": "es"
+    }
+    </script>
+    <!-- JSON-LD Breadcrumb -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "DondeVer", "item": "{{ app_url }}/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ game.league_name }}", "item": "{{ app_url }}/liga/{{ game.league_slug }}"},
+        {"@type": "ListItem", "position": 3, "name": "{{ game.away.name }} vs {{ game.home.name }}"}
+      ]
     }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">

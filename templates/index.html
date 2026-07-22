@@ -22,6 +22,32 @@
     <meta name="twitter:title" content="DondeVer.app - Donde ver el partido hoy">
     <meta name="twitter:description" content="Encuentra donde ver {{ total_games }} juegos de hoy en Mexico, USA y Latinoamerica. Liga MX, NFL, NBA, MLB y mas.">
     <link rel="canonical" href="{{ app_url }}">
+    <!-- JSON-LD: WebSite + Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "DondeVer",
+      "url": "https://dondever.app/",
+      "description": "Guía de TV deportiva: dónde ver partidos en vivo en México, USA y Latinoamérica",
+      "inLanguage": "es",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://dondever.app/buscar?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "DondeVer",
+      "url": "https://dondever.app",
+      "logo": "https://dondever.app/static/og-image.png",
+      "sameAs": ["https://twitter.com/dondeverapp"]
+    }
+    </script>
     <link rel="icon" type="image/png" href="/static/logo.png">
     <link rel="apple-touch-icon" href="/static/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
