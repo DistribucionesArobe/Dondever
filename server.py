@@ -401,7 +401,7 @@ async def game_detail(request: Request, event_id: str, date: Optional[str] = Que
     if game["status"]["state"] in ("pre", "in"):
         try:
             league_slug = game.get("league_slug", "")
-            odds_list = await fetch_odds(league_slug, markets="h2h,spreads,totals")
+            odds_list = await fetch_odds(league_slug)
             odds = match_full_odds_to_game(game, odds_list)
         except Exception as e:
             logger.warning(f"Odds fetch failed for game {event_id}: {e}")

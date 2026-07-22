@@ -38,24 +38,27 @@ _cache = TTLCache(maxsize=500, ttl=300)
 _tv_cache = TTLCache(maxsize=1000, ttl=14400)
 # Track when TheSportsDB is rate-limiting us to avoid flooding with 429s
 _sportsdb_blocked_until = 0  # timestamp when we can retry
-# Odds cache: 4 hour TTL — free tier only has 500 req/month, must conserve
-_odds_cache = TTLCache(maxsize=200, ttl=14400)
+# Odds cache: 8 hour TTL — free tier only has 500 req/month, must conserve
+# ALWAYS fetch h2h,spreads,totals so homepage and game page share the same cache key
+_odds_cache = TTLCache(maxsize=200, ttl=28800)  # 8 hours
+_odds_request_count = 0  # track requests this process lifetime
+_ODDS_MONTHLY_BUDGET = 450  # leave 50 buffer from the 500 limit
 
 # ── Odds API (the-odds-api.com) ────────────────────────
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
 ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports"
 
 # Map our league slugs to the-odds-api sport keys
-# NOTE: Limited to high-traffic leagues to conserve free tier (500 req/month)
-# With 4h cache + 6 leagues ≈ ~6 req/day × 30 days = ~180 req/month (safe margin)
-# Add more leagues back when upgrading to paid plan
+# Only top leagues that matter to our MX/LATAM audience
+# Budget: 4 leagues × 3 req/day (8h cache) = 12/day × 30 = 360/month (safe)
 ODDS_SPORT_MAP = {
     "liga-mx": "soccer_mexico_ligamx",
     "premier-league": "soccer_epl",
-    "champions": "soccer_uefa_champs_league",
     "nfl": "americanfootball_nfl",
     "nba": "basketball_nba",
     "mlb": "baseball_mlb",
+    "champions": "soccer_uefa_champs_league",
+    "la-liga": "soccer_spain_la_liga",
 }
 
 
@@ -916,14 +919,15 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
 
 # ── Odds API Functions ──────────────────────────────────
 
-async def fetch_odds(league_slug: str, markets: str = "h2h") -> list[dict]:
+async def fetch_odds(league_slug: str, markets: str = "h2h,spreads,totals") -> list[dict]:
     """
     Fetch odds from the-odds-api.com for a given league.
-    Returns list of games with odds from top bookmakers.
-    Requires ODDS_API_KEY env var.
-    Free tier: 500 requests/month — use caching aggressively.
-    markets: comma-separated, e.g. "h2h" or "h2h,spreads,totals"
+    ALWAYS fetches all markets (h2h,spreads,totals) so homepage and game page
+    share the same cache entry — this halves our API usage.
+    Free tier: 500 requests/month — caching is critical.
     """
+    global _odds_request_count
+
     if not ODDS_API_KEY:
         return []
 
@@ -931,14 +935,21 @@ async def fetch_odds(league_slug: str, markets: str = "h2h") -> list[dict]:
     if not odds_sport:
         return []
 
-    cache_key = f"odds:{odds_sport}:{markets}"
+    # Always use full markets to maximize cache hits
+    markets = "h2h,spreads,totals"
+    cache_key = f"odds:{odds_sport}"
     if cache_key in _odds_cache:
         return _odds_cache[cache_key]
+
+    # Budget guard — stop fetching if we're burning too many requests
+    if _odds_request_count >= _ODDS_MONTHLY_BUDGET:
+        logger.warning(f"Odds API budget exhausted ({_odds_request_count} requests this process). Skipping.")
+        return []
 
     url = f"{ODDS_API_BASE}/{odds_sport}/odds"
     params = {
         "apiKey": ODDS_API_KEY,
-        "regions": "us,eu",
+        "regions": "us",
         "markets": markets,
         "oddsFormat": "american",
         "dateFormat": "iso",
@@ -947,6 +958,13 @@ async def fetch_odds(league_slug: str, markets: str = "h2h") -> list[dict]:
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(url, params=params)
+            _odds_request_count += 1
+
+            # The API returns remaining quota in headers — log it
+            remaining = resp.headers.get("x-requests-remaining", "?")
+            used = resp.headers.get("x-requests-used", "?")
+            logger.info(f"Odds API: {odds_sport} — used={used}, remaining={remaining}")
+
             resp.raise_for_status()
             data = resp.json()
             _odds_cache[cache_key] = data
