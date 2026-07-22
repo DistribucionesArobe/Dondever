@@ -1311,6 +1311,35 @@ async def twitter_test_tweet():
     return result
 
 
+@app.post("/twitter/trigger/{job_type}")
+async def twitter_trigger_job(job_type: str):
+    """Disparar manualmente un job de Twitter: summary, poll, pick, games."""
+    from twitter_bot import (
+        compose_daily_summary_tweet, post_tweet, post_daily_poll,
+        post_pick_del_dia, post_game_tweets,
+    )
+    from sports_api import get_todays_games
+
+    if job_type == "summary":
+        games = await get_todays_games()
+        if not games:
+            return {"status": "no_games", "message": "No hay juegos hoy"}
+        tweet = compose_daily_summary_tweet(games)
+        result = post_tweet(tweet)
+        return {"status": "ok", "type": "summary", "tweet": tweet, "result": result}
+    elif job_type == "poll":
+        result = await post_daily_poll()
+        return {"status": "ok", "type": "poll", "result": result}
+    elif job_type == "pick":
+        result = await post_pick_del_dia()
+        return {"status": "ok", "type": "pick", "result": result}
+    elif job_type == "games":
+        result = await post_game_tweets(minutes_before=240, max_tweets=2)
+        return {"status": "ok", "type": "games", "result": result}
+    else:
+        return {"status": "error", "message": f"Tipo '{job_type}' no valido. Usa: summary, poll, pick, games"}
+
+
 @app.get("/tiktok/generar")
 async def tiktok_generate_now(images: bool = False):
     """Manually trigger TikTok video generation. Pass ?images=true para generar carrusel tambien."""
