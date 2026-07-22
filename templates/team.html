@@ -507,12 +507,14 @@
     <div class="shop-section">
         <h2>Tienda de {{ team_name }}</h2>
         <div class="shop-grid">
-            {# ── AMAZON: Curated product with image (if available) ── #}
+            {# ── AMAZON: Curated jersey with image ── #}
             {% if curated.get('jersey') %}
             {% set prod = curated.jersey %}
-            <a href="https://www.amazon.com/dp/{{ prod.asin }}?tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if prod.get('img') }}" data-affiliate="amazon" data-placement="shop-jersey-curated" style="grid-column: span 2; border-color:#ff9900;">
+            <a href="https://www.amazon.com/dp/{{ prod.asin }}?tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card has-img" data-affiliate="amazon" data-placement="shop-jersey-curated" style="grid-column: span 2; border-color:#ff9900;">
                 {% if prod.get('img') %}
                 <img src="{{ prod.img }}" alt="{{ prod.name }}" class="shop-img" loading="lazy">
+                {% elif meli_jersey and meli_jersey.thumbnail %}
+                <img src="{{ meli_jersey.thumbnail }}" alt="{{ prod.name }}" class="shop-img" loading="lazy">
                 {% else %}
                 <span class="shop-icon">&#128085;</span>
                 {% endif %}
@@ -521,11 +523,14 @@
                 <span class="shop-badge">Comprar en Amazon &#8599;</span>
             </a>
             {% endif %}
+            {# ── AMAZON: Curated gorra with image ── #}
             {% if curated.get('gorra') %}
             {% set gprod = curated.gorra %}
-            <a href="https://www.amazon.com/dp/{{ gprod.asin }}?tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if gprod.get('img') }}" data-affiliate="amazon" data-placement="shop-cap-curated" style="border-color:#ff9900;">
+            <a href="https://www.amazon.com/dp/{{ gprod.asin }}?tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if gprod.get('img') or (meli_gorra and meli_gorra.thumbnail) }}" data-affiliate="amazon" data-placement="shop-cap-curated" style="border-color:#ff9900;">
                 {% if gprod.get('img') %}
                 <img src="{{ gprod.img }}" alt="{{ gprod.name }}" class="shop-img" loading="lazy">
+                {% elif meli_gorra and meli_gorra.thumbnail %}
+                <img src="{{ meli_gorra.thumbnail }}" alt="{{ gprod.name }}" class="shop-img" loading="lazy">
                 {% else %}
                 <span class="shop-icon">&#129506;</span>
                 {% endif %}
@@ -534,35 +539,49 @@
                 <span class="shop-badge">Comprar en Amazon &#8599;</span>
             </a>
             {% endif %}
-            {# ── AMAZON: Generic search-based cards (no image) ── #}
+            {# ── AMAZON: Generic jersey (with ML image fallback) ── #}
             {% if not curated.get('jersey') %}
-            <a href="https://www.amazon.com/s?k=jersey+{{ amz_team|urlencode }}+oficial&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey">
+            <a href="https://www.amazon.com/s?k=jersey+{{ amz_team|urlencode }}+oficial&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if meli_jersey and meli_jersey.thumbnail }}" data-affiliate="amazon" data-placement="shop-jersey">
+                {% if meli_jersey and meli_jersey.thumbnail %}
+                <img src="{{ meli_jersey.thumbnail }}" alt="Jersey {{ team_name }}" class="shop-img" loading="lazy">
+                {% else %}
                 <span class="shop-icon">&#128085;</span>
+                {% endif %}
                 <span class="shop-label">Jerseys {{ team_name }}</span>
                 <span class="shop-sub">Temporada actual</span>
                 <span class="shop-badge">Ver en Amazon &#8599;</span>
             </a>
             {% endif %}
+            {# ── AMAZON: Generic gorra (with ML image fallback) ── #}
             {% if not curated.get('gorra') %}
-            <a href="https://www.amazon.com/s?k=gorra+{{ amz_team|urlencode }}&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-cap">
+            <a href="https://www.amazon.com/s?k=gorra+{{ amz_team|urlencode }}&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if meli_gorra and meli_gorra.thumbnail }}" data-affiliate="amazon" data-placement="shop-cap">
+                {% if meli_gorra and meli_gorra.thumbnail %}
+                <img src="{{ meli_gorra.thumbnail }}" alt="Gorra {{ team_name }}" class="shop-img" loading="lazy">
+                {% else %}
                 <span class="shop-icon">&#129506;</span>
+                {% endif %}
                 <span class="shop-label">Gorras</span>
                 <span class="shop-sub">New Era y mas</span>
                 <span class="shop-badge">Ver en Amazon &#8599;</span>
             </a>
             {% endif %}
-            <a href="https://www.amazon.com/s?k={{ amz_team|urlencode }}+accesorios&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-acc">
+            {# ── AMAZON: Accesorios (with ML image fallback) ── #}
+            <a href="https://www.amazon.com/s?k={{ amz_team|urlencode }}+accesorios&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if meli_acc and meli_acc.thumbnail }}" data-affiliate="amazon" data-placement="shop-acc">
+                {% if meli_acc and meli_acc.thumbnail %}
+                <img src="{{ meli_acc.thumbnail }}" alt="Accesorios {{ team_name }}" class="shop-img" loading="lazy">
+                {% else %}
                 <span class="shop-icon">&#127941;</span>
+                {% endif %}
                 <span class="shop-label">Accesorios</span>
                 <span class="shop-sub">Todo de {{ team_name }}</span>
                 <span class="shop-badge">Ver en Amazon &#8599;</span>
             </a>
-            {# ── MERCADOLIBRE: With real product image from API ── #}
+            {# ── MERCADOLIBRE: Jersey with API image ── #}
             {% set meli_curated = team_shop_meli.get(team_slug) %}
             {% if meli_curated %}
-            <a href="{{ meli_curated }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if meli_product and meli_product.thumbnail }}" data-affiliate="mercadolibre" data-placement="shop-jersey-meli-curated" style="grid-column: span 2; border-color:#3483FA;">
-                {% if meli_product and meli_product.thumbnail %}
-                <img src="{{ meli_product.thumbnail }}" alt="Jersey {{ team_name }} MercadoLibre" class="shop-img" loading="lazy">
+            <a href="{{ meli_curated }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if meli_jersey and meli_jersey.thumbnail }}" data-affiliate="mercadolibre" data-placement="shop-jersey-meli-curated" style="grid-column: span 2; border-color:#3483FA;">
+                {% if meli_jersey and meli_jersey.thumbnail %}
+                <img src="{{ meli_jersey.thumbnail }}" alt="Jersey {{ team_name }} MercadoLibre" class="shop-img" loading="lazy">
                 {% else %}
                 <span class="shop-icon">&#128085;</span>
                 {% endif %}
@@ -571,9 +590,9 @@
                 <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>
             </a>
             {% else %}
-            <a href="https://listado.mercadolibre.com.mx/jersey-{{ meli_team }}" target="_blank" rel="nofollow noopener" class="shop-card{{ ' has-img' if meli_product and meli_product.thumbnail }}" data-affiliate="mercadolibre" data-placement="shop-jersey-meli" style="border-color:#3483FA;">
-                {% if meli_product and meli_product.thumbnail %}
-                <img src="{{ meli_product.thumbnail }}" alt="Jersey {{ team_name }} MercadoLibre" class="shop-img" loading="lazy">
+            <a href="https://listado.mercadolibre.com.mx/jersey-{{ meli_team }}" target="_blank" rel="nofollow noopener" class="shop-card{{ ' has-img' if meli_jersey and meli_jersey.thumbnail }}" data-affiliate="mercadolibre" data-placement="shop-jersey-meli" style="border-color:#3483FA;">
+                {% if meli_jersey and meli_jersey.thumbnail %}
+                <img src="{{ meli_jersey.thumbnail }}" alt="Jersey {{ team_name }} MercadoLibre" class="shop-img" loading="lazy">
                 {% else %}
                 <span class="shop-icon">&#128085;</span>
                 {% endif %}
@@ -582,8 +601,13 @@
                 <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>
             </a>
             {% endif %}
-            <a href="https://listado.mercadolibre.com.mx/gorra-{{ meli_team }}" target="_blank" rel="nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-cap-meli" style="border-color:#3483FA;">
+            {# ── MERCADOLIBRE: Gorras with API image ── #}
+            <a href="https://listado.mercadolibre.com.mx/gorra-{{ meli_team }}" target="_blank" rel="nofollow noopener" class="shop-card{{ ' has-img' if meli_gorra and meli_gorra.thumbnail }}" data-affiliate="mercadolibre" data-placement="shop-cap-meli" style="border-color:#3483FA;">
+                {% if meli_gorra and meli_gorra.thumbnail %}
+                <img src="{{ meli_gorra.thumbnail }}" alt="Gorra {{ team_name }} MercadoLibre" class="shop-img" loading="lazy">
+                {% else %}
                 <span class="shop-icon">&#129506;</span>
+                {% endif %}
                 <span class="shop-label">Gorras en MercadoLibre</span>
                 <span class="shop-sub">{{ team_name }} &middot; Mexico</span>
                 <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>

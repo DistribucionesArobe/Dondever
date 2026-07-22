@@ -3,6 +3,7 @@ DondeVer.app — Main FastAPI server
 Where to watch sports in Mexico & USA
 """
 
+import asyncio
 import logging
 import os
 from datetime import datetime, timezone, timedelta
@@ -2196,10 +2197,20 @@ async def team_page(request: Request, team_slug: str):
         except Exception:
             pass
 
-    # Fetch MercadoLibre product image for the team (cached 24h)
-    meli_product = None
+    # Fetch MercadoLibre product images for the team (cached 24h each)
+    # Fetch all 3 product types in parallel for speed
+    meli_jersey, meli_gorra, meli_acc = None, None, None
     try:
-        meli_product = await fetch_meli_product_image(f"jersey {team_name} oficial")
+        meli_jersey, meli_gorra, meli_acc = await asyncio.gather(
+            fetch_meli_product_image(f"jersey {team_name} oficial"),
+            fetch_meli_product_image(f"gorra {team_name}"),
+            fetch_meli_product_image(f"{team_name} accesorios futbol"),
+            return_exceptions=True,
+        )
+        # If any returned an exception, set to None
+        if isinstance(meli_jersey, Exception): meli_jersey = None
+        if isinstance(meli_gorra, Exception): meli_gorra = None
+        if isinstance(meli_acc, Exception): meli_acc = None
     except Exception:
         pass
 
@@ -2219,7 +2230,9 @@ async def team_page(request: Request, team_slug: str):
         "recent_results": recent_results,
         "upcoming_games": upcoming_games,
         "team_news": team_news,
-        "meli_product": meli_product,
+        "meli_jersey": meli_jersey,
+        "meli_gorra": meli_gorra,
+        "meli_acc": meli_acc,
     })
 
 
