@@ -160,9 +160,11 @@ async def compose_daily_broadcast() -> str:
         lines.append("")
         lines.append(f"{aff['cta']}: {aff['url']}")
 
-    # Site link
+    # Site link — usar dominio sin https para mejor parseo en WhatsApp
     lines.append("")
-    lines.append(f"Todos los juegos: {APP_URL}")
+    lines.append("Ver todos los juegos, canales y horarios:")
+    lines.append("dondever.app")
+    lines.append("")
     lines.append("_Escribe salir para dejar de recibir._")
     lines.append("_Solo entretenimiento. +18_")
 
@@ -212,11 +214,39 @@ async def send_daily_broadcast():
         now = datetime.now(TZ_MX)
         game_count = len(upcoming)
         if upcoming:
-            top = upcoming[0]
-            home, away = top["home"]["name"], top["away"]["name"]
-            template_summary = f"{game_count} juegos hoy. {home} vs {away} y mas."
+            # Find best game for the summary
+            priority = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga", "mlb"]
+            top = None
+            for pl in priority:
+                top = next((g for g in upcoming if g["league_slug"] == pl), None)
+                if top:
+                    break
+            if not top:
+                top = upcoming[0]
+            # Get unique leagues
+            league_names = list(dict.fromkeys(g.get("league_name", "") for g in upcoming if g.get("league_name")))
+            leagues_str = ", ".join(league_names[:3])
+            # Team order
+            sport = top.get("sport", "")
+            if sport in HOME_LEFT_SPORTS:
+                first, second = top["home"]["name"], top["away"]["name"]
+            else:
+                first, second = top["away"]["name"], top["home"]["name"]
+            # Format time
+            try:
+                dt = datetime.fromisoformat(top["date"].replace("Z", "+00:00"))
+                mx = dt.astimezone(TZ_MX)
+                time_str = mx.strftime("%I:%M %p")
+            except Exception:
+                time_str = ""
+            template_summary = (
+                f"{game_count} juegos hoy ({leagues_str}). "
+                f"Destacado: {first} vs {second}"
+                f"{' a las ' + time_str if time_str else ''}. "
+                f"Canales y horarios en dondever.app"
+            )
         else:
-            template_summary = f"{game_count} juegos programados para hoy."
+            template_summary = f"{game_count} juegos programados para hoy. Canales y horarios en dondever.app"
 
     for phone in subscribers:
         to_number = _ensure_wa_number(phone)

@@ -17,17 +17,33 @@ logger = logging.getLogger("dondever.whatsapp")
 
 
 def format_broadcast_text(broadcasts: list[dict]) -> str:
-    """Format broadcast channels for WhatsApp message."""
+    """Format broadcast channels for WhatsApp message.
+    Prioritize Mexican/Latin American channels over US-only ones."""
     if not broadcasts:
         return "Canal por confirmar"
-    channels = []
+
+    # Channels relevant to LATAM audience (prioritized)
+    mx_priority = {"ESPN MX", "TUDN", "Fox Sports MX", "Canal 5", "Azteca 7",
+                   "Azteca Deportes", "ViX", "ViX+", "Claro Sports", "Fox Deportes",
+                   "Caliente TV", "TV Azteca", "Televisa", "Star+", "SKY Sports",
+                   "ESPN Deportes", "Paramount+", "Apple TV+", "Amazon Prime Video",
+                   "TNT Sports", "HBO Max", "Max", "DAZN", "YouTube"}
+
+    prioritized = []
+    others = []
     for b in broadcasts:
         ch = b["channel"]
-        market = b.get("market", "")
-        if market and market != "National":
-            ch = f"{ch} ({market})"
-        channels.append(ch)
-    return ", ".join(channels)
+        if ch in mx_priority:
+            prioritized.append(ch)
+        else:
+            others.append(ch)
+
+    # Show MX channels first, then up to 2 others
+    result = prioritized + others[:2]
+    if not result:
+        result = [b["channel"] for b in broadcasts[:3]]
+
+    return ", ".join(result[:4])
 
 
 def format_game_time(date_str: str) -> str:
@@ -394,9 +410,10 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
 
             remaining = len(games) - len(top)
             if remaining > 0:
-                lines.append(f"_...y {remaining} mas. Ve todos en {APP_URL}_")
-            else:
-                lines.append(f"Ve mas en {APP_URL}")
+                lines.append(f"_...y {remaining} juegos mas_")
+            lines.append("")
+            lines.append("Ver todos los juegos, canales y horarios:")
+            lines.append("dondever.app")
 
             return "\n".join(lines)
 
