@@ -1166,3 +1166,53 @@ def _format_american_odds(price: int) -> str:
     if price >= 0:
         return f"+{price}"
     return str(price)
+
+
+# ── MercadoLibre Product Images (free public API) ──────────
+
+_meli_cache = TTLCache(maxsize=500, ttl=86400)  # 24 hour cache
+
+
+async def fetch_meli_product_image(query: str) -> dict | None:
+    """
+    Search MercadoLibre Mexico for a product and return thumbnail + link.
+    Uses the free public API — no auth required.
+    Returns: {"thumbnail": "https://...", "title": "...", "price": 799, "link": "https://..."}
+    """
+    cache_key = f"meli:{query}"
+    if cache_key in _meli_cache:
+        return _meli_cache[cache_key]
+
+    url = "https://api.mercadolibre.com/sites/MLM/search"
+    params = {"q": query, "limit": 1, "sort": "relevance"}
+
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            results = data.get("results", [])
+            if not results:
+                _meli_cache[cache_key] = None
+                return None
+
+            item = results[0]
+            # Convert http thumbnail to https and use bigger size
+            thumb = item.get("thumbnail", "")
+            if thumb:
+                thumb = thumb.replace("http://", "https://")
+                # Use higher quality image: D_NQ_NP -> D_Q_NP, or append size
+                thumb = thumb.replace("-I.jpg", "-O.jpg")  # O = larger
+
+            result = {
+                "thumbnail": thumb,
+                "title": item.get("title", ""),
+                "price": item.get("price", 0),
+                "link": item.get("permalink", ""),
+            }
+            _meli_cache[cache_key] = result
+            return result
+    except Exception as e:
+        logger.warning(f"MercadoLibre API error for '{query}': {e}")
+        _meli_cache[cache_key] = None
+        return None

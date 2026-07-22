@@ -229,58 +229,76 @@ TEAM_SHOP_MELI = {
 TEAM_SHOP = {
     # ── Liga MX ──
     "america": {
-        "jersey": {"asin": "B0FH7M43MM", "name": "Jersey Local 25/26", "brand": "adidas"},
-        "gorra":  {"asin": "B08BMJ5F8Y", "name": "Gorra oficial", "brand": "Fan Ink"},
+        "jersey": {"asin": "B0FH7M43MM", "name": "Jersey Local 25/26", "brand": "adidas",
+                   "img": "https://m.media-amazon.com/images/I/51-gle5XsOL._AC_SX200_.jpg"},
+        "gorra":  {"asin": "B08BMJ5F8Y", "name": "Gorra oficial", "brand": "Fan Ink",
+                   "img": "https://m.media-amazon.com/images/I/817C4FrDFvL._AC_SX200_.jpg"},
     },
     "chivas": {
-        "jersey": {"asin": "B0F1DSZR1C", "name": "Jersey Réplica 25/26", "brand": "Puma"},
-        "gorra":  {"asin": "B0FJQ7GT33", "name": "Gorra oficial", "brand": "Icon Sports"},
+        "jersey": {"asin": "B0F1DSZR1C", "name": "Jersey Réplica 25/26", "brand": "Puma",
+                   "img": "https://m.media-amazon.com/images/I/51Fq57hvNVL._AC_SX200_.jpg"},
+        "gorra":  {"asin": "B0FJQ7GT33", "name": "Gorra oficial", "brand": "Icon Sports",
+                   "img": "https://m.media-amazon.com/images/I/71Ki1YPXvtL._AC_SX200_.jpg"},
     },
     "cruz-azul": {
-        "jersey": {"asin": "B0H7M99NVQ", "name": "Jersey Local 26/27", "brand": "Pirma"},
+        "jersey": {"asin": "B0H7M99NVQ", "name": "Jersey Local 26/27", "brand": "Pirma",
+                   "img": "https://m.media-amazon.com/images/I/71PRdGlPmqL._AC_SX200_.jpg"},
     },
     "tigres": {
-        "jersey": {"asin": "B0FKCZYXZR", "name": "Jersey Visitante 25/26", "brand": "adidas"},
+        "jersey": {"asin": "B0FKCZYXZR", "name": "Jersey Visitante 25/26", "brand": "adidas",
+                   "img": "https://m.media-amazon.com/images/I/81dfyEFYX8L._AC_SX200_.jpg"},
     },
     "pumas": {
-        "jersey": {"asin": "B0FP2RZ263", "name": "Jersey Visitante 25/26", "brand": "Puma"},
+        "jersey": {"asin": "B0FP2RZ263", "name": "Jersey Visitante 25/26", "brand": "Puma",
+                   "img": "https://m.media-amazon.com/images/I/719BgkwP4qL._AC_SX200_.jpg"},
     },
     "monterrey": {
-        "jersey": {"asin": "B0GL7DXJZC", "name": "Jersey Local", "brand": "Puma"},
+        "jersey": {"asin": "B0GL7DXJZC", "name": "Jersey Local", "brand": "Puma",
+                   "img": "https://m.media-amazon.com/images/I/51FaBYwo-KL._AC_SX200_.jpg"},
     },
     # ── MLB ──
     "dodgers": {
-        "jersey": {"asin": "B0D9KPCKDH", "name": "Jersey Ohtani Alt.", "brand": "Outerstuff"},
+        "jersey": {"asin": "B0D9KPCKDH", "name": "Jersey Ohtani Alt.", "brand": "Outerstuff",
+                   "img": "https://m.media-amazon.com/images/I/710WPsyxp+L._AC_SX200_.jpg"},
     },
     "yankees": {
-        "jersey": {"asin": "B0D9MTYCRX", "name": "Jersey Aaron Judge", "brand": "Outerstuff"},
+        "jersey": {"asin": "B0D9MTYCRX", "name": "Jersey Aaron Judge", "brand": "Outerstuff",
+                   "img": "https://m.media-amazon.com/images/I/81nnAt+GOYL._AC_SX200_.jpg"},
     },
     # ── NFL ──
     "cowboys": {
-        "jersey": {"asin": "B0F45WPRLY", "name": "Camiseta oficial", "brand": "FOCO"},
+        "jersey": {"asin": "B0F45WPRLY", "name": "Camiseta oficial", "brand": "FOCO",
+                   "img": "https://m.media-amazon.com/images/I/71qp-FWjBrL._AC_SX200_.jpg"},
     },
     "chiefs": {
-        "jersey": {"asin": "B0FY7NNM3Y", "name": "Jersey Mahomes", "brand": "NFL Pro Line"},
+        "jersey": {"asin": "B0FY7NNM3Y", "name": "Jersey Mahomes", "brand": "NFL Pro Line",
+                   "img": "https://m.media-amazon.com/images/I/81yl1CeEQEL._AC_SX200_.jpg"},
     },
     "raiders": {
-        "jersey": {"asin": "B0FTTNDCNH", "name": "Jersey Raiders", "brand": "NFL Pro Line"},
+        "jersey": {"asin": "B0FTTNDCNH", "name": "Jersey Raiders", "brand": "NFL Pro Line",
+                   "img": "https://m.media-amazon.com/images/I/71svSxym4WL._AC_SX200_.jpg"},
     },
     # ── NBA ──
     "lakers": {
-        "jersey": {"asin": "B0CKCZF66D", "name": "Jersey LeBron James", "brand": "Nike"},
+        "jersey": {"asin": "B0CKCZF66D", "name": "Jersey LeBron James", "brand": "Nike",
+                   "img": "https://m.media-amazon.com/images/I/71rKzitOGfL._AC_SX200_.jpg"},
     },
     "warriors": {
-        "jersey": {"asin": "B0CKD6LX56", "name": "Jersey Stephen Curry", "brand": "Nike"},
+        "jersey": {"asin": "B0CKD6LX56", "name": "Jersey Stephen Curry", "brand": "Nike",
+                   "img": "https://m.media-amazon.com/images/I/61oNp4b6EqL._AC_SX200_.jpg"},
     },
     # ── Europa ──
     "real-madrid": {
-        "jersey": {"asin": "B0FH7CJT1C", "name": "Jersey Local 25/26", "brand": "adidas"},
+        "jersey": {"asin": "B0FH7CJT1C", "name": "Jersey Local 25/26", "brand": "adidas",
+                   "img": "https://m.media-amazon.com/images/I/61VBS366HwL._AC_SX200_.jpg"},
     },
     "barcelona": {
-        "jersey": {"asin": "B0FP2QD1QM", "name": "Jersey 25/26", "brand": "Nike"},
+        "jersey": {"asin": "B0FP2QD1QM", "name": "Jersey 25/26", "brand": "Nike",
+                   "img": "https://m.media-amazon.com/images/I/616x14NyV1L._AC_SX200_.jpg"},
     },
     "inter-miami": {
-        "jersey": {"asin": "B0D6Z3918S", "name": "Jersey Messi 25/26", "brand": "adidas"},
+        "jersey": {"asin": "B0D6Z3918S", "name": "Jersey Messi 25/26", "brand": "adidas",
+                   "img": "https://m.media-amazon.com/images/I/61n9+sNi1JL._AC_SX200_.jpg"},
     },
 }
 

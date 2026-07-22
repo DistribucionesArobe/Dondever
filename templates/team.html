@@ -140,14 +140,16 @@
 
         .shop-section { margin:1.25rem 0; }
         .shop-section h2 { font-size:1rem; font-weight:700; margin-bottom:0.6rem; }
-        .shop-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:0.5rem; }
+        .shop-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:0.6rem; }
         .shop-card {
             display:flex; flex-direction:column; align-items:center; justify-content:center;
             background:white; border:1px solid #e5e7eb; border-radius:10px;
-            padding:0.9rem 0.6rem; text-decoration:none; color:#1a1a2e; transition:all 0.15s;
+            padding:0.75rem 0.6rem; text-decoration:none; color:#1a1a2e; transition:all 0.15s;
             text-align:center;
         }
-        .shop-card:hover { border-color:#ff9900; box-shadow:0 2px 8px rgba(255,153,0,0.12); }
+        .shop-card:hover { border-color:#ff9900; box-shadow:0 2px 8px rgba(255,153,0,0.12); transform:translateY(-1px); }
+        .shop-card.has-img { padding-top:0.4rem; }
+        .shop-img { width:100px; height:100px; object-fit:contain; margin-bottom:0.3rem; border-radius:6px; }
         .shop-icon { font-size:1.5rem; margin-bottom:0.35rem; }
         .shop-label { font-size:0.78rem; font-weight:700; line-height:1.3; }
         .shop-sub { font-size:0.65rem; color:#9ca3af; margin-top:0.15rem; }
@@ -505,11 +507,15 @@
     <div class="shop-section">
         <h2>Tienda de {{ team_name }}</h2>
         <div class="shop-grid">
-            {# ── AMAZON: Curated product with direct link (if available) ── #}
+            {# ── AMAZON: Curated product with image (if available) ── #}
             {% if curated.get('jersey') %}
             {% set prod = curated.jersey %}
-            <a href="https://www.amazon.com/dp/{{ prod.asin }}?tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey-curated" style="grid-column: span 2; border-color:#ff9900;">
+            <a href="https://www.amazon.com/dp/{{ prod.asin }}?tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if prod.get('img') }}" data-affiliate="amazon" data-placement="shop-jersey-curated" style="grid-column: span 2; border-color:#ff9900;">
+                {% if prod.get('img') %}
+                <img src="{{ prod.img }}" alt="{{ prod.name }}" class="shop-img" loading="lazy">
+                {% else %}
                 <span class="shop-icon">&#128085;</span>
+                {% endif %}
                 <span class="shop-label">{{ prod.name }}</span>
                 <span class="shop-sub">{{ prod.brand }} &middot; Producto verificado</span>
                 <span class="shop-badge">Comprar en Amazon &#8599;</span>
@@ -517,14 +523,18 @@
             {% endif %}
             {% if curated.get('gorra') %}
             {% set gprod = curated.gorra %}
-            <a href="https://www.amazon.com/dp/{{ gprod.asin }}?tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-cap-curated" style="border-color:#ff9900;">
+            <a href="https://www.amazon.com/dp/{{ gprod.asin }}?tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if gprod.get('img') }}" data-affiliate="amazon" data-placement="shop-cap-curated" style="border-color:#ff9900;">
+                {% if gprod.get('img') %}
+                <img src="{{ gprod.img }}" alt="{{ gprod.name }}" class="shop-img" loading="lazy">
+                {% else %}
                 <span class="shop-icon">&#129506;</span>
+                {% endif %}
                 <span class="shop-label">{{ gprod.name }}</span>
                 <span class="shop-sub">{{ gprod.brand }}</span>
                 <span class="shop-badge">Comprar en Amazon &#8599;</span>
             </a>
             {% endif %}
-            {# ── AMAZON: Generic search-based cards ── #}
+            {# ── AMAZON: Generic search-based cards (no image) ── #}
             {% if not curated.get('jersey') %}
             <a href="https://www.amazon.com/s?k=jersey+{{ amz_team|urlencode }}+oficial&tag={{ amz_tag }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="amazon" data-placement="shop-jersey">
                 <span class="shop-icon">&#128085;</span>
@@ -547,18 +557,26 @@
                 <span class="shop-sub">Todo de {{ team_name }}</span>
                 <span class="shop-badge">Ver en Amazon &#8599;</span>
             </a>
-            {# ── MERCADOLIBRE MEXICO: Curated affiliate links or search fallback ── #}
+            {# ── MERCADOLIBRE: With real product image from API ── #}
             {% set meli_curated = team_shop_meli.get(team_slug) %}
             {% if meli_curated %}
-            <a href="{{ meli_curated }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-jersey-meli-curated" style="grid-column: span 2; border-color:#3483FA;">
+            <a href="{{ meli_curated }}" target="_blank" rel="sponsored nofollow noopener" class="shop-card{{ ' has-img' if meli_product and meli_product.thumbnail }}" data-affiliate="mercadolibre" data-placement="shop-jersey-meli-curated" style="grid-column: span 2; border-color:#3483FA;">
+                {% if meli_product and meli_product.thumbnail %}
+                <img src="{{ meli_product.thumbnail }}" alt="Jersey {{ team_name }} MercadoLibre" class="shop-img" loading="lazy">
+                {% else %}
                 <span class="shop-icon">&#128085;</span>
+                {% endif %}
                 <span class="shop-label">Jerseys {{ team_name }} en MercadoLibre</span>
                 <span class="shop-sub">Precios en pesos &middot; Envio gratis &middot; Link verificado</span>
                 <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>
             </a>
             {% else %}
-            <a href="https://listado.mercadolibre.com.mx/jersey-{{ meli_team }}" target="_blank" rel="nofollow noopener" class="shop-card" data-affiliate="mercadolibre" data-placement="shop-jersey-meli" style="border-color:#3483FA;">
+            <a href="https://listado.mercadolibre.com.mx/jersey-{{ meli_team }}" target="_blank" rel="nofollow noopener" class="shop-card{{ ' has-img' if meli_product and meli_product.thumbnail }}" data-affiliate="mercadolibre" data-placement="shop-jersey-meli" style="border-color:#3483FA;">
+                {% if meli_product and meli_product.thumbnail %}
+                <img src="{{ meli_product.thumbnail }}" alt="Jersey {{ team_name }} MercadoLibre" class="shop-img" loading="lazy">
+                {% else %}
                 <span class="shop-icon">&#128085;</span>
+                {% endif %}
                 <span class="shop-label">Jerseys en MercadoLibre</span>
                 <span class="shop-sub">Precios en pesos &middot; Envio gratis</span>
                 <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>

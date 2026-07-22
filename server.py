@@ -19,6 +19,7 @@ from sports_api import (
     get_todays_games, search_games, get_team_stats, get_league_standings,
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
     get_recent_league_results, get_upcoming_league_games, fetch_team_news,
+    fetch_meli_product_image,
 )
 from whatsapp_bot import handle_whatsapp_message
 from tiktok_auth import (
@@ -2195,6 +2196,13 @@ async def team_page(request: Request, team_slug: str):
         except Exception:
             pass
 
+    # Fetch MercadoLibre product image for the team (cached 24h)
+    meli_product = None
+    try:
+        meli_product = await fetch_meli_product_image(f"jersey {team_name} oficial")
+    except Exception:
+        pass
+
     return templates.TemplateResponse(request, "team.html", {
         "team_name": team_name,
         "team_slug": team_slug,
@@ -2211,6 +2219,7 @@ async def team_page(request: Request, team_slug: str):
         "recent_results": recent_results,
         "upcoming_games": upcoming_games,
         "team_news": team_news,
+        "meli_product": meli_product,
     })
 
 
