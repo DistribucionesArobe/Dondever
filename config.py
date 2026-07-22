@@ -29,14 +29,14 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 
 # ── Affiliate links ─────────────────────────────────────
 AFFILIATES = {
-    "caliente": {
-        "name": "Caliente",
-        "url": os.getenv("AFFILIATE_CALIENTE", "") or "https://online.caliente.mx/page?member=Dondever&campaign=DEFAULT&channel=DEFAULT&zone=68997593&lp=68997591",
-        "logo": "/static/affiliates/caliente.svg",
-        "cta": "Apuesta HOY con $3,000 de bono",
-        "cta_short": "Registrate → $3,000 gratis",
-        "cta_twitter": "Bono $3,000 en Caliente",
-        "bonus": "100% hasta $3,000 MXN en tu primer deposito",
+    "strendus": {
+        "name": "Strendus",
+        "url": os.getenv("AFFILIATE_STRENDUS", "") or "https://www.strendus.com.mx/sports",
+        "logo": "/static/affiliates/strendus.svg",
+        "cta": "Apuesta en Strendus — casino legal en Mexico",
+        "cta_short": "Registrate en Strendus",
+        "cta_twitter": "Apuestas deportivas en Strendus",
+        "bonus": "Casino y apuestas deportivas con licencia SEGOB",
     },
     "betsson": {
         "name": "Betsson",

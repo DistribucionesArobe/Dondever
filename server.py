@@ -1551,7 +1551,7 @@ async def casinos_page(request: Request):
     """Casino comparison landing — for SEO + affiliate conversion."""
     from config import get_affiliate_url
     return templates.TemplateResponse(request, "casinos.html", {
-        "caliente_url": get_affiliate_url("caliente", source="casinos"),
+        "strendus_url": get_affiliate_url("strendus", source="casinos"),
         "betsson_url": get_affiliate_url("betsson", source="casinos"),
     })
 
