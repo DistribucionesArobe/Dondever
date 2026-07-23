@@ -436,9 +436,7 @@
         .pick-disclaimer { font-size: 0.55rem; opacity: 0.4; margin-top: 0.5rem; line-height: 1.4; }
 
         /* ── Team Quick Panel (search) ──────── */
-        .team-panel {
-            max-width: 900px; margin: 0.75rem auto 0; padding: 0 1rem;
-        }
+        .team-panel { max-width: 900px; margin: 0.75rem auto 0; padding: 0 1rem; }
         .tp-card {
             background: white; border: 2px solid #10b981; border-radius: 14px;
             padding: 1rem 1.2rem; box-shadow: 0 4px 12px rgba(16,185,129,0.1);
@@ -446,30 +444,59 @@
         }
         @keyframes tpSlide { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
         .tp-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
-        .tp-logo { width: 48px; height: 48px; border-radius: 50%; object-fit: contain; background: #f3f4f6; }
-        .tp-name { font-size: 1.1rem; font-weight: 800; }
+        .tp-logo { width: 52px; height: 52px; border-radius: 50%; object-fit: contain; background: #f3f4f6; }
+        .tp-name { font-size: 1.15rem; font-weight: 800; }
         .tp-league { font-size: 0.75rem; color: #6b7280; }
-        .tp-record { font-size: 0.75rem; color: #059669; font-weight: 700; background: #d1fae5; padding: 0.15rem 0.5rem; border-radius: 1rem; margin-left: 0.5rem; }
-        .tp-next { background: #f8fafc; border-radius: 10px; padding: 0.75rem; margin-bottom: 0.6rem; }
-        .tp-next-label { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: #059669; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
-        .tp-matchup { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.9rem; }
-        .tp-matchup img { width: 28px; height: 28px; border-radius: 50%; object-fit: contain; background: #f3f4f6; }
-        .tp-time { font-size: 1.3rem; font-weight: 800; color: #f97316; }
-        .tp-meta { font-size: 0.7rem; color: #6b7280; margin-top: 0.2rem; }
-        .tp-channels { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.35rem; }
-        .tp-ch { font-size: 0.65rem; padding: 0.2rem 0.5rem; background: #dbeafe; color: #1d4ed8; border-radius: 4px; font-weight: 600; }
-        .tp-odds { display: flex; gap: 0.3rem; margin-top: 0.5rem; }
-        .tp-odds-chip { font-size: 0.7rem; padding: 0.25rem 0.6rem; background: #f3f4f6; border-radius: 6px; font-weight: 700; color: #374151; }
-        .tp-odds-chip .abbr { color: #9ca3af; font-weight: 600; margin-right: 0.2rem; }
+        .tp-record { font-size: 0.7rem; color: #059669; font-weight: 700; background: #d1fae5; padding: 0.15rem 0.5rem; border-radius: 1rem; margin-left: 0.4rem; }
+        /* Stats grid (mirrors team page) */
+        .tp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 0.4rem; margin-bottom: 0.7rem; }
+        .tp-stat { text-align: center; padding: 0.4rem 0.2rem; border-radius: 8px; background: #f8fafc; }
+        .tp-stat-val { font-size: 1rem; font-weight: 800; color: #1a1a2e; }
+        .tp-stat-val.green { color: #059669; }
+        .tp-stat-val.red { color: #ef4444; }
+        .tp-stat-val.orange { color: #f97316; }
+        .tp-stat-label { font-size: 0.55rem; text-transform: uppercase; color: #9ca3af; font-weight: 600; letter-spacing: 0.03em; }
+        /* Game sections */
+        .tp-section { background: #f8fafc; border-radius: 10px; padding: 0.7rem; margin-bottom: 0.5rem; }
+        .tp-section-label { font-size: 0.6rem; text-transform: uppercase; font-weight: 700; color: #059669; letter-spacing: 0.05em; margin-bottom: 0.35rem; }
+        .tp-matchup { display: flex; align-items: center; gap: 0.4rem; font-weight: 700; font-size: 0.85rem; }
+        .tp-matchup img { width: 26px; height: 26px; border-radius: 50%; object-fit: contain; background: #f3f4f6; }
+        .tp-time { font-size: 1.2rem; font-weight: 800; color: #f97316; }
+        .tp-meta { font-size: 0.65rem; color: #6b7280; margin-top: 0.15rem; }
+        .tp-channels { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.3rem; }
+        .tp-ch { font-size: 0.6rem; padding: 0.15rem 0.45rem; background: #dbeafe; color: #1d4ed8; border-radius: 4px; font-weight: 600; }
+        .tp-odds { display: flex; gap: 0.25rem; margin-top: 0.4rem; }
+        .tp-odds-chip { font-size: 0.65rem; padding: 0.2rem 0.5rem; background: #f3f4f6; border-radius: 6px; font-weight: 700; color: #374151; }
+        .tp-odds-chip .abbr { color: #9ca3af; font-weight: 600; margin-right: 0.15rem; }
         .tp-odds-chip.draw { color: #ea580c; }
-        .tp-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
+        .tp-live { display: inline-block; background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.7rem; animation: pulse 2s infinite; }
+        .tp-score { font-size: 1.2rem; font-weight: 800; color: #059669; }
+        /* Upcoming games mini list */
+        .tp-upcoming { display: flex; flex-direction: column; gap: 0.3rem; }
+        .tp-upcoming-row { display: flex; align-items: center; justify-content: space-between; padding: 0.3rem 0; font-size: 0.75rem; border-bottom: 1px solid #f1f5f9; }
+        .tp-upcoming-row:last-child { border-bottom: none; }
+        .tp-upcoming-teams { font-weight: 600; color: #374151; display: flex; align-items: center; gap: 0.3rem; }
+        .tp-upcoming-teams img { width: 18px; height: 18px; border-radius: 50%; }
+        .tp-upcoming-time { color: #f97316; font-weight: 700; font-size: 0.7rem; }
+        .tp-upcoming-score { font-weight: 800; color: #059669; }
+        /* Shop products row */
+        .tp-products { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.4rem; margin-bottom: 0.5rem; }
+        .tp-product { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0.5rem; border: 1px solid #e5e7eb; border-radius: 10px; text-decoration: none; color: inherit; transition: border-color 0.15s, transform 0.15s; }
+        .tp-product:hover { border-color: #ff9900; transform: translateY(-1px); }
+        .tp-product.meli { border-color: #3483FA; }
+        .tp-product.meli:hover { border-color: #2968c8; }
+        .tp-product img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 0.3rem; }
+        .tp-product-name { font-size: 0.65rem; font-weight: 600; color: #374151; line-height: 1.2; }
+        .tp-product-brand { font-size: 0.55rem; color: #9ca3af; }
+        .tp-product-store { font-size: 0.55rem; font-weight: 700; margin-top: 0.2rem; }
+        .tp-product-store.amz { color: #ff9900; }
+        .tp-product-store.ml { color: #3483FA; }
+        /* Actions */
+        .tp-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem; }
         .tp-btn { font-size: 0.7rem; padding: 0.4rem 0.8rem; border-radius: 8px; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; }
         .tp-btn-primary { background: #10b981; color: white; }
         .tp-btn-shop { background: #ff9900; color: white; }
         .tp-btn-bet { background: #1a1a2e; color: #10b981; }
-        .tp-live { display: inline-block; background: #ef4444; color: white; padding: 3px 10px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; animation: pulse 2s infinite; }
-        .tp-score { font-size: 1.3rem; font-weight: 800; color: #059669; }
-        .tp-jersey { width: 60px; height: 60px; object-fit: contain; border-radius: 6px; margin-left: auto; }
 
         /* ── Ad Slot (subtle) ───────────────── */
         .ad-slot {
@@ -1162,24 +1189,44 @@
 
     function _buildTeamPanel(d) {
         var html = '<div class="tp-card">';
+        var s = d.stats || {};
 
-        // Header: logo + name + league + record
+        // ── Header: logo + name + league + record badge ──
         html += '<div class="tp-header">';
         if (d.logo) html += '<img src="' + d.logo + '" alt="' + d.name + '" class="tp-logo">';
         html += '<div><div class="tp-name">' + d.name + '</div>';
         html += '<span class="tp-league">' + d.league + '</span>';
-        if (d.record) html += '<span class="tp-record">' + d.record + '</span>';
-        html += '</div>';
-        if (d.jersey_img) html += '<img src="' + d.jersey_img + '" alt="Jersey" class="tp-jersey">';
-        html += '</div>';
+        if (s.record_display) html += '<span class="tp-record">' + s.record_display + '</span>';
+        html += '</div></div>';
 
-        // Live game
+        // ── Stats grid (like team page) ──
+        if (s.rank || s.wins) {
+            html += '<div class="tp-stats">';
+            if (s.rank) html += '<div class="tp-stat"><div class="tp-stat-val">' + s.rank + '</div><div class="tp-stat-label">Posición</div></div>';
+            if (s.record_display) html += '<div class="tp-stat"><div class="tp-stat-val">' + s.record_display + '</div><div class="tp-stat-label">G-E-P</div></div>';
+            if (s.points !== '' && s.points !== undefined && s.sport_type === 'soccer') html += '<div class="tp-stat"><div class="tp-stat-val green">' + s.points + '</div><div class="tp-stat-label">Puntos</div></div>';
+            if (s.goal_diff !== '' && s.goal_diff !== undefined) {
+                var gdClass = Number(s.goal_diff) > 0 ? 'green' : (Number(s.goal_diff) < 0 ? 'red' : '');
+                html += '<div class="tp-stat"><div class="tp-stat-val ' + gdClass + '">' + s.goal_diff + '</div><div class="tp-stat-label">Dif. goles</div></div>';
+            }
+            if (s.win_pct && s.sport_type !== 'soccer') html += '<div class="tp-stat"><div class="tp-stat-val">' + s.win_pct + '</div><div class="tp-stat-label">Win%</div></div>';
+            if (s.streak) html += '<div class="tp-stat"><div class="tp-stat-val">' + s.streak + '</div><div class="tp-stat-label">Racha</div></div>';
+            html += '</div>';
+        }
+
+        // ── Live game ──
         if (d.live_game) {
             var lg = d.live_game;
-            html += '<div class="tp-next" style="border-left:3px solid #ef4444;">';
-            html += '<div class="tp-next-label"><span class="tp-live">EN VIVO</span> ' + lg.status + '</div>';
-            html += '<div class="tp-matchup">' + lg.first + ' <span class="tp-score">' + lg.score_first + '</span>';
-            html += ' - <span class="tp-score">' + lg.score_second + '</span> ' + lg.second + '</div>';
+            html += '<div class="tp-section" style="border-left:3px solid #ef4444;">';
+            html += '<div class="tp-section-label"><span class="tp-live">EN VIVO</span> ' + lg.status_display + '</div>';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+            html += '<div class="tp-matchup">';
+            if (lg.first_logo) html += '<img src="' + lg.first_logo + '" alt="">';
+            html += lg.first + '</div>';
+            html += '<div class="tp-score">' + lg.score_first + ' - ' + lg.score_second + '</div>';
+            html += '<div class="tp-matchup">' + lg.second;
+            if (lg.second_logo) html += '<img src="' + lg.second_logo + '" alt="">';
+            html += '</div></div>';
             if (lg.channels && lg.channels.length) {
                 html += '<div class="tp-channels">';
                 lg.channels.forEach(function(ch) { html += '<span class="tp-ch">' + ch + '</span>'; });
@@ -1188,29 +1235,25 @@
             html += '</div>';
         }
 
-        // Next game
+        // ── Next game (featured) ──
         if (d.next_game) {
             var ng = d.next_game;
-            html += '<div class="tp-next">';
-            html += '<div class="tp-next-label">Proximo juego</div>';
+            html += '<div class="tp-section">';
+            html += '<div class="tp-section-label">Próximo partido</div>';
             html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
             html += '<div class="tp-matchup">';
             if (ng.first_logo) html += '<img src="' + ng.first_logo + '" alt="">';
-            html += ng.first + ' <span style="color:#9ca3af;margin:0 0.3rem;">vs</span> ';
+            html += ng.first + ' <span style="color:#9ca3af;margin:0 0.2rem;">vs</span> ';
             if (ng.second_logo) html += '<img src="' + ng.second_logo + '" alt="">';
             html += ng.second + '</div>';
             html += '<div style="text-align:right;"><div class="tp-time" data-utc="' + ng.date + '">' + ng.time_mx + '</div>';
-            html += '<div class="tp-meta">HORA MX &middot; ' + ng.league + '</div></div>';
+            html += '<div class="tp-meta">Hora CDMX &middot; ' + ng.league + '</div></div>';
             html += '</div>';
-
-            // Channels
             if (ng.channels && ng.channels.length) {
                 html += '<div class="tp-channels">';
                 ng.channels.forEach(function(ch) { html += '<span class="tp-ch">' + ch + '</span>'; });
                 html += '</div>';
             }
-
-            // Odds
             if (ng.odds) {
                 html += '<div class="tp-odds">';
                 var o = ng.odds;
@@ -1222,15 +1265,65 @@
             html += '</div>';
         }
 
-        if (!d.next_game && !d.live_game) {
-            html += '<div class="tp-next"><div class="tp-meta">Sin juegos programados para hoy</div></div>';
+        // ── Last result ──
+        if (d.last_result) {
+            var lr = d.last_result;
+            html += '<div class="tp-section" style="border-left:3px solid #9ca3af;">';
+            html += '<div class="tp-section-label" style="color:#6b7280;">Último resultado</div>';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+            html += '<div class="tp-matchup">';
+            if (lr.first_logo) html += '<img src="' + lr.first_logo + '" alt="">';
+            html += lr.first + '</div>';
+            html += '<div class="tp-score">' + (lr.score_first||'') + ' - ' + (lr.score_second||'') + '</div>';
+            html += '<div class="tp-matchup">' + lr.second;
+            if (lr.second_logo) html += '<img src="' + lr.second_logo + '" alt="">';
+            html += '</div></div>';
+            html += '</div>';
         }
 
-        // Action buttons
+        // ── Upcoming games list ──
+        if (d.upcoming && d.upcoming.length) {
+            html += '<div class="tp-section">';
+            html += '<div class="tp-section-label">Próximos partidos</div>';
+            html += '<div class="tp-upcoming">';
+            d.upcoming.forEach(function(g) {
+                html += '<div class="tp-upcoming-row">';
+                html += '<div class="tp-upcoming-teams">';
+                if (g.first_logo) html += '<img src="' + g.first_logo + '" alt="">';
+                html += g.first + ' vs ' + g.second;
+                if (g.second_logo) html += '<img src="' + g.second_logo + '" alt="">';
+                html += '</div>';
+                html += '<span class="tp-upcoming-time" data-utc="' + g.date + '">' + g.time_mx + '</span>';
+                html += '</div>';
+            });
+            html += '</div></div>';
+        }
+
+        if (!d.next_game && !d.live_game && !d.last_result) {
+            html += '<div class="tp-section"><div class="tp-meta">Sin juegos programados</div></div>';
+        }
+
+        // ── Shop products ──
+        if (d.products && d.products.length) {
+            html += '<div class="tp-section"><div class="tp-section-label">Tienda</div>';
+            html += '<div class="tp-products">';
+            d.products.forEach(function(p) {
+                var isMeli = p.store === 'MercadoLibre';
+                html += '<a href="' + p.url + '" target="_blank" rel="sponsored nofollow noopener" class="tp-product' + (isMeli ? ' meli' : '') + '" data-affiliate="' + (isMeli ? 'mercadolibre' : 'amazon') + '" data-placement="search-shop">';
+                if (p.img) html += '<img src="' + p.img + '" alt="' + p.name + '">';
+                else html += '<div style="width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;background:#f9fafb;border-radius:8px;">' + (p.type==='jersey'?'👕':p.type==='gorra'?'🧢':'🛍️') + '</div>';
+                html += '<div class="tp-product-name">' + p.name + '</div>';
+                if (p.brand) html += '<div class="tp-product-brand">' + p.brand + '</div>';
+                html += '<div class="tp-product-store ' + (isMeli ? 'ml' : 'amz') + '">' + (isMeli ? 'Ver en MercadoLibre ↗' : 'Comprar en Amazon ↗') + '</div>';
+                html += '</a>';
+            });
+            html += '</div></div>';
+        }
+
+        // ── Action buttons ──
         html += '<div class="tp-actions">';
-        html += '<a href="/equipo/' + d.slug + '" class="tp-btn tp-btn-primary">Ver equipo &#8599;</a>';
-        if (d.has_shop) html += '<a href="/equipo/' + d.slug + '#tienda" class="tp-btn tp-btn-shop">Tienda &#128085;</a>';
-        html += '<a href="https://www.strendus.com.mx/sports" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="strendus" data-placement="search-panel">Momios en Strendus &#8599;</a>';
+        html += '<a href="/equipo/' + d.slug + '" class="tp-btn tp-btn-primary">Ver todo sobre ' + d.name + ' ↗</a>';
+        html += '<a href="https://www.strendus.com.mx/sports" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="strendus" data-placement="search-panel">Momios en Strendus ↗</a>';
         html += '</div>';
 
         html += '</div>';

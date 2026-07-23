@@ -714,10 +714,10 @@ async def api_leagues():
 @app.get("/api/team/{team_slug}")
 async def api_team_quick(team_slug: str):
     """
-    Quick team info for the smart search panel.
-    Returns: team info, next game, odds, record, affiliate links.
+    Rich team info for the smart search panel — mini team page.
+    Returns: stats, next/live games, upcoming list, last result, shop products.
     """
-    from config import HOME_LEFT_SPORTS
+    from config import HOME_LEFT_SPORTS, TEAM_SHOP_MELI, MELI_AFF_PARAM
     from sports_api import TEAM_LEAGUE_MAP
 
     team_info = POPULAR_TEAMS.get(team_slug)
@@ -727,7 +727,7 @@ async def api_team_quick(team_slug: str):
     team_name = team_info["name"]
     search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
 
-    # Fetch games, stats, and odds in parallel
+    # Fetch games and stats in parallel
     games_task = search_games(search_term)
     stats_task = get_team_stats(team_slug)
 
@@ -748,69 +748,113 @@ async def api_team_quick(team_slug: str):
             if not team_league: team_league = g.get("league_name", "")
             break
 
-    # Next upcoming game
+    # ── Stats block (mirrors team page) ──
+    stats_block = {}
+    if stats:
+        sport_type = stats.get("sport_type", "")
+        w = stats.get("wins", "")
+        l = stats.get("losses", "")
+        t = stats.get("ties", "")
+        stats_block = {
+            "rank": stats.get("rank", ""),
+            "wins": w, "losses": l, "ties": t,
+            "points": stats.get("points", ""),
+            "goals_for": stats.get("goals_for", ""),
+            "goals_against": stats.get("goals_against", ""),
+            "goal_diff": stats.get("goal_diff", ""),
+            "games_played": stats.get("games_played", ""),
+            "win_pct": stats.get("win_pct", ""),
+            "streak": stats.get("streak", ""),
+            "sport_type": sport_type,
+        }
+        # Build G-E-P or W-L record string
+        if sport_type == "soccer" and w and l:
+            stats_block["record_display"] = f"{w}-{t}-{l}" if t else f"{w}-{l}"
+        elif w and l:
+            stats_block["record_display"] = f"{w}-{l}"
+        else:
+            stats_block["record_display"] = ""
+
+    # ── Games: upcoming, live, completed ──
     upcoming = [g for g in games if g["status"]["state"] == "pre"]
-    next_game = None
-    if upcoming:
-        g = upcoming[0]
+    live_list = [g for g in games if g["status"]["state"] == "in"]
+    completed = [g for g in games if g["status"]["state"] == "post"]
+
+    def _format_game(g, include_odds=False):
         sport = g.get("sport", "")
         home_left = sport in HOME_LEFT_SPORTS
         first = g["home"]["name"] if home_left else g["away"]["name"]
         second = g["away"]["name"] if home_left else g["home"]["name"]
-        channels = [b["channel"] for b in g.get("broadcasts", [])[:3]]
-
-        # Try to get odds
-        odds_data = None
-        try:
-            ls = g.get("league_slug", "")
-            odds_list = await fetch_odds(ls)
-            odds_data = match_odds_to_game(g, odds_list)
-        except Exception:
-            pass
-
-        next_game = {
+        channels = [b["channel"] for b in g.get("broadcasts", [])[:4]]
+        result = {
             "id": g["id"],
-            "first": first,
-            "second": second,
+            "first": first, "second": second,
             "first_logo": g["home"].get("logo", "") if home_left else g["away"].get("logo", ""),
             "second_logo": g["away"].get("logo", "") if home_left else g["home"].get("logo", ""),
             "date": g["date"],
             "time_mx": format_mx_time(g["date"]),
             "league": g.get("league_name", ""),
             "channels": channels,
-            "odds": odds_data,
+            "state": g["status"]["state"],
+            "status_display": g["status"].get("display", ""),
         }
+        # Scores for live/completed
+        if g["status"]["state"] in ("in", "post"):
+            result["score_first"] = g["home"].get("score", "") if home_left else g["away"].get("score", "")
+            result["score_second"] = g["away"].get("score", "") if home_left else g["home"].get("score", "")
+        return result
+
+    # Next game with odds
+    next_game = None
+    if upcoming:
+        next_game = _format_game(upcoming[0])
+        try:
+            ls = upcoming[0].get("league_slug", "")
+            odds_list = await fetch_odds(ls)
+            next_game["odds"] = match_odds_to_game(upcoming[0], odds_list)
+        except Exception:
+            next_game["odds"] = None
+
+    # More upcoming (up to 3 total)
+    upcoming_list = [_format_game(g) for g in upcoming[1:3]]
 
     # Live game
-    live = [g for g in games if g["status"]["state"] == "in"]
-    live_game = None
-    if live:
-        g = live[0]
-        sport = g.get("sport", "")
-        home_left = sport in HOME_LEFT_SPORTS
-        live_game = {
-            "id": g["id"],
-            "first": g["home"]["name"] if home_left else g["away"]["name"],
-            "second": g["away"]["name"] if home_left else g["home"]["name"],
-            "score_first": g["home"].get("score", "") if home_left else g["away"].get("score", ""),
-            "score_second": g["away"].get("score", "") if home_left else g["home"].get("score", ""),
-            "status": g["status"].get("display", ""),
-            "channels": [b["channel"] for b in g.get("broadcasts", [])[:3]],
-        }
+    live_game = _format_game(live_list[0]) if live_list else None
 
-    # Record from stats
-    record = ""
-    if stats:
-        wins = stats.get("wins", "")
-        losses = stats.get("losses", "")
-        if wins and losses:
-            record = f"{wins}-{losses}"
+    # Last result
+    last_result = _format_game(completed[0]) if completed else None
 
-    # Affiliate shop link
+    # ── Shop products ──
     shop = TEAM_SHOP.get(team_slug, {})
-    jersey_img = ""
-    if shop.get("jersey", {}).get("img"):
-        jersey_img = shop["jersey"]["img"]
+    amz_tag = AFFILIATES.get("amazon", "dondever0f-20")
+    products = []
+    if shop.get("jersey"):
+        j = shop["jersey"]
+        products.append({
+            "type": "jersey", "name": j.get("name", "Jersey"),
+            "brand": j.get("brand", ""),
+            "img": j.get("img", ""),
+            "url": f"https://www.amazon.com/dp/{j['asin']}?tag={amz_tag}",
+            "store": "Amazon",
+        })
+    if shop.get("gorra"):
+        g = shop["gorra"]
+        products.append({
+            "type": "gorra", "name": g.get("name", "Gorra"),
+            "brand": g.get("brand", ""),
+            "img": g.get("img", ""),
+            "url": f"https://www.amazon.com/dp/{g['asin']}?tag={amz_tag}",
+            "store": "Amazon",
+        })
+    # MercadoLibre curated link
+    meli_curated = TEAM_SHOP_MELI.get(team_slug)
+    if meli_curated:
+        products.append({
+            "type": "meli", "name": f"Jerseys en MercadoLibre",
+            "brand": "", "img": "",
+            "url": f"{meli_curated}{MELI_AFF_PARAM}",
+            "store": "MercadoLibre",
+        })
 
     return JSONResponse({
         "found": True,
@@ -818,10 +862,12 @@ async def api_team_quick(team_slug: str):
         "name": team_name,
         "logo": team_logo,
         "league": team_league,
-        "record": record,
+        "stats": stats_block,
         "next_game": next_game,
+        "upcoming": upcoming_list,
         "live_game": live_game,
-        "jersey_img": jersey_img,
+        "last_result": last_result,
+        "products": products,
         "has_shop": bool(shop),
     })
 
