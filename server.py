@@ -1597,6 +1597,12 @@ async def sitemap_xml():
         ("guia/donde-ver-mlb-en-venezuela", "weekly", "0.8"),
         ("guia/donde-ver-mlb-en-republica-dominicana", "weekly", "0.8"),
         ("guia/donde-ver-mlb-en-panama", "weekly", "0.8"),
+        # Evergreen high-volume guides (Jul 2026)
+        ("guia/donde-ver-mundial-2026-gratis", "daily", "0.9"),
+        ("guia/mejores-apps-ver-futbol-en-vivo", "weekly", "0.8"),
+        ("guia/como-ver-fox-sports-en-mexico", "weekly", "0.8"),
+        ("guia/donde-ver-futbol-gratis-por-internet", "weekly", "0.8"),
+        ("guia/guia-canales-deportivos-mexico", "weekly", "0.8"),
     ]
     for page, freq, priority in static_pages:
         urls.append(
@@ -1932,6 +1938,9 @@ COUNTRY_SPORT_PRIORITY = {
             {"label": "🏀 Dónde ver NBA", "url": "/guia/donde-ver-nba-en-mexico"},
             {"label": "🏆 Dónde ver Champions League", "url": "/guia/donde-ver-champions-en-mexico"},
             {"label": "🏎️ Dónde ver F1", "url": "/liga/f1"},
+            {"label": "🏆 Mundial 2026 gratis", "url": "/guia/donde-ver-mundial-2026-gratis"},
+            {"label": "📱 Apps para ver futbol", "url": "/guia/mejores-apps-ver-futbol-en-vivo"},
+            {"label": "📺 Canales deportivos", "url": "/guia/guia-canales-deportivos-mexico"},
         ],
     },
     "venezuela": {
