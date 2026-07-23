@@ -3,14 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dónde ver {{ team_name }} hoy en vivo — Canal, horario y transmisión {{ team_league }} | DondeVer</title>
-    <meta name="description" content="¿Dónde ver a {{ team_name }} hoy en vivo? Canales de TV, horarios y streaming para ver {{ team_name }} ({{ team_league }}) en México, USA, Venezuela, República Dominicana, Panamá y toda Latinoamérica. {{ team_aka }}.">
-    <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal, {{ team_name }} horario, {{ team_aka }}, {{ team_league }} en vivo, {{ team_sport }} en vivo hoy, {{ team_name }} Venezuela, {{ team_name }} Republica Dominicana, {{ team_name }} Panama, {{ team_name }} Colombia">
-    <meta property="og:title" content="¿Dónde ver a {{ team_name }} hoy? — Canal y horario en vivo">
-    <meta property="og:description" content="Canales de TV, horario y streaming para {{ team_name }} ({{ team_league }}) en México, USA y Latinoamérica. Actualizado hoy.">
+    <title>Dónde ver {{ team_name }} hoy — Canal y horario | DondeVer</title>
+    <meta name="description" content="¿Dónde ver a {{ team_name }} hoy? Canales, horarios y streaming de {{ team_league }} en México, USA y Latinoamérica.">
+    <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal, {{ team_aka }}, {{ team_league }} en vivo">
+    <meta property="og:title" content="¿Dónde ver a {{ team_name }} hoy? | DondeVer">
+    <meta property="og:description" content="Canales, horario y streaming de {{ team_name }} ({{ team_league }}) en México, USA y Latinoamérica.">
     <meta property="og:image" content="{{ team_logo or 'https://dondever.app/static/og-image.png' }}">
     <meta property="og:url" content="https://dondever.app/equipo/{{ team_slug }}">
     <meta property="og:type" content="website">
+    <meta property="og:locale" content="es_MX">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Dónde ver {{ team_name }} hoy — Canal y horario">
+    <meta name="twitter:description" content="Canales, horarios y streaming de {{ team_league }} en México, USA y Latinoamérica.">
+    <meta name="twitter:image" content="{{ team_logo or 'https://dondever.app/static/og-image.png' }}">
     <link rel="canonical" href="https://dondever.app/equipo/{{ team_slug }}">
     <!-- JSON-LD: SportsTeam -->
     <script type="application/ld+json">
@@ -37,6 +43,39 @@
         {"@type": "ListItem", "position": 1, "name": "DondeVer", "item": "https://dondever.app/"},
         {"@type": "ListItem", "position": 2, "name": "{{ team_league }}", "item": "https://dondever.app/liga/{{ team_league|lower|replace(' ', '-') }}"},
         {"@type": "ListItem", "position": 3, "name": "{{ team_name }}"}
+      ]
+    }
+    </script>
+    <!-- JSON-LD: FAQPage for rich snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Dónde ver a {{ team_name }} hoy en vivo?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Consulta en DondeVer.app los canales de TV y plataformas de streaming que transmiten los partidos de {{ team_name }} ({{ team_league }}) en vivo. Actualizamos horarios y canales para México, USA y toda Latinoamérica."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿En qué canal pasan a {{ team_name }}?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Los partidos de {{ team_name }} se transmiten en diferentes canales según el país. En México generalmente por TUDN, ViX, ESPN o Fox Sports. En USA por ESPN, Fox Sports o las cadenas de la liga. Revisa esta página para ver el canal exacto de cada partido."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿A qué hora juega {{ team_name }} hoy?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "El horario del próximo partido de {{ team_name }} se muestra arriba con la hora local de México (CDMX). La página se actualiza automáticamente a tu zona horaria."
+          }
+        }
       ]
     }
     </script>

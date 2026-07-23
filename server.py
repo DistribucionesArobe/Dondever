@@ -2085,10 +2085,20 @@ async def matchup_page(request: Request, matchup_slug: str):
                 break
 
     if not matched_game:
-        return templates.TemplateResponse(
-            request, "404.html", status_code=410,
-            context={"message": f"No encontramos el partido de hoy. Revisa los juegos de hoy en la home."}
-        )
+        # Redirect to team page instead of 404 — preserves SEO value
+        # Try to find a matching team page for slug_a or slug_b
+        for s in (slug_a, slug_b):
+            if s in POPULAR_TEAMS:
+                return RedirectResponse(url=f"/equipo/{s}", status_code=302)
+            # Check TEAM_ALIASES for partial match
+            for alias, _search in TEAM_ALIASES.items():
+                if s in alias or alias in s:
+                    team_slug_match = alias.replace(" ", "-")
+                    if team_slug_match in POPULAR_TEAMS:
+                        return RedirectResponse(url=f"/equipo/{team_slug_match}", status_code=302)
+                    break
+        # Fallback: redirect to homepage
+        return RedirectResponse(url="/", status_code=302)
 
     # Fetch odds for the game
     odds = None
