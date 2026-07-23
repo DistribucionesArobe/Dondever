@@ -197,7 +197,7 @@ def parse_events(data: dict, league_slug: str, league_name: str, emoji: str) -> 
             "time": time_str,
             "channel": channel,
             "status": status,
-            "season": event.get("season", {}).get("type", {}).get("name", ""),
+            "season": str(event.get("season", {}).get("year", "")),
         })
 
     return games
