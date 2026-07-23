@@ -8,4 +8,7 @@ build/
 venv/
 .DS_Store
 static/tiktok/
+static/instagram/
 subscribers.json
+.instagram_token
+logs/

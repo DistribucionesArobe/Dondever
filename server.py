@@ -700,6 +700,83 @@ async def api_games(
     return JSONResponse({"games": games, "count": len(games)})
 
 
+@app.get("/api/instagram-image")
+async def api_instagram_image(date: Optional[str] = None):
+    """Generate Instagram daily image and return public URL.
+    The image is saved to /static/instagram/ so it's publicly accessible
+    (required by Meta Content Publishing API).
+    """
+    from generate_instagram import (
+        get_todays_games as ig_get_games,
+        pick_best_games, generate_image, download_logo,
+    )
+    import asyncio as _aio
+
+    now = datetime.now(TZ_MX)
+    if date:
+        date_str = date.replace("-", "")
+    else:
+        date_str = now.strftime("%Y%m%d")
+
+    date_nice = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+
+    # Fetch real games
+    games = await ig_get_games(date_str)
+    if not games:
+        return JSONResponse({"error": "No games found", "date": date_nice}, status_code=404)
+
+    selected = pick_best_games(games, 7)
+
+    # Download logos
+    logo_urls = set()
+    for g in selected:
+        for k in ("home", "away"):
+            url = g[k].get("logo", "")
+            if url:
+                logo_urls.add(url)
+
+    logos = {}
+    logo_tasks = {url: download_logo(url) for url in logo_urls}
+    results = await _aio.gather(*logo_tasks.values(), return_exceptions=True)
+    for url, result in zip(logo_tasks.keys(), results):
+        if result and not isinstance(result, Exception):
+            logos[url] = result
+
+    # Generate image
+    img = generate_image(selected, date_str, False, logos)
+
+    # Save to static folder
+    filename = f"juegos_{date_nice}.png"
+    static_path = os.path.join("static", "instagram", filename)
+    img.save(static_path, "PNG", quality=95)
+
+    public_url = f"{APP_URL}/static/instagram/{filename}"
+
+    # Build caption
+    lines = [f"⚽🏀⚾ Juegos de hoy — {date_nice}\n"]
+    for g in selected:
+        emoji = g.get("emoji", "⚽")
+        ch = g.get("channel", "")
+        lines.append(f"{g['time']} {g['away']['name']} vs {g['home']['name']} — {ch}")
+    lines.append("\n📺 Todos los horarios y canales en DondeVer.app")
+    lines.append("\n#DondeVer #DeportesEnVivo #LigaMX #MLB #NBA #NFL #FutbolMexicano #DeportesHoy")
+    caption = "\n".join(lines)
+
+    return JSONResponse({
+        "image_url": public_url,
+        "filename": filename,
+        "date": date_nice,
+        "games_count": len(selected),
+        "caption": caption,
+        "games": [
+            {"time": g["time"], "league": g["league"],
+             "away": g["away"]["name"], "home": g["home"]["name"],
+             "channel": g.get("channel", "")}
+            for g in selected
+        ],
+    })
+
+
 @app.get("/api/leagues")
 async def api_leagues():
     """List available leagues."""
