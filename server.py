@@ -748,6 +748,7 @@ async def api_instagram_image(date: Optional[str] = None):
     # Save to static folder
     filename = f"juegos_{date_nice}.png"
     static_path = os.path.join("static", "instagram", filename)
+    os.makedirs(os.path.dirname(static_path), exist_ok=True)
     img.save(static_path, "PNG", quality=95)
 
     public_url = f"{APP_URL}/static/instagram/{filename}"
