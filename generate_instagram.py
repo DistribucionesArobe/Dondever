@@ -115,6 +115,26 @@ GRAY = (156, 163, 175)          # #9ca3af
 LIGHT_GRAY = (209, 213, 219)    # #d1d5db
 ACCENT_LIME = (163, 230, 53)    # #a3e635
 
+# League accent colors (for card left border)
+LEAGUE_COLORS = {
+    "liga-mx":        (0, 180, 80),      # green
+    "world-cup":      (218, 165, 32),    # gold
+    "champions":      (0, 82, 155),      # UEFA blue
+    "premier-league": (55, 0, 130),      # EPL purple
+    "la-liga":        (255, 87, 34),     # orange
+    "mls":            (0, 45, 114),      # dark blue
+    "nfl":            (1, 51, 105),      # NFL blue
+    "nba":            (200, 16, 46),     # NBA red
+    "mlb":            (0, 51, 160),      # MLB blue
+    "nhl":            (0, 0, 0),         # black
+    "ufc":            (213, 0, 0),       # UFC red
+    "serie-a":        (0, 140, 72),      # green
+    "bundesliga":     (220, 0, 50),      # red
+    "ligue-1":        (15, 80, 22),      # dark green
+    "europa-league":  (252, 76, 2),      # orange
+    "copa-america":   (0, 51, 153),      # blue
+}
+
 
 # ── ESPN API ────────────────────────────────────────────────
 
@@ -324,34 +344,85 @@ async def download_logo(url: str) -> Optional[Image.Image]:
     return None
 
 
+def draw_gradient_bg(img, color_top, color_bottom):
+    """Draw a vertical gradient background."""
+    W, H = img.size
+    draw = ImageDraw.Draw(img)
+    for y in range(H):
+        ratio = y / H
+        r = int(color_top[0] + (color_bottom[0] - color_top[0]) * ratio)
+        g = int(color_top[1] + (color_bottom[1] - color_top[1]) * ratio)
+        b = int(color_top[2] + (color_bottom[2] - color_top[2]) * ratio)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+
+def draw_decorative_elements(draw, W, H):
+    """Draw subtle decorative circles and lines in background."""
+    import random
+    random.seed(42)  # Consistent pattern
+    for _ in range(25):
+        cx = random.randint(0, W)
+        cy = random.randint(0, H)
+        r = random.randint(20, 120)
+        opacity = random.randint(8, 20)
+        draw.ellipse(
+            [cx - r, cy - r, cx + r, cy + r],
+            fill=(255, 255, 255, opacity) if hasattr(draw, '_image') else (30, 35, 55),
+            outline=None,
+        )
+    # Diagonal accent lines
+    for i in range(3):
+        x_offset = 200 + i * 350
+        draw.line([(x_offset, 0), (x_offset - 200, H)], fill=(40, 45, 65), width=1)
+
+
 def generate_image(
     games: list,
     date_str: str,
     is_stories: bool = False,
     logos: dict = None,
 ) -> Image.Image:
-    """Generate the Instagram image."""
+    """Generate the Instagram image with vibrant design."""
     W = 1080
     H = 1920 if is_stories else 1350
 
     img = Image.new("RGB", (W, H), BG_DARK)
+
+    # ── Gradient background ────────────────────────────
+    draw_gradient_bg(img, (12, 10, 40), (22, 28, 52))
+
     draw = ImageDraw.Draw(img)
 
+    # Decorative background elements
+    draw_decorative_elements(draw, W, H)
+
+    # ── Glow accent top ─────────────────────────────
+    # Subtle green glow at top-center
+    for r in range(200, 0, -2):
+        alpha = max(3, int(12 * (1 - r / 200)))
+        color = (16, 185, 129, alpha)  # Green-ish
+        x = W // 2
+        draw.ellipse([x - r, -r, x + r, r], fill=(12 + alpha, 20 + alpha, 40 + alpha // 2))
+
     # Fonts
-    f_title = get_font(64, bold=True)
-    f_subtitle = get_font(52, bold=True)
+    f_title = get_font(72, bold=True)
+    f_subtitle = get_font(56, bold=True)
+    f_date_big = get_font(40, bold=True)
     f_date = get_font(28, bold=True)
-    f_date_sm = get_font(20)
+    f_weekday = get_font(24, bold=True)
     f_league = get_font(22, bold=True)
     f_season = get_font(16)
-    f_time = get_font(36, bold=True)
-    f_team = get_font(26, bold=True)
-    f_vs = get_font(20)
-    f_channel = get_font(20, bold=True)
-    f_footer = get_font(22, bold=True)
+    f_time = get_font(34, bold=True)
+    f_team = get_font(24, bold=True)
+    f_score = get_font(30, bold=True)
+    f_vs = get_font(18)
+    f_channel = get_font(18, bold=True)
+    f_footer = get_font(24, bold=True)
     f_footer_sm = get_font(18)
-    f_brand = get_font(32, bold=True)
-    f_tag = get_font(18, bold=True)
+    f_brand = get_font(36, bold=True)
+    f_tag = get_font(16, bold=True)
+    f_live = get_font(22, bold=True)
+    f_count = get_font(60, bold=True)
 
     y = 40 if not is_stories else 100
 
@@ -359,25 +430,31 @@ def generate_image(
 
     # Brand name top-left
     draw.text((50, y), "DondeVer", fill=GREEN, font=f_brand)
-    draw.text((50 + draw.textlength("DondeVer", font=f_brand), y), ".app", fill=WHITE, font=f_brand)
+    bname_w = draw.textlength("DondeVer", font=f_brand)
+    draw.text((50 + bname_w, y), ".app", fill=WHITE, font=f_brand)
 
-    # "TV ABIERTA EN MÉXICO" badge top-right
-    badge_text = "TV ABIERTA"
-    badge_sub = "EN MÉXICO"
-    bw = draw.textlength(badge_text, font=f_tag) + 30
-    bx = W - 50 - int(bw)
-    draw_rounded_rect(draw, (bx, y, W - 50, y + 50), 8, GREEN)
-    draw.text((bx + 15, y + 5), badge_text, fill=BG_DARK, font=f_tag)
-    draw.text((bx + 15, y + 28), badge_sub, fill=BG_DARK, font=get_font(14, bold=True))
+    # Game count badge top-right
+    count_str = str(len(games))
+    badge_w = 160
+    bx = W - 50 - badge_w
+    draw_rounded_rect(draw, (bx, y - 5, W - 50, y + 55), 12, GREEN)
+    draw.text((bx + 15, y - 2), count_str, fill=BG_DARK, font=f_count)
+    count_w = draw.textlength(count_str, font=f_count)
+    draw.text((bx + 15 + count_w + 8, y + 5), "JUEGOS", fill=BG_DARK, font=f_tag)
+    draw.text((bx + 15 + count_w + 8, y + 24), "EN VIVO", fill=(5, 80, 50), font=f_tag)
 
-    y += 70
+    y += 75
 
-    # Title: "JUEGOS DE HOY"
+    # Title: "JUEGOS DE HOY" with green underline accent
     draw.text((50, y), "JUEGOS", fill=WHITE, font=f_title)
-    y += 60
-    draw.text((50, y), "DE HOY", fill=WHITE, font=f_subtitle)
+    title_w = draw.textlength("JUEGOS", font=f_title)
+    y += 68
+    draw.text((50, y), "DE HOY", fill=GREEN, font=f_subtitle)
+    y += 55
+    # Green accent bar under title
+    draw.rectangle([(50, y), (50 + title_w, y + 5)], fill=GREEN)
 
-    # Date box on the right
+    # Date box on the right — big and bold
     try:
         dt = datetime.strptime(date_str, "%Y%m%d")
         day_num = dt.strftime("%d")
@@ -389,89 +466,78 @@ def generate_image(
     except Exception:
         day_num, month_str, weekday = "??", "???", "---"
 
-    date_box_x = W - 280
-    date_box_y = y - 50
-    draw_rounded_rect(draw, (date_box_x, date_box_y, W - 50, date_box_y + 100), 10, BG_CARD)
-    # Green border
-    draw.rectangle((date_box_x, date_box_y, date_box_x + 4, date_box_y + 100), fill=GREEN)
+    date_box_x = W - 300
+    date_box_y = y - 110
+    draw_rounded_rect(draw, (date_box_x, date_box_y, W - 50, date_box_y + 115), 14, (25, 30, 55))
+    # Green left border
+    draw.rectangle((date_box_x, date_box_y + 10, date_box_x + 5, date_box_y + 105), fill=GREEN)
 
-    draw.text((date_box_x + 20, date_box_y + 10), f"{day_num} {month_str}", fill=GREEN, font=f_date)
-    draw.text((date_box_x + 20, date_box_y + 45), weekday, fill=WHITE, font=f_date)
-    draw.text((date_box_x + 20, date_box_y + 75), "TIEMPO DEL CENTRO (CDMX)", fill=GRAY, font=get_font(12))
+    draw.text((date_box_x + 22, date_box_y + 12), f"{day_num} {month_str}", fill=GREEN, font=f_date_big)
+    draw.text((date_box_x + 22, date_box_y + 58), weekday, fill=WHITE, font=f_weekday)
+    draw.text((date_box_x + 22, date_box_y + 88), "HORA CDMX (UTC-6)", fill=GRAY, font=get_font(13))
 
-    y += 70
-
-    # Divider line
-    draw.line([(50, y), (W - 50, y)], fill=(40, 44, 60), width=2)
-    y += 15
+    y += 25
 
     # ── Game rows ───────────────────────────────────────
 
     num_games = len(games)
     if is_stories:
-        row_h = min(150, (H - y - 150) // max(num_games, 1))
+        row_h = min(150, (H - y - 180) // max(num_games, 1))
     else:
-        row_h = min(130, (H - y - 150) // max(num_games, 1))
-    gap = 8
+        row_h = min(130, (H - y - 180) // max(num_games, 1))
+    gap = 10
 
     for i, game in enumerate(games):
         ry = y + i * (row_h + gap)
         card_bg = BG_CARD if i % 2 == 0 else BG_CARD_ALT
 
-        # Card background
-        draw_rounded_rect(draw, (30, ry, W - 30, ry + row_h), 12, card_bg)
+        # Card background with rounded corners
+        draw_rounded_rect(draw, (30, ry, W - 30, ry + row_h), 14, card_bg)
 
-        # Left section: League info
-        league_x = 50
-        league_y = ry + 15
+        # Colored left accent bar by league
+        league_color = LEAGUE_COLORS.get(game["league_slug"], GREEN)
+        draw.rectangle([(30, ry + 8), (36, ry + row_h - 8)], fill=league_color)
 
-        # League name
-        draw.text((league_x, league_y), game["league"].upper(), fill=WHITE, font=f_league)
+        # ── Left: League + emoji ──────────
+        league_x = 55
+        league_y = ry + row_h // 2 - 22
 
-        # Season/type below league
-        season_text = ""
-        if game.get("season"):
-            s = game["season"]
-            if "Regular" in s:
-                season_text = "TEMPORADA 2026"
-            elif "Post" in s:
-                season_text = "PLAYOFFS"
-            elif "Pre" in s:
-                season_text = "PRETEMPORADA"
-            elif "All" in s:
-                season_text = "ALL-STAR"
-            else:
-                season_text = s.upper()
+        # League colored dot
+        dot_r = 6
+        draw.ellipse([league_x, league_y + 6, league_x + dot_r * 2, league_y + 6 + dot_r * 2], fill=league_color)
+        draw.text((league_x + 18, league_y), game["league"].upper(), fill=WHITE, font=f_league)
+
+        # Season below
+        season_text = game.get("season", "")
         if season_text:
-            draw.text((league_x, league_y + 28), season_text, fill=GRAY, font=f_season)
+            draw.text((league_x + 18, league_y + 26), season_text, fill=GRAY, font=f_season)
 
-        # Vertical separator after league
+        # ── Center: Time/Status ───────────
         sep_x = 260
-        draw.line([(sep_x, ry + 15), (sep_x, ry + row_h - 15)], fill=(50, 55, 70), width=2)
+        draw.line([(sep_x, ry + 15), (sep_x, ry + row_h - 15)], fill=(45, 50, 70), width=1)
 
-        # Time
-        time_x = sep_x + 25
-        time_color = GREEN if game["status"] == "STATUS_SCHEDULED" else ACCENT_LIME
+        time_x = sep_x + 15
+
         if game["status"] in ("STATUS_IN_PROGRESS", "STATUS_HALFTIME"):
-            time_text = "EN VIVO"
-            time_color = (239, 68, 68)  # Red
+            # Red "EN VIVO" badge with pulsing dot
+            live_bg = (180, 20, 30)
+            lx = time_x
+            ly = ry + row_h // 2 - 18
+            draw_rounded_rect(draw, (lx, ly, lx + 110, ly + 36), 8, live_bg)
+            # Red dot
+            draw.ellipse([lx + 10, ly + 12, lx + 22, ly + 24], fill=(255, 80, 80))
+            draw.text((lx + 28, ly + 5), "EN VIVO", fill=WHITE, font=f_live)
         elif game["status"] in ("STATUS_FINAL", "STATUS_FULL_TIME"):
-            time_text = "FINAL"
-            time_color = GRAY
+            draw.text((time_x, ry + row_h // 2 - 18), "FINAL", fill=GRAY, font=f_time)
         else:
-            time_text = game["time"]
+            draw.text((time_x, ry + row_h // 2 - 20), game["time"], fill=GREEN, font=f_time)
 
-        draw.text((time_x, ry + (row_h // 2) - 20), time_text, fill=time_color, font=f_time)
+        # ── Right: Teams ──────────────────
+        sep2_x = sep_x + 130
+        draw.line([(sep2_x, ry + 15), (sep2_x, ry + row_h - 15)], fill=(45, 50, 70), width=1)
 
-        # Vertical separator after time
-        sep2_x = sep_x + 140
-        draw.line([(sep2_x, ry + 15), (sep2_x, ry + row_h - 15)], fill=(50, 55, 70), width=2)
-
-        # Teams section
-        teams_x = sep2_x + 20
-
-        # Team logos (if available)
-        logo_size = 32
+        teams_x = sep2_x + 15
+        logo_size = 34
         logo_x = teams_x
 
         # Away team logo
@@ -479,62 +545,80 @@ def generate_image(
         if logos and away_logo_key in logos and logos[away_logo_key]:
             logo_img = logos[away_logo_key].resize((logo_size, logo_size), Image.LANCZOS)
             try:
-                img.paste(logo_img, (logo_x, ry + 12), logo_img)
+                img.paste(logo_img, (logo_x, ry + 10), logo_img)
             except Exception:
-                img.paste(logo_img, (logo_x, ry + 12))
+                img.paste(logo_img, (logo_x, ry + 10))
 
         # Home team logo
         home_logo_key = game["home"].get("logo", "")
         if logos and home_logo_key in logos and logos[home_logo_key]:
             logo_img = logos[home_logo_key].resize((logo_size, logo_size), Image.LANCZOS)
             try:
-                img.paste(logo_img, (logo_x, ry + row_h - logo_size - 12), logo_img)
+                img.paste(logo_img, (logo_x, ry + row_h - logo_size - 10), logo_img)
             except Exception:
-                img.paste(logo_img, (logo_x, ry + row_h - logo_size - 12))
+                img.paste(logo_img, (logo_x, ry + row_h - logo_size - 10))
 
-        # Team names — always try full name; only shorten if > 22 chars
+        # Team names
         name_x = logo_x + logo_size + 10
-        max_name_chars = 22
+        max_name_chars = 20
         away_name = game["away"]["name"] if len(game["away"]["name"]) <= max_name_chars else game["away"]["short"]
         home_name = game["home"]["name"] if len(game["home"]["name"]) <= max_name_chars else game["home"]["short"]
 
-        # Layout: AWAY on top, "vs." in green small, HOME on bottom
         draw.text((name_x, ry + 12), away_name.upper(), fill=WHITE, font=f_team)
-        draw.text((name_x, ry + 40), "vs.", fill=GREEN, font=f_vs)
-        draw.text((name_x, ry + row_h - 40), home_name.upper(), fill=WHITE, font=f_team)
+        draw.text((name_x, ry + 38), "vs.", fill=GRAY, font=f_vs)
+        draw.text((name_x, ry + row_h - 38), home_name.upper(), fill=WHITE, font=f_team)
 
-        # Scores (if in progress or final)
+        # Scores (bold, larger)
         if game["status"] in ("STATUS_IN_PROGRESS", "STATUS_HALFTIME", "STATUS_FINAL", "STATUS_FULL_TIME"):
-            score_x = name_x + 250
             if game["away"].get("score"):
-                draw.text((score_x, ry + 15), str(game["away"]["score"]), fill=WHITE, font=f_team)
+                score_text = str(game["away"]["score"])
+                sw = draw.textlength(score_text, font=f_score)
+                draw.text((W - 160 - sw, ry + 10), score_text, fill=WHITE, font=f_score)
             if game["home"].get("score"):
-                draw.text((score_x, ry + row_h - 42), str(game["home"]["score"]), fill=WHITE, font=f_team)
+                score_text = str(game["home"]["score"])
+                sw = draw.textlength(score_text, font=f_score)
+                draw.text((W - 160 - sw, ry + row_h - 40), score_text, fill=WHITE, font=f_score)
 
-        # Channel (right side)
+        # Channel badge (right side)
         channel = game.get("channel", "")
         if channel:
+            # Truncate long channel names
+            if len(channel) > 14:
+                channel = channel[:12] + ".."
             ch_w = draw.textlength(channel, font=f_channel)
-            ch_x = W - 60 - int(ch_w)
+            ch_x = W - 55 - int(ch_w)
             ch_y = ry + (row_h // 2) - 12
+            # Channel pill background
+            draw_rounded_rect(draw, (ch_x - 10, ch_y - 4, W - 42, ch_y + 22), 6, (35, 40, 60))
             draw.text((ch_x, ch_y), channel, fill=GREEN, font=f_channel)
 
     # ── Footer ──────────────────────────────────────────
 
-    footer_y = H - 100 if not is_stories else H - 160
-    draw.line([(50, footer_y - 20), (W - 50, footer_y - 20)], fill=(40, 44, 60), width=2)
+    footer_y = H - 120 if not is_stories else H - 180
+
+    # Gradient bar separator
+    for x in range(50, W - 50):
+        ratio = (x - 50) / (W - 100)
+        r = int(16 + (0 - 16) * ratio)
+        g = int(185 + (100 - 185) * ratio)
+        b = int(129 + (255 - 129) * ratio)
+        draw.line([(x, footer_y - 15), (x, footer_y - 12)], fill=(abs(r), abs(g), abs(b)))
 
     # Footer text
-    draw.text((50, footer_y), "TODOS LOS HORARIOS,", fill=GRAY, font=f_footer_sm)
-    draw.text((50, footer_y + 22), "CANALES Y RESULTADOS EN:", fill=GRAY, font=f_footer_sm)
+    draw.text((50, footer_y + 5), "TODOS LOS HORARIOS,", fill=GRAY, font=f_footer_sm)
+    draw.text((50, footer_y + 27), "CANALES Y RESULTADOS EN:", fill=GRAY, font=f_footer_sm)
 
-    # DondeVer.app button
+    # DondeVer.app button — bigger, bolder
     btn_text = "DondeVer.app"
-    btn_w = draw.textlength(btn_text, font=f_footer) + 40
+    btn_w = draw.textlength(btn_text, font=f_footer) + 50
     btn_x = W - 60 - int(btn_w)
     btn_y = footer_y + 5
-    draw_rounded_rect(draw, (btn_x, btn_y, btn_x + int(btn_w), btn_y + 40), 8, GREEN)
-    draw.text((btn_x + 20, btn_y + 5), btn_text, fill=BG_DARK, font=f_footer)
+    draw_rounded_rect(draw, (btn_x, btn_y, btn_x + int(btn_w), btn_y + 45), 10, GREEN)
+    draw.text((btn_x + 25, btn_y + 8), btn_text, fill=BG_DARK, font=f_footer)
+
+    # Social CTA
+    cta_y = footer_y + 65
+    draw.text((W // 2 - 150, cta_y), "Síguenos  @dondeverapp", fill=GRAY, font=get_font(20, bold=True))
 
     return img
 
