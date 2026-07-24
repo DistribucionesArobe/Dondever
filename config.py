@@ -65,6 +65,15 @@ AFFILIATES = {
         "cta_twitter": "Ve deportes en Amazon Prime Video",
         "bonus": "Deportes en vivo en Prime Video",
     },
+    "surfshark": {
+        "name": "Surfshark VPN",
+        "url": os.getenv("AFFILIATE_SURFSHARK", "") or "https://www.jdoqocy.com/click-101647648-15741703",
+        "logo": "/static/affiliates/vpn.svg",
+        "cta": "Desbloquea contenido deportivo con VPN",
+        "cta_short": "VPN para deportes",
+        "cta_twitter": "Ve partidos de cualquier region con VPN",
+        "bonus": "Hasta 86% de descuento + 3 meses gratis",
+    },
 }
 
 # ── MercadoLibre Afiliados (Mexico / LATAM) ──────────────
