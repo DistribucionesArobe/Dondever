@@ -29,11 +29,16 @@ except ImportError:
     import httpx
 
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from jinja2 import Environment, FileSystemLoader
 except ImportError:
-    print("Installing Pillow...")
-    os.system(f"{sys.executable} -m pip install Pillow -q")
-    from PIL import Image, ImageDraw, ImageFont
+    os.system(f"{sys.executable} -m pip install jinja2 -q")
+    from jinja2 import Environment, FileSystemLoader
+
+try:
+    from playwright.async_api import async_playwright
+except ImportError:
+    os.system(f"{sys.executable} -m pip install playwright -q")
+    from playwright.async_api import async_playwright
 
 
 # ── Config ──────────────────────────────────────────────────
@@ -288,339 +293,175 @@ def pick_best_games(games: list, max_games: int = MAX_GAMES) -> list:
     return selected
 
 
-# ── Image Generation ────────────────────────────────────────
+# ── Image Generation (HTML → PNG via Playwright) ──────────
 
-def get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-    """Get a system font. Falls back gracefully."""
-    font_paths = []
-    if bold:
-        font_paths = [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/System/Library/Fonts/Helvetica.ttc",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        ]
-    else:
-        font_paths = [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "/System/Library/Fonts/Helvetica.ttc",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        ]
+# League color hex for HTML template
+LEAGUE_COLORS_HEX = {
+    "liga-mx":        "#00b450",
+    "world-cup":      "#daa520",
+    "champions":      "#00529b",
+    "premier-league": "#37003c",
+    "la-liga":        "#ff5722",
+    "mls":            "#002d72",
+    "nfl":            "#013369",
+    "nba":            "#c8102e",
+    "mlb":            "#0033a0",
+    "nhl":            "#000000",
+    "ufc":            "#d50000",
+    "serie-a":        "#008c48",
+    "bundesliga":     "#dc0032",
+    "ligue-1":        "#0f5016",
+    "europa-league":  "#fc4c02",
+    "copa-america":   "#003399",
+}
 
-    for fp in font_paths:
-        if os.path.exists(fp):
-            try:
-                return ImageFont.truetype(fp, size)
-            except Exception:
-                continue
-
-    return ImageFont.load_default()
-
-
-def draw_rounded_rect(draw, xy, radius, fill):
-    """Draw a rounded rectangle."""
-    x0, y0, x1, y1 = xy
-    draw.rectangle([x0 + radius, y0, x1 - radius, y1], fill=fill)
-    draw.rectangle([x0, y0 + radius, x1, y1 - radius], fill=fill)
-    draw.pieslice([x0, y0, x0 + 2*radius, y0 + 2*radius], 180, 270, fill=fill)
-    draw.pieslice([x1 - 2*radius, y0, x1, y0 + 2*radius], 270, 360, fill=fill)
-    draw.pieslice([x0, y1 - 2*radius, x0 + 2*radius, y1], 90, 180, fill=fill)
-    draw.pieslice([x1 - 2*radius, y1 - 2*radius, x1, y1], 0, 90, fill=fill)
+# Short league display names for Instagram
+LEAGUE_SHORT_NAMES = {
+    "Champions League": "CHAMPIONS",
+    "Premier League": "PREMIER",
+    "Europa League": "EUROPA",
+    "Copa América": "COPA AME",
+}
 
 
-async def download_logo(url: str) -> Optional[Image.Image]:
-    """Download a team logo and return as PIL Image."""
-    if not url:
-        return None
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(url)
-            if resp.status_code == 200:
-                from io import BytesIO
-                img = Image.open(BytesIO(resp.content))
-                img = img.convert("RGBA")
-                return img
-    except Exception:
-        pass
-    return None
-
-
-def draw_gradient_bg(img, color_top, color_bottom):
-    """Draw a vertical gradient background."""
-    W, H = img.size
-    draw = ImageDraw.Draw(img)
-    for y in range(H):
-        ratio = y / H
-        r = int(color_top[0] + (color_bottom[0] - color_top[0]) * ratio)
-        g = int(color_top[1] + (color_bottom[1] - color_top[1]) * ratio)
-        b = int(color_top[2] + (color_bottom[2] - color_top[2]) * ratio)
-        draw.line([(0, y), (W, y)], fill=(r, g, b))
-
-
-def draw_decorative_elements(draw, W, H):
-    """Draw subtle decorative circles and lines in background."""
-    import random
-    random.seed(42)  # Consistent pattern
-    for _ in range(25):
-        cx = random.randint(0, W)
-        cy = random.randint(0, H)
-        r = random.randint(20, 120)
-        opacity = random.randint(8, 20)
-        draw.ellipse(
-            [cx - r, cy - r, cx + r, cy + r],
-            fill=(255, 255, 255, opacity) if hasattr(draw, '_image') else (30, 35, 55),
-            outline=None,
-        )
-    # Diagonal accent lines
-    for i in range(3):
-        x_offset = 200 + i * 350
-        draw.line([(x_offset, 0), (x_offset - 200, H)], fill=(40, 45, 65), width=1)
-
-
-def generate_image(
-    games: list,
-    date_str: str,
-    is_stories: bool = False,
-    logos: dict = None,
-) -> Image.Image:
-    """Generate the Instagram image with vibrant design."""
-    W = 1080
-    H = 1920 if is_stories else 1350
-
-    img = Image.new("RGB", (W, H), BG_DARK)
-
-    # ── Gradient background ────────────────────────────
-    draw_gradient_bg(img, (12, 10, 40), (22, 28, 52))
-
-    draw = ImageDraw.Draw(img)
-
-    # Decorative background elements
-    draw_decorative_elements(draw, W, H)
-
-    # ── Glow accent top ─────────────────────────────
-    # Subtle green glow at top-center
-    for r in range(200, 0, -2):
-        alpha = max(3, int(12 * (1 - r / 200)))
-        color = (16, 185, 129, alpha)  # Green-ish
-        x = W // 2
-        draw.ellipse([x - r, -r, x + r, r], fill=(12 + alpha, 20 + alpha, 40 + alpha // 2))
-
-    # Fonts
-    f_title = get_font(72, bold=True)
-    f_subtitle = get_font(56, bold=True)
-    f_date_big = get_font(40, bold=True)
-    f_date = get_font(28, bold=True)
-    f_weekday = get_font(24, bold=True)
-    f_league = get_font(22, bold=True)
-    f_season = get_font(16)
-    f_time = get_font(34, bold=True)
-    f_team = get_font(24, bold=True)
-    f_score = get_font(30, bold=True)
-    f_vs = get_font(18)
-    f_channel = get_font(18, bold=True)
-    f_footer = get_font(24, bold=True)
-    f_footer_sm = get_font(18)
-    f_brand = get_font(36, bold=True)
-    f_tag = get_font(16, bold=True)
-    f_live = get_font(22, bold=True)
-    f_count = get_font(60, bold=True)
-
-    y = 40 if not is_stories else 100
-
-    # ── Header ──────────────────────────────────────────
-
-    # Brand name top-left
-    draw.text((50, y), "DondeVer", fill=GREEN, font=f_brand)
-    bname_w = draw.textlength("DondeVer", font=f_brand)
-    draw.text((50 + bname_w, y), ".app", fill=WHITE, font=f_brand)
-
-    # Game count badge top-right
-    count_str = str(len(games))
-    badge_w = 160
-    bx = W - 50 - badge_w
-    draw_rounded_rect(draw, (bx, y - 5, W - 50, y + 55), 12, GREEN)
-    draw.text((bx + 15, y - 2), count_str, fill=BG_DARK, font=f_count)
-    count_w = draw.textlength(count_str, font=f_count)
-    draw.text((bx + 15 + count_w + 8, y + 5), "JUEGOS", fill=BG_DARK, font=f_tag)
-    draw.text((bx + 15 + count_w + 8, y + 24), "EN VIVO", fill=(5, 80, 50), font=f_tag)
-
-    y += 75
-
-    # Title: "JUEGOS DE HOY" with green underline accent
-    draw.text((50, y), "JUEGOS", fill=WHITE, font=f_title)
-    title_w = draw.textlength("JUEGOS", font=f_title)
-    y += 68
-    draw.text((50, y), "DE HOY", fill=GREEN, font=f_subtitle)
-    y += 55
-    # Green accent bar under title
-    draw.rectangle([(50, y), (50 + title_w, y + 5)], fill=GREEN)
-
-    # Date box on the right — big and bold
+def prepare_template_data(games: list, date_str: str, is_stories: bool = False):
+    """Prepare game data for the HTML template."""
+    # Parse date
     try:
         dt = datetime.strptime(date_str, "%Y%m%d")
         day_num = dt.strftime("%d")
         month_names = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN",
                        "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
         month_str = month_names[dt.month - 1]
-        day_names = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO", "DOMINGO"]
+        day_names = ["LUNES", "MARTES", "MIÉRCOLES", "JUEVES",
+                     "VIERNES", "SÁBADO", "DOMINGO"]
         weekday = day_names[dt.weekday()]
     except Exception:
         day_num, month_str, weekday = "??", "???", "---"
 
-    date_box_x = W - 300
-    date_box_y = y - 110
-    draw_rounded_rect(draw, (date_box_x, date_box_y, W - 50, date_box_y + 115), 14, (25, 30, 55))
-    # Green left border
-    draw.rectangle((date_box_x, date_box_y + 10, date_box_x + 5, date_box_y + 105), fill=GREEN)
+    # Process games for template
+    template_games = []
+    for game in games:
+        slug = game["league_slug"]
+        league_name = game["league"]
+        league_display = LEAGUE_SHORT_NAMES.get(league_name, league_name).upper()
+        if len(league_display) > 12:
+            league_display = league_display[:12]
 
-    draw.text((date_box_x + 22, date_box_y + 12), f"{day_num} {month_str}", fill=GREEN, font=f_date_big)
-    draw.text((date_box_x + 22, date_box_y + 58), weekday, fill=WHITE, font=f_weekday)
-    draw.text((date_box_x + 22, date_box_y + 88), "HORA CDMX (UTC-6)", fill=GRAY, font=get_font(13))
-
-    y += 25
-
-    # ── Game rows ───────────────────────────────────────
-
-    num_games = len(games)
-    if is_stories:
-        row_h = min(150, (H - y - 180) // max(num_games, 1))
-    else:
-        row_h = min(130, (H - y - 180) // max(num_games, 1))
-    gap = 10
-
-    for i, game in enumerate(games):
-        ry = y + i * (row_h + gap)
-        card_bg = BG_CARD if i % 2 == 0 else BG_CARD_ALT
-
-        # Card background with rounded corners
-        draw_rounded_rect(draw, (30, ry, W - 30, ry + row_h), 14, card_bg)
-
-        # Colored left accent bar by league
-        league_color = LEAGUE_COLORS.get(game["league_slug"], GREEN)
-        draw.rectangle([(30, ry + 8), (36, ry + row_h - 8)], fill=league_color)
-
-        # ── Left: League + emoji ──────────
-        league_x = 55
-        league_y = ry + row_h // 2 - 22
-
-        # League colored dot
-        dot_r = 6
-        draw.ellipse([league_x, league_y + 6, league_x + dot_r * 2, league_y + 6 + dot_r * 2], fill=league_color)
-        draw.text((league_x + 18, league_y), game["league"].upper(), fill=WHITE, font=f_league)
-
-        # Season below
-        season_text = game.get("season", "")
-        if season_text:
-            draw.text((league_x + 18, league_y + 26), season_text, fill=GRAY, font=f_season)
-
-        # ── Center: Time/Status ───────────
-        sep_x = 260
-        draw.line([(sep_x, ry + 15), (sep_x, ry + row_h - 15)], fill=(45, 50, 70), width=1)
-
-        time_x = sep_x + 15
-
-        if game["status"] in ("STATUS_IN_PROGRESS", "STATUS_HALFTIME"):
-            # Red "EN VIVO" badge with pulsing dot
-            live_bg = (180, 20, 30)
-            lx = time_x
-            ly = ry + row_h // 2 - 18
-            draw_rounded_rect(draw, (lx, ly, lx + 110, ly + 36), 8, live_bg)
-            # Red dot
-            draw.ellipse([lx + 10, ly + 12, lx + 22, ly + 24], fill=(255, 80, 80))
-            draw.text((lx + 28, ly + 5), "EN VIVO", fill=WHITE, font=f_live)
-        elif game["status"] in ("STATUS_FINAL", "STATUS_FULL_TIME"):
-            draw.text((time_x, ry + row_h // 2 - 18), "FINAL", fill=GRAY, font=f_time)
+        # Season display
+        season = game.get("season", "")
+        if season:
+            if "Regular" in str(season) or season.isdigit():
+                season_display = f"Temporada {season}" if season.isdigit() else "Temporada 2026"
+            elif "Post" in str(season):
+                season_display = "Playoffs"
+            elif "Pre" in str(season):
+                season_display = "Pretemporada"
+            elif "All" in str(season):
+                season_display = "All-Star"
+            else:
+                season_display = str(season)
         else:
-            draw.text((time_x, ry + row_h // 2 - 20), game["time"], fill=GREEN, font=f_time)
+            season_display = ""
 
-        # ── Right: Teams ──────────────────
-        sep2_x = sep_x + 130
-        draw.line([(sep2_x, ry + 15), (sep2_x, ry + row_h - 15)], fill=(45, 50, 70), width=1)
+        # Status
+        status = game["status"]
+        is_live = status in ("STATUS_IN_PROGRESS", "STATUS_HALFTIME")
+        is_final = status in ("STATUS_FINAL", "STATUS_FULL_TIME")
+        show_score = is_live or is_final
 
-        teams_x = sep2_x + 15
-        logo_size = 34
-        logo_x = teams_x
-
-        # Away team logo
-        away_logo_key = game["away"].get("logo", "")
-        if logos and away_logo_key in logos and logos[away_logo_key]:
-            logo_img = logos[away_logo_key].resize((logo_size, logo_size), Image.LANCZOS)
-            try:
-                img.paste(logo_img, (logo_x, ry + 10), logo_img)
-            except Exception:
-                img.paste(logo_img, (logo_x, ry + 10))
-
-        # Home team logo
-        home_logo_key = game["home"].get("logo", "")
-        if logos and home_logo_key in logos and logos[home_logo_key]:
-            logo_img = logos[home_logo_key].resize((logo_size, logo_size), Image.LANCZOS)
-            try:
-                img.paste(logo_img, (logo_x, ry + row_h - logo_size - 10), logo_img)
-            except Exception:
-                img.paste(logo_img, (logo_x, ry + row_h - logo_size - 10))
-
-        # Team names
-        name_x = logo_x + logo_size + 10
-        max_name_chars = 20
-        away_name = game["away"]["name"] if len(game["away"]["name"]) <= max_name_chars else game["away"]["short"]
-        home_name = game["home"]["name"] if len(game["home"]["name"]) <= max_name_chars else game["home"]["short"]
-
-        draw.text((name_x, ry + 12), away_name.upper(), fill=WHITE, font=f_team)
-        draw.text((name_x, ry + 38), "vs.", fill=GRAY, font=f_vs)
-        draw.text((name_x, ry + row_h - 38), home_name.upper(), fill=WHITE, font=f_team)
-
-        # Scores (bold, larger)
-        if game["status"] in ("STATUS_IN_PROGRESS", "STATUS_HALFTIME", "STATUS_FINAL", "STATUS_FULL_TIME"):
-            if game["away"].get("score"):
-                score_text = str(game["away"]["score"])
-                sw = draw.textlength(score_text, font=f_score)
-                draw.text((W - 160 - sw, ry + 10), score_text, fill=WHITE, font=f_score)
-            if game["home"].get("score"):
-                score_text = str(game["home"]["score"])
-                sw = draw.textlength(score_text, font=f_score)
-                draw.text((W - 160 - sw, ry + row_h - 40), score_text, fill=WHITE, font=f_score)
-
-        # Channel badge (right side)
+        # Channel display (truncate if too long)
         channel = game.get("channel", "")
-        if channel:
-            # Truncate long channel names
-            if len(channel) > 14:
-                channel = channel[:12] + ".."
-            ch_w = draw.textlength(channel, font=f_channel)
-            ch_x = W - 55 - int(ch_w)
-            ch_y = ry + (row_h // 2) - 12
-            # Channel pill background
-            draw_rounded_rect(draw, (ch_x - 10, ch_y - 4, W - 42, ch_y + 22), 6, (35, 40, 60))
-            draw.text((ch_x, ch_y), channel, fill=GREEN, font=f_channel)
+        channel_display = channel[:14] if len(channel) > 14 else channel
 
-    # ── Footer ──────────────────────────────────────────
+        # Team display names (use full if short enough, otherwise abbreviation)
+        max_name = 20
+        away_display = game["away"]["name"].upper() if len(game["away"]["name"]) <= max_name else game["away"]["short"].upper()
+        home_display = game["home"]["name"].upper() if len(game["home"]["name"]) <= max_name else game["home"]["short"].upper()
 
-    footer_y = H - 120 if not is_stories else H - 180
+        template_games.append({
+            "league_display": league_display,
+            "league_color": LEAGUE_COLORS_HEX.get(slug, "#10b981"),
+            "season_display": season_display,
+            "time": game["time"],
+            "is_live": is_live,
+            "is_final": is_final,
+            "show_score": show_score,
+            "away": {
+                "display_name": away_display,
+                "logo": game["away"].get("logo", ""),
+                "score": game["away"].get("score"),
+            },
+            "home": {
+                "display_name": home_display,
+                "logo": game["home"].get("logo", ""),
+                "score": game["home"].get("score"),
+            },
+            "channel": channel,
+            "channel_display": channel_display,
+        })
 
-    # Gradient bar separator
-    for x in range(50, W - 50):
-        ratio = (x - 50) / (W - 100)
-        r = int(16 + (0 - 16) * ratio)
-        g = int(185 + (100 - 185) * ratio)
-        b = int(129 + (255 - 129) * ratio)
-        draw.line([(x, footer_y - 15), (x, footer_y - 12)], fill=(abs(r), abs(g), abs(b)))
+    # Calculate card sizing for logo-centric layout
+    num_games = len(template_games)
+    height = 1920 if is_stories else 1350
+    header_footer = 240  # header + title + footer
+    available = height - header_footer
+    card_h = min(160, available // max(num_games, 1) - 12)
+    card_h = max(card_h, 130)  # minimum height for logos
+    gap = max(6, min(14, (available - card_h * num_games) // max(num_games - 1, 1)))
 
-    # Footer text
-    draw.text((50, footer_y + 5), "TODOS LOS HORARIOS,", fill=GRAY, font=f_footer_sm)
-    draw.text((50, footer_y + 27), "CANALES Y RESULTADOS EN:", fill=GRAY, font=f_footer_sm)
+    return {
+        "games": template_games,
+        "day_num": day_num,
+        "month_str": month_str,
+        "weekday": weekday,
+        "height": height,
+        "card_h": card_h,
+        "gap": gap,
+    }
 
-    # DondeVer.app button — bigger, bolder
-    btn_text = "DondeVer.app"
-    btn_w = draw.textlength(btn_text, font=f_footer) + 50
-    btn_x = W - 60 - int(btn_w)
-    btn_y = footer_y + 5
-    draw_rounded_rect(draw, (btn_x, btn_y, btn_x + int(btn_w), btn_y + 45), 10, GREEN)
-    draw.text((btn_x + 25, btn_y + 8), btn_text, fill=BG_DARK, font=f_footer)
 
-    # Social CTA
-    cta_y = footer_y + 65
-    draw.text((W // 2 - 150, cta_y), "Síguenos  @dondeverapp", fill=GRAY, font=get_font(20, bold=True))
+async def generate_image(
+    games: list,
+    date_str: str,
+    is_stories: bool = False,
+    output_path: str = "instagram.png",
+) -> str:
+    """Generate the Instagram image using HTML template + Playwright.
 
-    return img
+    Returns the output file path.
+    """
+    # Prepare template data
+    data = prepare_template_data(games, date_str, is_stories)
+
+    # Render HTML from template
+    template_dir = Path(__file__).parent / "templates"
+    env = Environment(loader=FileSystemLoader(str(template_dir)))
+    template = env.get_template("instagram_image.html")
+    html_content = template.render(**data)
+
+    # Render HTML to PNG with Playwright
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-gpu"],
+        )
+        page = await browser.new_page(
+            viewport={"width": 1080, "height": data["height"]},
+            device_scale_factor=1,
+        )
+
+        await page.set_content(html_content, wait_until="networkidle")
+
+        # Wait for Google Fonts to load
+        await page.wait_for_timeout(2000)
+
+        # Screenshot the full page
+        await page.screenshot(path=output_path, full_page=False)
+        await browser.close()
+
+    print(f"  Image saved: {output_path}")
+    return output_path
 
 
 # ── Main ────────────────────────────────────────────────────
@@ -629,13 +470,10 @@ async def main():
     # Parse args
     date_input = None
     is_stories = False
-    skip_logos = False
 
     for arg in sys.argv[1:]:
         if arg == "--stories":
             is_stories = True
-        elif arg == "--no-logos":
-            skip_logos = True
         else:
             date_input = arg
 
@@ -651,58 +489,37 @@ async def main():
     else:
         date_str = now_mx.strftime("%Y%m%d")
 
-    print(f"\n🏟️  DondeVer Instagram Generator")
-    print(f"📅 Date: {date_str[:4]}-{date_str[4:6]}-{date_str[6:]}")
-    print(f"📐 Format: {'Stories (1080x1920)' if is_stories else 'Feed (1080x1350)'}")
+    print(f"\n  DondeVer Instagram Generator (Playwright)")
+    print(f"  Date: {date_str[:4]}-{date_str[4:6]}-{date_str[6:]}")
+    print(f"  Format: {'Stories (1080x1920)' if is_stories else 'Feed (1080x1350)'}")
     print()
 
     # Fetch games
     games = await get_todays_games(date_str)
 
     if not games:
-        print("❌ No games found for this date.")
+        print("  No games found for this date.")
         sys.exit(0)
 
-    print(f"\n📊 Total games found: {len(games)}")
+    print(f"\n  Total games found: {len(games)}")
 
     # Pick best games
     selected = pick_best_games(games, MAX_GAMES)
-    print(f"✅ Selected {len(selected)} games for image:")
+    print(f"  Selected {len(selected)} games for image:")
     for g in selected:
         ch = g.get('channel', 'N/A')
         print(f"   {g['time']} | {g['league']:20s} | {g['away']['name']} vs {g['home']['name']} | {ch}")
 
-    # Download logos
-    logos = {}
-    if not skip_logos:
-        print("\n🎨 Downloading team logos...")
-        logo_urls = set()
-        for g in selected:
-            for team_key in ("home", "away"):
-                url = g[team_key].get("logo", "")
-                if url:
-                    logo_urls.add(url)
-
-        logo_tasks = {url: download_logo(url) for url in logo_urls}
-        results = await asyncio.gather(*logo_tasks.values())
-        for url, result in zip(logo_tasks.keys(), results):
-            if result:
-                logos[url] = result
-        print(f"   Downloaded {len(logos)}/{len(logo_urls)} logos")
-
     # Generate image
-    print("\n🖼️  Generating image...")
-    img = generate_image(selected, date_str, is_stories, logos)
-
-    # Save
+    print("\n  Generating image with Playwright...")
     date_nice = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
     suffix = "_stories" if is_stories else ""
     filename = f"instagram_juegos_{date_nice}{suffix}.png"
-    output_path = Path(filename)
-    img.save(output_path, "PNG", quality=95)
 
-    print(f"\n✅ Image saved: {output_path}")
-    print(f"   Size: {img.size[0]}x{img.size[1]}")
+    await generate_image(selected, date_str, is_stories, filename)
+
+    output_path = Path(filename)
+    print(f"\n  Image saved: {output_path}")
     print(f"   File: {output_path.stat().st_size / 1024:.0f} KB")
 
     return str(output_path)

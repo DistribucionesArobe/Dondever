@@ -708,9 +708,8 @@ async def api_instagram_image(date: Optional[str] = None):
     """
     from generate_instagram import (
         get_todays_games as ig_get_games,
-        pick_best_games, generate_image, download_logo,
+        pick_best_games, generate_image,
     )
-    import asyncio as _aio
 
     now = datetime.now(TZ_MX)
     if date:
@@ -727,29 +726,11 @@ async def api_instagram_image(date: Optional[str] = None):
 
     selected = pick_best_games(games, 7)
 
-    # Download logos
-    logo_urls = set()
-    for g in selected:
-        for k in ("home", "away"):
-            url = g[k].get("logo", "")
-            if url:
-                logo_urls.add(url)
-
-    logos = {}
-    logo_tasks = {url: download_logo(url) for url in logo_urls}
-    results = await _aio.gather(*logo_tasks.values(), return_exceptions=True)
-    for url, result in zip(logo_tasks.keys(), results):
-        if result and not isinstance(result, Exception):
-            logos[url] = result
-
-    # Generate image
-    img = generate_image(selected, date_str, False, logos)
-
-    # Save to static folder
+    # Generate image with Playwright (HTML → PNG)
     filename = f"juegos_{date_nice}.png"
     static_path = os.path.join("static", "instagram", filename)
     os.makedirs(os.path.dirname(static_path), exist_ok=True)
-    img.save(static_path, "PNG", quality=95)
+    await generate_image(selected, date_str, False, static_path)
 
     public_url = f"{APP_URL}/static/instagram/{filename}"
 
