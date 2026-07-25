@@ -534,6 +534,8 @@
             border-left: 3px solid #25d366;
             border-radius: 12px;
             padding: 1rem 1.1rem;
+        }
+        .wa-cta-top {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -542,6 +544,20 @@
         }
         .wa-cta-title { font-size: 0.9rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem; }
         .wa-cta-sub { font-size: 0.75rem; color: #6b7280; margin-top: 0.2rem; }
+        .wa-cta-features {
+            display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem;
+            font-size: 0.7rem; color: #374151;
+        }
+        .wa-cta-features span { background: #f0fdf4; padding: 0.2rem 0.5rem; border-radius: 4px; }
+        .wa-form {
+            display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;
+        }
+        .wa-form input[type="tel"] {
+            flex: 1; min-width: 180px; padding: 0.55rem 0.75rem;
+            border: 1px solid #d1d5db; border-radius: 8px;
+            font-size: 0.82rem; font-family: inherit;
+        }
+        .wa-form input[type="tel"]:focus { outline: none; border-color: #25d366; }
         .wa-cta-btn {
             background: #25d366;
             color: white;
@@ -552,7 +568,17 @@
             text-decoration: none;
             white-space: nowrap;
             letter-spacing: 0.02em;
+            border: none; cursor: pointer;
         }
+        .wa-cta-btn:hover { background: #1fb855; }
+        .wa-cta-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .wa-msg {
+            margin-top: 0.5rem; font-size: 0.72rem; padding: 0.4rem 0.6rem;
+            border-radius: 6px; display: none;
+        }
+        .wa-msg.success { display: block; background: #f0fdf4; color: #166534; }
+        .wa-msg.error { display: block; background: #fef2f2; color: #991b1b; }
+        .wa-note { font-size: 0.62rem; color: #9ca3af; margin-top: 0.4rem; }
 
         /* ── Popular Teams ──────────────────── */
         .teams-section {
@@ -873,13 +899,27 @@
 </main>
 
 <!-- WhatsApp CTA -->
-<div class="wa-cta">
+<div class="wa-cta" id="wa-subscribe">
     <div class="wa-cta-inner">
-        <div>
-            <div class="wa-cta-title">&#128242; Recibe partidos por WhatsApp</div>
-            <div class="wa-cta-sub">Horarios y alertas gratis, directo a tu telefono.</div>
+        <div class="wa-cta-top">
+            <div>
+                <div class="wa-cta-title">&#128242; Recibe picks y momios por WhatsApp</div>
+                <div class="wa-cta-sub">Tips basados en estadisticas + link a Strendus. Gratis, diario a las 9 AM.</div>
+            </div>
         </div>
-        <a href="https://wa.me/15715463202?text=hoy" class="wa-cta-btn">ACTIVAR GRATIS</a>
+        <div class="wa-cta-features">
+            <span>Juegos del dia</span>
+            <span>Momios</span>
+            <span>Tips estadisticos</span>
+            <span>Over/Under</span>
+        </div>
+        <form class="wa-form" id="waForm" onsubmit="return waSubscribe(event)">
+            <input type="tel" id="waPhone" placeholder="+52 1 834 175 1234" required
+                   pattern="[\+]?[0-9\s\-]{10,15}" title="Numero con lada (ej: +521XXXXXXXXXX)">
+            <button type="submit" class="wa-cta-btn" id="waBtn">SUSCRIBIRME GRATIS</button>
+        </form>
+        <div class="wa-msg" id="waMsg"></div>
+        <div class="wa-note">Solo entretenimiento. +18. Escribe SALIR en cualquier momento para cancelar.</div>
     </div>
 </div>
 
@@ -1002,13 +1042,13 @@
         <a href="/sobre-nosotros">Sobre nosotros</a> &middot;
         <a href="/privacidad">Privacidad</a> &middot;
         <a href="/terminos">Terminos</a> &middot;
-        <a href="https://wa.me/15715463202?text=hoy">WhatsApp</a>
+        <a href="#wa-subscribe" onclick="document.getElementById('wa-subscribe').scrollIntoView({behavior:'smooth'});return false;">WhatsApp</a>
     </p>
     <p style="margin-top:0.3rem">Los enlaces de apuestas son publicidad. Apuesta responsablemente. Solo mayores de 18.</p>
 </footer>
 
 <!-- WhatsApp Float -->
-<a href="https://wa.me/15715463202?text=hoy" class="wa-float" title="Pregunta por WhatsApp">
+<a href="#wa-subscribe" class="wa-float" title="Suscribete a picks por WhatsApp" onclick="document.getElementById('wa-subscribe').scrollIntoView({behavior:'smooth'});return false;">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
         <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.555 4.126 1.528 5.869L.06 23.897l6.171-1.617A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.94 0-3.75-.58-5.264-1.573l-.378-.224-3.91 1.025 1.043-3.811-.247-.393A9.777 9.777 0 012.182 12 9.818 9.818 0 0112 2.182 9.818 9.818 0 0121.818 12 9.818 9.818 0 0112 21.818z"/>
@@ -1353,6 +1393,51 @@
     });
   }, true);
 })();
+
+// ── WhatsApp Subscribe ────────────────────────────
+function waSubscribe(e) {
+  e.preventDefault();
+  var phone = document.getElementById('waPhone').value.replace(/[\s\-]/g, '');
+  if (!phone.startsWith('+')) phone = '+' + phone;
+  var btn = document.getElementById('waBtn');
+  var msg = document.getElementById('waMsg');
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+  msg.className = 'wa-msg';
+  msg.style.display = 'none';
+
+  fetch('/api/whatsapp/subscribe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({phone: phone})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      msg.className = 'wa-msg success';
+      msg.textContent = data.new ? 'Listo! Recibiras picks y momios diario a las 9 AM.' : 'Ya estas suscrito. Recibiras el mensaje diario.';
+      msg.style.display = 'block';
+      btn.textContent = 'SUSCRITO';
+      if (typeof gtag === 'function') {
+        gtag('event', 'whatsapp_subscribe', {event_category: 'engagement'});
+      }
+    } else {
+      msg.className = 'wa-msg error';
+      msg.textContent = data.error || 'Error al registrar. Intenta de nuevo.';
+      msg.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'SUSCRIBIRME GRATIS';
+    }
+  })
+  .catch(function() {
+    msg.className = 'wa-msg error';
+    msg.textContent = 'Error de conexion. Intenta de nuevo.';
+    msg.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'SUSCRIBIRME GRATIS';
+  });
+  return false;
+}
 </script>
 <script src="/static/timezone.js" defer></script>
 </body>

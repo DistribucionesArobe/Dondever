@@ -991,6 +991,31 @@ async def whatsapp_debug():
     return info
 
 
+@app.post("/api/whatsapp/subscribe")
+async def api_whatsapp_subscribe(request: Request):
+    """Public endpoint for WhatsApp opt-in from the website."""
+    try:
+        body = await request.json()
+        phone = body.get("phone", "").strip()
+        if not phone:
+            return {"ok": False, "error": "Ingresa tu numero de telefono."}
+        # Normalize: ensure + prefix, remove spaces
+        phone = phone.replace(" ", "").replace("-", "")
+        if not phone.startswith("+"):
+            phone = "+" + phone
+        # Basic validation: must be 10-15 digits after +
+        digits = phone[1:]
+        if not digits.isdigit() or len(digits) < 10 or len(digits) > 15:
+            return {"ok": False, "error": "Numero invalido. Usa formato +521XXXXXXXXXX"}
+        from subscribers import subscribe
+        is_new = subscribe(phone)
+        logger.info(f"WhatsApp subscribe from web: {phone} (new={is_new})")
+        return {"ok": True, "new": is_new}
+    except Exception as e:
+        logger.error(f"WhatsApp subscribe error: {e}")
+        return {"ok": False, "error": "Error interno. Intenta de nuevo."}
+
+
 @app.get("/admin/subscribers")
 async def admin_subscribers(token: str = ""):
     """
