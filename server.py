@@ -1160,12 +1160,13 @@ _last_broadcast = {"ran_at": None, "result": None, "error": None}
 @app.api_route("/whatsapp/broadcast-now", methods=["GET", "POST"])
 async def whatsapp_broadcast_now(token: str = ""):
     """Disparar el broadcast diario ahora mismo a todos los suscriptores.
-    Acepta GET y POST para compatibilidad con cron externos (cron-job.org, etc.)."""
+    Acepta GET y POST para compatibilidad con cron externos (cron-job.org, etc.).
+    Usa Meta Cloud API (send_whatsapp_daily.py)."""
     admin_token = os.getenv("ADMIN_TOKEN", "")
     if not admin_token or token != admin_token:
         return {"ok": False, "error": "token invalido"}
     try:
-        from whatsapp_broadcast import send_daily_broadcast
+        from send_whatsapp_daily import send_daily_broadcast
         result = await send_daily_broadcast()
         _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
         _last_broadcast["result"] = result
@@ -1178,17 +1179,30 @@ async def whatsapp_broadcast_now(token: str = ""):
         return {"ok": False, "error": str(e), "type": type(e).__name__}
 
 
+@app.api_route("/whatsapp/broadcast-preview", methods=["GET"])
+async def whatsapp_broadcast_preview():
+    """Preview del mensaje diario sin enviarlo."""
+    try:
+        from send_whatsapp_daily import compose_daily_message
+        msg = await compose_daily_message()
+        if msg:
+            return {"ok": True, "message": msg, "chars": len(msg)}
+        return {"ok": True, "message": None, "note": "No games today"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @app.get("/whatsapp/broadcast-status")
 async def whatsapp_broadcast_status():
     """Ver el resultado del ultimo broadcast (sin auth)."""
     from subscribers import get_active_subscribers
-    from whatsapp_broadcast import CONTENT_SID
+    from meta_whatsapp import is_configured as wa_configured
     active = get_active_subscribers()
     return {
         "last_broadcast": _last_broadcast,
         "active_subscribers": len(active),
-        "content_template_configured": bool(CONTENT_SID),
-        "hint": "Sin CONTENT_SID, los broadcasts solo llegan a usuarios que mandaron msg en las ultimas 24h."
+        "meta_whatsapp_configured": wa_configured(),
+        "hint": "Usa Meta Cloud API. Set WHATSAPP_ACCESS_TOKEN y WHATSAPP_PHONE_NUMBER_ID en env vars."
     }
 
 
@@ -1268,16 +1282,16 @@ try:
     from apscheduler.triggers.cron import CronTrigger
     from twitter_bot import setup_twitter_scheduler
     from facebook_bot import setup_facebook_scheduler
-    from whatsapp_broadcast import send_daily_broadcast as _raw_broadcast
+    from send_whatsapp_daily import send_daily_broadcast as _meta_broadcast
     from tiktok_generator import generate_daily_video, generate_daily_images
     from whatsapp_alerts import send_pregame_alerts
     from push_notifications import check_and_send_pregame_pushes, send_daily_push_summary
     from apscheduler.triggers.interval import IntervalTrigger
 
     async def _tracked_broadcast():
-        """Wrapper that logs broadcast results for diagnostics."""
+        """Wrapper that logs broadcast results — now uses Meta Cloud API."""
         try:
-            result = await _raw_broadcast()
+            result = await _meta_broadcast()
             _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
             _last_broadcast["result"] = result
             _last_broadcast["error"] = None

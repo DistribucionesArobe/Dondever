@@ -16,7 +16,7 @@ import httpx
 
 logger = logging.getLogger("dondever.meta_whatsapp")
 
-META_API_VERSION = "v21.0"
+META_API_VERSION = "v25.0"
 
 
 def _get_credentials() -> tuple[str, str]:
