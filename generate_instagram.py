@@ -66,8 +66,8 @@ INSTAGRAM_LEAGUES = [
     ("copa-america",    "soccer",     "conmebol.america",   "Copa América",     "⚽"),
 ]
 
-# Max games to show on the image
-MAX_GAMES = 7
+# Max games to show on the image (new layout groups by league, can handle more)
+MAX_GAMES = 10
 
 # Default channels per league (Mexico)
 DEFAULT_CHANNELS = {
@@ -324,8 +324,77 @@ LEAGUE_SHORT_NAMES = {
 }
 
 
+def _process_game(game: dict) -> dict:
+    """Process a single game dict into template-ready format."""
+    slug = game["league_slug"]
+    league_name = game["league"]
+    league_display = LEAGUE_SHORT_NAMES.get(league_name, league_name).upper()
+    if len(league_display) > 12:
+        league_display = league_display[:12]
+
+    # Season display
+    season = game.get("season", "")
+    if season:
+        if "Regular" in str(season) or season.isdigit():
+            season_display = f"Temporada {season}" if season.isdigit() else "Temporada 2026"
+        elif "Post" in str(season):
+            season_display = "Playoffs"
+        elif "Pre" in str(season):
+            season_display = "Pretemporada"
+        elif "All" in str(season):
+            season_display = "All-Star"
+        else:
+            season_display = str(season)
+    else:
+        season_display = ""
+
+    # Status
+    status = game["status"]
+    is_live = status in ("STATUS_IN_PROGRESS", "STATUS_HALFTIME")
+    is_final = status in ("STATUS_FINAL", "STATUS_FULL_TIME")
+    show_score = is_live or is_final
+
+    # Channel display (truncate if too long)
+    channel = game.get("channel", "")
+    channel_display = channel[:14] if len(channel) > 14 else channel
+
+    # Team display names (use full if short enough, otherwise abbreviation)
+    max_name = 20
+    away_display = game["away"]["name"].upper() if len(game["away"]["name"]) <= max_name else game["away"]["short"].upper()
+    home_display = game["home"]["name"].upper() if len(game["home"]["name"]) <= max_name else game["home"]["short"].upper()
+
+    return {
+        "league_slug": slug,
+        "league_display": league_display,
+        "league_color": LEAGUE_COLORS_HEX.get(slug, "#10b981"),
+        "season_display": season_display,
+        "time": game["time"],
+        "is_live": is_live,
+        "is_final": is_final,
+        "show_score": show_score,
+        "away": {
+            "display_name": away_display,
+            "logo": game["away"].get("logo", ""),
+            "score": game["away"].get("score"),
+        },
+        "home": {
+            "display_name": home_display,
+            "logo": game["home"].get("logo", ""),
+            "score": game["home"].get("score"),
+        },
+        "channel": channel,
+        "channel_display": channel_display,
+    }
+
+
 def prepare_template_data(games: list, date_str: str, is_stories: bool = False):
-    """Prepare game data for the HTML template."""
+    """Prepare game data for the HTML template.
+
+    Groups games by league and assigns layout types:
+    - 'featured': 1-2 games shown side by side with big logos (top-priority league)
+    - 'compact': 2-4 games in a compact row with small logos
+    - 'highlight': single game shown as a horizontal card with medium logos
+    """
     # Parse date
     try:
         dt = datetime.strptime(date_str, "%Y%m%d")
@@ -339,85 +408,77 @@ def prepare_template_data(games: list, date_str: str, is_stories: bool = False):
     except Exception:
         day_num, month_str, weekday = "??", "???", "---"
 
-    # Process games for template
-    template_games = []
-    for game in games:
-        slug = game["league_slug"]
-        league_name = game["league"]
-        league_display = LEAGUE_SHORT_NAMES.get(league_name, league_name).upper()
-        if len(league_display) > 12:
-            league_display = league_display[:12]
+    # Process all games
+    processed = [_process_game(g) for g in games]
 
-        # Season display
-        season = game.get("season", "")
-        if season:
-            if "Regular" in str(season) or season.isdigit():
-                season_display = f"Temporada {season}" if season.isdigit() else "Temporada 2026"
-            elif "Post" in str(season):
-                season_display = "Playoffs"
-            elif "Pre" in str(season):
-                season_display = "Pretemporada"
-            elif "All" in str(season):
-                season_display = "All-Star"
-            else:
-                season_display = str(season)
+    # Group by league (preserving order from pick_best_games which is by time)
+    from collections import OrderedDict
+    league_order = []
+    league_map = OrderedDict()
+    for g in processed:
+        slug = g["league_slug"]
+        if slug not in league_map:
+            league_map[slug] = []
+            league_order.append(slug)
+        league_map[slug].append(g)
+
+    # Sort leagues by priority so the most important league gets 'featured'
+    LEAGUE_PRIORITY = {
+        "liga-mx": 100, "world-cup": 99, "champions": 95,
+        "copa-america": 90, "nfl": 90, "nba": 85, "mlb": 80,
+        "premier-league": 75, "la-liga": 70, "mls": 65,
+        "serie-a": 60, "ufc": 55, "europa-league": 50,
+        "bundesliga": 45, "ligue-1": 40, "nhl": 35,
+    }
+    league_order.sort(key=lambda s: -LEAGUE_PRIORITY.get(s, 20))
+
+    # Assign layouts based on number of games and priority
+    league_groups = []
+    featured_assigned = False
+
+    for slug in league_order:
+        lg_games = league_map[slug]
+        color = LEAGUE_COLORS_HEX.get(slug, "#10b981")
+        name_raw = lg_games[0]["league_display"]
+
+        num = len(lg_games)
+
+        if not featured_assigned and num >= 2:
+            # Top-priority league with 2+ games gets featured (big logos, side by side)
+            layout = "featured"
+            lg_games = lg_games[:2]  # max 2 for featured row
+            featured_assigned = True
+        elif not featured_assigned and num == 1:
+            # Top-priority league with 1 game gets highlight
+            layout = "highlight"
+            featured_assigned = True
+        elif num >= 3:
+            # 3+ games → compact row (max 4)
+            layout = "compact"
+            lg_games = lg_games[:4]
+        elif num == 2:
+            # 2 games → featured (side by side)
+            layout = "featured"
         else:
-            season_display = ""
+            # 1 game → highlight
+            layout = "highlight"
 
-        # Status
-        status = game["status"]
-        is_live = status in ("STATUS_IN_PROGRESS", "STATUS_HALFTIME")
-        is_final = status in ("STATUS_FINAL", "STATUS_FULL_TIME")
-        show_score = is_live or is_final
-
-        # Channel display (truncate if too long)
-        channel = game.get("channel", "")
-        channel_display = channel[:14] if len(channel) > 14 else channel
-
-        # Team display names (use full if short enough, otherwise abbreviation)
-        max_name = 20
-        away_display = game["away"]["name"].upper() if len(game["away"]["name"]) <= max_name else game["away"]["short"].upper()
-        home_display = game["home"]["name"].upper() if len(game["home"]["name"]) <= max_name else game["home"]["short"].upper()
-
-        template_games.append({
-            "league_display": league_display,
-            "league_color": LEAGUE_COLORS_HEX.get(slug, "#10b981"),
-            "season_display": season_display,
-            "time": game["time"],
-            "is_live": is_live,
-            "is_final": is_final,
-            "show_score": show_score,
-            "away": {
-                "display_name": away_display,
-                "logo": game["away"].get("logo", ""),
-                "score": game["away"].get("score"),
-            },
-            "home": {
-                "display_name": home_display,
-                "logo": game["home"].get("logo", ""),
-                "score": game["home"].get("score"),
-            },
-            "channel": channel,
-            "channel_display": channel_display,
+        league_groups.append({
+            "name": name_raw,
+            "color": color,
+            "layout": layout,
+            "games": lg_games,
         })
 
-    # Calculate card sizing for logo-centric layout
-    num_games = len(template_games)
+    # Calculate height
     height = 1920 if is_stories else 1350
-    header_footer = 240  # header + title + footer
-    available = height - header_footer
-    card_h = min(160, available // max(num_games, 1) - 12)
-    card_h = max(card_h, 130)  # minimum height for logos
-    gap = max(6, min(14, (available - card_h * num_games) // max(num_games - 1, 1)))
 
     return {
-        "games": template_games,
+        "league_groups": league_groups,
         "day_num": day_num,
         "month_str": month_str,
         "weekday": weekday,
         "height": height,
-        "card_h": card_h,
-        "gap": gap,
     }
 
 
