@@ -131,10 +131,96 @@ def send_template(to: str, template_name: str, language: str = "es_MX", componen
         return {"ok": False, "id": None, "error": str(e)}
 
 
+def send_interactive_buttons(to: str, body: str, buttons: list[dict], header: str = "", footer: str = "") -> dict:
+    """
+    Send a WhatsApp interactive message with reply buttons (max 3).
+
+    buttons: [{"id": "btn_picks", "title": "Picks del Dia"}]
+      - id: unique string (max 256 chars)
+      - title: button label (max 20 chars)
+
+    Returns: {"ok": bool, "id": str|None, "error": str|None}
+    """
+    token, phone_id = _get_credentials()
+    if not token or not phone_id:
+        return {"ok": False, "id": None, "error": "not_configured"}
+
+    url = f"https://graph.facebook.com/{META_API_VERSION}/{phone_id}/messages"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+    interactive = {
+        "type": "button",
+        "body": {"text": body},
+        "action": {
+            "buttons": [
+                {"type": "reply", "reply": {"id": b["id"], "title": b["title"]}}
+                for b in buttons[:3]
+            ]
+        },
+    }
+    if header:
+        interactive["header"] = {"type": "text", "text": header}
+    if footer:
+        interactive["footer"] = {"text": footer}
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": _normalize_to(to),
+        "type": "interactive",
+        "interactive": interactive,
+    }
+
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.post(url, headers=headers, json=payload)
+            data = resp.json() if resp.content else {}
+            if resp.status_code >= 400:
+                logger.warning(f"Meta interactive send failed {resp.status_code}: {data}")
+                return {
+                    "ok": False,
+                    "id": None,
+                    "error": data.get("error", {}).get("message", f"HTTP {resp.status_code}"),
+                    "raw": data,
+                }
+            msg_id = (data.get("messages") or [{}])[0].get("id")
+            return {"ok": True, "id": msg_id, "error": None, "raw": data}
+    except Exception as e:
+        logger.exception(f"Meta interactive send exception to {to}: {e}")
+        return {"ok": False, "id": None, "error": str(e)}
+
+
+def mark_as_read(message_id: str) -> bool:
+    """Mark a message as read (blue check marks)."""
+    token, phone_id = _get_credentials()
+    if not token or not phone_id:
+        return False
+    url = f"https://graph.facebook.com/{META_API_VERSION}/{phone_id}/messages"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "status": "read",
+        "message_id": message_id,
+    }
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(url, headers=headers, json=payload)
+            return resp.status_code < 400
+    except Exception:
+        return False
+
+
 def parse_inbound_webhook(payload: dict) -> list[dict]:
     """
     Parse inbound webhook from Meta. Returns list of normalized message dicts:
     [{"from": "+521...", "body": "hola", "message_id": "wamid...", "timestamp": "..."}]
+    Handles text messages AND interactive button replies.
     Ignores status callbacks (delivered/read/sent).
     """
     messages = []
@@ -143,16 +229,32 @@ def parse_inbound_webhook(payload: dict) -> list[dict]:
             for change in entry.get("changes", []):
                 value = change.get("value", {})
                 for msg in value.get("messages", []):
-                    if msg.get("type") != "text":
-                        # Only handle text messages for now
-                        # Later: interactive, button, list replies
+                    msg_type = msg.get("type", "")
+                    body = ""
+
+                    if msg_type == "text":
+                        body = (msg.get("text") or {}).get("body", "")
+                    elif msg_type == "interactive":
+                        # Button reply or list reply
+                        interactive = msg.get("interactive", {})
+                        ir_type = interactive.get("type", "")
+                        if ir_type == "button_reply":
+                            body = interactive.get("button_reply", {}).get("id", "")
+                        elif ir_type == "list_reply":
+                            body = interactive.get("list_reply", {}).get("id", "")
+                    elif msg_type == "button":
+                        # Quick reply button from template
+                        body = (msg.get("button") or {}).get("text", "")
+                    else:
                         continue
-                    messages.append({
-                        "from": "+" + msg.get("from", ""),
-                        "body": (msg.get("text") or {}).get("body", ""),
-                        "message_id": msg.get("id"),
-                        "timestamp": msg.get("timestamp"),
-                    })
+
+                    if body:
+                        messages.append({
+                            "from": "+" + msg.get("from", ""),
+                            "body": body,
+                            "message_id": msg.get("id"),
+                            "timestamp": msg.get("timestamp"),
+                        })
     except Exception as e:
         logger.exception(f"Failed to parse inbound Meta webhook: {e}")
     return messages

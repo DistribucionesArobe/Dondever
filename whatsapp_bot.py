@@ -219,26 +219,24 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             f"Siempre puedes consultar juegos en {APP_URL}"
         )
 
-    # Subscribe (keywords explícitas — "picks" y "pick" van al handler de picks más abajo)
+    # Subscribe (keywords explícitas + button reply "btn_suscribir")
     if body_clean in (
         "suscribir", "suscribirme", "suscribirse",
         "suscripcion", "suscripción", "inscribir", "inscribirme",
         "subscribe", "subscribirse", "alta", "diario",
         "quiero picks", "quiero suscribirme", "quiero recibir picks",
-        "picks diarios", "recibir picks",
+        "picks diarios", "recibir picks", "btn_suscribir",
     ):
         is_new = subscribe(from_number)
         if is_new:
-            # Immediately send today's picks so user doesn't wait until tomorrow 9am
+            # Send today's picks via Meta Cloud API
             try:
-                from whatsapp_broadcast import compose_daily_broadcast, get_twilio_client
-                from config import TWILIO_WA_NUMBER
-                picks_msg = await compose_daily_broadcast()
-                client = get_twilio_client()
-                if picks_msg and client:
-                    to_number = from_number if from_number.startswith("whatsapp:") else f"whatsapp:{from_number}"
-                    client.messages.create(body=picks_msg, from_=TWILIO_WA_NUMBER, to=to_number)
-                    logger.info(f"Welcome picks sent to {to_number}")
+                from send_whatsapp_daily import compose_daily_message
+                import meta_whatsapp
+                picks_msg = await compose_daily_message()
+                if picks_msg and meta_whatsapp.is_configured():
+                    result = meta_whatsapp.send_text(from_number, picks_msg)
+                    logger.info(f"Welcome picks sent via Meta to {from_number}: {result.get('ok')}")
             except Exception as e:
                 logger.exception(f"Failed to send welcome picks: {e}")
             return (
@@ -275,31 +273,12 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     if body_clean in ("mis equipos", "favoritos", "equipos", "mis alertas", "alertas"):
         return get_favorites_list(from_number)
 
-    # Help
+    # Help / Hola — returns special marker so webhook sends buttons
     if body_clean in ("ayuda", "help", "hola", "hi", "menu", "inicio"):
-        return (
-            "Hola! Soy *DondeVer* - tu asistente de deportes en vivo.\n\n"
-            "*QUE PUEDO HACER:*\n\n"
-            "*Juegos de hoy*\n"
-            "Escribe *hoy* o el nombre de un equipo\n"
-            "_Ejemplo: hoy, chivas, lakers, nfl_\n\n"
-            "*Picks diarios gratis*\n"
-            "Escribe *picks* para el pick del dia\n"
-            "Escribe *suscribir* y te lo mando cada manana\n\n"
-            "*Alertas de tu equipo*\n"
-            "Escribe *alerta chivas* y te aviso:\n"
-            "- 1 hora antes de cada partido\n"
-            "- Cuando anoten gol en tiempo real\n"
-            "_Puedes agregar varios equipos!_\n\n"
-            "*Otros comandos:*\n"
-            "- *mis equipos* - ver tus alertas activas\n"
-            "- *quitar chivas* - quitar un equipo\n"
-            "- *salir* - dejar de recibir mensajes\n\n"
-            f"Todo GRATIS. Visita {APP_URL}"
-        )
+        return "__BUTTONS_WELCOME__"
 
-    # Picks del dia (auto-subscribe anyone who asks for picks)
-    if body_clean in ("picks", "pick", "pick del dia", "sugerencia", "tip"):
+    # Picks del dia (auto-subscribe anyone who asks for picks) + button reply
+    if body_clean in ("picks", "pick", "pick del dia", "sugerencia", "tip", "btn_picks"):
         subscribe(from_number)  # silent auto-subscribe
         games = await get_todays_games()
         priority = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga"]
@@ -379,7 +358,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
 
     try:
         # Today's overview — short version to avoid WhatsApp rejecting long messages
-        if body_clean in ("hoy", "juegos", "games", "today", "que hay hoy", "partidos"):
+        if body_clean in ("hoy", "juegos", "games", "today", "que hay hoy", "partidos", "btn_hoy"):
             games = await get_todays_games()
             if not games:
                 return "No encontre juegos programados para hoy. Intenta manana!"

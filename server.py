@@ -23,6 +23,7 @@ from sports_api import (
     fetch_meli_product_image,
 )
 from whatsapp_bot import handle_whatsapp_message
+import meta_whatsapp
 from tiktok_auth import (
     get_tiktok_auth_url, exchange_code_for_token, get_user_info,
     upload_video_to_tiktok, check_publish_status, is_authenticated,
@@ -966,6 +967,89 @@ async def whatsapp_webhook(
 async def whatsapp_verify():
     """Health check for Twilio webhook verification."""
     return {"status": "ok", "service": "dondever-whatsapp"}
+
+
+# ── Meta WhatsApp Cloud API Webhook ────────────────────────
+
+WELCOME_BUTTONS = [
+    {"id": "btn_picks", "title": "Picks del Dia"},
+    {"id": "btn_hoy", "title": "Juegos de Hoy"},
+    {"id": "btn_suscribir", "title": "Suscribirse"},
+]
+
+WELCOME_BODY = (
+    "Hola! Soy *DondeVer* - tu guia de deportes en vivo.\n\n"
+    "Elige una opcion o escribe el nombre de un equipo:"
+)
+
+
+@app.get("/webhook/meta-whatsapp")
+async def meta_whatsapp_verify(request: Request):
+    """Meta webhook verification — responds to hub.challenge."""
+    params = request.query_params
+    mode = params.get("hub.mode", "")
+    token = params.get("hub.verify_token", "")
+    challenge = params.get("hub.challenge", "")
+
+    verify_token = os.getenv("WHATSAPP_VERIFY_TOKEN", "")
+    if mode == "subscribe" and token == verify_token and verify_token:
+        logger.info("Meta WhatsApp webhook verified successfully")
+        return PlainTextResponse(content=challenge, status_code=200)
+
+    logger.warning(f"Meta webhook verification failed: mode={mode}, token_match={token == verify_token}")
+    return PlainTextResponse(content="Forbidden", status_code=403)
+
+
+@app.post("/webhook/meta-whatsapp")
+async def meta_whatsapp_webhook(request: Request):
+    """Meta WhatsApp Cloud API webhook — receives messages and replies."""
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"status": "ok"}
+
+    messages = meta_whatsapp.parse_inbound_webhook(payload)
+    if not messages:
+        return {"status": "ok"}
+
+    for msg in messages:
+        from_number = msg["from"]
+        body = msg["body"]
+        message_id = msg.get("message_id")
+
+        logger.info(f"Meta WA from {from_number}: {body!r}")
+
+        # Mark as read (blue check)
+        if message_id:
+            meta_whatsapp.mark_as_read(message_id)
+
+        try:
+            response_text = await handle_whatsapp_message(body, from_number)
+        except Exception as e:
+            logger.exception(f"WhatsApp handler error: {e}")
+            response_text = "Tuvimos un problema. Intenta de nuevo o escribe *ayuda*."
+
+        if not response_text:
+            response_text = (
+                "No entendi. Escribe *ayuda* para ver comandos, "
+                "*hoy* para juegos, o *picks* para el pick del dia."
+            )
+
+        # Special marker: send interactive buttons instead of plain text
+        if response_text == "__BUTTONS_WELCOME__":
+            result = meta_whatsapp.send_interactive_buttons(
+                to=from_number,
+                body=WELCOME_BODY,
+                buttons=WELCOME_BUTTONS,
+                header="DondeVer.app",
+                footer="dondever.app — Todo GRATIS",
+            )
+            logger.info(f"Meta WA buttons to {from_number}: {result.get('ok')}")
+        else:
+            result = meta_whatsapp.send_text(from_number, response_text)
+            logger.info(f"Meta WA reply to {from_number}: ok={result.get('ok')}")
+
+    return {"status": "ok"}
 
 
 @app.get("/whatsapp/debug")
