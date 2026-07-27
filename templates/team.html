@@ -200,6 +200,61 @@
         /* SEO collapsible section */
         .seo-open .seo-collapsed-content { display:block !important; }
         .seo-open .seo-toggle-icon { transform:rotate(180deg); }
+
+        /* ── Email Newsletter CTA ───────────────── */
+        .wa-cta {
+            max-width: 900px;
+            margin: 0 auto 1.25rem;
+            padding: 0 1rem;
+        }
+        .wa-cta-inner {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-left: 3px solid #2563eb;
+            border-radius: 12px;
+            padding: 1rem 1.1rem;
+        }
+        .wa-cta-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .wa-cta-title { font-size: 0.9rem; font-weight: 800; display: flex; align-items: center; gap: 0.4rem; }
+        .wa-cta-sub { font-size: 0.75rem; color: #6b7280; margin-top: 0.2rem; }
+        .wa-cta-features {
+            display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem;
+            font-size: 0.7rem; color: #374151;
+        }
+        .wa-cta-features span { background: #f0fdf4; padding: 0.2rem 0.5rem; border-radius: 4px; }
+        .wa-form {
+            display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;
+        }
+        .wa-form input[type="email"] {
+            flex: 1; min-width: 180px; padding: 0.55rem 0.75rem;
+            border: 1px solid #d1d5db; border-radius: 8px;
+            font-size: 0.82rem; font-family: inherit;
+        }
+        .wa-form input[type="email"]:focus { outline: none; border-color: #2563eb; }
+        .wa-cta-btn {
+            color: white;
+            padding: 0.55rem 1.1rem;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.78rem;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+            border: none; cursor: pointer;
+        }
+        .wa-cta-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .wa-msg {
+            margin-top: 0.5rem; font-size: 0.72rem; padding: 0.4rem 0.6rem;
+            border-radius: 6px; display: none;
+        }
+        .wa-msg.success { display: block; background: #f0fdf4; color: #166534; }
+        .wa-msg.error { display: block; background: #fef2f2; color: #991b1b; }
+        .wa-note { font-size: 0.62rem; color: #9ca3af; margin-top: 0.4rem; }
     </style>
 
     <!-- FAQPage Schema for rich results -->
@@ -864,6 +919,31 @@
 
 </div>
 
+<!-- Email Newsletter CTA -->
+<div class="wa-cta" id="email-subscribe" style="background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 100%);">
+    <div class="wa-cta-inner">
+        <div class="wa-cta-top">
+            <div>
+                <div class="wa-cta-title">&#9993; Picks diarios por Email</div>
+                <div class="wa-cta-sub">Recibe cada manana el pick del dia, momios y tips directo en tu correo. Gratis.</div>
+            </div>
+        </div>
+        <div class="wa-cta-features">
+            <span>Pick del dia</span>
+            <span>Momios</span>
+            <span>6+ juegos</span>
+            <span>Tips estadisticos</span>
+        </div>
+        <form class="wa-form" id="emailForm" onsubmit="return emailSubscribe(event)">
+            <input type="email" id="emailInput" placeholder="tu@email.com" required
+                   style="font-size:15px;">
+            <button type="submit" class="wa-cta-btn" id="emailBtn" style="background:#2563eb;">SUSCRIBIRME GRATIS</button>
+        </form>
+        <div class="wa-msg" id="emailMsg"></div>
+        <div class="wa-note">Sin spam. Solo picks deportivos. Cancela cuando quieras.</div>
+    </div>
+</div>
+
 <footer>
     <p><a href="/">DondeVer.app</a> &middot; <a href="/streaming">Comparar Streaming</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
 </footer>
@@ -905,6 +985,51 @@ updateCountdowns(); setInterval(updateCountdowns, 60000);
     });
   }, true);
 })();
+</script>
+<script>
+// ── Email Subscribe ─────────────────────────────────
+function emailSubscribe(e) {
+  e.preventDefault();
+  var email = document.getElementById('emailInput').value.trim();
+  var btn = document.getElementById('emailBtn');
+  var msg = document.getElementById('emailMsg');
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+  msg.className = 'wa-msg';
+  msg.style.display = 'none';
+
+  fetch('/api/email-subscribe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: email})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      msg.className = 'wa-msg success';
+      msg.textContent = data.is_new ? 'Listo! Recibiras picks diarios en tu correo.' : 'Ya estas suscrito. Revisa tu bandeja manana.';
+      msg.style.display = 'block';
+      btn.textContent = 'SUSCRITO';
+      if (typeof gtag === 'function') {
+        gtag('event', 'email_subscribe', {event_category: 'engagement'});
+      }
+    } else {
+      msg.className = 'wa-msg error';
+      msg.textContent = data.error === 'invalid_email' ? 'Email no valido. Verifica e intenta de nuevo.' : 'Error al registrar. Intenta de nuevo.';
+      msg.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'SUSCRIBIRME GRATIS';
+    }
+  })
+  .catch(function() {
+    msg.className = 'wa-msg error';
+    msg.textContent = 'Error de conexion. Intenta de nuevo.';
+    msg.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'SUSCRIBIRME GRATIS';
+  });
+  return false;
+}
 </script>
 <script src="/static/timezone.js" defer></script>
 </body>
