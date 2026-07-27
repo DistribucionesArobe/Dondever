@@ -24,6 +24,7 @@ from sports_api import (
 )
 from whatsapp_bot import handle_whatsapp_message
 import meta_whatsapp
+import email_subscribers
 from tiktok_auth import (
     get_tiktok_auth_url, exchange_code_for_token, get_user_info,
     upload_video_to_tiktok, check_publish_status, is_authenticated,
@@ -1050,6 +1051,62 @@ async def meta_whatsapp_webhook(request: Request):
             logger.info(f"Meta WA reply to {from_number}: ok={result.get('ok')}")
 
     return {"status": "ok"}
+
+
+# ── Email Newsletter Endpoints ──────────────────────────────
+
+
+@app.post("/api/email-subscribe")
+async def api_email_subscribe(request: Request):
+    """Subscribe an email to the daily picks newsletter."""
+    try:
+        data = await request.json()
+        email_addr = data.get("email", "").strip().lower()
+    except Exception:
+        return JSONResponse({"ok": False, "error": "invalid_request"}, status_code=400)
+
+    if not email_addr:
+        return JSONResponse({"ok": False, "error": "email_required"}, status_code=400)
+
+    result = email_subscribers.subscribe(email_addr)
+    if not result["success"]:
+        return JSONResponse({"ok": False, "error": result.get("error", "failed")}, status_code=400)
+
+    return {"ok": True, "is_new": result["is_new"]}
+
+
+@app.get("/email-unsubscribe")
+async def email_unsubscribe(request: Request, token: str = ""):
+    """Unsubscribe from email newsletter via token link."""
+    if not token:
+        return HTMLResponse(
+            "<html><body style='font-family:sans-serif;text-align:center;padding:60px;'>"
+            "<h2>Link invalido</h2><p>No se pudo cancelar la suscripcion.</p>"
+            "</body></html>",
+            status_code=400,
+        )
+
+    success = email_subscribers.unsubscribe(token=token)
+    if success:
+        return HTMLResponse(
+            "<html><body style='font-family:sans-serif;text-align:center;padding:60px;'>"
+            "<h2>Listo!</h2><p>Te desuscribiste del newsletter de DondeVer.</p>"
+            "<p>Si cambias de opinion, suscribete de nuevo en "
+            "<a href='https://dondever.app'>dondever.app</a></p>"
+            "</body></html>"
+        )
+    return HTMLResponse(
+        "<html><body style='font-family:sans-serif;text-align:center;padding:60px;'>"
+        "<h2>No encontramos tu suscripcion</h2>"
+        "<p>Es posible que ya estuvieras desuscrito.</p>"
+        "</body></html>"
+    )
+
+
+@app.get("/api/email-subscribers/count")
+async def api_email_subscriber_count():
+    """Get email subscriber count (for admin)."""
+    return {"count": email_subscribers.get_subscriber_count()}
 
 
 @app.get("/whatsapp/debug")

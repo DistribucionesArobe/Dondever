@@ -923,6 +923,31 @@
     </div>
 </div>
 
+<!-- Email Newsletter CTA -->
+<div class="wa-cta" id="email-subscribe" style="background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 100%);">
+    <div class="wa-cta-inner">
+        <div class="wa-cta-top">
+            <div>
+                <div class="wa-cta-title">&#9993; Picks diarios por Email</div>
+                <div class="wa-cta-sub">Recibe cada manana el pick del dia, momios y tips directo en tu correo. Gratis.</div>
+            </div>
+        </div>
+        <div class="wa-cta-features">
+            <span>Pick del dia</span>
+            <span>Momios</span>
+            <span>6+ juegos</span>
+            <span>Tips estadisticos</span>
+        </div>
+        <form class="wa-form" id="emailForm" onsubmit="return emailSubscribe(event)">
+            <input type="email" id="emailInput" placeholder="tu@email.com" required
+                   style="font-size:15px;">
+            <button type="submit" class="wa-cta-btn" id="emailBtn" style="background:#2563eb;">SUSCRIBIRME GRATIS</button>
+        </form>
+        <div class="wa-msg" id="emailMsg"></div>
+        <div class="wa-note">Sin spam. Solo picks deportivos. Cancela cuando quieras.</div>
+    </div>
+</div>
+
 <!-- Popular Teams -->
 <div class="teams-section">
     <h2>Equipos populares</h2>
@@ -1424,6 +1449,50 @@ function waSubscribe(e) {
     } else {
       msg.className = 'wa-msg error';
       msg.textContent = data.error || 'Error al registrar. Intenta de nuevo.';
+      msg.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'SUSCRIBIRME GRATIS';
+    }
+  })
+  .catch(function() {
+    msg.className = 'wa-msg error';
+    msg.textContent = 'Error de conexion. Intenta de nuevo.';
+    msg.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'SUSCRIBIRME GRATIS';
+  });
+  return false;
+}
+
+// ── Email Subscribe ─────────────────────────────────
+function emailSubscribe(e) {
+  e.preventDefault();
+  var email = document.getElementById('emailInput').value.trim();
+  var btn = document.getElementById('emailBtn');
+  var msg = document.getElementById('emailMsg');
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+  msg.className = 'wa-msg';
+  msg.style.display = 'none';
+
+  fetch('/api/email-subscribe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: email})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      msg.className = 'wa-msg success';
+      msg.textContent = data.is_new ? 'Listo! Recibiras picks diarios en tu correo.' : 'Ya estas suscrito. Revisa tu bandeja manana.';
+      msg.style.display = 'block';
+      btn.textContent = 'SUSCRITO';
+      if (typeof gtag === 'function') {
+        gtag('event', 'email_subscribe', {event_category: 'engagement'});
+      }
+    } else {
+      msg.className = 'wa-msg error';
+      msg.textContent = data.error === 'invalid_email' ? 'Email no valido. Verifica e intenta de nuevo.' : 'Error al registrar. Intenta de nuevo.';
       msg.style.display = 'block';
       btn.disabled = false;
       btn.textContent = 'SUSCRIBIRME GRATIS';
