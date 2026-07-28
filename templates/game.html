@@ -726,13 +726,31 @@
     {% endif %}
 
     {# Betsson secondary CTA — más pequeño, debajo de odds o al final #}
-    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+    <div style="max-width:650px;margin:0 auto 0.75rem;padding:0 1rem;">
         <a href="/go/betsson?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" style="display:flex;align-items:center;gap:0.75rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;">
             <div style="flex:1;">
                 <div style="font-size:0.8rem;font-weight:700;color:white;">Betsson</div>
                 <div style="font-size:0.65rem;color:#9ca3af;">{{ affiliates.betsson.bonus }}</div>
             </div>
             <div style="color:#f97316;font-weight:700;font-size:0.7rem;white-space:nowrap;">{{ affiliates.betsson.cta_short }} &rarr;</div>
+        </a>
+    </div>
+
+    {# Jubilee & Vivento CTAs — casinos Wintown #}
+    <div style="max-width:650px;margin:0 auto 0.75rem;padding:0 1rem;display:flex;gap:0.5rem;">
+        <a href="/go/jubilee?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" style="display:flex;align-items:center;gap:0.5rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;flex:1;">
+            <div style="flex:1;">
+                <div style="font-size:0.8rem;font-weight:700;color:white;">Jubilee</div>
+                <div style="font-size:0.65rem;color:#9ca3af;">{{ affiliates.jubilee.bonus }}</div>
+            </div>
+            <div style="color:#fbbf24;font-weight:700;font-size:0.7rem;white-space:nowrap;">Ir &rarr;</div>
+        </a>
+        <a href="/go/vivento?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" style="display:flex;align-items:center;gap:0.5rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;flex:1;">
+            <div style="flex:1;">
+                <div style="font-size:0.8rem;font-weight:700;color:white;">Vivento</div>
+                <div style="font-size:0.65rem;color:#9ca3af;">{{ affiliates.vivento.bonus }}</div>
+            </div>
+            <div style="color:#ef4444;font-weight:700;font-size:0.7rem;white-space:nowrap;">Ir &rarr;</div>
         </a>
     </div>
 

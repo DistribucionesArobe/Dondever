@@ -74,6 +74,24 @@ AFFILIATES = {
         "cta_twitter": "Ve partidos de cualquier region con VPN",
         "bonus": "Hasta 86% de descuento + 3 meses gratis",
     },
+    "jubilee": {
+        "name": "Jubilee",
+        "url": os.getenv("AFFILIATE_JUBILEE", "") or "https://www.jubilee.mx/",
+        "logo": "/static/affiliates/jubilee.svg",
+        "cta": "Juega en Jubilee — casino online legal en Mexico",
+        "cta_short": "Registrate en Jubilee",
+        "cta_twitter": "Casino y apuestas en Jubilee",
+        "bonus": "Casino online con licencia SEGOB",
+    },
+    "vivento": {
+        "name": "Vivento",
+        "url": os.getenv("AFFILIATE_VIVENTO", "") or "https://vivento.mx/",
+        "logo": "/static/affiliates/vivento.svg",
+        "cta": "Juega en Vivento — casino online legal en Mexico",
+        "cta_short": "Registrate en Vivento",
+        "cta_twitter": "Casino y apuestas en Vivento",
+        "bonus": "Casino online con licencia en Mexico",
+    },
 }
 
 # ── MercadoLibre Afiliados (Mexico / LATAM) ──────────────
