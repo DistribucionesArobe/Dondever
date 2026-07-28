@@ -81,18 +81,19 @@ def format_game_time_mx(date_str: str) -> str:
 
 def get_betting_affiliate_text() -> str:
     """
-    Random BETTING affiliate CTA con link corto branded.
-    Usa cta_twitter con bono especifico para mayor conversion.
-    Ej: 'Bono $3,000 en Betsson 👉 dondever.app/go/betsson?s=twitter'
+    BETTING affiliate CTA con link geo-inteligente /go/bet.
+    El servidor decide el casino según el país del visitante:
+    MX → Jubilee/Vivento, resto → Betsson. El texto es neutro de
+    marca para que nunca haya mismatch entre tweet y destino.
     """
-    betting_keys = [k for k in AFFILIATES if k in ("betsson", "jubilee", "vivento")]
-    if not betting_keys:
-        return ""
-    key = random.choice(betting_keys)
-    aff = AFFILIATES[key]
-    short_url = get_short_affiliate_url(key, source="twitter")
-    cta_text = aff.get("cta_twitter", aff["cta"])
-    return f"🎁 {cta_text} 👉 {short_url}"
+    from config import APP_URL
+    smart_url = f"{APP_URL.replace('https://', '')}/go/bet?s=twitter"
+    ctas = [
+        "Bono de bienvenida hasta $3,000 MXN",
+        "Apuesta en vivo con bono de registro",
+        "Casino legal en tu pais + bono",
+    ]
+    return f"🎁 {random.choice(ctas)} 👉 {smart_url}"
 
 
 def get_team_order(game: dict) -> tuple[str, str]:

@@ -483,16 +483,35 @@ def get_click_stats(days: int = 7) -> dict:
 
 # Branded affiliate redirect — "dondever.app/go/betsson" en vez de links largos
 @app.get("/go/{key}")
-async def affiliate_redirect(key: str, s: str = "web"):
+async def affiliate_redirect(key: str, s: str = "web", request: Request = None):
     """
     Redirige a la URL del afiliado con tracking de source.
     Uso: /go/betsson?s=twitter  →  link afiliado real + sub1=twitter
+
+    /go/bet = link geo-inteligente: decide el casino según el país
+    del visitante (Accept-Language / Cloudflare header si existe).
+    MX → Jubilee/Vivento (rotado), resto → Betsson.
     """
     from fastapi.responses import RedirectResponse
     from config import get_affiliate_url
+    import random as _random
     # Legacy: strendus fue removido — redirigir links viejos a betsson
     if key == "strendus":
         key = "betsson"
+    # Smart geo link: /go/bet
+    if key == "bet":
+        country = ""
+        al = ""
+        if request is not None:
+            country = (request.headers.get("cf-ipcountry")
+                       or request.headers.get("x-vercel-ip-country") or "").upper()
+            al = (request.headers.get("accept-language") or "").lower()
+        if country:
+            is_mx = country == "MX"
+        else:
+            # Heurística por idioma: es-MX o español genérico → México
+            is_mx = "es-mx" in al or "es-419" in al or al.startswith("es")
+        key = _random.choice(["jubilee", "vivento"]) if is_mx else "betsson"
     _track_click(key, s)  # track antes de redirigir
     target = get_affiliate_url(key, source=s)
     if target == "#":
