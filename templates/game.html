@@ -328,6 +328,20 @@
             {% endif %}
         </div>
         {% if game.venue %}<div class="venue">Sede: {{ game.venue }}</div>{% endif %}
+
+        {# ── Betting Strip — naranja, prominente, dentro del card ── #}
+        {% if game.status.state == 'pre' %}
+        <div style="margin:0.75rem -1.25rem -1.25rem;background:linear-gradient(135deg,#7c2d12,#9a3412);border-radius:0 0 16px 16px;padding:0.65rem 1rem;">
+            <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:#fed7aa;font-weight:600;margin-bottom:0.4rem;text-align:center;">&#127922; Apuesta este partido</div>
+            <div style="display:flex;gap:0.35rem;justify-content:center;flex-wrap:wrap;">
+                <a href="/go/strendus?s=game-strip" target="_blank" rel="sponsored nofollow noopener" data-affiliate="strendus" style="background:#059669;color:white;font-size:0.7rem;font-weight:700;padding:0.4rem 0.85rem;border-radius:6px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Strendus</a>
+                <a href="/go/betsson?s=game-strip" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" style="background:#ea580c;color:white;font-size:0.7rem;font-weight:700;padding:0.4rem 0.85rem;border-radius:6px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Betsson</a>
+                <a href="/go/jubilee?s=game-strip" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" style="background:#d97706;color:white;font-size:0.7rem;font-weight:700;padding:0.4rem 0.85rem;border-radius:6px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Jubilee</a>
+                <a href="/go/vivento?s=game-strip" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" style="background:#dc2626;color:white;font-size:0.7rem;font-weight:700;padding:0.4rem 0.85rem;border-radius:6px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Vivento</a>
+            </div>
+            <div style="font-size:0.5rem;color:#fed7aa;opacity:0.5;text-align:center;margin-top:0.3rem;">+18 Publicidad. Apuesta responsablemente.</div>
+        </div>
+        {% endif %}
     </div>
 
     {# ── Stats Comparison ── #}
@@ -736,23 +750,7 @@
         </a>
     </div>
 
-    {# Jubilee & Vivento CTAs — casinos Wintown #}
-    <div style="max-width:650px;margin:0 auto 0.75rem;padding:0 1rem;display:flex;gap:0.5rem;">
-        <a href="/go/jubilee?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" style="display:flex;align-items:center;gap:0.5rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;flex:1;">
-            <div style="flex:1;">
-                <div style="font-size:0.8rem;font-weight:700;color:white;">Jubilee</div>
-                <div style="font-size:0.65rem;color:#9ca3af;">{{ affiliates.jubilee.bonus }}</div>
-            </div>
-            <div style="color:#fbbf24;font-weight:700;font-size:0.7rem;white-space:nowrap;">Ir &rarr;</div>
-        </a>
-        <a href="/go/vivento?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" style="display:flex;align-items:center;gap:0.5rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;flex:1;">
-            <div style="flex:1;">
-                <div style="font-size:0.8rem;font-weight:700;color:white;">Vivento</div>
-                <div style="font-size:0.65rem;color:#9ca3af;">{{ affiliates.vivento.bonus }}</div>
-            </div>
-            <div style="color:#ef4444;font-weight:700;font-size:0.7rem;white-space:nowrap;">Ir &rarr;</div>
-        </a>
-    </div>
+    {# Jubilee & Vivento CTAs moved to betting strip inside game card #}
 
     <!-- Email Newsletter CTA -->
     <div class="wa-cta" id="email-subscribe" style="background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 100%);">

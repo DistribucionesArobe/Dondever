@@ -410,6 +410,40 @@
         .odds-chip .team-abbr { color: #9ca3af; font-weight: 600; }
         .odds-chip.draw { color: #ea580c; }
 
+        /* ── Betting Strip inside game cards ── */
+        .bet-strip {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding-top: 0.45rem;
+            margin-top: 0.45rem;
+            border-top: 1px solid #f3f4f6;
+            flex-wrap: wrap;
+        }
+        .bet-strip-label {
+            font-size: 0.58rem;
+            font-weight: 700;
+            color: #ea580c;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-right: 0.1rem;
+        }
+        .bet-pill {
+            display: inline-block;
+            font-size: 0.58rem;
+            font-weight: 700;
+            color: white !important;
+            padding: 0.18rem 0.5rem;
+            border-radius: 5px;
+            text-decoration: none !important;
+            transition: opacity 0.15s;
+        }
+        .bet-pill:hover { opacity: 0.8; }
+        .bet-pill.bp-strendus { background: #059669; }
+        .bet-pill.bp-betsson { background: #ea580c; }
+        .bet-pill.bp-jubilee { background: #d97706; }
+        .bet-pill.bp-vivento { background: #dc2626; }
+
         /* ── Partido Destacado ──────────────── */
         .pick-card {
             display: block;
@@ -843,6 +877,17 @@
                     <span class="team-abbr">{{ bottom_team.name[:3]|upper }}</span>
                     {{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}
                 </span>
+            </div>
+            {% endif %}
+
+            {# ── Betting Strip ── #}
+            {% if state == 'pre' %}
+            <div class="bet-strip" onclick="event.preventDefault();event.stopPropagation();">
+                <span class="bet-strip-label">&#127922; Apuestas</span>
+                <a href="/go/strendus?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="strendus" class="bet-pill bp-strendus" onclick="event.stopPropagation();">Strendus</a>
+                <a href="/go/betsson?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="bet-pill bp-betsson" onclick="event.stopPropagation();">Betsson</a>
+                <a href="/go/jubilee?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" class="bet-pill bp-jubilee" onclick="event.stopPropagation();">Jubilee</a>
+                <a href="/go/vivento?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" class="bet-pill bp-vivento" onclick="event.stopPropagation();">Vivento</a>
             </div>
             {% endif %}
         </a>
