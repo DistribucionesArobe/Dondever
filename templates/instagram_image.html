@@ -10,11 +10,25 @@
     width: 1080px;
     height: {{ height }}px;
     font-family: 'Inter', sans-serif;
+    {% if ai_bg %}
+    /* Fondo generado con IA + overlay oscuro para legibilidad */
+    background:
+      linear-gradient(180deg, rgba(7,11,22,0.72) 0%, rgba(7,11,22,0.82) 45%, rgba(7,11,22,0.93) 100%),
+      url('{{ ai_bg }}') center / cover no-repeat;
+    {% else %}
     background: #0a0e1a;
+    {% endif %}
     color: #fff;
     overflow: hidden;
     position: relative;
   }
+  {% if ai_bg %}
+  /* Con fondo IA las tarjetas necesitan más contraste */
+  .hero-card, .featured-card, .compact-card, .highlight-card {
+    background: rgba(10,14,26,0.72) !important;
+    backdrop-filter: blur(2px);
+  }
+  {% endif %}
 
   /* ── Stadium lights effect ── */
   .stadium-lights {

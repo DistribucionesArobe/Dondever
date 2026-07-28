@@ -491,6 +491,98 @@ def prepare_template_data(games: list, date_str: str, is_stories: bool = False):
     }
 
 
+# ── AI Background (gpt-image-1 / DALL-E) ───────────────────
+
+# Escenas por deporte — SIN texto, el texto real va encima con HTML
+_AI_SCENE_BY_SPORT = {
+    "soccer": "epic empty soccer stadium at night seen from field level, dramatic floodlights cutting through light mist, lush green pitch in foreground",
+    "baseball": "epic empty baseball stadium at night, dramatic floodlights, view from behind home plate looking out at the diamond, light atmospheric haze",
+    "basketball": "dramatic empty NBA basketball arena, spotlights on the glossy court, dark atmospheric upper stands, light haze in the beams",
+    "football": "epic empty american football stadium at night, dramatic stadium lights, yard lines visible in foreground, atmospheric fog",
+    "hockey": "dramatic empty ice hockey arena, spotlights reflecting on fresh ice, cold blue-teal atmosphere, light mist over the rink",
+    "mma": "dramatic empty MMA octagon cage under a single overhead spotlight, dark arena around it, atmospheric haze",
+}
+
+
+async def generate_ai_background(league_groups: list, date_str: str) -> Optional[str]:
+    """Generate a cinematic AI background for the day's image using
+    OpenAI's image API (gpt-image-1, fallback dall-e-3).
+
+    Returns a data-URI string, or None (→ template uses default bg).
+    Cached per-date in /tmp so retries don't re-bill.
+    """
+    api_key = os.getenv("OPENAI_API_KEY", "")
+    if not api_key or not league_groups:
+        return None
+
+    cache_path = Path(f"/tmp/ig_bg_{date_str}.png")
+    if cache_path.exists():
+        import base64
+        b64 = base64.b64encode(cache_path.read_bytes()).decode()
+        return f"data:image/png;base64,{b64}"
+
+    # Sport of the top-priority league of the day
+    slug_to_sport = {l[0]: l[1] for l in INSTAGRAM_LEAGUES}
+    top_slug = None
+    for lg in league_groups:
+        for g in lg.get("games", []):
+            top_slug = g.get("league_slug")
+            break
+        if top_slug:
+            break
+    sport = slug_to_sport.get(top_slug, "soccer")
+    scene = _AI_SCENE_BY_SPORT.get(sport, _AI_SCENE_BY_SPORT["soccer"])
+
+    prompt = (
+        f"{scene}. Cinematic sports photography style, photorealistic, "
+        "moody dark navy blue and emerald green color grading, "
+        "high contrast, dramatic volumetric lighting, wide angle, "
+        "mostly dark composition with empty dark space in the middle "
+        "(a schedule will be overlaid there). "
+        "Absolutely NO text, NO words, NO letters, NO numbers, NO logos, "
+        "NO scoreboards with visible digits, NO people in the foreground."
+    )
+
+    import base64
+    try:
+        async with httpx.AsyncClient(timeout=120) as client:
+            # gpt-image-1 (modelo actual)
+            r = await client.post(
+                "https://api.openai.com/v1/images/generations",
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={"model": "gpt-image-1", "prompt": prompt,
+                      "size": "1024x1536", "quality": "medium", "n": 1},
+            )
+            if r.status_code != 200:
+                print(f"  gpt-image-1 failed ({r.status_code}), trying dall-e-3...")
+                r = await client.post(
+                    "https://api.openai.com/v1/images/generations",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={"model": "dall-e-3", "prompt": prompt,
+                          "size": "1024x1792", "quality": "standard",
+                          "response_format": "b64_json", "n": 1},
+                )
+            if r.status_code != 200:
+                print(f"  AI background failed: {r.status_code} {r.text[:200]}")
+                return None
+            data = r.json()
+            b64 = data["data"][0].get("b64_json")
+            if not b64:
+                # dall-e-3 may return URL instead
+                url = data["data"][0].get("url")
+                if url:
+                    img = await client.get(url)
+                    b64 = base64.b64encode(img.content).decode()
+            if not b64:
+                return None
+            cache_path.write_bytes(base64.b64decode(b64))
+            print(f"  AI background generated ({sport})")
+            return f"data:image/png;base64,{b64}"
+    except Exception as e:
+        print(f"  AI background error: {e}")
+        return None
+
+
 async def generate_image(
     games: list,
     date_str: str,
@@ -503,6 +595,9 @@ async def generate_image(
     """
     # Prepare template data
     data = prepare_template_data(games, date_str, is_stories)
+
+    # AI background (si hay OPENAI_API_KEY; si falla usa el fondo default)
+    data["ai_bg"] = await generate_ai_background(data["league_groups"], date_str)
 
     # Render HTML from template
     template_dir = Path(__file__).parent / "templates"
