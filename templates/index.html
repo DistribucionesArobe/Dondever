@@ -439,7 +439,6 @@
             transition: opacity 0.15s;
         }
         .bet-pill:hover { opacity: 0.8; }
-        .bet-pill.bp-strendus { background: #059669; }
         .bet-pill.bp-betsson { background: #ea580c; }
         .bet-pill.bp-jubilee { background: #d97706; }
         .bet-pill.bp-vivento { background: #dc2626; }
@@ -884,7 +883,6 @@
             {% if state == 'pre' %}
             <div class="bet-strip" onclick="event.preventDefault();event.stopPropagation();">
                 <span class="bet-strip-label">&#127922; Apuestas</span>
-                <a href="/go/strendus?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="strendus" class="bet-pill bp-strendus" onclick="event.stopPropagation();">Strendus</a>
                 <a href="/go/betsson?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="bet-pill bp-betsson" onclick="event.stopPropagation();">Betsson</a>
                 <a href="/go/jubilee?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" class="bet-pill bp-jubilee" onclick="event.stopPropagation();">Jubilee</a>
                 <a href="/go/vivento?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" class="bet-pill bp-vivento" onclick="event.stopPropagation();">Vivento</a>
@@ -949,7 +947,7 @@
         <div class="wa-cta-top">
             <div>
                 <div class="wa-cta-title">&#128242; Recibe picks y momios por WhatsApp</div>
-                <div class="wa-cta-sub">Tips basados en estadisticas + link a Strendus. Gratis, diario a las 9 AM.</div>
+                <div class="wa-cta-sub">Tips basados en estadisticas + links de apuestas. Gratis, diario a las 9 AM.</div>
             </div>
         </div>
         <div class="wa-cta-features">
@@ -1433,7 +1431,7 @@
         // ── Action buttons ──
         html += '<div class="tp-actions">';
         html += '<a href="/equipo/' + d.slug + '" class="tp-btn tp-btn-primary">Ver todo sobre ' + d.name + ' ↗</a>';
-        html += '<a href="https://www.strendus.com.mx/sports" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="strendus" data-placement="search-panel">Momios en Strendus ↗</a>';
+        html += '<a href="/go/betsson?s=search-panel" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="betsson" data-placement="search-panel">Momios en Betsson ↗</a>';
         html += '</div>';
 
         html += '</div>';

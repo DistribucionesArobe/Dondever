@@ -144,7 +144,7 @@ def _team_matches_favorites(game: dict, favorites: list[str]) -> bool:
 
 
 def _get_betting_text() -> str:
-    betting_keys = [k for k in AFFILIATES if k in ("strendus", "betsson")]
+    betting_keys = [k for k in AFFILIATES if k in ("betsson", "jubilee", "vivento")]
     if not betting_keys:
         return ""
     key = random.choice(betting_keys)

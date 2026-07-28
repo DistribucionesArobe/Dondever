@@ -155,7 +155,7 @@ async def compose_email_content() -> dict | None:
           </td>
         </tr>"""
 
-    strendus_url = get_short_affiliate_url("strendus", source="email")
+    betsson_url = get_short_affiliate_url("betsson", source="email")
     remaining = len(upcoming) - 1 - len(top_others)
     remaining_text = f"<p style='text-align:center;color:#64748b;font-size:13px;'>...y {remaining} juegos mas en <a href='{APP_URL}' style='color:#2563eb;'>dondever.app</a></p>" if remaining > 0 else ""
 
@@ -196,10 +196,10 @@ async def compose_email_content() -> dict | None:
     </div>
   </div>
 
-  <!-- CTA Strendus -->
+  <!-- CTA Betsson -->
   <div style="padding:16px 24px;text-align:center;background:#fef3c7;">
-    <a href="{strendus_url}" style="display:inline-block;background:#dc2626;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:700;font-size:15px;">
-      Apuesta en Strendus
+    <a href="{betsson_url}" style="display:inline-block;background:#dc2626;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:700;font-size:15px;">
+      Apuesta en Betsson
     </a>
     <p style="margin:8px 0 0;font-size:12px;color:#92400e;">Casino y apuestas deportivas con licencia SEGOB</p>
   </div>

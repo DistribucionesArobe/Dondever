@@ -97,7 +97,7 @@ def get_random_affiliate(betting_only: bool = False) -> dict:
     betting_only=True excludes VPN/non-betting affiliates (for picks, game results).
     """
     if betting_only:
-        betting_keys = [k for k in AFFILIATES if k in ("strendus", "betsson")]
+        betting_keys = [k for k in AFFILIATES if k in ("betsson", "jubilee", "vivento")]
         key = random.choice(betting_keys) if betting_keys else random.choice(list(AFFILIATES.keys()))
     else:
         key = random.choice(list(AFFILIATES.keys()))

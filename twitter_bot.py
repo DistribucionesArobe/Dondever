@@ -83,9 +83,9 @@ def get_betting_affiliate_text() -> str:
     """
     Random BETTING affiliate CTA con link corto branded.
     Usa cta_twitter con bono especifico para mayor conversion.
-    Ej: 'Bono $3,000 en Strendus 👉 dondever.app/go/strendus?s=twitter'
+    Ej: 'Bono $3,000 en Betsson 👉 dondever.app/go/betsson?s=twitter'
     """
-    betting_keys = [k for k in AFFILIATES if k in ("strendus", "betsson")]
+    betting_keys = [k for k in AFFILIATES if k in ("betsson", "jubilee", "vivento")]
     if not betting_keys:
         return ""
     key = random.choice(betting_keys)

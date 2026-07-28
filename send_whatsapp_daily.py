@@ -1,6 +1,6 @@
 """
 Daily WhatsApp broadcast for DondeVer — via Meta Cloud API.
-Sends games + statistical betting tips + Strendus link.
+Sends games + statistical betting tips + Betsson link.
 
 Replaces the old Twilio-based whatsapp_broadcast.py.
 
@@ -323,7 +323,7 @@ async def compose_daily_message() -> str | None:
     - Top pick with statistical analysis
     - 3-5 more games with quick tips
     - Momios (odds) for each game
-    - Strendus affiliate link
+    - Betsson affiliate link
     """
     games = await get_todays_games()
     now = datetime.now(TZ_MX)
@@ -432,11 +432,11 @@ async def compose_daily_message() -> str | None:
             tip_line = f"  Tip: *{g_tip['pick']}* ({g_tip['confidence']}) — {g_tip['extra_market']}"
             lines.append(tip_line)
 
-    # ── Strendus CTA ──
-    strendus_url = get_short_affiliate_url("strendus", source="whatsapp")
+    # ── Betsson CTA ──
+    betsson_url = get_short_affiliate_url("betsson", source="whatsapp")
     lines.append("")
-    lines.append(f"Apuesta en *Strendus* — casino legal en Mexico:")
-    lines.append(strendus_url)
+    lines.append(f"Apuesta en *Betsson* — casino legal en Mexico:")
+    lines.append(betsson_url)
 
     # ── Footer ──
     lines.append("")

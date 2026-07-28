@@ -490,6 +490,9 @@ async def affiliate_redirect(key: str, s: str = "web"):
     """
     from fastapi.responses import RedirectResponse
     from config import get_affiliate_url
+    # Legacy: strendus fue removido — redirigir links viejos a betsson
+    if key == "strendus":
+        key = "betsson"
     _track_click(key, s)  # track antes de redirigir
     target = get_affiliate_url(key, source=s)
     if target == "#":
@@ -1979,8 +1982,9 @@ async def casinos_page(request: Request):
     """Casino comparison landing — for SEO + affiliate conversion."""
     from config import get_affiliate_url
     return templates.TemplateResponse(request, "casinos.html", {
-        "strendus_url": get_affiliate_url("strendus", source="casinos"),
         "betsson_url": get_affiliate_url("betsson", source="casinos"),
+        "jubilee_url": get_affiliate_url("jubilee", source="casinos"),
+        "vivento_url": get_affiliate_url("vivento", source="casinos"),
     })
 
 GUIDE_REDIRECTS = {

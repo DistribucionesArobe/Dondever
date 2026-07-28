@@ -29,15 +29,6 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 
 # ── Affiliate links ─────────────────────────────────────
 AFFILIATES = {
-    "strendus": {
-        "name": "Strendus",
-        "url": os.getenv("AFFILIATE_STRENDUS", "") or "https://www.strendus.com.mx/sports",
-        "logo": "/static/affiliates/strendus.svg",
-        "cta": "Apuesta en Strendus — casino legal en Mexico",
-        "cta_short": "Registrate en Strendus",
-        "cta_twitter": "Apuestas deportivas en Strendus",
-        "bonus": "Casino y apuestas deportivas con licencia SEGOB",
-    },
     "betsson": {
         "name": "Betsson",
         "url": os.getenv("AFFILIATE_BETSSON", "") or "https://record.betsson.mx/_HF2ZLLLzsI5GDKPB4tjc7WNd7ZgqdRLk/1/",

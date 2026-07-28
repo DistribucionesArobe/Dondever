@@ -65,7 +65,7 @@ def format_broadcast_channels(broadcasts: list[dict]) -> str:
 
 def get_betting_link() -> dict:
     """Get random betting affiliate with WhatsApp tracking."""
-    betting_keys = [k for k in AFFILIATES if k in ("strendus", "betsson")]
+    betting_keys = [k for k in AFFILIATES if k in ("betsson", "jubilee", "vivento")]
     if not betting_keys:
         return {"name": "", "cta": "", "url": ""}
     key = random.choice(betting_keys)
