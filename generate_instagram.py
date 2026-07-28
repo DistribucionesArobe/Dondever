@@ -470,6 +470,14 @@ def prepare_template_data(games: list, date_str: str, is_stories: bool = False):
             "games": lg_games,
         })
 
+    # ── Sparse mode: pocos juegos → tarjetas gigantes verticales (hero) ──
+    # Evita el hueco vacío cuando solo hay 2-4 juegos en el día
+    total_games = sum(len(lg["games"]) for lg in league_groups)
+    sparse = total_games <= 4
+    if sparse:
+        for lg in league_groups:
+            lg["layout"] = "hero"
+
     # Calculate height
     height = 1920 if is_stories else 1350
 
@@ -479,6 +487,7 @@ def prepare_template_data(games: list, date_str: str, is_stories: bool = False):
         "month_str": month_str,
         "weekday": weekday,
         "height": height,
+        "sparse": sparse,
     }
 
 

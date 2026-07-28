@@ -137,6 +137,130 @@
     flex-direction: column;
     gap: 16px;
   }
+  /* Sparse mode: pocos juegos → centrar verticalmente y más aire */
+  .leagues.sparse {
+    justify-content: center;
+    gap: 32px;
+  }
+
+  /* ── Hero cards (pocos juegos: tarjetas gigantes apiladas) ── */
+  .hero-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 24px;
+    padding: 36px 32px 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+  .hero-card:last-child { margin-bottom: 0; }
+  .hero-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: var(--lc, #10b981);
+    border-radius: 0 6px 6px 0;
+  }
+  .hero-team {
+    text-align: center;
+    flex: 1;
+    min-width: 0;
+  }
+  .hero-logo {
+    width: 150px; height: 150px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hero-logo img {
+    width: 144px; height: 144px;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6));
+  }
+  .hero-logo .initials {
+    width: 144px; height: 144px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 52px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.5);
+  }
+  .hero-name {
+    font-size: 24px;
+    font-weight: 800;
+    margin-top: 14px;
+    color: rgba(255,255,255,0.95);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hero-center {
+    width: 170px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .hero-time {
+    font-size: 52px;
+    font-weight: 900;
+    color: #10b981;
+    line-height: 1;
+  }
+  .hero-vs {
+    font-size: 22px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.25);
+    margin-top: 10px;
+  }
+  .hero-score {
+    font-size: 56px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+  }
+  .hero-score.is-final { color: rgba(255,255,255,0.4); }
+  .hero-channel {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: 18px;
+    font-weight: 700;
+    color: rgba(16,185,129,0.95);
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 10px;
+    padding: 8px 20px;
+  }
+  .hero-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .hero-live-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #ef4444;
+  }
+  .hero-live-text {
+    font-size: 18px;
+    font-weight: 900;
+    color: #ef4444;
+    letter-spacing: 2px;
+  }
+  .hero-final {
+    font-size: 18px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
 
   /* League label bar */
   .league-label {
@@ -605,7 +729,7 @@
   </div>
 
   <!-- League sections -->
-  <div class="leagues">
+  <div class="leagues{% if sparse %} sparse{% endif %}">
     {% for league in league_groups %}
     <!-- League label -->
     <div>
@@ -616,7 +740,49 @@
         <div class="league-label-line"></div>
       </div>
 
-      {% if league.layout == 'featured' %}
+      {% if league.layout == 'hero' %}
+      <!-- Hero: pocos juegos en el día → tarjetas gigantes apiladas -->
+      {% for game in league.games %}
+      <div class="hero-card" style="--lc: {{ league.color }};">
+        <div class="hero-team">
+          <div class="hero-logo">
+            {% if game.away.logo %}
+              <img src="{{ game.away.logo }}" alt="{{ game.away.display_name }}">
+            {% else %}
+              <div class="initials">{{ game.away.display_name[:2] }}</div>
+            {% endif %}
+          </div>
+          <div class="hero-name">{{ game.away.display_name }}</div>
+        </div>
+        <div class="hero-center">
+          {% if game.is_live %}
+            <div class="hero-live"><span class="hero-live-dot"></span><span class="hero-live-text">VIVO</span></div>
+            <div class="hero-score">{{ game.away.score }}-{{ game.home.score }}</div>
+          {% elif game.is_final %}
+            <div class="hero-final">FINAL</div>
+            <div class="hero-score is-final">{{ game.away.score }}-{{ game.home.score }}</div>
+          {% else %}
+            <div class="hero-time">{{ game.time }}</div>
+            <div class="hero-vs">VS</div>
+          {% endif %}
+          {% if game.channel_display %}
+            <div><span class="hero-channel">{{ game.channel_display }}</span></div>
+          {% endif %}
+        </div>
+        <div class="hero-team">
+          <div class="hero-logo">
+            {% if game.home.logo %}
+              <img src="{{ game.home.logo }}" alt="{{ game.home.display_name }}">
+            {% else %}
+              <div class="initials">{{ game.home.display_name[:2] }}</div>
+            {% endif %}
+          </div>
+          <div class="hero-name">{{ game.home.display_name }}</div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% elif league.layout == 'featured' %}
       <!-- Featured: 2 games side by side with big logos -->
       <div class="featured-row">
         {% for game in league.games %}
