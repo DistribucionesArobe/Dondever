@@ -883,9 +883,9 @@
             {% if state == 'pre' %}
             <div class="bet-strip" onclick="event.preventDefault();event.stopPropagation();">
                 <span class="bet-strip-label">&#127922; Apuestas</span>
-                <a href="/go/betsson?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="bet-pill bp-betsson" onclick="event.stopPropagation();">Betsson</a>
-                <a href="/go/jubilee?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" class="bet-pill bp-jubilee" onclick="event.stopPropagation();">Jubilee</a>
-                <a href="/go/vivento?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" class="bet-pill bp-vivento" onclick="event.stopPropagation();">Vivento</a>
+                <a href="/go/betsson?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" class="bet-pill bp-betsson" style="display:none;" onclick="event.stopPropagation();">Betsson</a>
+                <a href="/go/jubilee?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-pill bp-jubilee" onclick="event.stopPropagation();">Jubilee</a>
+                <a href="/go/vivento?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" data-geo="mx" class="bet-pill bp-vivento" onclick="event.stopPropagation();">Vivento</a>
             </div>
             {% endif %}
         </a>
@@ -1431,7 +1431,8 @@
         // ── Action buttons ──
         html += '<div class="tp-actions">';
         html += '<a href="/equipo/' + d.slug + '" class="tp-btn tp-btn-primary">Ver todo sobre ' + d.name + ' ↗</a>';
-        html += '<a href="/go/betsson?s=search-panel" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="betsson" data-placement="search-panel">Momios en Betsson ↗</a>';
+        var _betBrand = window.__geoMX === false ? ['betsson','Betsson'] : ['jubilee','Jubilee'];
+        html += '<a href="/go/' + _betBrand[0] + '?s=search-panel" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="' + _betBrand[0] + '" data-placement="search-panel">Momios en ' + _betBrand[1] + ' ↗</a>';
         html += '</div>';
 
         html += '</div>';
@@ -1552,5 +1553,30 @@ function emailSubscribe(e) {
 }
 </script>
 <script src="/static/timezone.js" defer></script>
+
+<script>
+/* Geo-targeting de casinos: MX → Jubilee/Vivento, USA → Betsson.
+   Usa la zona horaria del navegador — sin APIs externas ni permisos. */
+(function(){
+  var MX_TZ = ["America/Mexico_City","America/Monterrey","America/Tijuana","America/Cancun","America/Chihuahua","America/Hermosillo","America/Matamoros","America/Mazatlan","America/Merida","America/Ojinaga","America/Bahia_Banderas","America/Ciudad_Juarez"];
+  var tz = "";
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch(e){}
+  var isMX = !tz || MX_TZ.indexOf(tz) !== -1;   /* default MX si no detecta */
+  window.__geoMX = isMX;
+  document.querySelectorAll('[data-geo]').forEach(function(el){
+    var forUS = el.getAttribute('data-geo') === 'us';
+    var show = forUS ? !isMX : isMX;
+    el.style.display = show ? (el.getAttribute('data-display') || '') : 'none';
+  });
+  if (isMX) {
+    /* Reescribir links de Betsson sin marca visible (botones de momios) a Jubilee */
+    document.querySelectorAll('a[data-affiliate="betsson"]:not([data-geo])').forEach(function(a){
+      a.href = a.href.replace("/go/betsson", "/go/jubilee");
+      a.setAttribute("data-affiliate", "jubilee");
+      a.innerHTML = a.innerHTML.replace(/Betsson/g, "Jubilee");
+    });
+  }
+})();
+</script>
 </body>
 </html>
