@@ -379,29 +379,43 @@ def compose_daily_summary_tweet(games: list[dict]) -> str:
 
     opener = random.choice(DAILY_OPENERS)
 
-    # Pick destacado
-    pick_text = ""
-    if games:
-        top_game = games[0]
-        first, second = get_team_order(top_game)
-        pick_text = f"\n🎯 Pick: {get_pick_team(top_game)} en {first} vs {second}"
+    # Top 3 partidos CONCRETOS — la gente reacciona a equipos, no a números
+    _PRIORITY = ["liga-mx", "world-cup", "champions", "premier-league",
+                 "la-liga", "nfl", "nba", "mlb", "mls"]
+    upcoming = [g for g in games if g.get("status", {}).get("state") == "pre"] or games
+    ranked = sorted(
+        upcoming,
+        key=lambda g: (_PRIORITY.index(g["league_slug"])
+                       if g.get("league_slug") in _PRIORITY else 99),
+    )
+    top3 = ranked[:3]
+
+    game_lines = []
+    for g in top3:
+        first, second = get_team_order(g)
+        emoji = g.get("emoji", "⚽")
+        t = format_game_time_mx(g.get("date", ""))
+        game_lines.append(f"{emoji} {first} vs {second} — {t}")
+    games_text = "\n".join(game_lines)
 
     # Pregunta para engagement
     questions = [
-        "¿Qué partido vas a ver? 👇",
-        "¿A quién le vas hoy?",
-        "Dime en comentarios qué juego no te pierdes 👇",
+        "¿Cuál vas a ver hoy? 👇",
+        "¿A quién le vas? 👇",
+        "Dime cuál no te pierdes 👇",
     ]
     q = random.choice(questions)
 
-    tweet = (
-        f"{opener} ({date_str})\n\n"
-        f"{count} juegos en vivo"
-    )
-    if leagues_text:
-        tweet += f"\n{leagues_text}"
-    tweet += pick_text
-    tweet += f"\n\n{q}\n\ndondever.app"
+    tweet = f"{opener} ({date_str})\n\n"
+    if games_text:
+        tweet += f"{games_text}\n"
+        if count > len(top3):
+            tweet += f"+{count - len(top3)} juegos más\n"
+    else:
+        tweet += f"{count} juegos en vivo\n"
+        if leagues_text:
+            tweet += f"{leagues_text}\n"
+    tweet += f"\n{q}\n\ndondever.app"
 
     return tweet[:280]
 
