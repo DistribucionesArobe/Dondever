@@ -23,6 +23,9 @@ import httpx
 from config import APP_URL, TZ_MX, HOME_LEFT_SPORTS, get_short_affiliate_url
 from sports_api import get_todays_games, fetch_odds, match_odds_to_game, fetch_standings, ODDS_SPORT_MAP
 from email_subscribers import get_active_subscribers
+
+APP_URL_BASE = os.getenv("APP_URL", "https://dondever.app")
+INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY", "")
 from send_whatsapp_daily import (
     LEAGUE_ESPN_MAP, LEAGUE_PRIORITY,
     _generate_stat_tip, _team_order, _fmt_time, _format_channels,
@@ -276,7 +279,26 @@ async def send_daily_email_broadcast(test_email: str | None = None):
         recipients = [{"email": test_email, "token": "test"}]
         logger.info(f"Test mode: sending to {test_email}")
     else:
-        recipients = get_active_subscribers()
+        # Try API first (for cron jobs on separate services)
+        if INTERNAL_API_KEY:
+            try:
+                with httpx.Client(timeout=15.0) as client:
+                    resp = client.get(
+                        f"{APP_URL_BASE}/api/internal/email-subscribers",
+                        params={"key": INTERNAL_API_KEY}
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        recipients = data.get("subscribers", [])
+                        logger.info(f"Fetched {len(recipients)} email subscribers from API")
+                    else:
+                        logger.error(f"API returned {resp.status_code}, falling back to file")
+                        recipients = get_active_subscribers()
+            except Exception as e:
+                logger.error(f"Failed to fetch from API: {e}, falling back to file")
+                recipients = get_active_subscribers()
+        else:
+            recipients = get_active_subscribers()
         logger.info(f"Email broadcast to {len(recipients)} subscribers")
 
     if not recipients:

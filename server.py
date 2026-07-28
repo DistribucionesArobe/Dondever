@@ -1109,6 +1109,25 @@ async def api_email_subscriber_count():
     return {"count": email_subscribers.get_subscriber_count()}
 
 
+@app.get("/api/internal/whatsapp-subscribers")
+async def internal_whatsapp_subscribers(key: str = ""):
+    """Internal endpoint for cron jobs to fetch WhatsApp subscriber list."""
+    internal_key = os.getenv("INTERNAL_API_KEY", "")
+    if not internal_key or key != internal_key:
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    from subscribers import get_active_subscribers
+    return {"subscribers": get_active_subscribers()}
+
+
+@app.get("/api/internal/email-subscribers")
+async def internal_email_subscribers(key: str = ""):
+    """Internal endpoint for cron jobs to fetch email subscriber list."""
+    internal_key = os.getenv("INTERNAL_API_KEY", "")
+    if not internal_key or key != internal_key:
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    return {"subscribers": email_subscribers.get_active_subscribers()}
+
+
 @app.get("/whatsapp/debug")
 async def whatsapp_debug():
     """Diagnostico del webhook de WhatsApp."""

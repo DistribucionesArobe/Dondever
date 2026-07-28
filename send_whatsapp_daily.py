@@ -20,6 +20,8 @@ import os
 import sys
 from datetime import datetime, timezone
 
+import httpx
+
 from config import (
     AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS,
     get_short_affiliate_url,
@@ -30,6 +32,9 @@ from sports_api import (
 )
 from subscribers import get_active_subscribers
 from meta_whatsapp import send_text, is_configured
+
+APP_URL = os.getenv("APP_URL", "https://dondever.app")
+INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY", "")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
 logger = logging.getLogger("dondever.wa_daily")
@@ -465,7 +470,26 @@ async def send_daily_broadcast(test_number: str | None = None):
         recipients = [test_number]
         logger.info(f"Test mode: sending to {test_number}")
     else:
-        recipients = get_active_subscribers()
+        # Try API first (for cron jobs on separate services)
+        if INTERNAL_API_KEY:
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    resp = await client.get(
+                        f"{APP_URL}/api/internal/whatsapp-subscribers",
+                        params={"key": INTERNAL_API_KEY}
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        recipients = data.get("subscribers", [])
+                        logger.info(f"Fetched {len(recipients)} subscribers from API")
+                    else:
+                        logger.error(f"API returned {resp.status_code}, falling back to file")
+                        recipients = get_active_subscribers()
+            except Exception as e:
+                logger.error(f"Failed to fetch from API: {e}, falling back to file")
+                recipients = get_active_subscribers()
+        else:
+            recipients = get_active_subscribers()
         logger.info(f"Broadcast to {len(recipients)} subscribers")
 
     if not recipients:
