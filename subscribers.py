@@ -98,6 +98,29 @@ def get_active_subscribers() -> list[str]:
     ]
 
 
+def is_in_24h_window(phone: str, margin_hours: float = 1.0) -> bool:
+    """True si el suscriptor escribió hace menos de (24 - margin) horas.
+
+    Dentro de la ventana de 24h de WhatsApp se puede mandar mensaje
+    libre (barato); fuera se necesita plantilla aprobada (caro).
+    El margen evita mandar freeform justo al borde de la ventana.
+    """
+    phone = phone.strip()
+    data = _load()
+    info = data["subscribers"].get(phone)
+    if not info or not info.get("last_active"):
+        return False
+    try:
+        last = datetime.fromisoformat(info["last_active"])
+        now = datetime.now(TZ_MX)
+        if last.tzinfo is None:
+            last = last.replace(tzinfo=TZ_MX)
+        hours = (now - last).total_seconds() / 3600.0
+        return hours < (24.0 - margin_hours)
+    except Exception:
+        return False
+
+
 def get_subscriber_count() -> int:
     """Get count of active subscribers."""
     return len(get_active_subscribers())

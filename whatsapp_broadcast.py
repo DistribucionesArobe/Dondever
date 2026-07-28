@@ -248,13 +248,46 @@ async def send_daily_broadcast():
         else:
             template_summary = f"{game_count} juegos programados para hoy. Canales y horarios en dondever.app"
 
+    # Gancho de respuesta: si el usuario contesta, su ventana de 24h se
+    # reabre y el broadcast de mañana le sale como mensaje libre (barato)
+    from subscribers import is_in_24h_window
+    import random as _random
+    reply_hooks = [
+        "\n\n💬 Responde PICK y te mando mi pick del día",
+        "\n\n💬 ¿A quién le vas hoy? Respóndeme 👀",
+        "\n\n💬 Responde 1 si vas a ver el partido de hoy",
+    ]
+    freeform_text = message_text + _random.choice(reply_hooks)
+
+    _n_window = 0
     for phone in subscribers:
         to_number = _ensure_wa_number(phone)
+        in_window = is_in_24h_window(phone)
         try:
-            # Strategy: use Content Template FIRST for broadcasts (works outside 24h window).
-            # Freeform messages get accepted by Twilio but silently fail delivery
-            # when the user hasn't messaged in 24h — the error is async and we never see it.
-            if CONTENT_SID:
+            # Estrategia de costos:
+            # - Usuario escribió hace <23h → mensaje LIBRE (casi gratis)
+            # - Fuera de ventana → plantilla aprobada (pagada, ~$0.04/msg)
+            if in_window:
+                _n_window += 1
+                try:
+                    msg = client.messages.create(
+                        body=freeform_text,
+                        from_=from_number,
+                        to=to_number,
+                    )
+                    logger.info(f"Freeform (in-window) sent to {to_number}")
+                except Exception as ff_err:
+                    logger.warning(f"Freeform failed for {to_number}: {ff_err}, trying template...")
+                    if not CONTENT_SID:
+                        raise
+                    import json as _json
+                    msg = client.messages.create(
+                        content_sid=CONTENT_SID,
+                        content_variables=_json.dumps({"1": template_summary}),
+                        from_=from_number,
+                        to=to_number,
+                    )
+            elif CONTENT_SID:
                 import json as _json
                 try:
                     msg = client.messages.create(
@@ -268,7 +301,7 @@ async def send_daily_broadcast():
                     # Template failed — try freeform as fallback (user might be in 24h window)
                     logger.warning(f"Template failed for {to_number}: {tmpl_err}, trying freeform...")
                     msg = client.messages.create(
-                        body=message_text,
+                        body=freeform_text,
                         from_=from_number,
                         to=to_number,
                     )
@@ -276,7 +309,7 @@ async def send_daily_broadcast():
             else:
                 # No template configured — freeform only (works within 24h window)
                 msg = client.messages.create(
-                    body=message_text,
+                    body=freeform_text,
                     from_=from_number,
                     to=to_number,
                 )
@@ -291,8 +324,9 @@ async def send_daily_broadcast():
                 f"Broadcast FAILED for {to_number}: {error_detail}"
             )
 
-    result = {"sent": sent, "failed": failed, "total": count, "errors": errors}
-    logger.info(f"Broadcast complete: {sent} sent, {failed} failed out of {count}")
+    result = {"sent": sent, "failed": failed, "total": count,
+              "in_window_free": _n_window, "errors": errors}
+    logger.info(f"Broadcast complete: {sent} sent ({_n_window} freeform in-window), {failed} failed out of {count}")
     if errors:
         logger.warning(f"Broadcast errors detail: {errors}")
     return result
