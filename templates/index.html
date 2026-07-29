@@ -806,7 +806,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}">
+        <div data-href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}">
 
             {% if state == 'in' %}
             <div class="gc-status-row">
@@ -893,14 +893,14 @@
 
             {# ── Betting Strip ── #}
             {% if state == 'pre' %}
-            <div class="bet-strip" onclick="event.preventDefault();event.stopPropagation();">
+            <div class="bet-strip" onclick="event.stopPropagation();">
                 <span class="bet-strip-label">&#127922; Apuestas</span>
                 <a href="/go/betsson?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" class="bet-pill bp-betsson" style="display:none;" onclick="event.stopPropagation();">Betsson</a>
                 <a href="/go/jubilee?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-pill bp-jubilee" onclick="event.stopPropagation();">Jubilee</a>
                 <a href="/go/vivento?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" data-geo="mx" class="bet-pill bp-vivento" onclick="event.stopPropagation();">Vivento</a>
             </div>
             {% endif %}
-        </a>
+        </div>
         {% endfor %}
     </section>
 
@@ -1136,6 +1136,15 @@
 </a>
 
 <script>
+    // ── Game card click-to-navigate (div instead of <a> to avoid nested-link issues) ──
+    document.querySelectorAll('.game-card[data-href]').forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            // Don't navigate if user clicked an actual link inside the card
+            if (e.target.closest('a')) return;
+            window.location.href = card.dataset.href;
+        });
+    });
+
     // ── Countdown Timer ─────────────────────
     function updateCountdowns() {
         document.querySelectorAll('.countdown[data-kickoff]').forEach(el => {
