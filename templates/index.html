@@ -269,7 +269,13 @@
         /* ── League Section ─────────────────── */
         .league-section {
             margin-bottom: 1.4rem;
+            display: flex;
+            flex-direction: column;
         }
+        .game-card.live { order: 0; }
+        .game-card { order: 1; }
+        .game-card.final { order: 2; }
+        .league-header { order: -1; }
         @media (min-width: 768px) {
             .league-section {
                 display: grid;
