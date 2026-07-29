@@ -348,6 +348,11 @@
             font-size: 0.6rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;
             letter-spacing: 0.03em;
         }
+        .pre-badge {
+            display: inline-block; background: #fff7ed; color: #ea580c;
+            font-size: 0.6rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+            letter-spacing: 0.03em; border: 1px solid #fed7aa;
+        }
         .gc-clock { font-size: 0.8rem; font-weight: 800; color: #ef4444; }
 
         .gc-row {
@@ -816,6 +821,10 @@
             {% elif state == 'post' %}
             <div class="gc-status-row">
                 <span class="final-badge">FINAL</span>
+            </div>
+            {% else %}
+            <div class="gc-status-row">
+                <span class="pre-badge">PRÓXIMO</span>
             </div>
             {% endif %}
 
