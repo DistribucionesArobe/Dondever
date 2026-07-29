@@ -72,7 +72,7 @@
             z-index: 100;
         }
         .header-inner {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 0 1rem;
             display: flex;
@@ -123,7 +123,7 @@
             text-align: center;
         }
         .hero-inner {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto;
         }
         .hero h1 {
@@ -161,7 +161,7 @@
 
         /* ── Search Bar ─────────────────────── */
         .search-wrap {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0.65rem auto 0;
             padding: 0 1rem;
         }
@@ -192,7 +192,7 @@
 
         /* ── Sport Filters ───────────────────── */
         .filters-wrap {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0.75rem auto 0;
             padding: 0 1rem;
         }
@@ -261,13 +261,25 @@
 
         /* ── Main Content ───────────────────── */
         .main {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto;
             padding: 0.85rem 1rem 1.5rem;
         }
 
         /* ── League Section ─────────────────── */
-        .league-section { margin-bottom: 1.4rem; }
+        .league-section {
+            margin-bottom: 1.4rem;
+        }
+        @media (min-width: 768px) {
+            .league-section {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+            .league-header { grid-column: 1 / -1; }
+            .pick-card { grid-column: 1 / -1; }
+            .game-card { margin-bottom: 0; }
+        }
         .league-header {
             font-size: 0.9rem;
             font-weight: 800;
@@ -469,7 +481,7 @@
         .pick-disclaimer { font-size: 0.55rem; opacity: 0.4; margin-top: 0.5rem; line-height: 1.4; }
 
         /* ── Team Quick Panel (search) ──────── */
-        .team-panel { max-width: 900px; margin: 0.75rem auto 0; padding: 0 1rem; }
+        .team-panel { max-width: 1100px; margin: 0.75rem auto 0; padding: 0 1rem; }
         .tp-card {
             background: white; border: 2px solid #10b981; border-radius: 14px;
             padding: 1rem 1.2rem; box-shadow: 0 4px 12px rgba(16,185,129,0.1);
@@ -557,7 +569,7 @@
 
         /* ── WhatsApp CTA ───────────────────── */
         .wa-cta {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto 1.25rem;
             padding: 0 1rem;
         }
@@ -615,7 +627,7 @@
 
         /* ── Popular Teams ──────────────────── */
         .teams-section {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto 1.25rem;
             padding: 0 1rem;
         }
@@ -643,7 +655,7 @@
 
         /* ── Info Section ───────────────────── */
         .info-section {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto 1.25rem;
             padding: 0 1rem;
         }
@@ -685,7 +697,7 @@
 
         /* ── Footer ─────────────────────────── */
         .footer {
-            max-width: 900px; margin: 2rem auto 1rem; padding: 1.5rem 1rem;
+            max-width: 1100px; margin: 2rem auto 1rem; padding: 1.5rem 1rem;
             border-top: 1px solid #e5e7eb; text-align: center;
             color: #9ca3af; font-size: 0.7rem;
         }
@@ -1047,7 +1059,7 @@
 </div>
 
 <!-- Guides -->
-<div style="max-width:900px;margin:1.5rem auto 0;padding:0 1rem;">
+<div style="max-width:1100px;margin:1.5rem auto 0;padding:0 1rem;">
     <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;">
         <h3 style="font-size:0.85rem;font-weight:700;color:#059669;margin-bottom:0.75rem;">Guias: Como ver en Mexico, USA y Latinoamerica</h3>
         <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
@@ -1088,7 +1100,7 @@
 <!-- Subtle affiliate mention -->
 {% for key, aff in affiliates.items() %}
 {% if loop.index == 2 %}
-<div class="ad-slot" style="max-width:900px;margin:1rem auto 0;padding:0 1rem;">
+<div class="ad-slot" style="max-width:1100px;margin:1rem auto 0;padding:0 1rem;">
     <a href="/go/{{ key }}?s=web" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ key }}" class="ad-slot-link">
         <span class="ad-slot-title">{{ aff.name }} &middot; {{ aff.bonus }}</span>
         <span class="ad-slot-tag">Publicidad</span>
