@@ -31,7 +31,7 @@ from sports_api import (
     fetch_standings, ODDS_SPORT_MAP,
 )
 from subscribers import get_active_subscribers
-from meta_whatsapp import send_text, is_configured
+from meta_whatsapp import send_text, send_template, is_configured
 
 APP_URL = os.getenv("APP_URL", "https://dondever.app")
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY", "")
@@ -449,21 +449,155 @@ async def compose_daily_message() -> str | None:
     return "\n".join(lines)
 
 
+# ── Template Variables Composer ───────────────────────────────
+
+async def compose_template_variables() -> dict | None:
+    """
+    Compose the 3 body variables for the picks_diarios WhatsApp template.
+    Returns {"var1": str, "var2": str, "var3": str} or None if no games.
+
+    Template structure:
+      DONDE VER — {{1}}
+      PICK DEL DIA
+      {{2}}
+      MAS JUEGOS + TIPS
+      {{3}}
+      Ver todos los juegos, canales y horarios en dondever.app
+    """
+    games = await get_todays_games()
+    now = datetime.now(TZ_MX)
+    date_display = now.strftime("%d/%m/%Y")
+    weekday = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"][now.weekday()]
+
+    if not games:
+        return None
+
+    upcoming = [g for g in games if g["status"]["state"] == "pre"]
+    if not upcoming:
+        return None
+
+    # Fetch odds and standings
+    leagues_in_play = set(g.get("league_slug", "") for g in upcoming)
+    odds_by_league = {}
+    for league_slug in leagues_in_play:
+        if league_slug in ODDS_SPORT_MAP:
+            odds_by_league[league_slug] = await fetch_odds(league_slug)
+
+    standings_by_league = {}
+    for league_slug in leagues_in_play:
+        espn_info = LEAGUE_ESPN_MAP.get(league_slug)
+        if espn_info:
+            sport, league_id = espn_info
+            try:
+                standings_by_league[league_slug] = await fetch_standings(sport, league_id)
+            except Exception:
+                standings_by_league[league_slug] = []
+
+    # Pick the featured game
+    pick = None
+    for pl in LEAGUE_PRIORITY:
+        pick = next((g for g in upcoming if g.get("league_slug") == pl), None)
+        if pick:
+            break
+    if not pick:
+        pick = upcoming[0]
+
+    pick_league = pick.get("league_slug", "")
+    pick_odds_list = odds_by_league.get(pick_league, [])
+    pick_odds = match_odds_to_game(pick, pick_odds_list) if pick_odds_list else None
+    pick_standings = standings_by_league.get(pick_league, [])
+    pick_tip = await _generate_stat_tip(pick, pick_odds, pick_standings)
+
+    # ── var1: date + game count ──
+    var1 = f"{weekday} {date_display} — {len(upcoming)} juegos hoy"
+
+    # ── var2: featured pick details ──
+    first, second = _team_order(pick)
+    time_str = _fmt_time(pick["date"])
+    channels = _format_channels(pick["broadcasts"])
+    pick_lines = [
+        f"{first} vs {second}",
+        f"{pick.get('league_name', '')} — {time_str} MX",
+        f"TV: {channels}",
+    ]
+    if pick_tip["odds_display"]:
+        pick_lines.append(f"Momios: {pick_tip['odds_display']}")
+    pick_lines.append(f"Tip: {pick_tip['pick']} ({pick_tip['confidence']})")
+    pick_lines.append(f"{pick_tip['reason']}")
+    pick_lines.append(f"Extra: {pick_tip['extra_market']}")
+    var2 = "\n".join(pick_lines)
+
+    # ── var3: other games summary ──
+    other_games = [g for g in upcoming if g["id"] != pick["id"]]
+    top_others = []
+    for pl in LEAGUE_PRIORITY:
+        for g in other_games:
+            if g.get("league_slug") == pl and g not in top_others:
+                top_others.append(g)
+                if len(top_others) >= 4:
+                    break
+        if len(top_others) >= 4:
+            break
+    for g in other_games:
+        if g not in top_others:
+            top_others.append(g)
+            if len(top_others) >= 4:
+                break
+
+    other_lines = []
+    for g in top_others:
+        f1, f2 = _team_order(g)
+        t = _fmt_time(g["date"])
+        ch = _format_channels(g["broadcasts"])
+        gl = g.get("league_slug", "")
+        g_odds_list = odds_by_league.get(gl, [])
+        g_odds = match_odds_to_game(g, g_odds_list) if g_odds_list else None
+        g_standings = standings_by_league.get(gl, [])
+        g_tip = await _generate_stat_tip(g, g_odds, g_standings)
+        other_lines.append(f"{f1} vs {f2} — {t}")
+        other_lines.append(f"{ch} | Tip: {g_tip['pick']} ({g_tip['confidence']})")
+
+    remaining = len(upcoming) - 1 - len(top_others)
+    if remaining > 0:
+        other_lines.append(f"...y {remaining} juegos mas en dondever.app")
+
+    var3 = "\n".join(other_lines) if other_lines else "Revisa dondever.app para mas juegos"
+
+    return {"var1": var1, "var2": var2, "var3": var3}
+
+
 # ── Sender ───────────────────────────────────────────────────
 
 async def send_daily_broadcast(test_number: str | None = None):
     """
     Send daily WhatsApp broadcast via Meta Cloud API.
-    If test_number is provided, send only to that number.
+    Uses approved template 'picks_diarios' for proactive messages
+    (works outside the 24h customer service window).
+    Falls back to send_text() if template fails (e.g. during review).
     """
     if not is_configured():
         logger.error("Meta WhatsApp not configured. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID.")
         return {"sent": 0, "failed": 0, "error": "not_configured"}
 
-    message = await compose_daily_message()
-    if not message:
+    # Try template variables first, fall back to freeform message
+    template_vars = await compose_template_variables()
+    freeform_message = None
+
+    if not template_vars:
         logger.info("No games today — skipping broadcast")
         return {"sent": 0, "failed": 0, "skipped": "no_games"}
+
+    # Build template components
+    components = [
+        {
+            "type": "body",
+            "parameters": [
+                {"type": "text", "text": template_vars["var1"]},
+                {"type": "text", "text": template_vars["var2"]},
+                {"type": "text", "text": template_vars["var3"]},
+            ],
+        }
+    ]
 
     # Determine recipients
     if test_number:
@@ -501,11 +635,30 @@ async def send_daily_broadcast(test_number: str | None = None):
     errors = []
 
     for phone in recipients:
-        result = send_text(phone, message)
+        # Use template for proactive messages (works outside 24h window)
+        result = send_template(
+            phone,
+            template_name="picks_diarios",
+            language="es_MX",
+            components=components,
+        )
+
         if result["ok"]:
             sent += 1
-            logger.info(f"Sent to {phone} — msg_id: {result['id']}")
+            logger.info(f"Sent template to {phone} — msg_id: {result['id']}")
         else:
+            # If template fails (not approved yet?), try freeform as fallback
+            err_msg = result.get("error", "")
+            if "template" in str(err_msg).lower() or "not found" in str(err_msg).lower():
+                logger.warning(f"Template failed for {phone}: {err_msg}, trying freeform fallback")
+                if freeform_message is None:
+                    freeform_message = await compose_daily_message()
+                if freeform_message:
+                    fallback = send_text(phone, freeform_message)
+                    if fallback["ok"]:
+                        sent += 1
+                        logger.info(f"Fallback freeform sent to {phone}")
+                        continue
             failed += 1
             errors.append({"phone": phone, "error": result["error"]})
             logger.error(f"Failed to send to {phone}: {result['error']}")
