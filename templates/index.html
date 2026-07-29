@@ -901,7 +901,7 @@
             {% endif %}
 
             {# ── Betting Strip ── #}
-            {% if state == 'pre' %}
+            {% if state != 'post' %}
             <div class="bet-strip" onclick="event.stopPropagation();">
                 <span class="bet-strip-label">&#127922; Apuestas</span>
                 <a href="/go/betsson?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" class="bet-pill bp-betsson" style="display:none;" onclick="event.stopPropagation();">Betsson</a>
