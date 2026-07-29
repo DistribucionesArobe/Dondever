@@ -67,7 +67,7 @@ def generate_image(date: str = None) -> dict:
 
     log.info(f"Generating image from {url}...")
 
-    with httpx.Client(timeout=30) as client:
+    with httpx.Client(timeout=120) as client:
         resp = client.get(url, params=params)
 
         if resp.status_code == 404:
