@@ -106,9 +106,11 @@ def send_template(to: str, template_name: str, language: str = "es_MX", componen
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
+    normalized = _normalize_to(to)
+    logger.info(f"send_template: original={to} → normalized={normalized}")
     payload = {
         "messaging_product": "whatsapp",
-        "to": _normalize_to(to),
+        "to": normalized,
         "type": "template",
         "template": {
             "name": template_name,
@@ -130,6 +132,7 @@ def send_template(to: str, template_name: str, language: str = "es_MX", componen
                     "error": data.get("error", {}).get("message", f"HTTP {resp.status_code}"),
                 }
             msg_id = (data.get("messages") or [{}])[0].get("id")
+            logger.info(f"send_template OK: to={normalized} status={resp.status_code} contacts={data.get('contacts')} messages={data.get('messages')}")
             return {"ok": True, "id": msg_id, "error": None}
     except Exception as e:
         logger.exception(f"Meta template exception: {e}")
