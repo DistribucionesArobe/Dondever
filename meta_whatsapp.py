@@ -32,12 +32,17 @@ def is_configured() -> bool:
 
 
 def _normalize_to(to: str) -> str:
-    """Strip 'whatsapp:' prefix and '+' sign — Meta Cloud API wants bare E.164 digits."""
+    """Strip 'whatsapp:' prefix and '+' sign — Meta Cloud API wants bare E.164 digits.
+    Also normalizes Mexican numbers: old format 521XXXXXXXXXX → 52XXXXXXXXXX."""
     to = to.strip()
     if to.startswith("whatsapp:"):
         to = to[len("whatsapp:"):]
     if to.startswith("+"):
         to = to[1:]
+    # Mexico: strip deprecated "1" after country code (521 → 52)
+    # Old format: 521 + 10 digits = 13 chars; new format: 52 + 10 digits = 12 chars
+    if to.startswith("521") and len(to) == 13:
+        to = "52" + to[3:]
     return to
 
 
