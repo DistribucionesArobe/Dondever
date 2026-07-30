@@ -155,7 +155,8 @@ async def compose_email_content() -> dict | None:
           </td>
         </tr>"""
 
-    betsson_url = get_short_affiliate_url("betsson", source="email")
+    jubilee_url = get_short_affiliate_url("jubilee", source="email")
+    vivento_url = get_short_affiliate_url("vivento", source="email")
     remaining = len(upcoming) - 1 - len(top_others)
     remaining_text = f"<p style='text-align:center;color:#64748b;font-size:13px;'>...y {remaining} juegos mas en <a href='{APP_URL}' style='color:#2563eb;'>dondever.app</a></p>" if remaining > 0 else ""
 
@@ -196,12 +197,13 @@ async def compose_email_content() -> dict | None:
     </div>
   </div>
 
-  <!-- CTA Betsson -->
-  <div style="padding:16px 24px;text-align:center;background:#fef3c7;">
-    <a href="{betsson_url}" style="display:inline-block;background:#dc2626;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:700;font-size:15px;">
-      Apuesta en Betsson
-    </a>
-    <p style="margin:8px 0 0;font-size:12px;color:#92400e;">Casino y apuestas deportivas con licencia SEGOB</p>
+  <!-- Affiliates -->
+  <div style="padding:16px 24px;text-align:center;">
+    <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Ver momios y apostar</p>
+    <div style="display:inline-block;">
+      <a href="{jubilee_url}" style="display:inline-block;background:#d97706;color:#ffffff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:700;font-size:14px;margin:0 4px;">Jubilee</a>
+      <a href="{vivento_url}" style="display:inline-block;background:#dc2626;color:#ffffff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:700;font-size:14px;margin:0 4px;">Vivento</a>
+    </div>
   </div>
 
   <!-- Mas juegos -->
@@ -235,12 +237,25 @@ async def compose_email_content() -> dict | None:
 
 # ── Resend API Sender ──────────────────────────────────────
 
-def send_email(to: str, subject: str, html: str) -> dict:
+def send_email(to: str, subject: str, html: str, unsub_url: str = "") -> dict:
     """Send one email via Resend API."""
     if not RESEND_API_KEY:
         return {"ok": False, "error": "RESEND_API_KEY not configured"}
 
     try:
+        payload = {
+            "from": RESEND_FROM,
+            "to": [to],
+            "subject": subject,
+            "html": html,
+        }
+        # List-Unsubscribe header helps deliverability
+        if unsub_url:
+            payload["headers"] = {
+                "List-Unsubscribe": f"<{unsub_url}>",
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            }
+
         with httpx.Client(timeout=15.0) as client:
             resp = client.post(
                 "https://api.resend.com/emails",
@@ -248,12 +263,7 @@ def send_email(to: str, subject: str, html: str) -> dict:
                     "Authorization": f"Bearer {RESEND_API_KEY}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "from": RESEND_FROM,
-                    "to": [to],
-                    "subject": subject,
-                    "html": html,
-                },
+                json=payload,
             )
             data = resp.json() if resp.content else {}
             if resp.status_code >= 400:
@@ -314,9 +324,10 @@ async def send_daily_email_broadcast(test_email: str | None = None):
         token = sub.get("token", "") if isinstance(sub, dict) else ""
 
         # Personalize unsubscribe link
+        unsub_url = f"{APP_URL}/email-unsubscribe?token={token}"
         html = html_template.replace("{{unsubscribe_token}}", token)
 
-        result = send_email(email, subject, html)
+        result = send_email(email, subject, html, unsub_url=unsub_url)
         if result["ok"]:
             sent += 1
             logger.info(f"Email sent to {email}")
