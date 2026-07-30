@@ -25,6 +25,7 @@ from sports_api import (
 from whatsapp_bot import handle_whatsapp_message
 import meta_whatsapp
 import email_subscribers
+import user_favs
 from tiktok_auth import (
     get_tiktok_auth_url, exchange_code_for_token, get_user_info,
     upload_video_to_tiktok, check_publish_status, is_authenticated,
@@ -1196,6 +1197,42 @@ async def api_whatsapp_subscribe(request: Request):
     except Exception as e:
         logger.error(f"WhatsApp subscribe error: {e}")
         return {"ok": False, "error": "Error interno. Intenta de nuevo."}
+
+
+# ── User Favorites (by phone) ──────────────────────────────
+
+
+@app.post("/api/favs/save")
+async def api_favs_save(request: Request):
+    """Save user favorites linked to WhatsApp phone number."""
+    try:
+        data = await request.json()
+        phone = data.get("phone", "").strip()
+        favs = data.get("favs", [])
+    except Exception:
+        return JSONResponse({"ok": False, "error": "invalid_request"}, status_code=400)
+
+    if not phone:
+        return JSONResponse({"ok": False, "error": "phone_required"}, status_code=400)
+
+    result = user_favs.save_favs(phone, favs)
+    if not result["success"]:
+        return JSONResponse({"ok": False, "error": result.get("error", "failed")}, status_code=400)
+
+    return {"ok": True, "count": result["count"]}
+
+
+@app.get("/api/favs/load")
+async def api_favs_load(phone: str = ""):
+    """Load user favorites by phone number."""
+    if not phone:
+        return JSONResponse({"ok": False, "error": "phone_required"}, status_code=400)
+
+    result = user_favs.load_favs(phone)
+    if not result["success"]:
+        return JSONResponse({"ok": False, "error": result.get("error", "failed")}, status_code=400)
+
+    return {"ok": True, "favs": result["favs"], "found": result.get("found", False)}
 
 
 @app.get("/admin/subscribers")
