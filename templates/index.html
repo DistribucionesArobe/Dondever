@@ -466,6 +466,34 @@
         .bet-pill.bp-jubilee { background: #d97706; }
         .bet-pill.bp-vivento { background: #dc2626; }
 
+        /* ── Actions row (calendar + share) ── */
+        .gc-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding-top: 0.4rem;
+            margin-top: 0.4rem;
+            border-top: 1px solid #f3f4f6;
+        }
+        .gc-act {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+            font-size: 0.58rem;
+            font-weight: 600;
+            color: #6b7280;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 5px;
+            padding: 0.2rem 0.45rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+            font-family: inherit;
+        }
+        .gc-act:hover { background: #e5e7eb; color: #374151; }
+        .gc-act.copied { background: #d1fae5; color: #059669; }
+
         /* ── Partido Destacado ──────────────── */
         .pick-card {
             display: block;
@@ -915,6 +943,14 @@
                 <a href="/go/vivento?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" data-geo="mx" class="bet-pill bp-vivento" onclick="event.stopPropagation();">Vivento</a>
             </div>
             {% endif %}
+
+            {# ── Calendar + Share ── #}
+            <div class="gc-actions" onclick="event.stopPropagation();">
+                {% if state == 'pre' %}
+                <button class="gc-act" onclick="dvCal(this)" data-t="{{ top_team.name }} vs {{ bottom_team.name }}" data-d="{{ game.date }}" data-l="{{ game.league_name }}" data-ch="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}" data-u="{{ app_url }}/juego/{{ game.id }}">&#128197; Calendario</button>
+                {% endif %}
+                <button class="gc-act" onclick="dvShare(this,'{{ app_url }}/juego/{{ game.id }}','{{ top_team.name }} vs {{ bottom_team.name }} - {{ game.league_name }}')">&#8599; Compartir</button>
+            </div>
         </div>
         {% endfor %}
     </section>
@@ -1159,6 +1195,31 @@
             window.location.href = card.dataset.href;
         });
     });
+
+    // ── Calendar + Share helpers ────────────
+    function dvCal(btn) {
+        var s = new Date(btn.dataset.d);
+        var e = new Date(s.getTime() + 7200000);
+        function fmt(d) { return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,''); }
+        var det = btn.dataset.l;
+        if (btn.dataset.ch) det += ' | Canal: ' + btn.dataset.ch;
+        det += '\n' + btn.dataset.u;
+        window.open('https://calendar.google.com/calendar/render?action=TEMPLATE'
+            + '&text=' + encodeURIComponent(btn.dataset.t)
+            + '&dates=' + fmt(s) + '/' + fmt(e)
+            + '&details=' + encodeURIComponent(det), '_blank');
+    }
+    function dvShare(btn, url, title) {
+        if (navigator.share) {
+            navigator.share({title: title + ' | DondeVer', url: url});
+            return;
+        }
+        navigator.clipboard.writeText(url).then(function() {
+            btn.innerHTML = '&#10003; Copiado';
+            btn.classList.add('copied');
+            setTimeout(function() { btn.innerHTML = '&#8599; Compartir'; btn.classList.remove('copied'); }, 2000);
+        });
+    }
 
     // ── Countdown Timer ─────────────────────
     function updateCountdowns() {

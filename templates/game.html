@@ -329,6 +329,16 @@
         </div>
         {% if game.venue %}<div class="venue">Sede: {{ game.venue }}</div>{% endif %}
 
+        {# ── Calendar + Share buttons ── #}
+        <div style="display:flex;gap:0.4rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+            {% if game.status.state == 'pre' %}
+            <button onclick="dvCal()" style="display:inline-flex;align-items:center;gap:0.3rem;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:0.45rem 0.85rem;font-size:0.78rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;transition:background 0.15s;">&#128197; Agregar al calendario</button>
+            {% endif %}
+            <button onclick="dvShareWA()" style="display:inline-flex;align-items:center;gap:0.3rem;background:#25D366;border:none;border-radius:8px;padding:0.45rem 0.85rem;font-size:0.78rem;font-weight:600;color:white;cursor:pointer;font-family:inherit;transition:opacity 0.15s;">&#128172; WhatsApp</button>
+            <button onclick="dvShareX()" style="display:inline-flex;align-items:center;gap:0.3rem;background:#0f172a;border:none;border-radius:8px;padding:0.45rem 0.85rem;font-size:0.78rem;font-weight:600;color:white;cursor:pointer;font-family:inherit;transition:opacity 0.15s;">&#120143; / X</button>
+            <button id="copyBtn" onclick="dvCopy()" style="display:inline-flex;align-items:center;gap:0.3rem;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:0.45rem 0.85rem;font-size:0.78rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;transition:background 0.15s;">&#128279; Copiar enlace</button>
+        </div>
+
         {# ── Betting Strip — naranja, prominente, dentro del card ── #}
         {% if game.status.state == 'pre' %}
         <div style="margin:0.75rem -1.25rem -1.25rem;background:linear-gradient(135deg,#7c2d12,#9a3412);border-radius:0 0 16px 16px;padding:0.65rem 1rem;">
@@ -893,6 +903,42 @@ function emailSubscribe(e) {
     });
   }
 })();
+</script>
+<script>
+// ── Calendar + Share ─────────────────────
+var _gTitle = '{{ first_team }} vs {{ second_team }}';
+var _gDate = '{{ game.date }}';
+var _gLeague = '{{ game.league_name }}';
+var _gChannel = '{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}';
+var _gUrl = '{{ app_url }}/juego/{{ game.id }}';
+
+function dvCal() {
+    var s = new Date(_gDate);
+    var e = new Date(s.getTime() + 7200000);
+    function fmt(d) { return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,''); }
+    var det = _gLeague;
+    if (_gChannel) det += ' | Canal: ' + _gChannel;
+    det += '\n' + _gUrl;
+    window.open('https://calendar.google.com/calendar/render?action=TEMPLATE'
+        + '&text=' + encodeURIComponent(_gTitle)
+        + '&dates=' + fmt(s) + '/' + fmt(e)
+        + '&details=' + encodeURIComponent(det), '_blank');
+}
+function dvShareWA() {
+    var text = _gTitle + ' - ' + _gLeague + '\n' + _gUrl;
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+function dvShareX() {
+    window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(_gTitle + ' | DondeVer') + '&url=' + encodeURIComponent(_gUrl), '_blank');
+}
+function dvCopy() {
+    navigator.clipboard.writeText(_gUrl).then(function() {
+        var b = document.getElementById('copyBtn');
+        b.innerHTML = '&#10003; Copiado';
+        b.style.background = '#d1fae5'; b.style.color = '#059669';
+        setTimeout(function() { b.innerHTML = '&#128279; Copiar enlace'; b.style.background = ''; b.style.color = ''; }, 2000);
+    });
+}
 </script>
 </body>
 </html>
