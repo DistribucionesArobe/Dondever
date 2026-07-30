@@ -432,11 +432,13 @@ async def compose_daily_message() -> str | None:
             tip_line = f"  Tip: *{g_tip['pick']}* ({g_tip['confidence']}) — {g_tip['extra_market']}"
             lines.append(tip_line)
 
-    # ── Betsson CTA ──
-    betsson_url = get_short_affiliate_url("betsson", source="whatsapp")
+    # ── Affiliates CTA ──
+    jubilee_url = get_short_affiliate_url("jubilee", source="whatsapp")
+    vivento_url = get_short_affiliate_url("vivento", source="whatsapp")
     lines.append("")
-    lines.append(f"Apuesta en *Betsson* — casino legal en Mexico:")
-    lines.append(betsson_url)
+    lines.append("Ver momios y apostar:")
+    lines.append(f"Jubilee: {jubilee_url}")
+    lines.append(f"Vivento: {vivento_url}")
 
     # ── Footer ──
     lines.append("")
