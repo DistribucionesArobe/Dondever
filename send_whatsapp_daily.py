@@ -455,16 +455,13 @@ async def compose_daily_message() -> str | None:
 
 async def compose_template_variables() -> dict | None:
     """
-    Compose the 3 body variables for the picks_diarios WhatsApp template.
-    Returns {"var1": str, "var2": str, "var3": str} or None if no games.
+    Compose the single body variable for the approved WhatsApp template.
+    Returns {"var1": str} or None if no games.
 
-    Template structure:
-      DONDE VER — {{1}}
-      PICK DEL DIA
-      {{2}}
-      MAS JUEGOS + TIPS
-      {{3}}
-      Ver todos los juegos, canales y horarios en dondever.app
+    Template (copy_copy_dondever_picks_v2_...):
+      DondeVer.app - Picks de hoy:
+      {{1}}
+      Mas info: dondever.app
     """
     games = await get_todays_games()
     now = datetime.now(TZ_MX)
@@ -510,26 +507,26 @@ async def compose_template_variables() -> dict | None:
     pick_standings = standings_by_league.get(pick_league, [])
     pick_tip = await _generate_stat_tip(pick, pick_odds, pick_standings)
 
-    # ── var1: date + game count ──
-    var1 = f"{weekday} {date_display} — {len(upcoming)} juegos hoy"
+    # ── Build single combined variable for {{1}} ──
+    lines = []
 
-    # ── var2: featured pick details ──
+    # Date + game count
+    lines.append(f"{weekday} {date_display} — {len(upcoming)} juegos")
+
+    # Featured pick
     first, second = _team_order(pick)
     time_str = _fmt_time(pick["date"])
     channels = _format_channels(pick["broadcasts"])
-    pick_lines = [
-        f"{first} vs {second}",
-        f"{pick.get('league_name', '')} — {time_str} MX",
-        f"TV: {channels}",
-    ]
+    lines.append("")
+    lines.append(f"PICK: {first} vs {second}")
+    lines.append(f"{pick.get('league_name', '')} — {time_str} MX")
+    lines.append(f"TV: {channels}")
     if pick_tip["odds_display"]:
-        pick_lines.append(f"Momios: {pick_tip['odds_display']}")
-    pick_lines.append(f"Tip: {pick_tip['pick']} ({pick_tip['confidence']})")
-    pick_lines.append(f"{pick_tip['reason']}")
-    pick_lines.append(f"Extra: {pick_tip['extra_market']}")
-    var2 = "\n".join(pick_lines)
+        lines.append(f"Momios: {pick_tip['odds_display']}")
+    lines.append(f"Tip: {pick_tip['pick']} ({pick_tip['confidence']})")
+    lines.append(f"{pick_tip['reason']}")
 
-    # ── var3: other games summary ──
+    # Other games
     other_games = [g for g in upcoming if g["id"] != pick["id"]]
     top_others = []
     for pl in LEAGUE_PRIORITY:
@@ -546,26 +543,28 @@ async def compose_template_variables() -> dict | None:
             if len(top_others) >= 4:
                 break
 
-    other_lines = []
-    for g in top_others:
-        f1, f2 = _team_order(g)
-        t = _fmt_time(g["date"])
-        ch = _format_channels(g["broadcasts"])
-        gl = g.get("league_slug", "")
-        g_odds_list = odds_by_league.get(gl, [])
-        g_odds = match_odds_to_game(g, g_odds_list) if g_odds_list else None
-        g_standings = standings_by_league.get(gl, [])
-        g_tip = await _generate_stat_tip(g, g_odds, g_standings)
-        other_lines.append(f"{f1} vs {f2} — {t}")
-        other_lines.append(f"{ch} | Tip: {g_tip['pick']} ({g_tip['confidence']})")
+    if top_others:
+        lines.append("")
+        for g in top_others:
+            f1, f2 = _team_order(g)
+            t = _fmt_time(g["date"])
+            gl = g.get("league_slug", "")
+            g_odds_list = odds_by_league.get(gl, [])
+            g_odds = match_odds_to_game(g, g_odds_list) if g_odds_list else None
+            g_standings = standings_by_league.get(gl, [])
+            g_tip = await _generate_stat_tip(g, g_odds, g_standings)
+            lines.append(f"{f1} vs {f2} — {t} | {g_tip['pick']}")
 
     remaining = len(upcoming) - 1 - len(top_others)
     if remaining > 0:
-        other_lines.append(f"...y {remaining} juegos mas en dondever.app")
+        lines.append(f"...y {remaining} mas")
 
-    var3 = "\n".join(other_lines) if other_lines else "Revisa dondever.app para mas juegos"
+    # Affiliate CTA
+    jubilee_url = get_short_affiliate_url("jubilee", source="whatsapp")
+    lines.append("")
+    lines.append(f"Momios: {jubilee_url}")
 
-    return {"var1": var1, "var2": var2, "var3": var3}
+    return {"var1": "\n".join(lines)}
 
 
 # ── Sender ───────────────────────────────────────────────────
@@ -573,9 +572,9 @@ async def compose_template_variables() -> dict | None:
 async def send_daily_broadcast(test_number: str | None = None):
     """
     Send daily WhatsApp broadcast via Meta Cloud API.
-    Uses approved template 'picks_diarios' for proactive messages
-    (works outside the 24h customer service window).
-    Falls back to send_text() if template fails (e.g. during review).
+    Uses approved template 'copy_copy_dondever_picks_v2_...' (1 variable)
+    in WABA Distribuciones Arobe (ID: 1224835083125902).
+    Falls back to send_text() if template fails.
     """
     if not is_configured():
         logger.error("Meta WhatsApp not configured. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID.")
@@ -589,14 +588,12 @@ async def send_daily_broadcast(test_number: str | None = None):
         logger.info("No games today — skipping broadcast")
         return {"sent": 0, "failed": 0, "skipped": "no_games"}
 
-    # Build template components
+    # Build template components (single variable for approved template)
     components = [
         {
             "type": "body",
             "parameters": [
                 {"type": "text", "text": template_vars["var1"]},
-                {"type": "text", "text": template_vars["var2"]},
-                {"type": "text", "text": template_vars["var3"]},
             ],
         }
     ]
@@ -640,7 +637,7 @@ async def send_daily_broadcast(test_number: str | None = None):
         # Use template for proactive messages (works outside 24h window)
         result = send_template(
             phone,
-            template_name="picks_diarios",
+            template_name="copy_copy_dondever_picks_v2_hx069fa2b377a15afd01a57f9bb6d2ba92",
             language="es_MX",
             components=components,
         )
