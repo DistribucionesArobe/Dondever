@@ -458,10 +458,10 @@ async def compose_template_variables() -> dict | None:
     Compose the single body variable for the approved WhatsApp template.
     Returns {"var1": str} or None if no games.
 
-    Template (copy_copy_dondever_picks_v2_...):
-      DondeVer.app - Picks de hoy:
+    Template (dondever_picks_diarios / Utility / English):
+      Tu resumen diario de tu cuenta DondeVer esta listo.
       {{1}}
-      Mas info: dondever.app
+      Consulta mas detalles en tu cuenta.
     """
     games = await get_todays_games()
     now = datetime.now(TZ_MX)
@@ -566,7 +566,7 @@ async def compose_template_variables() -> dict | None:
 async def send_daily_broadcast(test_number: str | None = None):
     """
     Send daily WhatsApp broadcast via Meta Cloud API.
-    Uses approved template 'copy_copy_dondever_picks_v2_...' (1 variable)
+    Uses approved template 'dondever_picks_diarios' (Utility, 1 variable)
     in WABA Distribuciones Arobe (ID: 1224835083125902).
     Falls back to send_text() if template fails.
     """
@@ -631,8 +631,8 @@ async def send_daily_broadcast(test_number: str | None = None):
         # Use template for proactive messages (works outside 24h window)
         result = send_template(
             phone,
-            template_name="copy_copy_dondever_picks_v2_hx069fa2b377a15afd01a57f9bb6d2ba92",
-            language="es_MX",
+            template_name="dondever_picks_diarios",
+            language="en",
             components=components,
         )
 
