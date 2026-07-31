@@ -560,7 +560,37 @@ async def compose_template_variables() -> dict | None:
     if remaining > 0:
         parts.append(f"...y {remaining} más en dondever.app")
 
-    return {"var1": " | ".join(parts)}
+    # v2 template variables (4 params, newlines in template itself)
+    pick_detail = f"{first} vs {second} | {pick.get('league_name', '')} {time_str} MX | {channels}"
+    if pick_tip["odds_display"]:
+        pick_detail += f" | {pick_tip['odds_display']}"
+    pick_detail += f" | {pick_tip['pick']} ({pick_tip['confidence']}) - {pick_tip['reason']}"
+
+    games_str = ""
+    if top_others:
+        game_parts = []
+        for g in top_others:
+            f1, f2 = _team_order(g)
+            t = _fmt_time(g["date"])
+            gl = g.get("league_slug", "")
+            g_odds_list = odds_by_league.get(gl, [])
+            g_odds = match_odds_to_game(g, g_odds_list) if g_odds_list else None
+            g_standings = standings_by_league.get(gl, [])
+            g_tip = await _generate_stat_tip(g, g_odds, g_standings)
+            game_parts.append(f"{f1} vs {f2} {t} - {g_tip['pick']}")
+        games_str = " | ".join(game_parts)
+
+    cta = f"Horarios y canales en dondever.app"
+    if remaining > 0:
+        cta = f"{remaining} juegos mas y detalles en dondever.app"
+
+    return {
+        "var1": " | ".join(parts),  # v1: single variable
+        "v2_header": f"{weekday} {date_display} - {len(upcoming)} juegos",
+        "v2_pick": pick_detail,
+        "v2_games": games_str or "Sin mas juegos hoy",
+        "v2_cta": cta,
+    }
 
 
 # ── Sender ───────────────────────────────────────────────────
@@ -584,8 +614,19 @@ async def send_daily_broadcast(test_number: str | None = None):
         logger.info("No games today — skipping broadcast")
         return {"sent": 0, "failed": 0, "skipped": "no_games"}
 
-    # Build template components (single variable for approved template)
-    components = [
+    # Build template components for both v1 and v2 templates
+    v2_components = [
+        {
+            "type": "body",
+            "parameters": [
+                {"type": "text", "text": template_vars["v2_header"]},
+                {"type": "text", "text": template_vars["v2_pick"]},
+                {"type": "text", "text": template_vars["v2_games"]},
+                {"type": "text", "text": template_vars["v2_cta"]},
+            ],
+        }
+    ]
+    v1_components = [
         {
             "type": "body",
             "parameters": [
@@ -630,13 +671,22 @@ async def send_daily_broadcast(test_number: str | None = None):
     errors = []
 
     for phone in recipients:
-        # Use template for proactive messages (works outside 24h window)
+        # Try v2 template first (multi-variable with newlines), fall back to v1
         result = send_template(
             phone,
-            template_name="dondever_picks_diarios",
-            language="en",
-            components=components,
+            template_name="dondever_daily_v2",
+            language="es_MX",
+            components=v2_components,
         )
+        if not result.get("ok"):
+            # v2 not approved yet or failed — fall back to v1
+            logger.info(f"v2 template failed for {phone}, trying v1: {result.get('error')}")
+            result = send_template(
+                phone,
+                template_name="dondever_picks_diarios",
+                language="en",
+                components=v1_components,
+            )
 
         if result["ok"]:
             sent += 1
