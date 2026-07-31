@@ -508,22 +508,27 @@ async def compose_template_variables() -> dict | None:
     pick_tip = await _generate_stat_tip(pick, pick_odds, pick_standings)
 
     # ── Build single combined variable for {{1}} ──
-    # NOTE: Meta template params cannot contain newlines or tabs
-    parts = []
+    lines = []
 
-    # Date + game count
+    # Header: date + game count
     first, second = _team_order(pick)
     time_str = _fmt_time(pick["date"])
     channels = _format_channels(pick["broadcasts"])
 
-    parts.append(f"{weekday} {date_display} — {len(upcoming)} juegos")
-    pick_str = f"PICK: {first} vs {second} ({pick.get('league_name', '')} {time_str} MX, {channels})"
-    if pick_tip["odds_display"]:
-        pick_str += f" Momios: {pick_tip['odds_display']}"
-    pick_str += f" — Tip: {pick_tip['pick']} ({pick_tip['confidence']}) {pick_tip['reason']}"
-    parts.append(pick_str)
+    lines.append(f"{weekday} {date_display} — {len(upcoming)} juegos")
+    lines.append("")  # blank line
 
-    # Other games (compact, no newlines)
+    # Featured pick
+    lines.append(f"⭐ PICK: {first} vs {second}")
+    lines.append(f"📺 {pick.get('league_name', '')} · {time_str} MX")
+    lines.append(f"📡 {channels}")
+    if pick_tip["odds_display"]:
+        lines.append(f"💰 Momios: {pick_tip['odds_display']}")
+    lines.append(f"💡 {pick_tip['pick']} ({pick_tip['confidence']})")
+    lines.append(f"↳ {pick_tip['reason']}")
+    lines.append("")  # blank line
+
+    # Other games
     other_games = [g for g in upcoming if g["id"] != pick["id"]]
     top_others = []
     for pl in LEAGUE_PRIORITY:
@@ -541,7 +546,7 @@ async def compose_template_variables() -> dict | None:
                 break
 
     if top_others:
-        game_strs = []
+        lines.append("⚾ Más juegos:")
         for g in top_others:
             f1, f2 = _team_order(g)
             t = _fmt_time(g["date"])
@@ -550,15 +555,14 @@ async def compose_template_variables() -> dict | None:
             g_odds = match_odds_to_game(g, g_odds_list) if g_odds_list else None
             g_standings = standings_by_league.get(gl, [])
             g_tip = await _generate_stat_tip(g, g_odds, g_standings)
-            game_strs.append(f"{f1} vs {f2} {t} — {g_tip['pick']}")
-        parts.append("Mas: " + " | ".join(game_strs))
+            lines.append(f"• {f1} vs {f2} {t}")
+            lines.append(f"  {g_tip['pick']}")
 
     remaining = len(upcoming) - 1 - len(top_others)
     if remaining > 0:
-        parts.append(f"...y {remaining} juegos mas en dondever.app")
+        lines.append(f"\n...y {remaining} juegos más en dondever.app")
 
-    # Join with " — " separator (no newlines allowed)
-    return {"var1": " — ".join(parts)}
+    return {"var1": "\n".join(lines)}
 
 
 # ── Sender ───────────────────────────────────────────────────
