@@ -1174,6 +1174,67 @@ async def whatsapp_debug():
     return info
 
 
+@app.get("/api/internal/whatsapp-diag")
+async def whatsapp_diagnostics(key: str = ""):
+    """Diagnostic endpoint: subscribe app to WABA + check templates."""
+    import os as _os
+    internal_key = _os.getenv("INTERNAL_API_KEY", "")
+    if not internal_key or key != internal_key:
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+
+    token = _os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    waba_id = "1224835083125902"
+    results = {}
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        # 1. Subscribe app to WABA
+        try:
+            r = await client.post(
+                f"https://graph.facebook.com/v25.0/{waba_id}/subscribed_apps",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            results["subscribe_app"] = r.json()
+        except Exception as e:
+            results["subscribe_app_error"] = str(e)
+
+        # 2. Get message templates
+        try:
+            r = await client.get(
+                f"https://graph.facebook.com/v25.0/{waba_id}/message_templates",
+                headers={"Authorization": f"Bearer {token}"},
+                params={"fields": "name,language,status,category", "limit": 50},
+            )
+            results["templates"] = r.json()
+        except Exception as e:
+            results["templates_error"] = str(e)
+
+        # 3. Check WABA details
+        try:
+            r = await client.get(
+                f"https://graph.facebook.com/v25.0/{waba_id}",
+                headers={"Authorization": f"Bearer {token}"},
+                params={"fields": "name,account_review_status,messaging_limit_tier,on_behalf_of_business_info"},
+            )
+            results["waba_info"] = r.json()
+        except Exception as e:
+            results["waba_info_error"] = str(e)
+
+        # 4. Check phone number quality
+        phone_id = _os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+        if phone_id:
+            try:
+                r = await client.get(
+                    f"https://graph.facebook.com/v25.0/{phone_id}",
+                    headers={"Authorization": f"Bearer {token}"},
+                    params={"fields": "verified_name,quality_rating,display_phone_number,status,messaging_limit_tier"},
+                )
+                results["phone_info"] = r.json()
+            except Exception as e:
+                results["phone_info_error"] = str(e)
+
+    return results
+
+
 @app.post("/api/whatsapp/subscribe")
 async def api_whatsapp_subscribe(request: Request):
     """Public endpoint for WhatsApp opt-in from the website."""
