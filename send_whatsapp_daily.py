@@ -508,25 +508,23 @@ async def compose_template_variables() -> dict | None:
     pick_tip = await _generate_stat_tip(pick, pick_odds, pick_standings)
 
     # ── Build single combined variable for {{1}} ──
-    lines = []
+    # NOTE: WhatsApp template params CANNOT contain newlines, tabs,
+    # or 4+ consecutive spaces (error 132018). Use " | " as separator.
+    parts = []
 
-    # Header: date + game count
     first, second = _team_order(pick)
     time_str = _fmt_time(pick["date"])
     channels = _format_channels(pick["broadcasts"])
 
-    lines.append(f"{weekday} {date_display} — {len(upcoming)} juegos")
-    lines.append("")  # blank line
+    # Header
+    parts.append(f"{weekday} {date_display} — {len(upcoming)} juegos")
 
     # Featured pick
-    lines.append(f"⭐ PICK: {first} vs {second}")
-    lines.append(f"📺 {pick.get('league_name', '')} · {time_str} MX")
-    lines.append(f"📡 {channels}")
+    pick_part = f"⭐ PICK: {first} vs {second} · {pick.get('league_name', '')} {time_str} MX · 📡 {channels}"
     if pick_tip["odds_display"]:
-        lines.append(f"💰 Momios: {pick_tip['odds_display']}")
-    lines.append(f"💡 {pick_tip['pick']} ({pick_tip['confidence']})")
-    lines.append(f"↳ {pick_tip['reason']}")
-    lines.append("")  # blank line
+        pick_part += f" · 💰 {pick_tip['odds_display']}"
+    pick_part += f" · 💡 {pick_tip['pick']} ({pick_tip['confidence']}) — {pick_tip['reason']}"
+    parts.append(pick_part)
 
     # Other games
     other_games = [g for g in upcoming if g["id"] != pick["id"]]
@@ -546,7 +544,7 @@ async def compose_template_variables() -> dict | None:
                 break
 
     if top_others:
-        lines.append("⚾ Más juegos:")
+        game_strs = []
         for g in top_others:
             f1, f2 = _team_order(g)
             t = _fmt_time(g["date"])
@@ -555,14 +553,14 @@ async def compose_template_variables() -> dict | None:
             g_odds = match_odds_to_game(g, g_odds_list) if g_odds_list else None
             g_standings = standings_by_league.get(gl, [])
             g_tip = await _generate_stat_tip(g, g_odds, g_standings)
-            lines.append(f"• {f1} vs {f2} {t}")
-            lines.append(f"  {g_tip['pick']}")
+            game_strs.append(f"{f1} vs {f2} {t} → {g_tip['pick']}")
+        parts.append("⚾ Más: " + " | ".join(game_strs))
 
     remaining = len(upcoming) - 1 - len(top_others)
     if remaining > 0:
-        lines.append(f"\n...y {remaining} juegos más en dondever.app")
+        parts.append(f"...y {remaining} más en dondever.app")
 
-    return {"var1": "\n".join(lines)}
+    return {"var1": " | ".join(parts)}
 
 
 # ── Sender ───────────────────────────────────────────────────
