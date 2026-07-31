@@ -671,22 +671,15 @@ async def send_daily_broadcast(test_number: str | None = None):
     errors = []
 
     for phone in recipients:
-        # Try v2 template first (multi-variable with newlines), fall back to v1
+        # Use v1 template (single variable, reliable delivery)
+        # NOTE: v2 (dondever_daily_v2) is approved but messages don't deliver
+        # despite API returning "accepted". Sticking with v1 until resolved.
         result = send_template(
             phone,
-            template_name="dondever_daily_v2",
-            language="es_MX",
-            components=v2_components,
+            template_name="dondever_picks_diarios",
+            language="en",
+            components=v1_components,
         )
-        if not result.get("ok"):
-            # v2 not approved yet or failed — fall back to v1
-            logger.info(f"v2 template failed for {phone}, trying v1: {result.get('error')}")
-            result = send_template(
-                phone,
-                template_name="dondever_picks_diarios",
-                language="en",
-                components=v1_components,
-            )
 
         if result["ok"]:
             sent += 1
