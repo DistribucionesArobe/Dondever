@@ -128,6 +128,7 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                 )
             if monetag_zone:
                 snippet += (
+                    f'<meta name="monetag" content="ce90bfedb944d0ac4754ee93708ed15d">\n'
                     f'<script>(function(d,z,s){{s.src="https://5gvci.com/act/files/tag.min.js?z="+z;try{{(document.body||document.documentElement).appendChild(s)}}catch(e){{}}}})("5gvci.com",{monetag_zone},document.createElement("script"))</script>\n'
                 )
             snippet = snippet.encode("utf-8")
