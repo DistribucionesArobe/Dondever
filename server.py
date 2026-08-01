@@ -129,7 +129,7 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
             if monetag_zone:
                 snippet += (
                     f'<meta name="monetag" content="ce90bfedb944d0ac4754ee93708ed15d">\n'
-                    f'<script src="https://quge5.com/88/tag.min.js" data-zone="{monetag_zone}" async data-cfasync="false"></script>\n'
+                    # Multitag script removed — only Push Notifications via sw.js
                 )
             snippet = snippet.encode("utf-8")
 
