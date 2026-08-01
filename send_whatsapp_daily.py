@@ -560,15 +560,23 @@ async def compose_template_variables() -> dict | None:
     if remaining > 0:
         parts.append(f"...y {remaining} más en dondever.app")
 
-    # v2 template variables (4 params, newlines in template itself)
-    pick_detail = f"{first} vs {second} | {pick.get('league_name', '')} {time_str} MX | {channels}"
-    if pick_tip["odds_display"]:
-        pick_detail += f" | {pick_tip['odds_display']}"
-    pick_detail += f" | {pick_tip['pick']} ({pick_tip['confidence']}) - {pick_tip['reason']}"
+    # v3 template variables (3 params, newlines in template body itself)
+    # Template dondever_daily_v3:
+    #   Tu resumen DondeVer esta listo.
+    #   📅 {{1}}
+    #   🎯 PICK DEL DIA:
+    #   {{2}}
+    #   ⚾ Mas juegos:
+    #   {{3}}
+    #   Consulta dondever.app para horarios y canales.
 
-    games_str = ""
+    v3_pick = f"{first} vs {second} · {pick.get('league_name', '')} {time_str} MX · {channels}"
+    if pick_tip["odds_display"]:
+        v3_pick += f" · {pick_tip['odds_display']}"
+    v3_pick += f" · Tip: {pick_tip['pick']} ({pick_tip['confidence']})"
+
+    v3_games_parts = []
     if top_others:
-        game_parts = []
         for g in top_others:
             f1, f2 = _team_order(g)
             t = _fmt_time(g["date"])
@@ -577,19 +585,16 @@ async def compose_template_variables() -> dict | None:
             g_odds = match_odds_to_game(g, g_odds_list) if g_odds_list else None
             g_standings = standings_by_league.get(gl, [])
             g_tip = await _generate_stat_tip(g, g_odds, g_standings)
-            game_parts.append(f"{f1} vs {f2} {t} - {g_tip['pick']}")
-        games_str = " | ".join(game_parts)
-
-    cta = f"Horarios y canales en dondever.app"
+            v3_games_parts.append(f"{f1} vs {f2} {t} - {g_tip['pick']}")
+    v3_games = " · ".join(v3_games_parts) if v3_games_parts else "Sin mas juegos hoy"
     if remaining > 0:
-        cta = f"{remaining} juegos mas y detalles en dondever.app"
+        v3_games += f" · +{remaining} mas en dondever.app"
 
     return {
-        "var1": " | ".join(parts),  # v1: single variable
-        "v2_header": f"{weekday} {date_display} - {len(upcoming)} juegos",
-        "v2_pick": pick_detail,
-        "v2_games": games_str or "Sin mas juegos hoy",
-        "v2_cta": cta,
+        "var1": " | ".join(parts),  # v1: single variable (fallback)
+        "v3_header": f"{weekday} {date_display} - {len(upcoming)} juegos",
+        "v3_pick": v3_pick,
+        "v3_games": v3_games,
     }
 
 
@@ -614,8 +619,20 @@ async def send_daily_broadcast(test_number: str | None = None):
         logger.info("No games today — skipping broadcast")
         return {"sent": 0, "failed": 0, "skipped": "no_games"}
 
+    # Build template components: v3 (3 vars, nice format) and v1 (1 var, fallback)
+    v3_components = None
     v1_components = None
     if template_vars:
+        v3_components = [
+            {
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": template_vars["v3_header"]},
+                    {"type": "text", "text": template_vars["v3_pick"]},
+                    {"type": "text", "text": template_vars["v3_games"]},
+                ],
+            }
+        ]
         v1_components = [
             {
                 "type": "body",
@@ -688,6 +705,21 @@ async def send_daily_broadcast(test_number: str | None = None):
             else:
                 logger.info(f"Freeform failed for {phone} (probably outside 24h window), trying template")
 
+        # Template fallback: try v3 (nice format), then v1 (ugly but reliable)
+        if not sent_ok and v3_components:
+            result = send_template(
+                phone,
+                template_name="dondever_daily_v3",
+                language="en",
+                components=v3_components,
+            )
+            if result["ok"]:
+                sent += 1
+                sent_ok = True
+                logger.info(f"Sent v3 template to {phone} — msg_id: {result['id']}")
+            else:
+                logger.info(f"v3 template failed for {phone}: {result.get('error')}, trying v1")
+
         if not sent_ok and v1_components:
             result = send_template(
                 phone,
@@ -697,11 +729,11 @@ async def send_daily_broadcast(test_number: str | None = None):
             )
             if result["ok"]:
                 sent += 1
-                logger.info(f"Sent template to {phone} — msg_id: {result['id']}")
+                logger.info(f"Sent v1 template to {phone} — msg_id: {result['id']}")
             else:
                 failed += 1
                 errors.append({"phone": phone, "error": result["error"]})
-                logger.error(f"Failed to send to {phone}: {result['error']}")
+                logger.error(f"Failed all methods for {phone}: {result['error']}")
 
     summary = {"sent": sent, "failed": failed, "total": len(recipients), "errors": errors}
     logger.info(f"Broadcast complete: {sent} sent, {failed} failed")
