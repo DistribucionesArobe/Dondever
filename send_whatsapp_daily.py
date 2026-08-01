@@ -606,34 +606,24 @@ async def send_daily_broadcast(test_number: str | None = None):
         logger.error("Meta WhatsApp not configured. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID.")
         return {"sent": 0, "failed": 0, "error": "not_configured"}
 
-    # Try template variables first, fall back to freeform message
+    # Compose both messages: freeform (beautiful) and template (fallback)
+    freeform_message = await compose_daily_message()
     template_vars = await compose_template_variables()
-    freeform_message = None
 
-    if not template_vars:
+    if not template_vars and not freeform_message:
         logger.info("No games today — skipping broadcast")
         return {"sent": 0, "failed": 0, "skipped": "no_games"}
 
-    # Build template components for both v1 and v2 templates
-    v2_components = [
-        {
-            "type": "body",
-            "parameters": [
-                {"type": "text", "text": template_vars["v2_header"]},
-                {"type": "text", "text": template_vars["v2_pick"]},
-                {"type": "text", "text": template_vars["v2_games"]},
-                {"type": "text", "text": template_vars["v2_cta"]},
-            ],
-        }
-    ]
-    v1_components = [
-        {
-            "type": "body",
-            "parameters": [
-                {"type": "text", "text": template_vars["var1"]},
-            ],
-        }
-    ]
+    v1_components = None
+    if template_vars:
+        v1_components = [
+            {
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": template_vars["var1"]},
+                ],
+            }
+        ]
 
     # Determine recipients
     if test_number:
@@ -666,40 +656,52 @@ async def send_daily_broadcast(test_number: str | None = None):
         logger.info("No subscribers")
         return {"sent": 0, "failed": 0}
 
+    # Deduplicate recipients by normalized phone number
+    from meta_whatsapp import _normalize_to
+    seen = set()
+    unique_recipients = []
+    for phone in recipients:
+        norm = _normalize_to(phone)
+        if norm not in seen:
+            seen.add(norm)
+            unique_recipients.append(phone)
+        else:
+            logger.warning(f"Skipping duplicate phone: {phone} (normalized: {norm})")
+    recipients = unique_recipients
+    logger.info(f"After dedup: {len(recipients)} unique recipients")
+
     sent = 0
     failed = 0
     errors = []
 
     for phone in recipients:
-        # Use v1 template (single variable, reliable delivery)
-        # NOTE: v2 (dondever_daily_v2) is approved but messages don't deliver
-        # despite API returning "accepted". Sticking with v1 until resolved.
-        result = send_template(
-            phone,
-            template_name="dondever_picks_diarios",
-            language="en",
-            components=v1_components,
-        )
+        # Strategy: try freeform first (beautiful formatting with newlines & bold)
+        # If freeform fails (user outside 24h window), fall back to template.
+        sent_ok = False
 
-        if result["ok"]:
-            sent += 1
-            logger.info(f"Sent template to {phone} — msg_id: {result['id']}")
-        else:
-            # If template fails (not approved yet?), try freeform as fallback
-            err_msg = result.get("error", "")
-            if "template" in str(err_msg).lower() or "not found" in str(err_msg).lower():
-                logger.warning(f"Template failed for {phone}: {err_msg}, trying freeform fallback")
-                if freeform_message is None:
-                    freeform_message = await compose_daily_message()
-                if freeform_message:
-                    fallback = send_text(phone, freeform_message)
-                    if fallback["ok"]:
-                        sent += 1
-                        logger.info(f"Fallback freeform sent to {phone}")
-                        continue
-            failed += 1
-            errors.append({"phone": phone, "error": result["error"]})
-            logger.error(f"Failed to send to {phone}: {result['error']}")
+        if freeform_message:
+            result = send_text(phone, freeform_message)
+            if result["ok"]:
+                sent += 1
+                sent_ok = True
+                logger.info(f"Sent freeform to {phone} — msg_id: {result['id']}")
+            else:
+                logger.info(f"Freeform failed for {phone} (probably outside 24h window), trying template")
+
+        if not sent_ok and v1_components:
+            result = send_template(
+                phone,
+                template_name="dondever_picks_diarios",
+                language="en",
+                components=v1_components,
+            )
+            if result["ok"]:
+                sent += 1
+                logger.info(f"Sent template to {phone} — msg_id: {result['id']}")
+            else:
+                failed += 1
+                errors.append({"phone": phone, "error": result["error"]})
+                logger.error(f"Failed to send to {phone}: {result['error']}")
 
     summary = {"sent": sent, "failed": failed, "total": len(recipients), "errors": errors}
     logger.info(f"Broadcast complete: {sent} sent, {failed} failed")

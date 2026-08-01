@@ -1630,15 +1630,16 @@ try:
         if os.getenv("FB_PAGE_ACCESS_TOKEN"):
             setup_facebook_scheduler(scheduler)
 
-        # WhatsApp daily broadcast at 9:00 AM MX time (15:00 UTC)
-        scheduler.add_job(
-            _tracked_broadcast,
-            CronTrigger(hour=15, minute=0),
-            id="whatsapp_daily_broadcast",
-            name="Daily WhatsApp picks broadcast",
-            replace_existing=True,
-        )
-        logger.info("WhatsApp broadcast scheduled at 9:00 AM MX")
+        # WhatsApp daily broadcast — DISABLED in scheduler.
+        # Handled by Render cron job "Dondever-WhatsApp" to avoid duplicate sends.
+        # scheduler.add_job(
+        #     _tracked_broadcast,
+        #     CronTrigger(hour=15, minute=0),
+        #     id="whatsapp_daily_broadcast",
+        #     name="Daily WhatsApp picks broadcast",
+        #     replace_existing=True,
+        # )
+        # logger.info("WhatsApp broadcast scheduled at 9:00 AM MX")
 
         # WhatsApp pre-game alerts every 5 minutes
         scheduler.add_job(
