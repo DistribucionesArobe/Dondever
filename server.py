@@ -66,7 +66,8 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
         gtm_id = os.getenv("GTM_CONTAINER_ID", "").strip()
         adsense_id = os.getenv("ADSENSE_PUB_ID", "").strip()  # format: ca-pub-XXXXXXXXXXXXXXXX
         onesignal_id = os.getenv("ONESIGNAL_APP_ID", "").strip()
-        if not ga_id and not clarity_id and not gtm_id and not gads_id and not adsense_id and not onesignal_id:
+        monetag_zone = os.getenv("MONETAG_ZONE_ID", "").strip()
+        if not ga_id and not clarity_id and not gtm_id and not gads_id and not adsense_id and not onesignal_id and not monetag_zone:
             return response
 
         ctype = response.headers.get("content-type", "")
@@ -124,6 +125,10 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                     f'    await OneSignal.init({{ appId: "{onesignal_id}" }});\n'
                     f'  }});\n'
                     f'</script>\n'
+                )
+            if monetag_zone:
+                snippet += (
+                    f'<script>(function(d,z,s){{s.src="https://5gvci.com/act/files/tag.min.js?z="+z;try{{(document.body||document.documentElement).appendChild(s)}}catch(e){{}}}})("5gvci.com",{monetag_zone},document.createElement("script"))</script>\n'
                 )
             snippet = snippet.encode("utf-8")
 
@@ -227,12 +232,21 @@ def _team_name_to_slug(team_name: str) -> str | None:
     return None
 
 
-# ── OneSignal Service Worker (must be at root scope) ─────
+# ── Service Workers (must be at root scope) ──────────────
 from pathlib import Path as _Path
 
 @app.get("/OneSignalSDKWorker.js")
 async def onesignal_service_worker():
     sw_path = _Path(__file__).parent / "OneSignalSDKWorker.js"
+    return Response(
+        content=sw_path.read_text(),
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/"},
+    )
+
+@app.get("/sw.js")
+async def monetag_service_worker():
+    sw_path = _Path(__file__).parent / "sw.js"
     return Response(
         content=sw_path.read_text(),
         media_type="application/javascript",
