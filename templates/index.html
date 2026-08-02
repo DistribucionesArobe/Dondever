@@ -96,24 +96,45 @@
         }
         .logo-text .donde { color: #f8f9fb; }
         .logo-text .ver { color: #10b981; }
-        .header-right {
+        .header-right { display: none; }
+        /* ── Country Picker (centered) ────────── */
+        .country-picker-wrap {
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            justify-content: center;
+            gap: 0.35rem;
+            padding: 0.4rem 0;
+            cursor: pointer;
+            user-select: none;
         }
+        .country-picker-text { font-size: 0.72rem; color: #9ca3af; }
+        .country-picker-flag { font-size: 0.78rem; font-weight: 700; color: #e2e8f0; }
+        .cs-arrow { font-size: 0.5rem; color: #9ca3af; }
+        .country-dropdown {
+            display: none;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.3rem;
+            padding: 0.5rem 1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .country-dropdown.open { display: flex; }
         .country-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.25rem;
-            padding: 0.25rem 0.55rem;
+            gap: 0.2rem;
+            padding: 0.3rem 0.5rem;
             border-radius: 6px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: #cbd5e1;
-            border: 1px solid #334155;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: #94a3b8;
+            cursor: pointer;
+            white-space: nowrap;
+            border: 1px solid transparent;
         }
+        .country-btn:hover { background: #334155; color: #fff; }
+        .country-btn.active { background: #059669; color: #fff; border-color: #059669; }
 
         /* ── Hero (tiny) ─────────────────────── */
         .hero {
@@ -807,10 +828,7 @@
             <img src="/static/logo-full.png" alt="DondeVer">
             <span class="logo-text"><span class="donde">Donde</span><span class="ver">Ver</span></span>
         </a>
-        <div class="header-right">
-            <span class="country-btn">🇲🇽 MX</span>
-            <span class="country-btn">🇺🇸 US</span>
-        </div>
+        <div class="header-right"></div>
     </div>
 </header>
 
@@ -834,6 +852,34 @@
 </div>
 <!-- Team Quick Panel (populated by JS when searching a known team) -->
 <div id="teamPanel" class="team-panel" style="display:none;"></div>
+
+<!-- Country Picker -->
+<div class="country-picker-wrap" id="country-toggle">
+    <span class="country-picker-text">Nos ves desde:</span>
+    <span class="country-picker-flag" id="current-country">🇲🇽 M&eacute;xico</span>
+    <span class="cs-arrow">&#9662;</span>
+</div>
+<div class="country-dropdown" id="country-dropdown">
+    <span class="country-btn" data-country="MX">🇲🇽 M&eacute;xico</span>
+    <span class="country-btn" data-country="CO">🇨🇴 Colombia</span>
+    <span class="country-btn" data-country="VE">🇻🇪 Venezuela</span>
+    <span class="country-btn" data-country="PA">🇵🇦 Panam&aacute;</span>
+    <span class="country-btn" data-country="AR">🇦🇷 Argentina</span>
+    <span class="country-btn" data-country="CL">🇨🇱 Chile</span>
+    <span class="country-btn" data-country="PE">🇵🇪 Per&uacute;</span>
+    <span class="country-btn" data-country="CR">🇨🇷 Costa Rica</span>
+    <span class="country-btn" data-country="DO">🇩🇴 Rep. Dominicana</span>
+    <span class="country-btn" data-country="EC">🇪🇨 Ecuador</span>
+    <span class="country-btn" data-country="GT">🇬🇹 Guatemala</span>
+    <span class="country-btn" data-country="HN">🇭🇳 Honduras</span>
+    <span class="country-btn" data-country="NI">🇳🇮 Nicaragua</span>
+    <span class="country-btn" data-country="SV">🇸🇻 El Salvador</span>
+    <span class="country-btn" data-country="CU">🇨🇺 Cuba</span>
+    <span class="country-btn" data-country="UY">🇺🇾 Uruguay</span>
+    <span class="country-btn" data-country="US">🇺🇸 Estados Unidos</span>
+    <span class="country-btn" data-country="BR">🇧🇷 Brasil</span>
+    <span class="country-btn" data-country="ES">🇪🇸 Espa&ntilde;a</span>
+</div>
 
 <!-- Sport Filters -->
 {% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions'] %}
@@ -938,7 +984,7 @@
                 <span class="team-name">{{ bottom_team.name }}</span>
                 <span class="gc-right">
                     {% if state == 'pre' %}
-                        <span class="gc-sub">Hora MX</span>
+                        <span class="gc-sub tz-hora-label">HORA MX</span>
                     {% else %}
                         <span class="team-score">{{ bottom_team.score }}</span>
                     {% endif %}

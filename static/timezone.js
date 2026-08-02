@@ -1,90 +1,251 @@
 /**
- * DondeVer — Auto timezone conversion
+ * DondeVer — Auto timezone conversion v2
+ * Detects user country via: 1) stored preference, 2) IP geolocation, 3) browser timezone.
  * Converts game times from Mexico City to user's local timezone.
- * Also detects user country for ad targeting.
+ * Supports manual country selector in header.
  */
 (function() {
   'use strict';
 
-  var userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-  var isMexico = userTZ.indexOf('Mexico') !== -1 || userTZ === 'America/Merida' || userTZ === 'America/Monterrey' || userTZ === 'America/Cancun' || userTZ === 'America/Chihuahua' || userTZ === 'America/Mazatlan' || userTZ === 'America/Hermosillo' || userTZ === 'America/Tijuana';
+  // ── Country → Timezone mapping ──────────────────────────
+  var COUNTRY_TZ = {
+    'MX': 'America/Mexico_City',
+    'US': 'America/New_York',
+    'CO': 'America/Bogota',
+    'VE': 'America/Caracas',
+    'PA': 'America/Panama',
+    'AR': 'America/Argentina/Buenos_Aires',
+    'CL': 'America/Santiago',
+    'PE': 'America/Lima',
+    'CR': 'America/Costa_Rica',
+    'DO': 'America/Santo_Domingo',
+    'EC': 'America/Guayaquil',
+    'GT': 'America/Guatemala',
+    'HN': 'America/Tegucigalpa',
+    'NI': 'America/Managua',
+    'SV': 'America/El_Salvador',
+    'CU': 'America/Havana',
+    'BO': 'America/La_Paz',
+    'PY': 'America/Asuncion',
+    'UY': 'America/Montevideo',
+    'ES': 'Europe/Madrid',
+    'BR': 'America/Sao_Paulo',
+  };
 
-  // Country detection from timezone (for ads)
+  var COUNTRY_LABELS = {
+    'MX': 'HORA MX', 'US': 'Hora USA', 'CO': 'Hora CO', 'VE': 'Hora VE',
+    'PA': 'Hora PA', 'AR': 'Hora AR', 'CL': 'Hora CL', 'PE': 'Hora PE',
+    'CR': 'Hora CR', 'DO': 'Hora RD', 'EC': 'Hora EC', 'GT': 'Hora GT',
+    'HN': 'Hora HN', 'NI': 'Hora NI', 'SV': 'Hora SV', 'CU': 'Hora CU',
+    'BO': 'Hora BO', 'PY': 'Hora PY', 'UY': 'Hora UY', 'ES': 'Hora ES',
+    'BR': 'Hora BR',
+  };
+
+  var COUNTRY_NAMES = {
+    'MX': 'México', 'US': 'Estados Unidos', 'CO': 'Colombia',
+    'VE': 'Venezuela', 'PA': 'Panamá', 'AR': 'Argentina',
+    'CL': 'Chile', 'PE': 'Perú', 'CR': 'Costa Rica',
+    'DO': 'Rep. Dominicana', 'EC': 'Ecuador', 'GT': 'Guatemala',
+    'HN': 'Honduras', 'NI': 'Nicaragua', 'SV': 'El Salvador',
+    'CU': 'Cuba', 'BO': 'Bolivia', 'PY': 'Paraguay',
+    'UY': 'Uruguay', 'ES': 'España', 'BR': 'Brasil',
+  };
+
+  var COUNTRY_FLAGS = {
+    'MX': '\u{1F1F2}\u{1F1FD}', 'US': '\u{1F1FA}\u{1F1F8}', 'CO': '\u{1F1E8}\u{1F1F4}',
+    'VE': '\u{1F1FB}\u{1F1EA}', 'PA': '\u{1F1F5}\u{1F1E6}', 'AR': '\u{1F1E6}\u{1F1F7}',
+    'CL': '\u{1F1E8}\u{1F1F1}', 'PE': '\u{1F1F5}\u{1F1EA}', 'CR': '\u{1F1E8}\u{1F1F7}',
+    'DO': '\u{1F1E9}\u{1F1F4}', 'EC': '\u{1F1EA}\u{1F1E8}', 'GT': '\u{1F1EC}\u{1F1F9}',
+    'HN': '\u{1F1ED}\u{1F1F3}', 'NI': '\u{1F1F3}\u{1F1EE}', 'SV': '\u{1F1F8}\u{1F1FB}',
+    'CU': '\u{1F1E8}\u{1F1FA}', 'BO': '\u{1F1E7}\u{1F1F4}', 'PY': '\u{1F1F5}\u{1F1FE}',
+    'UY': '\u{1F1FA}\u{1F1FE}', 'ES': '\u{1F1EA}\u{1F1F8}', 'BR': '\u{1F1E7}\u{1F1F7}',
+  };
+
+  // ── Browser TZ → Country fallback ──────────────────────
   var TZ_COUNTRY = {
-    'Europe/Madrid': 'ES', 'Europe/London': 'GB',
-    'America/Bogota': 'CO', 'America/Lima': 'PE',
-    'America/Santiago': 'CL', 'America/Buenos_Aires': 'AR',
-    'America/Argentina/Buenos_Aires': 'AR',
-    'America/Caracas': 'VE', 'America/Guayaquil': 'EC',
-    'America/Guatemala': 'GT', 'America/Tegucigalpa': 'HN',
-    'America/Managua': 'NI', 'America/Panama': 'PA',
-    'America/Costa_Rica': 'CR', 'America/El_Salvador': 'SV',
-    'America/Santo_Domingo': 'DO', 'America/Havana': 'CU',
-    'America/New_York': 'US', 'America/Chicago': 'US',
-    'America/Denver': 'US', 'America/Los_Angeles': 'US',
-    'America/Phoenix': 'US',
+    'America/Bogota': 'CO', 'America/Lima': 'PE', 'America/Santiago': 'CL',
+    'America/Buenos_Aires': 'AR', 'America/Argentina/Buenos_Aires': 'AR',
+    'America/Caracas': 'VE', 'America/Guayaquil': 'EC', 'America/Guatemala': 'GT',
+    'America/Tegucigalpa': 'HN', 'America/Managua': 'NI', 'America/Panama': 'PA',
+    'America/Costa_Rica': 'CR', 'America/El_Salvador': 'SV', 'America/Santo_Domingo': 'DO',
+    'America/Havana': 'CU', 'America/La_Paz': 'BO', 'America/Asuncion': 'PY',
+    'America/Montevideo': 'UY', 'Europe/Madrid': 'ES', 'America/Sao_Paulo': 'BR',
+    'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US',
+    'America/Los_Angeles': 'US', 'America/Phoenix': 'US',
   };
 
-  var TZ_LABELS = {
-    'ES': 'Hora de España', 'CO': 'Hora de Colombia', 'PE': 'Hora de Perú',
-    'CL': 'Hora de Chile', 'AR': 'Hora de Argentina', 'VE': 'Hora de Venezuela',
-    'EC': 'Hora de Ecuador', 'GT': 'Hora de Guatemala', 'HN': 'Hora de Honduras',
-    'NI': 'Hora de Nicaragua', 'PA': 'Hora de Panamá', 'CR': 'Hora de Costa Rica',
-    'SV': 'Hora de El Salvador', 'DO': 'Hora de Rep. Dominicana', 'CU': 'Hora de Cuba',
-    'US': 'Hora local USA', 'GB': 'Hora de UK',
-  };
+  var MX_ZONES = ['America/Mexico_City','America/Merida','America/Monterrey','America/Cancun',
+    'America/Chihuahua','America/Mazatlan','America/Hermosillo','America/Tijuana','America/Bahia_Banderas','America/Matamoros','America/Ojinaga'];
 
-  // Expose country for ad targeting
-  var country = 'MX';
-  if (!isMexico) {
-    country = TZ_COUNTRY[userTZ] || 'OTHER';
-  }
-  window.__DV_COUNTRY = country;
-  window.__DV_TZ = userTZ;
+  var browserTZ = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
 
-  // If user is in Mexico, no conversion needed (times already in MX)
-  if (isMexico) return;
-
-  // Convert all elements with data-utc
-  var els = document.querySelectorAll('[data-utc]');
-  if (!els.length) return;
-
-  var tzLabel = TZ_LABELS[country] || 'Tu hora local';
-
-  els.forEach(function(el) {
-    var utc = el.getAttribute('data-utc');
-    if (!utc) return;
-    try {
-      var d = new Date(utc.replace('Z', '+00:00'));
-      if (isNaN(d.getTime())) return;
-      var local = d.toLocaleTimeString('es-MX', {
-        hour: 'numeric', minute: '2-digit', hour12: true,
-        timeZone: userTZ
-      });
-      // Capitalize AM/PM
-      local = local.replace(/\s?(a|p)\.?\s?m\.?/i, function(m) {
-        return ' ' + m.trim().toUpperCase().replace(/\./g, '');
-      });
-      el.textContent = local;
-    } catch(e) {}
-  });
-
-  // Update timezone label if present
-  var tzEl = document.getElementById('tz-label');
-  if (tzEl) {
-    tzEl.textContent = tzLabel;
+  // ── Detect country ─────────────────────────────────────
+  function detectCountryFromTZ() {
+    if (MX_ZONES.indexOf(browserTZ) !== -1) return 'MX';
+    return TZ_COUNTRY[browserTZ] || null;
   }
 
-  // Add a small badge showing timezone on the page
-  var badge = document.querySelector('.tz-badge');
-  if (!badge) {
-    var container = document.querySelector('.hero-inner') || document.querySelector('.main');
-    if (container) {
-      badge = document.createElement('div');
-      badge.className = 'tz-badge';
-      badge.style.cssText = 'text-align:center;font-size:0.65rem;color:#6b7280;margin-top:0.3rem;';
-      badge.innerHTML = '🌍 ' + tzLabel;
-      container.appendChild(badge);
+  function getStoredCountry() {
+    try { return localStorage.getItem('dv_country'); } catch(e) { return null; }
+  }
+
+  function storeCountry(code) {
+    try { localStorage.setItem('dv_country', code); } catch(e) {}
+  }
+
+  // ── Convert times ──────────────────────────────────────
+  function convertTimes(countryCode) {
+    var tz = COUNTRY_TZ[countryCode];
+    if (!tz) return;
+
+    var label = COUNTRY_LABELS[countryCode] || 'Tu hora';
+    var isMX = (countryCode === 'MX');
+
+    // Update all time elements
+    if (!isMX) {
+      var els = document.querySelectorAll('[data-utc]');
+      els.forEach(function(el) {
+        var utc = el.getAttribute('data-utc');
+        if (!utc) return;
+        try {
+          var d = new Date(utc.replace('Z', '+00:00'));
+          if (isNaN(d.getTime())) return;
+          var local = d.toLocaleTimeString('es-MX', {
+            hour: 'numeric', minute: '2-digit', hour12: true,
+            timeZone: tz
+          });
+          local = local.replace(/\s?(a|p)\.?\s?m\.?/i, function(m) {
+            return ' ' + m.trim().toUpperCase().replace(/\./g, '');
+          });
+          el.textContent = local;
+        } catch(e) {}
+      });
     }
+
+    // Update all hora labels (class tz-hora-label or gc-sub containing "Hora")
+    var horaEls = document.querySelectorAll('.tz-hora-label');
+    horaEls.forEach(function(el) { el.textContent = label; });
+
+    // Also update any gc-sub that says "Hora MX" or similar
+    var gcSubs = document.querySelectorAll('.gc-sub');
+    gcSubs.forEach(function(el) {
+      if (el.textContent.trim().indexOf('Hora') === 0) {
+        el.textContent = label;
+      }
+    });
+
+    // Update "Hora CDMX" in team panel meta
+    var metas = document.querySelectorAll('.tp-meta');
+    metas.forEach(function(el) {
+      el.textContent = el.textContent.replace(/Hora CDMX/g, label);
+    });
+
+    // Update #tz-label if present
+    var tzEl = document.getElementById('tz-label');
+    if (tzEl) tzEl.textContent = label;
+
+    // Expose for ad targeting
+    window.__DV_COUNTRY = countryCode;
+    window.__DV_TZ = tz;
+  }
+
+  // ── Update header selector UI ──────────────────────────
+  function updateSelectorUI(countryCode) {
+    var btns = document.querySelectorAll('.country-btn[data-country]');
+    btns.forEach(function(btn) {
+      if (btn.getAttribute('data-country') === countryCode) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Update the current-country display with flag + full name
+    var display = document.getElementById('current-country');
+    if (display) {
+      var flag = COUNTRY_FLAGS[countryCode] || '';
+      var name = COUNTRY_NAMES[countryCode] || countryCode;
+      display.textContent = flag + ' ' + name;
+    }
+  }
+
+  // ── Country selector click handler ─────────────────────
+  function setupSelector() {
+    // Dropdown toggle
+    var toggle = document.getElementById('country-toggle');
+    var dropdown = document.getElementById('country-dropdown');
+    if (toggle && dropdown) {
+      toggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+      });
+      document.addEventListener('click', function() {
+        dropdown.classList.remove('open');
+      });
+    }
+
+    // Country buttons
+    var btns = document.querySelectorAll('.country-btn[data-country]');
+    btns.forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var code = this.getAttribute('data-country');
+        storeCountry(code);
+        // Reload to reconvert all times from server-rendered MX times
+        window.location.reload();
+      });
+    });
+  }
+
+  // ── IP-based detection (async, only if no stored pref) ─
+  function detectFromIP(callback) {
+    // Use free ipapi.co — returns just the 2-letter country code
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://ipapi.co/country/', true);
+    xhr.timeout = 3000;
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var code = xhr.responseText.trim().toUpperCase();
+        if (COUNTRY_TZ[code]) {
+          callback(code);
+        } else {
+          callback(null);
+        }
+      } else {
+        callback(null);
+      }
+    };
+    xhr.onerror = xhr.ontimeout = function() { callback(null); };
+    xhr.send();
+  }
+
+  // ── Main init ──────────────────────────────────────────
+  function init(country) {
+    convertTimes(country);
+    updateSelectorUI(country);
+    setupSelector();
+  }
+
+  // Priority: 1) stored preference, 2) IP geo, 3) browser TZ
+  var stored = getStoredCountry();
+  if (stored && COUNTRY_TZ[stored]) {
+    init(stored);
+  } else {
+    // Try IP detection first
+    detectFromIP(function(ipCountry) {
+      if (ipCountry) {
+        storeCountry(ipCountry);
+        init(ipCountry);
+      } else {
+        // Fall back to browser timezone
+        var tzCountry = detectCountryFromTZ() || 'MX';
+        init(tzCountry);
+      }
+    });
+    // While IP detection loads, show based on browser TZ (instant, no flash)
+    var quickCountry = detectCountryFromTZ() || 'MX';
+    convertTimes(quickCountry);
+    updateSelectorUI(quickCountry);
+    setupSelector();
   }
 })();
