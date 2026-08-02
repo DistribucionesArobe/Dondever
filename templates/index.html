@@ -405,7 +405,7 @@
         .countdown { font-size: 0.6rem; color: #9ca3af; font-weight: 600; margin-top: 1px; }
         .countdown.soon { color: #ef4444; font-weight: 700; }
 
-        .fav-btn { position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; font-size:0.95rem; opacity:0.25; transition:opacity 0.2s; padding:2px; z-index:2; }
+        .fav-btn { background:none; border:none; cursor:pointer; font-size:0.75rem; opacity:0.2; transition:opacity 0.2s; padding:0 3px; z-index:2; flex-shrink:0; line-height:1; }
         .fav-btn:hover, .fav-btn.active { opacity:1; }
 
         .gc-channels {
@@ -1374,17 +1374,20 @@
         if (favFilterActive) applyFavFilter();
     }
 
-    // Add star buttons to each game card
+    // Add star buttons next to each team name
     document.querySelectorAll('.game-card').forEach(card => {
         const teams = (card.dataset.teams || '').split(',');
-        teams.forEach(t => {
-            if (!t) return;
+        const rows = card.querySelectorAll('.gc-row');
+        teams.forEach((t, i) => {
+            if (!t || !rows[i]) return;
+            const nameEl = rows[i].querySelector('.team-name');
+            if (!nameEl) return;
             const btn = document.createElement('button');
             btn.className = 'fav-btn' + (favTeams.includes(t) ? ' active' : '');
-            btn.innerHTML = '&#11088;';
-            btn.title = 'Agregar a favoritos';
+            btn.innerHTML = '&#9733;';
+            btn.title = favTeams.includes(t) ? 'Quitar de favoritos' : 'Seguir este equipo';
             btn.onclick = (e) => toggleFav(t, btn, e);
-            card.appendChild(btn);
+            nameEl.parentNode.insertBefore(btn, nameEl.nextSibling);
         });
     });
 
@@ -1546,13 +1549,13 @@
                         favTeams = merged;
                         _origSaveFavs();
                         updateFavPill();
-                        // Re-render star buttons
-                        document.querySelectorAll('.fav-btn').forEach(function(btn) {
-                            var card = btn.closest('.game-card');
-                            if (!card) return;
+                        // Re-render star buttons — each btn is next to one team name
+                        document.querySelectorAll('.game-card').forEach(function(card) {
                             var teams = (card.dataset.teams || '').split(',');
-                            teams.forEach(function(t) {
-                                if (favTeams.includes(t)) btn.classList.add('active');
+                            var btns = card.querySelectorAll('.fav-btn');
+                            btns.forEach(function(btn, i) {
+                                var t = teams[i];
+                                if (t && favTeams.includes(t)) btn.classList.add('active');
                             });
                         });
                     }
