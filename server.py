@@ -20,7 +20,7 @@ from sports_api import (
     get_todays_games, search_games, get_team_stats, get_league_standings,
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
     get_recent_league_results, get_upcoming_league_games, fetch_team_news,
-    fetch_meli_product_image,
+    fetch_meli_product_image, fetch_espn_event_summary,
 )
 from whatsapp_bot import handle_whatsapp_message
 import meta_whatsapp
@@ -129,7 +129,8 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
             if monetag_zone:
                 snippet += (
                     f'<meta name="monetag" content="ce90bfedb944d0ac4754ee93708ed15d">\n'
-                    # Multitag script removed — only Push Notifications via sw.js
+                    f'<script src="https://5gvci.com/act/files/tag.min.js?z=11479109" data-cfasync="false" async></script>\n'
+                    # Push Notifications only — registers sw.js for opt-in browser push
                 )
             snippet = snippet.encode("utf-8")
 
@@ -442,11 +443,22 @@ async def game_detail(request: Request, event_id: str, date: Optional[str] = Que
     except Exception as e:
         logger.warning(f"Stats fetch failed for game {event_id}: {e}")
 
+    # Fetch ESPN event summary (lineups, H2H, standings, boxscore)
+    summary = {}
+    try:
+        sport = game.get("sport", "")
+        league_slug = game.get("league_slug", "")
+        if sport and league_slug:
+            summary = await fetch_espn_event_summary(sport, league_slug, event_id)
+    except Exception as e:
+        logger.warning(f"Summary fetch failed for game {event_id}: {e}")
+
     return templates.TemplateResponse(
         request, "game.html", context={
             "game": game, "odds": odds,
             "home_slug": home_slug, "away_slug": away_slug,
             "home_stats": home_stats, "away_stats": away_stats,
+            "summary": summary,
         }
     )
 

@@ -157,6 +157,219 @@ async def fetch_espn_scoreboard(
             return {"events": [], "leagues": []}
 
 
+# ── ESPN Event Summary (lineups, H2H, standings, leaders) ──
+
+_summary_cache = TTLCache(maxsize=200, ttl=300)  # 5 min
+
+async def fetch_espn_event_summary(
+    sport: str, league: str, event_id: str
+) -> dict:
+    """
+    Fetch ESPN summary for a single event.
+    Returns parsed dict with rosters, standings, seasonseries, boxscore.
+    """
+    cache_key = f"summary:{sport}:{league}:{event_id}"
+    if cache_key in _summary_cache:
+        return _summary_cache[cache_key]
+
+    url = f"{ESPN_BASE}/{sport}/{league}/summary"
+    params = {"event": event_id}
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        try:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+        except httpx.HTTPError as e:
+            logger.warning(f"ESPN summary error for {event_id}: {e}")
+            return {}
+        except Exception as e:
+            logger.warning(f"ESPN summary parse error for {event_id}: {e}")
+            return {}
+
+    result = {}
+
+    # ── Rosters / Lineups ──
+    try:
+        rosters_raw = data.get("rosters", [])
+        parsed_rosters = []
+        for team_roster in rosters_raw:
+            team_info = team_roster.get("team", {})
+            players = []
+            for p in team_roster.get("roster", []):
+                athlete = p.get("athlete", {})
+                pos = p.get("position", {})
+                # Parse stats array into dict
+                stats = {}
+                for s in p.get("stats", []):
+                    if isinstance(s, dict):
+                        stats[s.get("abbreviation", s.get("name", ""))] = s.get("displayValue", s.get("value", ""))
+                players.append({
+                    "name": athlete.get("displayName", ""),
+                    "short_name": athlete.get("shortName", ""),
+                    "headshot": athlete.get("headshot", {}).get("href", "") if isinstance(athlete.get("headshot"), dict) else athlete.get("headshot", ""),
+                    "jersey": p.get("jersey", ""),
+                    "position": pos.get("abbreviation", pos.get("name", "")),
+                    "starter": p.get("starter", False),
+                    "bat_order": p.get("batOrder", 0),
+                    "stats": stats,
+                })
+            parsed_rosters.append({
+                "team_id": team_info.get("id", ""),
+                "team_name": team_info.get("displayName", ""),
+                "team_abbr": team_info.get("abbreviation", ""),
+                "team_logo": team_info.get("logo", ""),
+                "players": players,
+            })
+        if parsed_rosters:
+            result["rosters"] = parsed_rosters
+    except Exception as e:
+        logger.debug(f"Rosters parse error: {e}")
+
+    # ── Season Series (H2H) ──
+    try:
+        series_raw = data.get("seasonseries", [])
+        parsed_series = []
+        for s in series_raw:
+            events = []
+            for ev in s.get("events", []):
+                competitors = ev.get("competitors", [])
+                teams = []
+                for c in competitors:
+                    teams.append({
+                        "name": c.get("team", {}).get("displayName", c.get("team", {}).get("name", "")),
+                        "abbr": c.get("team", {}).get("abbreviation", ""),
+                        "score": c.get("score", ""),
+                        "winner": c.get("winner", False),
+                    })
+                events.append({
+                    "id": ev.get("id", ""),
+                    "date": ev.get("date", ""),
+                    "status": ev.get("statusType", {}).get("name", ev.get("status", "")),
+                    "teams": teams,
+                })
+            parsed_series.append({
+                "type": s.get("type", ""),
+                "title": s.get("title", ""),
+                "summary": s.get("summary", ""),
+                "events": events,
+            })
+        if parsed_series:
+            result["seasonseries"] = parsed_series
+    except Exception as e:
+        logger.debug(f"Season series parse error: {e}")
+
+    # ── Standings ──
+    try:
+        standings_raw = data.get("standings", {})
+        groups = standings_raw.get("groups", [])
+        parsed_standings = []
+        for g in groups:
+            header = g.get("header", "")
+            entries = []
+            for entry in g.get("standings", {}).get("entries", []):
+                team = entry.get("team", {})
+                stats = {}
+                for st in entry.get("stats", []):
+                    stats[st.get("abbreviation", st.get("name", ""))] = st.get("displayValue", st.get("value", ""))
+                entries.append({
+                    "team_name": team.get("displayName", team.get("name", "")),
+                    "team_abbr": team.get("abbreviation", ""),
+                    "team_logo": team.get("logos", [{}])[0].get("href", "") if team.get("logos") else "",
+                    "wins": stats.get("W", ""),
+                    "losses": stats.get("L", ""),
+                    "pct": stats.get("PCT", ""),
+                    "gb": stats.get("GB", ""),
+                    "streak": stats.get("STRK", ""),
+                })
+            parsed_standings.append({
+                "header": header,
+                "entries": entries,
+            })
+        if parsed_standings:
+            result["standings"] = parsed_standings
+    except Exception as e:
+        logger.debug(f"Standings parse error: {e}")
+
+    # ── Boxscore Player Stats (for key players) ──
+    try:
+        boxscore = data.get("boxscore", {})
+        players_raw = boxscore.get("players", [])
+        parsed_players = []
+        for team_players in players_raw:
+            team_info = team_players.get("team", {})
+            stat_groups = []
+            for group in team_players.get("statistics", []):
+                group_name = group.get("type", group.get("name", ""))
+                labels = group.get("labels", [])
+                athletes = []
+                for ath in group.get("athletes", []):
+                    athlete_info = ath.get("athlete", {})
+                    stat_values = ath.get("stats", [])
+                    stat_dict = {}
+                    for i, label in enumerate(labels):
+                        if i < len(stat_values):
+                            stat_dict[label] = stat_values[i]
+                    athletes.append({
+                        "name": athlete_info.get("displayName", ""),
+                        "short_name": athlete_info.get("shortName", ""),
+                        "headshot": athlete_info.get("headshot", ""),
+                        "jersey": athlete_info.get("jersey", ""),
+                        "position": ath.get("position", {}).get("abbreviation", ""),
+                        "starter": ath.get("starter", False),
+                        "stats": stat_dict,
+                    })
+                stat_groups.append({
+                    "type": group_name,
+                    "labels": labels,
+                    "athletes": athletes,
+                })
+            parsed_players.append({
+                "team_name": team_info.get("displayName", ""),
+                "team_abbr": team_info.get("abbreviation", ""),
+                "stat_groups": stat_groups,
+            })
+        if parsed_players:
+            result["boxscore_players"] = parsed_players
+    except Exception as e:
+        logger.debug(f"Boxscore players parse error: {e}")
+
+    # ── Probables (starting pitchers, etc.) from header ──
+    try:
+        header = data.get("header", {})
+        competitions = header.get("competitions", [{}])
+        if competitions:
+            comp = competitions[0]
+            for competitor in comp.get("competitors", []):
+                probables = competitor.get("probables", [])
+                if probables:
+                    if "probables" not in result:
+                        result["probables"] = []
+                    for prob in probables:
+                        athlete = prob.get("athlete", {})
+                        stats_list = []
+                        splits = prob.get("statistics", {}).get("splits", {})
+                        if splits:
+                            for cat in splits.get("categories", []):
+                                for st in cat.get("stats", []):
+                                    stats_list.append({
+                                        "name": st.get("abbreviation", st.get("name", "")),
+                                        "value": st.get("displayValue", st.get("value", "")),
+                                    })
+                        result["probables"].append({
+                            "team_id": competitor.get("id", ""),
+                            "name": athlete.get("displayName", ""),
+                            "short_name": athlete.get("shortName", ""),
+                            "headshot": athlete.get("headshot", {}).get("href", "") if isinstance(athlete.get("headshot"), dict) else "",
+                            "stats": {s["name"]: s["value"] for s in stats_list},
+                        })
+    except Exception as e:
+        logger.debug(f"Probables parse error: {e}")
+
+    _summary_cache[cache_key] = result
+    return result
+
+
 # ── TheSportsDB Premium API ─────────────────────────────
 
 # Map ESPN league IDs to TheSportsDB league IDs

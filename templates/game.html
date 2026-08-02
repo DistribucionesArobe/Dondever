@@ -467,6 +467,174 @@
     </div>
     {% endif %}
 
+    {# ── Alineaciones / Rosters ── #}
+    {% if summary and summary.rosters %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#6366f1;font-weight:600;">Alineaciones</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                {% for roster in summary.rosters %}
+                <div>
+                    <div style="text-align:center;margin-bottom:0.5rem;">
+                        {% if roster.team_logo %}<img src="{{ roster.team_logo }}" alt="" style="width:24px;height:24px;vertical-align:middle;margin-right:0.25rem;">{% endif %}
+                        <span style="font-size:0.75rem;font-weight:700;color:#1a1a2e;">{{ roster.team_abbr }}</span>
+                    </div>
+                    {% for player in roster.players if player.starter %}
+                    <div style="display:flex;align-items:center;gap:0.3rem;padding:0.25rem 0.35rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;">
+                        <span style="color:#9ca3af;font-weight:600;min-width:1.2rem;text-align:right;">{{ player.jersey }}</span>
+                        <span style="flex:1;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ player.short_name or player.name }}</span>
+                        <span style="color:#6b7280;font-size:0.6rem;font-weight:600;">{{ player.position }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            {% if summary.probables %}
+            <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;">
+                <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;font-weight:600;text-align:center;margin-bottom:0.5rem;">
+                    {% if game.sport == 'baseball' %}Pitchers Probables{% else %}Titulares Clave{% endif %}
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                    {% for prob in summary.probables %}
+                    <div style="text-align:center;">
+                        {% if prob.headshot %}<img src="{{ prob.headshot }}" alt="" style="width:40px;height:40px;border-radius:50%;border:2px solid #e5e7eb;margin-bottom:0.25rem;">{% endif %}
+                        <div style="font-size:0.75rem;font-weight:700;color:#1a1a2e;">{{ prob.short_name or prob.name }}</div>
+                        {% if prob.stats %}
+                        <div style="font-size:0.6rem;color:#6b7280;margin-top:0.15rem;">
+                            {% for key, val in prob.stats.items() %}{% if loop.index <= 4 %}{{ key }}: {{ val }}{% if not loop.last and loop.index < 4 %} · {% endif %}{% endif %}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Tabla de Posiciones (mini) ── #}
+    {% if summary and summary.standings %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#059669;font-weight:600;">Tabla de Posiciones</div>
+            </div>
+            {% for group in summary.standings %}
+            {% if not loop.first %}<div style="margin-top:0.75rem;"></div>{% endif %}
+            <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.04em;color:#9ca3af;font-weight:600;margin-bottom:0.4rem;">{{ group.header }}</div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+                <thead>
+                    <tr style="color:#9ca3af;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.04em;">
+                        <th style="text-align:left;padding:0.3rem 0;font-weight:600;">#</th>
+                        <th style="text-align:left;padding:0.3rem 0;font-weight:600;">Equipo</th>
+                        <th style="text-align:center;padding:0.3rem 0;font-weight:600;">G</th>
+                        <th style="text-align:center;padding:0.3rem 0;font-weight:600;">P</th>
+                        <th style="text-align:center;padding:0.3rem 0;font-weight:600;">PCT</th>
+                        <th style="text-align:center;padding:0.3rem 0;font-weight:600;">DIF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in group.entries %}
+                    {% set is_playing = entry.team_name == game.home.name or entry.team_name == game.away.name or entry.team_abbr == game.home.abbreviation or entry.team_abbr == game.away.abbreviation %}
+                    <tr style="border-top:1px solid #f3f4f6;{% if is_playing %}background:#f0fdf4;font-weight:700;{% endif %}">
+                        <td style="padding:0.35rem 0;color:#6b7280;">{{ loop.index }}</td>
+                        <td style="padding:0.35rem 0;">
+                            {% if entry.team_logo %}<img src="{{ entry.team_logo }}" alt="" style="width:16px;height:16px;vertical-align:middle;margin-right:0.2rem;">{% endif %}
+                            <span style="color:#1a1a2e;">{{ entry.team_abbr or entry.team_name }}</span>
+                        </td>
+                        <td style="text-align:center;padding:0.35rem 0;">{{ entry.wins }}</td>
+                        <td style="text-align:center;padding:0.35rem 0;">{{ entry.losses }}</td>
+                        <td style="text-align:center;padding:0.35rem 0;">{{ entry.pct }}</td>
+                        <td style="text-align:center;padding:0.35rem 0;color:#6b7280;">{{ entry.gb }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Historial H2H / Serie de Temporada ── #}
+    {% if summary and summary.seasonseries %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#f59e0b;font-weight:600;">Historial entre equipos</div>
+            </div>
+            {% for series in summary.seasonseries %}
+            <div style="{% if not loop.first %}margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;{% endif %}">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                    <span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.04em;color:#9ca3af;font-weight:600;">{{ series.title }}</span>
+                    <span style="font-size:0.72rem;font-weight:700;color:#1a1a2e;">{{ series.summary }}</span>
+                </div>
+                {% for ev in series.events %}
+                {% if ev.status == 'STATUS_FINAL' and ev.teams %}
+                <div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;">
+                    <span style="color:#9ca3af;font-size:0.6rem;min-width:3.5rem;">{{ ev.date[:10] if ev.date else '' }}</span>
+                    {% for t in ev.teams %}
+                    <span style="flex:1;{% if loop.first %}text-align:right;{% else %}text-align:left;{% endif %}color:{% if t.winner %}#059669{% else %}#6b7280{% endif %};font-weight:{% if t.winner %}700{% else %}400{% endif %};">
+                        {{ t.abbr or t.name }}
+                        <span style="font-weight:700;">{{ t.score }}</span>
+                    </span>
+                    {% if loop.first %}<span style="color:#d1d5db;font-size:0.6rem;">vs</span>{% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Boxscore / Stats de Jugadores Clave ── #}
+    {% if summary and summary.boxscore_players %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#ef4444;font-weight:600;">Jugadores Clave</div>
+            </div>
+            {% for team_data in summary.boxscore_players %}
+            {% if not loop.first %}<div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;"></div>{% endif %}
+            <div style="font-size:0.7rem;font-weight:700;color:#1a1a2e;margin-bottom:0.4rem;">{{ team_data.team_name }}</div>
+            {% for group in team_data.stat_groups %}
+            {% if group.athletes %}
+            <div style="{% if not loop.first %}margin-top:0.5rem;{% endif %}">
+                <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.04em;color:#9ca3af;font-weight:600;margin-bottom:0.3rem;">{{ group.type }}</div>
+                <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.65rem;min-width:300px;">
+                    <thead>
+                        <tr style="color:#9ca3af;font-size:0.58rem;text-transform:uppercase;">
+                            <th style="text-align:left;padding:0.2rem 0.2rem;font-weight:600;position:sticky;left:0;background:white;">Jugador</th>
+                            {% for label in group.labels[:8] %}
+                            <th style="text-align:center;padding:0.2rem 0.2rem;font-weight:600;">{{ label }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ath in group.athletes[:6] %}
+                        <tr style="border-top:1px solid #f3f4f6;">
+                            <td style="padding:0.25rem 0.2rem;white-space:nowrap;color:#374151;font-weight:600;position:sticky;left:0;background:white;">{{ ath.short_name or ath.name }}</td>
+                            {% for label in group.labels[:8] %}
+                            <td style="text-align:center;padding:0.25rem 0.2rem;color:#6b7280;">{{ ath.stats.get(label, '-') }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     {# ── CTAs contextuales basados en los canales del partido ── #}
     {# Find the first streaming affiliate that matches a broadcast channel #}
     {% set featured_saff = namespace(found=false, key='', name='', cta='', bg='', color='') %}
