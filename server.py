@@ -130,7 +130,9 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                 snippet += (
                     f'<meta name="monetag" content="ce90bfedb944d0ac4754ee93708ed15d">\n'
                     f'<script src="https://5gvci.com/act/files/tag.min.js?z=11479109" data-cfasync="false" async></script>\n'
-                    # Push Notifications only — registers sw.js for opt-in browser push
+                    # Push Notifications — registers sw.js for opt-in browser push
+                    f'<script>(function(s){{s.dataset.zone="11481358",s.src="https://nap5k.com/tag.min.js"}})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement("script")))</script>\n'
+                    # In-Page Push Banner — small notification-style ad in corner
                 )
             snippet = snippet.encode("utf-8")
 
