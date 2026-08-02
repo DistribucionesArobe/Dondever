@@ -448,8 +448,12 @@ async def game_detail(request: Request, event_id: str, date: Optional[str] = Que
     try:
         sport = game.get("sport", "")
         league_slug = game.get("league_slug", "")
-        if sport and league_slug:
-            summary = await fetch_espn_event_summary(sport, league_slug, event_id)
+        # Resolve ESPN league code from slug (e.g. "liga-mx" → "mex.1")
+        from config import ALL_LEAGUES
+        league_info = ALL_LEAGUES.get(league_slug)
+        espn_league = league_info[1] if isinstance(league_info, tuple) else league_slug
+        if sport and espn_league:
+            summary = await fetch_espn_event_summary(sport, espn_league, event_id)
     except Exception as e:
         logger.warning(f"Summary fetch failed for game {event_id}: {e}")
 
