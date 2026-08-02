@@ -344,6 +344,13 @@ async def home(
     prev_date = (viewing_date - timedelta(days=1)).strftime("%Y%m%d")
     next_date = (viewing_date + timedelta(days=1)).strftime("%Y%m%d")
 
+    # ── Sport counts for hero cards ─────────────────────
+    sport_counts: dict[str, int] = {"all": len(games)}
+    for g in games:
+        ls = g.get("league_slug", "")
+        s = LEAGUES.get(ls, ("other",))[0] if ls in LEAGUES else "other"
+        sport_counts[s] = sport_counts.get(s, 0) + 1
+
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -360,6 +367,7 @@ async def home(
             "next_date": next_date,
             "total_games": len(games),
             "pick_game": pick_game,
+            "sport_counts": sport_counts,
         },
     )
 

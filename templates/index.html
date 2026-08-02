@@ -136,130 +136,142 @@
         .country-btn:hover { background: #334155; color: #fff; }
         .country-btn.active { background: #059669; color: #fff; border-color: #059669; }
 
-        /* ── Hero (tiny) ─────────────────────── */
+        /* ── Hero — "¿Qué quieres ver hoy?" ── */
         .hero {
-            background: #ffffff;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 1rem 1rem 0.85rem;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            padding: 1.2rem 1rem 0.8rem;
             text-align: center;
         }
-        .hero-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
+        .hero-inner { max-width: 1100px; margin: 0 auto; }
         .hero h1 {
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: #0f172a;
-            letter-spacing: -0.3px;
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.15rem;
         }
-        .hero h1 .accent { color: #10b981; }
-
-        .date-nav {
+        .hero h1 .accent { color: #34d399; }
+        .hero-sub {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            font-weight: 600;
+            margin-bottom: 0.7rem;
+        }
+        .hero-stats {
             display: inline-flex;
-            gap: 0.3rem;
+            gap: 0.6rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-bottom: 0.7rem;
+        }
+        .hero-stat-live { color: #ef4444; }
+        .hero-stat-next { color: #f59e0b; }
+
+        /* ── Sport Cards ──────────────────────── */
+        .sport-cards {
+            display: flex;
+            gap: 0.45rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 0.7rem;
+        }
+        .sport-card {
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin-top: 0.65rem;
-            background: #f3f4f6;
-            padding: 0.25rem;
-            border-radius: 10px;
-        }
-        .date-tab {
-            padding: 0.35rem 0.75rem;
-            border-radius: 8px;
+            gap: 0.2rem;
+            width: 72px;
+            height: 64px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.06);
+            border: 1.5px solid rgba(255,255,255,0.08);
             text-decoration: none;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #6b7280;
-            transition: all 0.15s;
+            transition: all 0.2s;
+            cursor: pointer;
         }
-        a.date-tab:hover { color: #0f172a; }
-        .date-tab.active {
-            background: #0f172a;
-            color: white;
+        .sport-card:hover, .sport-card.active {
+            background: rgba(16,185,129,0.15);
+            border-color: #10b981;
+            transform: translateY(-2px);
         }
+        .sport-card.active { background: rgba(16,185,129,0.2); border-color: #34d399; }
+        .sport-card .sc-emoji { font-size: 1.4rem; line-height: 1; }
+        .sport-card .sc-label { font-size: 0.6rem; font-weight: 800; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.3px; }
+        .sport-card.active .sc-label { color: #34d399; }
+        .sport-card .sc-count { font-size: 0.5rem; font-weight: 700; color: #64748b; }
+        .sport-card.active .sc-count { color: #6ee7b7; }
 
-        /* ── Search Bar ─────────────────────── */
-        .search-wrap {
-            max-width: 1100px;
-            margin: 0.65rem auto 0;
-            padding: 0 1rem;
+        /* ── Search Bar (hero-integrated) ──── */
+        .hero-search {
+            max-width: 420px;
+            margin: 0 auto 0.6rem;
+            position: relative;
         }
         .search-box {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
             padding: 0.55rem 0.85rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            transition: border-color 0.2s;
         }
-        .search-box::before {
-            content: "🔍";
-            font-size: 0.85rem;
-        }
+        .search-box:focus-within { border-color: #10b981; background: rgba(255,255,255,0.12); }
+        .search-box::before { content: "🔍"; font-size: 0.85rem; }
         .search-input {
             width: 100%;
             border: none;
             outline: none;
             font-size: 0.85rem;
             font-family: inherit;
-            color: #0f172a;
+            color: #fff;
             background: transparent;
         }
-        .search-input::placeholder { color: #9ca3af; }
+        .search-input::placeholder { color: #64748b; }
+        .search-or { font-size: 0.65rem; color: #64748b; margin-bottom: 0.4rem; font-weight: 600; }
 
-        /* ── Sport Filters ───────────────────── */
+        .date-nav {
+            display: inline-flex;
+            gap: 0.3rem;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.06);
+            padding: 0.2rem;
+            border-radius: 10px;
+        }
+        .date-tab {
+            padding: 0.3rem 0.7rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #94a3b8;
+            transition: all 0.15s;
+        }
+        a.date-tab:hover { color: #fff; }
+        .date-tab.active {
+            background: #10b981;
+            color: white;
+        }
+
+        /* ── Sub-filters (soccer leagues etc) ── */
         .filters-wrap {
             max-width: 1100px;
-            margin: 0.75rem auto 0;
-            padding: 0 1rem;
+            margin: 0 auto;
+            padding: 0.4rem 1rem 0;
         }
-        .filters {
-            display: flex;
-            gap: 0.4rem;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            padding-bottom: 0.15rem;
-        }
+        .filters { display: none; }
         .filters::-webkit-scrollbar { display: none; }
-        .filter-pill {
-            flex: 0 0 auto;
-            padding: 0.4rem 0.85rem;
-            border-radius: 2rem;
-            border: 1px solid #e5e7eb;
-            background: white;
-            color: #4b5563;
-            font-size: 0.75rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.15s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-            white-space: nowrap;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        .filter-pill:hover {
-            border-color: #10b981;
-            color: #059669;
-        }
-        .filter-pill.active {
-            background: #0f172a;
-            color: white;
-            border-color: #0f172a;
-        }
+        .filter-pill { display: none; }
         .subfilters {
             display: flex;
             gap: 0.35rem;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
-            margin-top: 0.4rem;
         }
         .subfilters::-webkit-scrollbar { display: none; }
         .subfilter-pill {
@@ -275,9 +287,12 @@
             transition: all 0.15s;
         }
         .subfilter-pill:hover { background: #e5e7eb; color: #0f172a; }
-        .subfilter-pill.active {
-            background: #d1fae5;
-            color: #059669;
+        .subfilter-pill.active { background: #d1fae5; color: #059669; }
+        @media (min-width: 768px) {
+            .sport-card { width: 88px; height: 72px; }
+            .sport-card .sc-emoji { font-size: 1.7rem; }
+            .sport-card .sc-label { font-size: 0.65rem; }
+            .hero h1 { font-size: 1.6rem; }
         }
 
         /* ── Main Content ───────────────────── */
@@ -321,18 +336,17 @@
         }
         .league-count { color: #9ca3af; font-weight: 600; font-size: 0.75rem; }
 
-        /* ── Game Card ──────────────────────── */
+        /* ── Game Card (Smart & Clean) ───────── */
         .game-card {
             position: relative;
             background: white;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
-            padding: 0.7rem 0.9rem;
+            padding: 0.65rem 0.85rem;
             margin-bottom: 0.5rem;
             display: block;
             text-decoration: none;
             color: inherit;
-            cursor: pointer;
             transition: border-color 0.15s, box-shadow 0.15s;
             box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
@@ -353,11 +367,17 @@
         .game-card.final { background: #fafafa; }
         .game-card.final .team-name { color: #6b7280; }
 
-        .gc-status-row {
+        /* Compact top row: badge + primary channel + toggle */
+        .gc-compact-top {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.35rem;
+        }
+        .gc-compact-left {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
         }
         .live-badge {
             display: inline-flex; align-items: center; gap: 0.3rem;
@@ -381,6 +401,13 @@
             letter-spacing: 0.03em; border: 1px solid #fed7aa;
         }
         .gc-clock { font-size: 0.8rem; font-weight: 800; color: #ef4444; }
+        .gc-toggle {
+            background: none; border: none; cursor: pointer;
+            font-size: 0.7rem; color: #9ca3af; padding: 2px 6px;
+            border-radius: 6px; transition: all 0.2s;
+        }
+        .gc-toggle:hover { background: #f3f4f6; color: #0f172a; }
+        .gc-toggle.open { transform: rotate(180deg); }
 
         .gc-row {
             display: flex;
@@ -405,8 +432,23 @@
         .countdown { font-size: 0.6rem; color: #9ca3af; font-weight: 600; margin-top: 1px; }
         .countdown.soon { color: #ef4444; font-weight: 700; }
 
+        /* Primary channel (always visible) */
+        .gc-primary-channel {
+            display: flex; align-items: center; gap: 0.25rem;
+            margin-top: 0.4rem; font-size: 0.65rem; color: #64748b;
+        }
+        .gc-primary-channel .channel-tag { margin-left: 0.15rem; }
+
         .fav-btn { background:none; border:none; cursor:pointer; font-size:0.75rem; opacity:0.2; transition:opacity 0.2s; padding:0 3px; z-index:2; flex-shrink:0; line-height:1; }
         .fav-btn:hover, .fav-btn.active { opacity:1; }
+
+        /* ── Accordion (hidden by default) ──── */
+        .gc-accordion {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .gc-accordion.open { max-height: 500px; }
 
         .gc-channels {
             display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem;
@@ -422,6 +464,22 @@
         .channel-tag.broadcast { background: #d1fae5; color: #059669; }
         .channel-tag.free-mx { background: #059669; color: white; }
         .channel-tag.unknown { background: #f3f4f6; color: #9ca3af; }
+
+        /* ── Streaming CTA (affiliate) ─────── */
+        .gc-streaming-cta {
+            display: flex; flex-wrap: wrap; gap: 0.35rem;
+            margin-top: 0.5rem; padding-top: 0.5rem;
+            border-top: 1px solid #f3f4f6;
+        }
+        .stream-btn {
+            display: inline-flex; align-items: center; gap: 0.25rem;
+            padding: 0.35rem 0.7rem; border-radius: 8px;
+            font-size: 0.65rem; font-weight: 700;
+            text-decoration: none; transition: opacity 0.15s;
+            color: white;
+        }
+        .stream-btn:hover { opacity: 0.85; }
+        .stream-btn .stream-label { font-size: 0.55rem; opacity: 0.85; }
 
         /* ── Mini Odds on Game Card ────────── */
         .odds-mini {
@@ -487,7 +545,7 @@
         .bet-pill.bp-jubilee { background: #d97706; }
         .bet-pill.bp-vivento { background: #dc2626; }
 
-        /* ── Actions row (calendar + share) ── */
+        /* ── Actions row (calendar + share + detail) ── */
         .gc-actions {
             display: flex;
             align-items: center;
@@ -514,6 +572,54 @@
         }
         .gc-act:hover { background: #e5e7eb; color: #374151; }
         .gc-act.copied { background: #d1fae5; color: #059669; }
+        .gc-act-detail {
+            margin-left: auto;
+            background: #0f172a; color: #fff;
+            font-size: 0.58rem; font-weight: 700;
+            padding: 0.25rem 0.55rem; border-radius: 6px;
+            text-decoration: none; transition: background 0.15s;
+        }
+        .gc-act-detail:hover { background: #10b981; }
+
+        /* ── Subscription Filter Bar ─────── */
+        .sub-filter-bar {
+            max-width: 1100px; margin: 0 auto; padding: 0.5rem 1rem;
+        }
+        .sub-filter-inner {
+            background: white; border: 1px solid #e5e7eb; border-radius: 10px;
+            padding: 0.5rem 0.75rem; display: flex; align-items: center; gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .sub-filter-label {
+            font-size: 0.68rem; font-weight: 700; color: #374151;
+            white-space: nowrap;
+        }
+        .sub-chip {
+            display: inline-flex; align-items: center; gap: 0.2rem;
+            padding: 0.2rem 0.5rem; border-radius: 6px;
+            font-size: 0.6rem; font-weight: 700; cursor: pointer;
+            border: 1.5px solid #e5e7eb; background: white; color: #6b7280;
+            transition: all 0.15s; white-space: nowrap;
+        }
+        .sub-chip:hover { border-color: #10b981; color: #059669; }
+        .sub-chip.active { background: #d1fae5; border-color: #10b981; color: #059669; }
+        .sub-chip .sub-check { font-size: 0.55rem; }
+        .sub-filter-toggle {
+            margin-left: auto; font-size: 0.6rem; font-weight: 700;
+            color: #10b981; background: none; border: none; cursor: pointer;
+            padding: 0.2rem 0.4rem; border-radius: 4px;
+        }
+        .sub-filter-toggle:hover { background: #d1fae5; }
+        .sub-filter-toggle.active { color: #ef4444; }
+        .sub-upsell {
+            display: none; width: 100%; margin-top: 0.35rem; padding-top: 0.35rem;
+            border-top: 1px solid #f3f4f6; font-size: 0.6rem; color: #6b7280;
+        }
+        .sub-upsell.show { display: block; }
+        .sub-upsell a {
+            color: #6d28d9; font-weight: 700; text-decoration: none;
+        }
+        .sub-upsell a:hover { text-decoration: underline; }
 
         /* ── Fav Onboarding + Sync bar ── */
         .fav-bar {
@@ -832,10 +938,95 @@
     </div>
 </header>
 
-<!-- Hero (tiny) -->
+<!-- Hero — ¿Qué deporte quieres ver hoy? -->
+{% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions'] %}
+{% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
 <div class="hero">
     <div class="hero-inner">
-        <h1>&#191;D&oacute;nde ver <span class="accent">deportes hoy</span>?</h1>
+        <h1>&#191;Qu&eacute; <span class="accent">deporte</span> quieres ver hoy?</h1>
+        <div class="hero-sub" id="country-toggle">
+            Nos ves desde: <span id="current-country" style="cursor:pointer;">&#127474;&#127485; M&eacute;xico &#9662;</span>
+        </div>
+        <div class="country-dropdown" id="country-dropdown">
+            <span class="country-btn" data-country="MX">&#127474;&#127485; M&eacute;xico</span>
+            <span class="country-btn" data-country="CO">&#127464;&#127476; Colombia</span>
+            <span class="country-btn" data-country="VE">&#127483;&#127466; Venezuela</span>
+            <span class="country-btn" data-country="PA">&#127477;&#127462; Panam&aacute;</span>
+            <span class="country-btn" data-country="AR">&#127462;&#127479; Argentina</span>
+            <span class="country-btn" data-country="CL">&#127464;&#127473; Chile</span>
+            <span class="country-btn" data-country="PE">&#127477;&#127466; Per&uacute;</span>
+            <span class="country-btn" data-country="CR">&#127464;&#127479; Costa Rica</span>
+            <span class="country-btn" data-country="DO">&#127465;&#127476; Rep. Dominicana</span>
+            <span class="country-btn" data-country="EC">&#127466;&#127464; Ecuador</span>
+            <span class="country-btn" data-country="GT">&#127468;&#127481; Guatemala</span>
+            <span class="country-btn" data-country="HN">&#127469;&#127475; Honduras</span>
+            <span class="country-btn" data-country="NI">&#127475;&#127470; Nicaragua</span>
+            <span class="country-btn" data-country="SV">&#127480;&#127483; El Salvador</span>
+            <span class="country-btn" data-country="CU">&#127464;&#127482; Cuba</span>
+            <span class="country-btn" data-country="UY">&#127482;&#127486; Uruguay</span>
+            <span class="country-btn" data-country="US">&#127482;&#127480; Estados Unidos</span>
+            <span class="country-btn" data-country="BR">&#127463;&#127479; Brasil</span>
+            <span class="country-btn" data-country="ES">&#127466;&#127480; Espa&ntilde;a</span>
+        </div>
+
+        <!-- Sport Cards Grid -->
+        <div class="sport-cards">
+            <a href="/" class="sport-card {% if not current_sport and not current_league %}active{% endif %}">
+                <span class="sc-emoji">&#128247;</span>
+                <span class="sc-label">Todos</span>
+                <span class="sc-count">{% if sport_counts.get('all') %}{{ sport_counts['all'] }} hoy{% endif %}</span>
+            </a>
+            <a href="/?sport=soccer" class="sport-card {% if is_soccer %}active{% endif %}">
+                <span class="sc-emoji">&#9917;</span>
+                <span class="sc-label">F&uacute;tbol</span>
+                <span class="sc-count">{% if sport_counts.get('soccer') %}{{ sport_counts['soccer'] }}{% endif %}</span>
+            </a>
+            <a href="/?sport=baseball" class="sport-card {% if current_sport == 'baseball' %}active{% endif %}">
+                <span class="sc-emoji">&#9918;</span>
+                <span class="sc-label">B&eacute;isbol</span>
+                <span class="sc-count">{% if sport_counts.get('baseball') %}{{ sport_counts['baseball'] }}{% endif %}</span>
+            </a>
+            <a href="/?sport=basketball" class="sport-card {% if current_sport == 'basketball' %}active{% endif %}">
+                <span class="sc-emoji">&#127936;</span>
+                <span class="sc-label">Basket</span>
+                <span class="sc-count">{% if sport_counts.get('basketball') %}{{ sport_counts['basketball'] }}{% endif %}</span>
+            </a>
+            <a href="/?sport=football" class="sport-card {% if current_sport == 'football' %}active{% endif %}">
+                <span class="sc-emoji">&#127944;</span>
+                <span class="sc-label">NFL</span>
+                <span class="sc-count">{% if sport_counts.get('football') %}{{ sport_counts['football'] }}{% endif %}</span>
+            </a>
+            <a href="/?sport=hockey" class="sport-card {% if current_sport == 'hockey' %}active{% endif %}">
+                <span class="sc-emoji">&#127954;</span>
+                <span class="sc-label">NHL</span>
+                <span class="sc-count">{% if sport_counts.get('hockey') %}{{ sport_counts['hockey'] }}{% endif %}</span>
+            </a>
+            <a href="/?sport=mma" class="sport-card {% if current_sport == 'mma' %}active{% endif %}">
+                <span class="sc-emoji">&#129354;</span>
+                <span class="sc-label">UFC</span>
+                <span class="sc-count">{% if sport_counts.get('mma') %}{{ sport_counts['mma'] }}{% endif %}</span>
+            </a>
+            <a href="/?sport=motorsports" class="sport-card {% if current_sport == 'motorsports' %}active{% endif %}">
+                <span class="sc-emoji">&#127950;</span>
+                <span class="sc-label">F1</span>
+                <span class="sc-count">{% if sport_counts.get('motorsports') %}{{ sport_counts['motorsports'] }}{% endif %}</span>
+            </a>
+        </div>
+
+        <!-- Fav filter (hidden, shown by JS if user has favs) -->
+        <button class="filter-pill" id="favFilter" onclick="toggleFavFilter()" style="cursor:pointer;border:none;display:none;background:rgba(255,255,255,0.08);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);border-radius:2rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;margin-bottom:0.5rem;">&#11088; Mis equipos</button>
+
+        <!-- Search -->
+        <div class="search-or">o busca tu equipo</div>
+        <div class="hero-search">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Buscar equipo, liga, canal..." id="searchInput" autocomplete="off">
+            </div>
+        </div>
+        <!-- Team Quick Panel -->
+        <div id="teamPanel" class="team-panel" style="display:none;"></div>
+
+        <!-- Date nav -->
         <nav class="date-nav">
             <a href="/?date={{ prev_date }}" class="date-tab">&larr; Ayer</a>
             <span class="date-tab active">{{ today_display }}</span>
@@ -844,58 +1035,9 @@
     </div>
 </div>
 
-<!-- Search -->
-<div class="search-wrap">
-    <div class="search-box">
-        <input type="text" class="search-input" placeholder="Buscar equipo, liga..." id="searchInput" autocomplete="off">
-    </div>
-</div>
-<!-- Team Quick Panel (populated by JS when searching a known team) -->
-<div id="teamPanel" class="team-panel" style="display:none;"></div>
-
-<!-- Country Picker -->
-<div class="country-picker-wrap" id="country-toggle">
-    <span class="country-picker-text">Nos ves desde:</span>
-    <span class="country-picker-flag" id="current-country">🇲🇽 M&eacute;xico</span>
-    <span class="cs-arrow">&#9662;</span>
-</div>
-<div class="country-dropdown" id="country-dropdown">
-    <span class="country-btn" data-country="MX">🇲🇽 M&eacute;xico</span>
-    <span class="country-btn" data-country="CO">🇨🇴 Colombia</span>
-    <span class="country-btn" data-country="VE">🇻🇪 Venezuela</span>
-    <span class="country-btn" data-country="PA">🇵🇦 Panam&aacute;</span>
-    <span class="country-btn" data-country="AR">🇦🇷 Argentina</span>
-    <span class="country-btn" data-country="CL">🇨🇱 Chile</span>
-    <span class="country-btn" data-country="PE">🇵🇪 Per&uacute;</span>
-    <span class="country-btn" data-country="CR">🇨🇷 Costa Rica</span>
-    <span class="country-btn" data-country="DO">🇩🇴 Rep. Dominicana</span>
-    <span class="country-btn" data-country="EC">🇪🇨 Ecuador</span>
-    <span class="country-btn" data-country="GT">🇬🇹 Guatemala</span>
-    <span class="country-btn" data-country="HN">🇭🇳 Honduras</span>
-    <span class="country-btn" data-country="NI">🇳🇮 Nicaragua</span>
-    <span class="country-btn" data-country="SV">🇸🇻 El Salvador</span>
-    <span class="country-btn" data-country="CU">🇨🇺 Cuba</span>
-    <span class="country-btn" data-country="UY">🇺🇾 Uruguay</span>
-    <span class="country-btn" data-country="US">🇺🇸 Estados Unidos</span>
-    <span class="country-btn" data-country="BR">🇧🇷 Brasil</span>
-    <span class="country-btn" data-country="ES">🇪🇸 Espa&ntilde;a</span>
-</div>
-
-<!-- Sport Filters -->
-{% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions'] %}
-{% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
+<!-- Sub-filters (soccer leagues) -->
+{% if is_soccer %}
 <div class="filters-wrap">
-    <div class="filters">
-        <a href="/" class="filter-pill {% if not current_sport and not current_league %}active{% endif %}">Todos</a>
-        <button class="filter-pill" id="favFilter" onclick="toggleFavFilter()" style="cursor:pointer;border:none;display:none;">&#11088; Mis equipos</button>
-        <a href="/?sport=soccer" class="filter-pill {% if is_soccer %}active{% endif %}">&#9917; F&uacute;tbol</a>
-        <a href="/?sport=baseball" class="filter-pill {% if current_sport == 'baseball' %}active{% endif %}">&#9918; B&eacute;isbol</a>
-        <a href="/?sport=basketball" class="filter-pill {% if current_sport == 'basketball' %}active{% endif %}">&#127936; Basket</a>
-        <a href="/?sport=football" class="filter-pill {% if current_sport == 'football' %}active{% endif %}">&#127944; NFL</a>
-        <a href="/?sport=hockey" class="filter-pill {% if current_sport == 'hockey' %}active{% endif %}">&#127954; NHL</a>
-        <a href="/?sport=mma" class="filter-pill {% if current_sport == 'mma' %}active{% endif %}">&#129346; UFC</a>
-    </div>
-    {% if is_soccer %}
     <div class="subfilters">
         <a href="/?league=liga-mx" class="subfilter-pill {% if current_league == 'liga-mx' %}active{% endif %}">Liga MX</a>
         <a href="/?league=premier-league" class="subfilter-pill {% if current_league == 'premier-league' %}active{% endif %}">Premier</a>
@@ -905,7 +1047,26 @@
         <a href="/?league=bundesliga" class="subfilter-pill {% if current_league == 'bundesliga' %}active{% endif %}">Bundesliga</a>
         <a href="/?league=ligue-1" class="subfilter-pill {% if current_league == 'ligue-1' %}active{% endif %}">Ligue 1</a>
     </div>
-    {% endif %}
+</div>
+{% endif %}
+
+<!-- Subscription Filter -->
+<div class="sub-filter-bar" id="subFilterBar">
+    <div class="sub-filter-inner">
+        <span class="sub-filter-label">&#128250; Mis plataformas:</span>
+        <span class="sub-chip" data-sub="TUDN" onclick="toggleSub(this)"><span class="sub-check"></span>TUDN</span>
+        <span class="sub-chip" data-sub="ESPN" onclick="toggleSub(this)"><span class="sub-check"></span>ESPN</span>
+        <span class="sub-chip" data-sub="Fox Sports" onclick="toggleSub(this)"><span class="sub-check"></span>Fox Sports</span>
+        <span class="sub-chip" data-sub="ViX" onclick="toggleSub(this)"><span class="sub-check"></span>ViX</span>
+        <span class="sub-chip" data-sub="Prime Video" onclick="toggleSub(this)"><span class="sub-check"></span>Prime Video</span>
+        <span class="sub-chip" data-sub="ESPN+" onclick="toggleSub(this)"><span class="sub-check"></span>ESPN+</span>
+        <span class="sub-chip" data-sub="Azteca 7" onclick="toggleSub(this)"><span class="sub-check"></span>Azteca 7</span>
+        <span class="sub-chip" data-sub="Canal 5" onclick="toggleSub(this)"><span class="sub-check"></span>Canal 5</span>
+        <span class="sub-chip" data-sub="TNT" onclick="toggleSub(this)"><span class="sub-check"></span>TNT</span>
+        <span class="sub-chip" data-sub="Peacock" onclick="toggleSub(this)"><span class="sub-check"></span>Peacock</span>
+        <button class="sub-filter-toggle" id="subFilterToggle" onclick="applySubFilter()">Filtrar</button>
+        <div class="sub-upsell" id="subUpsell"></div>
+    </div>
 </div>
 
 <!-- Favorites Bar (onboarding → sync → linked) -->
@@ -943,25 +1104,30 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div data-href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}">
+        <div class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
 
-            {% if state == 'in' %}
-            <div class="gc-status-row">
-                <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
-                {% if game.status.clock %}<span class="gc-clock">{{ game.status.clock }}</span>{% endif %}
+            {# ── Compact top: badge + primary channel + toggle ── #}
+            <div class="gc-compact-top">
+                <div class="gc-compact-left">
+                    {% if state == 'in' %}
+                    <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
+                    {% if game.status.clock %}<span class="gc-clock">{{ game.status.clock }}</span>{% endif %}
+                    {% elif state == 'post' %}
+                    <span class="final-badge">FINAL</span>
+                    {% else %}
+                    <span class="pre-badge">PR&Oacute;XIMO</span>
+                    {% endif %}
+                    {% if game.broadcasts %}
+                    <span class="channel-tag {{ game.broadcasts[0].info.get('type', 'unknown') if game.broadcasts[0].info else 'unknown' }}{% if game.broadcasts[0].info and game.broadcasts[0].info.get('country') == 'MX' and game.broadcasts[0].info.get('type') == 'broadcast' %} free-mx{% endif %}" style="font-size:0.58rem;">
+                        {{ game.broadcasts[0].channel }}
+                    </span>
+                    {% endif %}
+                </div>
+                <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
             </div>
-            {% elif state == 'post' %}
-            <div class="gc-status-row">
-                <span class="final-badge">FINAL</span>
-            </div>
-            {% else %}
-            <div class="gc-status-row">
-                <span class="pre-badge">PRÓXIMO</span>
-            </div>
-            {% endif %}
 
+            {# ── Teams ── #}
             <div class="gc-row">
-                <span class="gc-icon">&#127968;</span>
                 {% if top_team.logo %}
                 <img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">
                 {% endif %}
@@ -975,9 +1141,7 @@
                     {% endif %}
                 </span>
             </div>
-
             <div class="gc-row">
-                <span class="gc-icon">&#9992;&#65039;</span>
                 {% if bottom_team.logo %}
                 <img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">
                 {% endif %}
@@ -991,63 +1155,86 @@
                 </span>
             </div>
 
-            <div class="gc-channels">
-                <span class="gc-channels-icon">&#128250;</span>
-                {% if game.broadcasts %}
+            {# ── Accordion (hidden by default) ── #}
+            <div class="gc-accordion">
+                {# All channels #}
+                <div class="gc-channels">
+                    <span class="gc-channels-icon">&#128250;</span>
+                    {% if game.broadcasts %}
+                        {% for b in game.broadcasts %}
+                        {% set saff = streaming_aff.get(b.channel) %}
+                        {% if saff %}
+                        <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
+                            {{ b.channel }} &#8599;
+                        </a>
+                        {% else %}
+                        <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
+                            {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <span class="channel-tag unknown">Por confirmar</span>
+                    {% endif %}
+                </div>
+
+                {# ── Streaming affiliate CTAs ── #}
+                {% set ns = namespace(has_streaming=false) %}
+                {% for b in game.broadcasts %}
+                    {% if streaming_aff.get(b.channel) %}{% set ns.has_streaming = true %}{% endif %}
+                {% endfor %}
+                {% if ns.has_streaming %}
+                <div class="gc-streaming-cta" onclick="event.stopPropagation();">
                     {% for b in game.broadcasts %}
                     {% set saff = streaming_aff.get(b.channel) %}
                     {% if saff %}
-                    <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
-                        {{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span>
+                    <a href="/go/{{ saff.key }}?s=card-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="stream-btn" style="background:{{ saff.bg }};">
+                        {{ saff.cta }} <span class="stream-label">&#8599;</span>
                     </a>
-                    {% else %}
-                    <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
-                        {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
-                    </span>
                     {% endif %}
                     {% endfor %}
-                {% else %}
-                    <span class="channel-tag unknown">Por confirmar</span>
+                </div>
                 {% endif %}
-            </div>
 
-            {# ── Mini Odds Preview ── #}
-            {% if game.odds %}
-            <div class="odds-mini">
-                <span class="odds-mini-label">Momios</span>
-                <span class="odds-chip">
-                    <span class="team-abbr">{{ top_team.name[:3]|upper }}</span>
-                    {{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}
-                </span>
-                {% if game.odds.draw_odds %}
-                <span class="odds-chip draw">
-                    <span class="team-abbr">EMP</span>
-                    {{ game.odds.draw_odds }}
-                </span>
+                {# ── Mini Odds ── #}
+                {% if game.odds %}
+                <div class="odds-mini">
+                    <span class="odds-mini-label">Momios</span>
+                    <span class="odds-chip">
+                        <span class="team-abbr">{{ top_team.name[:3]|upper }}</span>
+                        {{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}
+                    </span>
+                    {% if game.odds.draw_odds %}
+                    <span class="odds-chip draw">
+                        <span class="team-abbr">EMP</span>
+                        {{ game.odds.draw_odds }}
+                    </span>
+                    {% endif %}
+                    <span class="odds-chip">
+                        <span class="team-abbr">{{ bottom_team.name[:3]|upper }}</span>
+                        {{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}
+                    </span>
+                </div>
                 {% endif %}
-                <span class="odds-chip">
-                    <span class="team-abbr">{{ bottom_team.name[:3]|upper }}</span>
-                    {{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}
-                </span>
-            </div>
-            {% endif %}
 
-            {# ── Betting Strip ── #}
-            {% if state != 'post' %}
-            <div class="bet-strip" onclick="event.stopPropagation();">
-                <span class="bet-strip-label">&#127922; Apuestas</span>
-                <a href="/go/betsson?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" class="bet-pill bp-betsson" style="display:none;" onclick="event.stopPropagation();">Betsson</a>
-                <a href="/go/jubilee?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-pill bp-jubilee" onclick="event.stopPropagation();">Jubilee</a>
-                <a href="/go/vivento?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" data-geo="mx" class="bet-pill bp-vivento" onclick="event.stopPropagation();">Vivento</a>
-            </div>
-            {% endif %}
-
-            {# ── Calendar + Share ── #}
-            <div class="gc-actions" onclick="event.stopPropagation();">
-                {% if state == 'pre' %}
-                <button class="gc-act" onclick="dvCal(this)" data-t="{{ top_team.name }} vs {{ bottom_team.name }}" data-d="{{ game.date }}" data-l="{{ game.league_name }}" data-ch="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}" data-u="{{ app_url }}/juego/{{ game.id }}">&#128197; Calendario</button>
+                {# ── Betting Strip ── #}
+                {% if state != 'post' %}
+                <div class="bet-strip" onclick="event.stopPropagation();">
+                    <span class="bet-strip-label">&#127922; Apuestas</span>
+                    <a href="/go/betsson?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" class="bet-pill bp-betsson" style="display:none;" onclick="event.stopPropagation();">Betsson</a>
+                    <a href="/go/jubilee?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-pill bp-jubilee" onclick="event.stopPropagation();">Jubilee</a>
+                    <a href="/go/vivento?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" data-geo="mx" class="bet-pill bp-vivento" onclick="event.stopPropagation();">Vivento</a>
+                </div>
                 {% endif %}
-                <button class="gc-act" onclick="dvShare(this,'{{ app_url }}/juego/{{ game.id }}','{{ top_team.name }} vs {{ bottom_team.name }} - {{ game.league_name }}')">&#8599; Compartir</button>
+
+                {# ── Actions: calendar + share + detail link ── #}
+                <div class="gc-actions" onclick="event.stopPropagation();">
+                    {% if state == 'pre' %}
+                    <button class="gc-act" onclick="dvCal(this)" data-t="{{ top_team.name }} vs {{ bottom_team.name }}" data-d="{{ game.date }}" data-l="{{ game.league_name }}" data-ch="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}" data-u="{{ app_url }}/juego/{{ game.id }}">&#128197; Calendario</button>
+                    {% endif %}
+                    <button class="gc-act" onclick="dvShare(this,'{{ app_url }}/juego/{{ game.id }}','{{ top_team.name }} vs {{ bottom_team.name }} - {{ game.league_name }}')">&#8599; Compartir</button>
+                    <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="gc-act-detail">Ver detalles &rarr;</a>
+                </div>
             </div>
         </div>
         {% endfor %}
@@ -1285,12 +1472,26 @@
 </a>
 
 <script>
-    // ── Game card click-to-navigate (div instead of <a> to avoid nested-link issues) ──
-    document.querySelectorAll('.game-card[data-href]').forEach(function(card) {
+    // ── Accordion toggle for game cards ──
+    function toggleAccordion(btn) {
+        event.stopPropagation();
+        var card = btn.closest('.game-card');
+        var acc = card.querySelector('.gc-accordion');
+        if (acc.classList.contains('open')) {
+            acc.classList.remove('open');
+            btn.classList.remove('open');
+        } else {
+            acc.classList.add('open');
+            btn.classList.add('open');
+        }
+    }
+    // Click anywhere on the compact part of the card toggles the accordion
+    document.querySelectorAll('.game-card').forEach(function(card) {
+        card.style.cursor = 'pointer';
         card.addEventListener('click', function(e) {
-            // Don't navigate if user clicked an actual link inside the card
-            if (e.target.closest('a')) return;
-            window.location.href = card.dataset.href;
+            if (e.target.closest('a') || e.target.closest('button') || e.target.closest('.gc-accordion')) return;
+            var btn = card.querySelector('.gc-toggle');
+            if (btn) toggleAccordion(btn);
         });
     });
 
@@ -1563,6 +1764,81 @@
             }).catch(function(){});
     }
     showSyncBar();
+
+    // ── Subscription Filter ("Mis Suscripciones") ─────
+    var mySubs = JSON.parse(localStorage.getItem('dv_subs') || '[]');
+    var subFilterOn = false;
+
+    // Restore saved subs
+    mySubs.forEach(function(s) {
+        var chip = document.querySelector('.sub-chip[data-sub="' + s + '"]');
+        if (chip) chip.classList.add('active');
+    });
+
+    function toggleSub(chip) {
+        var s = chip.dataset.sub;
+        chip.classList.toggle('active');
+        var idx = mySubs.indexOf(s);
+        if (idx >= 0) { mySubs.splice(idx, 1); } else { mySubs.push(s); }
+        localStorage.setItem('dv_subs', JSON.stringify(mySubs));
+        if (subFilterOn) applySubFilter();
+    }
+
+    function applySubFilter() {
+        var toggleBtn = document.getElementById('subFilterToggle');
+        if (mySubs.length === 0) {
+            subFilterOn = false;
+            toggleBtn.textContent = 'Filtrar';
+            toggleBtn.classList.remove('active');
+            // Show all
+            document.querySelectorAll('.game-card').forEach(function(c) { c.style.display = ''; });
+            document.querySelectorAll('.league-section').forEach(function(s) { s.style.display = ''; });
+            document.getElementById('subUpsell').className = 'sub-upsell';
+            return;
+        }
+        subFilterOn = !subFilterOn;
+        toggleBtn.classList.toggle('active', subFilterOn);
+        toggleBtn.textContent = subFilterOn ? 'Mostrar todos' : 'Filtrar';
+
+        if (!subFilterOn) {
+            document.querySelectorAll('.game-card').forEach(function(c) { c.style.display = ''; });
+            document.querySelectorAll('.league-section').forEach(function(s) { s.style.display = ''; });
+            document.getElementById('subUpsell').className = 'sub-upsell';
+            return;
+        }
+        // Filter cards
+        var hidden = 0;
+        var missingPlatforms = {};
+        document.querySelectorAll('.game-card').forEach(function(card) {
+            var channels = (card.dataset.channels || '').toLowerCase().split(',');
+            var match = mySubs.some(function(sub) {
+                return channels.some(function(ch) { return ch.indexOf(sub.toLowerCase()) >= 0; });
+            });
+            card.style.display = match ? '' : 'none';
+            if (!match) {
+                hidden++;
+                channels.forEach(function(ch) {
+                    if (ch.trim()) missingPlatforms[ch.trim()] = true;
+                });
+            }
+        });
+        // Hide empty sections
+        document.querySelectorAll('.league-section').forEach(function(sec) {
+            var any = Array.from(sec.querySelectorAll('.game-card')).some(function(c) { return c.style.display !== 'none'; });
+            sec.style.display = any ? '' : 'none';
+        });
+        // Upsell
+        var upsell = document.getElementById('subUpsell');
+        if (hidden > 0) {
+            var missList = Object.keys(missingPlatforms).slice(0, 3).map(function(p) {
+                return p.charAt(0).toUpperCase() + p.slice(1);
+            }).join(', ');
+            upsell.innerHTML = hidden + ' partidos no disponibles en tus plataformas. Agrega <strong>' + missList + '</strong> para verlos todos.';
+            upsell.className = 'sub-upsell show';
+        } else {
+            upsell.className = 'sub-upsell';
+        }
+    }
 
     // ── Auto-refresh for live games ────────
     if (document.querySelector('.live-badge')) { setTimeout(() => location.reload(), 60000); }
