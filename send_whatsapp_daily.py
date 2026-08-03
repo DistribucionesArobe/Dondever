@@ -603,15 +603,15 @@ async def compose_template_variables() -> dict | None:
 async def send_daily_broadcast(test_number: str | None = None):
     """
     Send daily WhatsApp broadcast via Meta Cloud API.
-    Uses approved template 'dondever_picks_diarios' (Utility, 1 variable)
-    in WABA Distribuciones Arobe (ID: 1224835083125902).
-    Falls back to send_text() if template fails.
+    Strategy: template first (works outside 24h window), freeform as last resort.
+    Templates: dondever_daily_v3 (3 params) → dondever_picks_diarios (1 param) → freeform.
+    WABA: Distribuciones Arobe (ID: 1224835083125902).
     """
     if not is_configured():
         logger.error("Meta WhatsApp not configured. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID.")
         return {"sent": 0, "failed": 0, "error": "not_configured"}
 
-    # Compose both messages: freeform (beautiful) and template (fallback)
+    # Compose both messages: template (reliable for broadcast) and freeform (last resort)
     freeform_message = await compose_daily_message()
     template_vars = await compose_template_variables()
 
@@ -692,20 +692,12 @@ async def send_daily_broadcast(test_number: str | None = None):
     errors = []
 
     for phone in recipients:
-        # Strategy: try freeform first (beautiful formatting with newlines & bold)
-        # If freeform fails (user outside 24h window), fall back to template.
+        # Strategy: templates first (work outside 24h window for proactive broadcasts).
+        # Meta API returns 200 for freeform even outside the 24h window but silently
+        # drops the message, so freeform is unreliable for broadcast — use as last resort.
         sent_ok = False
 
-        if freeform_message:
-            result = send_text(phone, freeform_message)
-            if result["ok"]:
-                sent += 1
-                sent_ok = True
-                logger.info(f"Sent freeform to {phone} — msg_id: {result['id']}")
-            else:
-                logger.info(f"Freeform failed for {phone} (probably outside 24h window), trying template")
-
-        # Template fallback: try v3 (nice format), then v1 (ugly but reliable)
+        # Try v3 template first (3 params, nicely formatted)
         if not sent_ok and v3_components:
             result = send_template(
                 phone,
@@ -720,6 +712,7 @@ async def send_daily_broadcast(test_number: str | None = None):
             else:
                 logger.info(f"v3 template failed for {phone}: {result.get('error')}, trying v1")
 
+        # Try v1 template (1 param, simpler fallback)
         if not sent_ok and v1_components:
             result = send_template(
                 phone,
@@ -729,7 +722,17 @@ async def send_daily_broadcast(test_number: str | None = None):
             )
             if result["ok"]:
                 sent += 1
+                sent_ok = True
                 logger.info(f"Sent v1 template to {phone} — msg_id: {result['id']}")
+            else:
+                logger.info(f"v1 template failed for {phone}: {result.get('error')}, trying freeform")
+
+        # Last resort: freeform (only works if user messaged within 24h)
+        if not sent_ok and freeform_message:
+            result = send_text(phone, freeform_message)
+            if result["ok"]:
+                sent += 1
+                logger.info(f"Sent freeform to {phone} — msg_id: {result['id']}")
             else:
                 failed += 1
                 errors.append({"phone": phone, "error": result["error"]})
