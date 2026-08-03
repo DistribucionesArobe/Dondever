@@ -1583,8 +1583,12 @@
             IT: 'serie-a', DE: 'bundesliga', PT: 'liga-portugal', NL: 'eredivisie',
         };
 
-        // European leagues (shown last, after LATAM)
-        var EU_SLUGS = ['premier-league','la-liga','champions','europa-league','serie-a','bundesliga','ligue-1','liga-portugal','eredivisie'];
+        // European leagues — right after local league (most popular globally)
+        var EU_SLUGS = ['champions','premier-league','la-liga','europa-league','serie-a','bundesliga','ligue-1','liga-portugal','eredivisie'];
+        // LATAM leagues — after European
+        var LATAM_SLUGS = ['liga-colombia','liga-argentina','liga-ecuador','liga-panama','liga-chile','liga-peru'];
+        // Continental — after LATAM
+        var CONTI_SLUGS = ['libertadores','sudamericana','concacaf-cl','copa-america'];
 
         function reorderPills(cc) {
             var local = LOCAL_LEAGUE[cc] || 'liga-mx';
@@ -1592,16 +1596,21 @@
             var label = scr.querySelector('.sf-label');
             if (!pills.length) return;
 
-            // Sort: local league first, then LATAM leagues, then Libertadores/Sudamericana, then European, then MLS
+            // Sort: local(0) → EU(10-19) → LATAM(20-29) → Continental(30-39) → rest(50)
             pills.sort(function(a, b) {
                 var sa = a.getAttribute('href').replace('/?league=', '');
                 var sb = b.getAttribute('href').replace('/?league=', '');
-                var wa = sa === local ? 0 : (EU_SLUGS.indexOf(sa) >= 0 ? 30 + EU_SLUGS.indexOf(sa) : 10);
-                var wb = sb === local ? 0 : (EU_SLUGS.indexOf(sb) >= 0 ? 30 + EU_SLUGS.indexOf(sb) : 10);
-                // If local league is European, move it to position 0 regardless
-                if (sa === local) wa = 0;
-                if (sb === local) wb = 0;
-                return wa - wb;
+                function weight(s) {
+                    if (s === local) return 0;
+                    var ei = EU_SLUGS.indexOf(s);
+                    if (ei >= 0) return 10 + ei;
+                    var li = LATAM_SLUGS.indexOf(s);
+                    if (li >= 0) return 20 + li;
+                    var ci = CONTI_SLUGS.indexOf(s);
+                    if (ci >= 0) return 30 + ci;
+                    return 50;
+                }
+                return weight(sa) - weight(sb);
             });
 
             // Re-append in order
