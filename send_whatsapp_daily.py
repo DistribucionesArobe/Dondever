@@ -692,27 +692,12 @@ async def send_daily_broadcast(test_number: str | None = None):
     errors = []
 
     for phone in recipients:
-        # Strategy: templates first (work outside 24h window for proactive broadcasts).
-        # Meta API returns 200 for freeform even outside the 24h window but silently
-        # drops the message, so freeform is unreliable for broadcast — use as last resort.
+        # Strategy: Utility template first (dondever_picks_diarios — 74% delivery).
+        # dondever_daily_v3 was recategorized to Marketing by Meta and has 0% delivery,
+        # so we skip it entirely. Freeform is last resort (24h window only).
         sent_ok = False
 
-        # Try v3 template first (3 params, nicely formatted)
-        if not sent_ok and v3_components:
-            result = send_template(
-                phone,
-                template_name="dondever_daily_v3",
-                language="en",
-                components=v3_components,
-            )
-            if result["ok"]:
-                sent += 1
-                sent_ok = True
-                logger.info(f"Sent v3 template to {phone} — msg_id: {result['id']}")
-            else:
-                logger.info(f"v3 template failed for {phone}: {result.get('error')}, trying v1")
-
-        # Try v1 template (1 param, simpler fallback)
+        # Primary: v1 Utility template (1 param — actually delivers)
         if not sent_ok and v1_components:
             result = send_template(
                 phone,
