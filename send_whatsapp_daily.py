@@ -769,15 +769,15 @@ async def send_daily_broadcast(test_number: str | None = None):
 WABA_ID = "1224835083125902"  # Distribuciones Arobe
 
 V4_TEMPLATE_BODY = (
-    "Tu resumen diario de DondeVer está listo.\n\n"
-    "📅 *{{1}}*\n"
+    "Tu resumen diario de DondeVer esta listo.\n\n"
+    "*{{1}}*\n"
     "{{2}} juegos programados hoy\n\n"
-    "📺 *Juego destacado*\n"
+    "*Juego destacado*\n"
     "*{{3}}*\n"
     "{{4}}\n"
-    "📺 {{5}}\n"
-    "📊 {{6}}\n\n"
-    "⚾ *Otros juegos*\n"
+    "{{5}}\n"
+    "{{6}}\n\n"
+    "*Otros juegos*\n"
     "{{7}}\n\n"
     "Consulta mas detalles en dondever.app"
 )
@@ -802,18 +802,18 @@ async def create_v4_template():
                     "body_text": [[
                         "Lunes 03/08/2026",
                         "18",
-                        "América vs Santos",
-                        "Liga MX — 5:00 PM MX",
-                        "TUDN, ViX",
-                        "América (Alta) — Récord 1G-0P vs 0G-2P · Más de 1.5 goles",
-                        "Toluca vs Necaxa 7:05 PM → Necaxa · +15 más",
+                        "America vs Santos",
+                        "Liga MX 5:00 PM MX",
+                        "TUDN ViX",
+                        "America (Alta)",
+                        "Necaxa 7:05 PM",
                     ]]
                 },
             }
         ],
     }
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
             f"https://graph.facebook.com/v25.0/{WABA_ID}/message_templates",
             headers={"Authorization": f"Bearer {token}"},
