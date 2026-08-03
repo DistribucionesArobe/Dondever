@@ -590,29 +590,41 @@ async def compose_template_variables() -> dict | None:
     if remaining > 0:
         v3_games += f" · +{remaining} mas en dondever.app"
 
-    # v4: analysis line (pick + confidence + reason + extra market)
-    v4_analysis = f"{pick_tip['pick']} ({pick_tip['confidence']}) — {pick_tip['reason']}"
+    # Build nicely formatted single-param value for dondever_picks_diarios
+    # WhatsApp renders newlines and *bold* within parameter values
+    var1_lines = [
+        f"*{weekday} {date_display}*",
+        f"{len(upcoming)} juegos programados hoy",
+        "",
+        f"*Juego destacado*",
+        f"*{first} vs {second}*",
+        f"{pick.get('league_name', '')} — {time_str} MX",
+        channels,
+        f"{pick_tip['pick']} ({pick_tip['confidence']}) — {pick_tip['reason']}",
+    ]
     if pick_tip.get("extra_market"):
-        v4_analysis += f" · {pick_tip['extra_market']}"
+        var1_lines.append(pick_tip["extra_market"])
 
-    # v4: other games line (reuse v3 parts)
-    v4_others = " · ".join(v3_games_parts) if v3_games_parts else "Sin mas juegos hoy"
-    if remaining > 0:
-        v4_others += f" · +{remaining} más"
+    # Other games section
+    if v3_games_parts:
+        var1_lines.append("")
+        var1_lines.append("*Otros juegos*")
+        for gp in v3_games_parts:
+            var1_lines.append(gp)
+        if remaining > 0:
+            var1_lines.append(f"+{remaining} mas en dondever.app")
+    elif remaining > 0:
+        var1_lines.append("")
+        var1_lines.append(f"+{remaining} mas en dondever.app")
+
+    var1_lines.append("")
+    var1_lines.append("Mas detalles en dondever.app")
 
     return {
-        "var1": " | ".join(parts),  # v1: single variable (fallback)
+        "var1": "\n".join(var1_lines),
         "v3_header": f"{weekday} {date_display} - {len(upcoming)} juegos",
         "v3_pick": v3_pick,
         "v3_games": v3_games,
-        # v4: 7-param template (dondever_resumen_diario)
-        "v4_date": f"{weekday} {date_display}",
-        "v4_count": str(len(upcoming)),
-        "v4_matchup": f"{first} vs {second}",
-        "v4_league_time": f"{pick.get('league_name', '')} — {time_str} MX",
-        "v4_channels": channels,
-        "v4_analysis": v4_analysis,
-        "v4_others": v4_others,
     }
 
 
@@ -622,7 +634,7 @@ async def send_daily_broadcast(test_number: str | None = None):
     """
     Send daily WhatsApp broadcast via Meta Cloud API.
     Strategy: template first (works outside 24h window), freeform as last resort.
-    Templates: dondever_resumen_diario (7 params) → dondever_picks_diarios (1 param) → freeform.
+    Templates: dondever_picks_diarios (1 param, UTILITY) → freeform.
     WABA: Distribuciones Arobe (ID: 1224835083125902).
     """
     if not is_configured():
@@ -637,24 +649,9 @@ async def send_daily_broadcast(test_number: str | None = None):
         logger.info("No games today — skipping broadcast")
         return {"sent": 0, "failed": 0, "skipped": "no_games"}
 
-    # Build template components: v4 (7 vars, nice format) and v1 (1 var, fallback)
-    v4_components = None
+    # Build template components for dondever_picks_diarios (1 param, UTILITY)
     v1_components = None
     if template_vars:
-        v4_components = [
-            {
-                "type": "body",
-                "parameters": [
-                    {"type": "text", "text": template_vars["v4_date"]},
-                    {"type": "text", "text": template_vars["v4_count"]},
-                    {"type": "text", "text": template_vars["v4_matchup"]},
-                    {"type": "text", "text": template_vars["v4_league_time"]},
-                    {"type": "text", "text": template_vars["v4_channels"]},
-                    {"type": "text", "text": template_vars["v4_analysis"]},
-                    {"type": "text", "text": template_vars["v4_others"]},
-                ],
-            }
-        ]
         v1_components = [
             {
                 "type": "body",
@@ -714,26 +711,11 @@ async def send_daily_broadcast(test_number: str | None = None):
     errors = []
 
     for phone in recipients:
-        # Strategy: v4 Utility template first (7 params, nice format),
-        # then v1 Utility fallback (1 param), then freeform (24h window only).
+        # Strategy: v1 Utility template (1 param with rich formatting),
+        # then freeform (24h window only).
         sent_ok = False
 
-        # Primary: v4 Utility template (7 params — nice multi-line format)
-        if not sent_ok and v4_components:
-            result = send_template(
-                phone,
-                template_name="dondever_resumen_diario",
-                language="es",
-                components=v4_components,
-            )
-            if result["ok"]:
-                sent += 1
-                sent_ok = True
-                logger.info(f"Sent v4 template to {phone} — msg_id: {result['id']}")
-            else:
-                logger.info(f"v4 template failed for {phone}: {result.get('error')}, trying v1")
-
-        # Fallback: v1 Utility template (1 param — ugly but delivers)
+        # Primary: Utility template (1 param — nicely formatted with newlines + bold)
         if not sent_ok and v1_components:
             result = send_template(
                 phone,
@@ -764,81 +746,9 @@ async def send_daily_broadcast(test_number: str | None = None):
     return summary
 
 
-# ── Template Management ───────────────────────────────────────
-
-WABA_ID = "1224835083125902"  # Distribuciones Arobe
-
-V4_TEMPLATE_BODY = (
-    "Tu resumen diario de DondeVer esta listo.\n\n"
-    "*{{1}}*\n"
-    "{{2}} juegos programados hoy\n\n"
-    "*Juego destacado*\n"
-    "*{{3}}*\n"
-    "{{4}}\n"
-    "{{5}}\n"
-    "{{6}}\n\n"
-    "*Otros juegos*\n"
-    "{{7}}\n\n"
-    "Consulta mas detalles en dondever.app"
-)
-
-
-async def create_v4_template():
-    """Create dondever_resumen_diario template via Meta API."""
-    token = os.getenv("WHATSAPP_ACCESS_TOKEN")
-    if not token:
-        print("ERROR: WHATSAPP_ACCESS_TOKEN not set")
-        return
-
-    payload = {
-        "name": "dondever_resumen_diario",
-        "language": "es",
-        "category": "UTILITY",
-        "components": [
-            {
-                "type": "BODY",
-                "text": V4_TEMPLATE_BODY,
-                "example": {
-                    "body_text": [[
-                        "Lunes 03/08/2026",
-                        "18",
-                        "America vs Santos",
-                        "Liga MX 5:00 PM MX",
-                        "TUDN ViX",
-                        "America (Alta)",
-                        "Necaxa 7:05 PM",
-                    ]]
-                },
-            }
-        ],
-    }
-
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.post(
-            f"https://graph.facebook.com/v25.0/{WABA_ID}/message_templates",
-            headers={"Authorization": f"Bearer {token}"},
-            json=payload,
-        )
-
-    data = resp.json()
-    print(f"Status: {resp.status_code}")
-    print(f"Response: {data}")
-
-    if resp.status_code == 200:
-        print(f"\n✅ Template created! ID: {data.get('id')}")
-        print("Needs Meta approval before it can be used.")
-        print("Check: Meta Business Suite → WhatsApp Manager → Message Templates")
-    else:
-        print(f"\n❌ Failed: {data.get('error', {}).get('message', 'Unknown error')}")
-
-
 # ── CLI ──────────────────────────────────────────────────────
 
 async def main():
-    if "--create-template" in sys.argv:
-        await create_v4_template()
-        return
-
     if "--preview" in sys.argv:
         msg = await compose_daily_message()
         if msg:
