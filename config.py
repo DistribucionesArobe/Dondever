@@ -465,6 +465,8 @@ LEAGUES = {
     "ligue-1":       ("soccer", "fra.1",         "Ligue 1",         "\u26bd"),
     "champions":     ("soccer", "uefa.champions","Champions League", "\u26bd"),
     "europa-league": ("soccer", "uefa.europa",   "Europa League",    "\u26bd"),
+    "liga-portugal": ("soccer", "por.1",         "Liga Portugal",    "\u26bd"),
+    "eredivisie":    ("soccer", "ned.1",         "Eredivisie",       "\u26bd"),
     "concacaf-cl":   ("soccer", "concacaf.champions", "Concacaf Champions Cup", "\u26bd"),
     "copa-america":  ("soccer", "conmebol.america", "Copa America",  "\u26bd"),
     "world-cup":     ("soccer", "fifa.world",    "Copa del Mundo",   "\u26bd"),

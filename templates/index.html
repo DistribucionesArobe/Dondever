@@ -261,33 +261,68 @@
         .filters-wrap {
             max-width: 1100px;
             margin: 0 auto;
-            padding: 0.4rem 1rem 0;
+            padding: 0.6rem 1rem 0.2rem;
+            position: relative;
         }
+        .filters-wrap::after {
+            content: '›';
+            position: absolute;
+            right: 0.3rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.4rem;
+            color: #9ca3af;
+            pointer-events: none;
+            animation: nudge 1.5s ease-in-out infinite;
+        }
+        @keyframes nudge {
+            0%, 100% { transform: translateY(-50%) translateX(0); }
+            50% { transform: translateY(-50%) translateX(4px); }
+        }
+        .filters-wrap.scrolled-end::after { display: none; }
         .filters { display: none; }
         .filters::-webkit-scrollbar { display: none; }
         .filter-pill { display: none; }
         .subfilters {
             display: flex;
-            gap: 0.35rem;
+            gap: 0.5rem;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
+            padding: 0.3rem 1.5rem 0.3rem 0;
         }
         .subfilters::-webkit-scrollbar { display: none; }
+        .sf-label {
+            flex: 0 0 auto;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            padding-right: 0.3rem;
+            white-space: nowrap;
+        }
         .subfilter-pill {
             flex: 0 0 auto;
-            padding: 0.3rem 0.7rem;
+            padding: 0.45rem 0.85rem;
             border-radius: 2rem;
-            background: #f3f4f6;
-            color: #6b7280;
-            font-size: 0.68rem;
+            background: #fff;
+            color: #374151;
+            font-size: 0.78rem;
             font-weight: 600;
             text-decoration: none;
             white-space: nowrap;
             transition: all 0.15s;
+            border: 1.5px solid #d1d5db;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
-        .subfilter-pill:hover { background: #e5e7eb; color: #0f172a; }
-        .subfilter-pill.active { background: #d1fae5; color: #059669; }
+        .subfilter-pill:hover { background: #f0fdf4; border-color: #10b981; color: #059669; }
+        .subfilter-pill.active {
+            background: #059669;
+            color: #fff;
+            border-color: #059669;
+            box-shadow: 0 2px 6px rgba(5,150,105,0.3);
+        }
         @media (min-width: 768px) {
             .sport-card { width: 88px; height: 72px; }
             .sport-card .sc-emoji { font-size: 1.7rem; }
@@ -939,7 +974,7 @@
 </header>
 
 <!-- Hero — ¿Qué deporte quieres ver hoy? -->
-{% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions', 'liga-colombia', 'liga-argentina', 'liga-ecuador', 'liga-panama', 'liga-chile', 'liga-peru', 'libertadores', 'sudamericana', 'mls', 'europa-league', 'concacaf-cl'] %}
+{% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions', 'europa-league', 'liga-portugal', 'eredivisie', 'liga-colombia', 'liga-argentina', 'liga-ecuador', 'liga-panama', 'liga-chile', 'liga-peru', 'libertadores', 'sudamericana', 'mls', 'concacaf-cl'] %}
 {% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
 <div class="hero">
     <div class="hero-inner">
@@ -1037,9 +1072,10 @@
 
 <!-- Sub-filters (soccer leagues) -->
 {% if is_soccer %}
-<div class="filters-wrap">
-    <div class="subfilters">
-        <a href="/?league=liga-mx" class="subfilter-pill {% if current_league == 'liga-mx' %}active{% endif %}">Liga MX</a>
+<div class="filters-wrap" id="leagueFiltersWrap">
+    <div class="subfilters" id="leagueScroller">
+        <span class="sf-label">&#9917; Ligas:</span>
+        <a href="/?league=liga-mx" class="subfilter-pill {% if current_league == 'liga-mx' %}active{% endif %}">&#127474;&#127485; Liga MX</a>
         <a href="/?league=liga-colombia" class="subfilter-pill {% if current_league == 'liga-colombia' %}active{% endif %}">BetPlay &#127464;&#127476;</a>
         <a href="/?league=liga-argentina" class="subfilter-pill {% if current_league == 'liga-argentina' %}active{% endif %}">Argentina &#127462;&#127479;</a>
         <a href="/?league=liga-ecuador" class="subfilter-pill {% if current_league == 'liga-ecuador' %}active{% endif %}">LigaPro &#127466;&#127464;</a>
@@ -1048,13 +1084,16 @@
         <a href="/?league=liga-peru" class="subfilter-pill {% if current_league == 'liga-peru' %}active{% endif %}">Liga 1 &#127477;&#127466;</a>
         <a href="/?league=libertadores" class="subfilter-pill {% if current_league == 'libertadores' %}active{% endif %}">Libertadores</a>
         <a href="/?league=sudamericana" class="subfilter-pill {% if current_league == 'sudamericana' %}active{% endif %}">Sudamericana</a>
-        <a href="/?league=premier-league" class="subfilter-pill {% if current_league == 'premier-league' %}active{% endif %}">Premier</a>
-        <a href="/?league=la-liga" class="subfilter-pill {% if current_league == 'la-liga' %}active{% endif %}">La Liga</a>
-        <a href="/?league=champions" class="subfilter-pill {% if current_league == 'champions' %}active{% endif %}">Champions</a>
-        <a href="/?league=serie-a" class="subfilter-pill {% if current_league == 'serie-a' %}active{% endif %}">Serie A</a>
-        <a href="/?league=mls" class="subfilter-pill {% if current_league == 'mls' %}active{% endif %}">MLS</a>
-        <a href="/?league=bundesliga" class="subfilter-pill {% if current_league == 'bundesliga' %}active{% endif %}">Bundesliga</a>
-        <a href="/?league=ligue-1" class="subfilter-pill {% if current_league == 'ligue-1' %}active{% endif %}">Ligue 1</a>
+        <a href="/?league=premier-league" class="subfilter-pill {% if current_league == 'premier-league' %}active{% endif %}">&#127468;&#127463; Premier</a>
+        <a href="/?league=la-liga" class="subfilter-pill {% if current_league == 'la-liga' %}active{% endif %}">&#127466;&#127480; La Liga</a>
+        <a href="/?league=champions" class="subfilter-pill {% if current_league == 'champions' %}active{% endif %}">&#127942; Champions</a>
+        <a href="/?league=europa-league" class="subfilter-pill {% if current_league == 'europa-league' %}active{% endif %}">&#127942; Europa League</a>
+        <a href="/?league=serie-a" class="subfilter-pill {% if current_league == 'serie-a' %}active{% endif %}">&#127470;&#127481; Serie A</a>
+        <a href="/?league=bundesliga" class="subfilter-pill {% if current_league == 'bundesliga' %}active{% endif %}">&#127465;&#127466; Bundesliga</a>
+        <a href="/?league=ligue-1" class="subfilter-pill {% if current_league == 'ligue-1' %}active{% endif %}">&#127467;&#127479; Ligue 1</a>
+        <a href="/?league=liga-portugal" class="subfilter-pill {% if current_league == 'liga-portugal' %}active{% endif %}">&#127477;&#127481; Portugal</a>
+        <a href="/?league=eredivisie" class="subfilter-pill {% if current_league == 'eredivisie' %}active{% endif %}">&#127475;&#127473; Eredivisie</a>
+        <a href="/?league=mls" class="subfilter-pill {% if current_league == 'mls' %}active{% endif %}">&#127482;&#127480; MLS</a>
     </div>
 </div>
 {% endif %}
@@ -1481,6 +1520,21 @@
 </a>
 
 <script>
+    // ── League scroller: hide arrow when scrolled to end ──
+    (function() {
+        var scr = document.getElementById('leagueScroller');
+        var wrap = document.getElementById('leagueFiltersWrap');
+        if (scr && wrap) {
+            scr.addEventListener('scroll', function() {
+                if (scr.scrollLeft + scr.clientWidth >= scr.scrollWidth - 10) {
+                    wrap.classList.add('scrolled-end');
+                } else {
+                    wrap.classList.remove('scrolled-end');
+                }
+            });
+        }
+    })();
+
     // ── Accordion toggle for game cards ──
     function toggleAccordion(btn) {
         event.stopPropagation();
