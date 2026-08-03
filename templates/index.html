@@ -939,7 +939,7 @@
 </header>
 
 <!-- Hero — ¿Qué deporte quieres ver hoy? -->
-{% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions'] %}
+{% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions', 'liga-colombia', 'liga-argentina', 'liga-ecuador', 'liga-panama', 'liga-chile', 'liga-peru', 'libertadores', 'sudamericana', 'mls', 'europa-league', 'concacaf-cl'] %}
 {% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
 <div class="hero">
     <div class="hero-inner">
@@ -1040,10 +1040,19 @@
 <div class="filters-wrap">
     <div class="subfilters">
         <a href="/?league=liga-mx" class="subfilter-pill {% if current_league == 'liga-mx' %}active{% endif %}">Liga MX</a>
+        <a href="/?league=liga-colombia" class="subfilter-pill {% if current_league == 'liga-colombia' %}active{% endif %}">BetPlay &#127464;&#127476;</a>
+        <a href="/?league=liga-argentina" class="subfilter-pill {% if current_league == 'liga-argentina' %}active{% endif %}">Argentina &#127462;&#127479;</a>
+        <a href="/?league=liga-ecuador" class="subfilter-pill {% if current_league == 'liga-ecuador' %}active{% endif %}">LigaPro &#127466;&#127464;</a>
+        <a href="/?league=liga-panama" class="subfilter-pill {% if current_league == 'liga-panama' %}active{% endif %}">LPF &#127477;&#127462;</a>
+        <a href="/?league=liga-chile" class="subfilter-pill {% if current_league == 'liga-chile' %}active{% endif %}">Chile &#127464;&#127473;</a>
+        <a href="/?league=liga-peru" class="subfilter-pill {% if current_league == 'liga-peru' %}active{% endif %}">Liga 1 &#127477;&#127466;</a>
+        <a href="/?league=libertadores" class="subfilter-pill {% if current_league == 'libertadores' %}active{% endif %}">Libertadores</a>
+        <a href="/?league=sudamericana" class="subfilter-pill {% if current_league == 'sudamericana' %}active{% endif %}">Sudamericana</a>
         <a href="/?league=premier-league" class="subfilter-pill {% if current_league == 'premier-league' %}active{% endif %}">Premier</a>
         <a href="/?league=la-liga" class="subfilter-pill {% if current_league == 'la-liga' %}active{% endif %}">La Liga</a>
         <a href="/?league=champions" class="subfilter-pill {% if current_league == 'champions' %}active{% endif %}">Champions</a>
         <a href="/?league=serie-a" class="subfilter-pill {% if current_league == 'serie-a' %}active{% endif %}">Serie A</a>
+        <a href="/?league=mls" class="subfilter-pill {% if current_league == 'mls' %}active{% endif %}">MLS</a>
         <a href="/?league=bundesliga" class="subfilter-pill {% if current_league == 'bundesliga' %}active{% endif %}">Bundesliga</a>
         <a href="/?league=ligue-1" class="subfilter-pill {% if current_league == 'ligue-1' %}active{% endif %}">Ligue 1</a>
     </div>
