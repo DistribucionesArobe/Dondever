@@ -233,6 +233,37 @@
         .search-input::placeholder { color: #64748b; }
         .search-or { font-size: 0.65rem; color: #64748b; margin-bottom: 0.4rem; font-weight: 600; }
 
+        /* Autocomplete dropdown */
+        .ac-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: #1e293b;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            max-height: 280px;
+            overflow-y: auto;
+            z-index: 200;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            display: none;
+        }
+        .ac-dropdown.show { display: block; }
+        .ac-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.55rem 0.85rem;
+            cursor: pointer;
+            transition: background 0.12s;
+            text-decoration: none;
+            color: #e2e8f0;
+            font-size: 0.8rem;
+        }
+        .ac-item:hover, .ac-item.ac-active { background: rgba(16,185,129,0.15); }
+        .ac-item img { width: 24px; height: 24px; object-fit: contain; border-radius: 4px; }
+        .ac-item .ac-meta { font-size: 0.65rem; color: #64748b; margin-left: auto; }
+        .ac-divider { border-top: 1px solid rgba(255,255,255,0.08); margin: 0.2rem 0; }
+
         .date-nav {
             display: inline-flex;
             gap: 0.3rem;
@@ -1053,10 +1084,11 @@
 
         <!-- Search -->
         <div class="search-or">o busca tu equipo</div>
-        <div class="hero-search">
+        <div class="hero-search" id="heroSearch">
             <div class="search-box">
                 <input type="text" class="search-input" placeholder="Buscar equipo, liga, canal..." id="searchInput" autocomplete="off">
             </div>
+            <div class="ac-dropdown" id="acDropdown"></div>
         </div>
         <!-- Team Quick Panel -->
         <div id="teamPanel" class="team-panel" style="display:none;"></div>
@@ -1152,7 +1184,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
 
             {# ── Compact top: badge + primary channel + toggle ── #}
             <div class="gc-compact-top">
@@ -1535,6 +1567,61 @@
         }
     })();
 
+    // ── Reorder league pills by user's country ──
+    (function() {
+        var scr = document.getElementById('leagueScroller');
+        if (!scr) return;
+
+        // Map country code → local league slug that should appear first
+        var LOCAL_LEAGUE = {
+            MX: 'liga-mx', CO: 'liga-colombia', AR: 'liga-argentina',
+            EC: 'liga-ecuador', PA: 'liga-panama', CL: 'liga-chile',
+            PE: 'liga-peru', VE: 'liga-mx', // Venezuela: Liga MX is most watched
+            US: 'mls', GT: 'liga-mx', HN: 'liga-mx', SV: 'liga-mx',
+            CR: 'liga-mx', DO: 'liga-mx', NI: 'liga-mx',
+            ES: 'la-liga', GB: 'premier-league', FR: 'ligue-1',
+            IT: 'serie-a', DE: 'bundesliga', PT: 'liga-portugal', NL: 'eredivisie',
+        };
+
+        // European leagues (shown last, after LATAM)
+        var EU_SLUGS = ['premier-league','la-liga','champions','europa-league','serie-a','bundesliga','ligue-1','liga-portugal','eredivisie'];
+
+        function reorderPills(cc) {
+            var local = LOCAL_LEAGUE[cc] || 'liga-mx';
+            var pills = Array.from(scr.querySelectorAll('.subfilter-pill'));
+            var label = scr.querySelector('.sf-label');
+            if (!pills.length) return;
+
+            // Sort: local league first, then LATAM leagues, then Libertadores/Sudamericana, then European, then MLS
+            pills.sort(function(a, b) {
+                var sa = a.getAttribute('href').replace('/?league=', '');
+                var sb = b.getAttribute('href').replace('/?league=', '');
+                var wa = sa === local ? 0 : (EU_SLUGS.indexOf(sa) >= 0 ? 30 + EU_SLUGS.indexOf(sa) : 10);
+                var wb = sb === local ? 0 : (EU_SLUGS.indexOf(sb) >= 0 ? 30 + EU_SLUGS.indexOf(sb) : 10);
+                // If local league is European, move it to position 0 regardless
+                if (sa === local) wa = 0;
+                if (sb === local) wb = 0;
+                return wa - wb;
+            });
+
+            // Re-append in order
+            pills.forEach(function(p) { scr.appendChild(p); });
+        }
+
+        // Wait for country detection (from timezone.js)
+        function tryReorder() {
+            var cc = localStorage.getItem('dv_country') || 'MX';
+            reorderPills(cc);
+        }
+        // Run after a tick (timezone.js sets localStorage)
+        setTimeout(tryReorder, 200);
+
+        // Also listen for country changes
+        window.addEventListener('countryChanged', function(e) {
+            if (e.detail && e.detail.country) reorderPills(e.detail.country);
+        });
+    })();
+
     // ── Accordion toggle for game cards ──
     function toggleAccordion(btn) {
         event.stopPropagation();
@@ -1903,30 +1990,143 @@
         }
     }
 
-    // ── Auto-refresh for live games ────────
-    if (document.querySelector('.live-badge')) { setTimeout(() => location.reload(), 60000); }
+    // ── Live score polling (every 30s) ────────
+    (function() {
+        var hasLive = document.querySelector('.game-card.live') || document.querySelector('.live-badge');
+        if (!hasLive) return;
 
-    // ── Smart search with team panel ─────────────────
-    var TEAM_MAP = {
+        function updateLiveScores() {
+            fetch('/api/live-scores')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.games) return;
+                    data.games.forEach(function(g) {
+                        var card = document.querySelector('[data-game-id="' + g.id + '"]');
+                        if (!card) return;
+
+                        var topSide = card.dataset.top || 'home'; // 'home' or 'away'
+                        var topScore = (topSide === 'home') ? g.home_score : g.away_score;
+                        var bottomScore = (topSide === 'home') ? g.away_score : g.home_score;
+
+                        // Update scores
+                        var scores = card.querySelectorAll('.team-score');
+                        if (scores.length >= 2) {
+                            if (scores[0].textContent !== String(topScore)) {
+                                scores[0].textContent = topScore;
+                                scores[0].style.transition = 'color 0.3s';
+                                scores[0].style.color = '#10b981';
+                                setTimeout(function() { scores[0].style.color = ''; }, 2000);
+                            }
+                            if (scores[1].textContent !== String(bottomScore)) {
+                                scores[1].textContent = bottomScore;
+                                scores[1].style.transition = 'color 0.3s';
+                                scores[1].style.color = '#10b981';
+                                setTimeout(function() { scores[1].style.color = ''; }, 2000);
+                            }
+                        }
+
+                        // Update clock
+                        var clock = card.querySelector('.gc-clock');
+                        if (clock && g.clock) {
+                            clock.textContent = g.clock;
+                        }
+
+                        // Update badge if game just ended
+                        if (g.state === 'post' && card.classList.contains('live')) {
+                            card.classList.remove('live');
+                            card.classList.add('final');
+                            var badge = card.querySelector('.live-badge');
+                            if (badge) {
+                                badge.outerHTML = '<span class="final-badge">FINAL</span>';
+                            }
+                            if (clock) clock.remove();
+                        }
+
+                        // Update detail text
+                        var detail = card.querySelector('.gc-detail');
+                        if (detail && g.detail) {
+                            detail.textContent = g.detail;
+                        }
+                    });
+
+                    // Check if any games still live — stop polling if none
+                    var stillLive = document.querySelector('.game-card.live');
+                    if (stillLive) {
+                        setTimeout(updateLiveScores, 30000);
+                    }
+                })
+                .catch(function() {
+                    // Retry on error
+                    setTimeout(updateLiveScores, 60000);
+                });
+        }
+
+        // Start polling after 30s
+        setTimeout(updateLiveScores, 30000);
+    })();
+
+    // ── Smart search with autocomplete + team panel ─────────────────
+    var AC_TEAMS = [
         {% for slug, info in popular_teams.items() %}
-        "{{ info.name|lower }}": "{{ slug }}",
+        {s:"{{ slug }}", n:"{{ info.name }}", l:"{{ info.logo|default('') }}", lg:"{{ info.league|default('') }}"},
         {% endfor %}
-    };
-    // Build alias map: common names → slug
+    ];
+    // Build alias map
     var TEAM_ALIASES_JS = {};
-    for (var slug in TEAM_MAP) { TEAM_ALIASES_JS[slug] = TEAM_MAP[slug]; }
-    // Add slug itself as alias
-    {% for slug, info in popular_teams.items() %}
-    TEAM_ALIASES_JS["{{ slug }}"] = "{{ slug }}";
-    {% endfor %}
+    AC_TEAMS.forEach(function(t) {
+        TEAM_ALIASES_JS[t.n.toLowerCase()] = t.s;
+        TEAM_ALIASES_JS[t.s] = t.s;
+    });
+    // League suggestions
+    var AC_LEAGUES = [
+        {% for slug, val in leagues.items() %}
+        {% if val[0] == 'soccer' %}
+        {s:"{{ slug }}", n:"{{ val[2] }}", type:"liga"},
+        {% endif %}
+        {% endfor %}
+    ];
 
     var searchInput = document.getElementById('searchInput');
     var teamPanel = document.getElementById('teamPanel');
+    var acDropdown = document.getElementById('acDropdown');
     var _tpTimeout = null;
     var _tpLastSlug = '';
+    var _acIdx = -1;
+
+    function showAutocomplete(q) {
+        if (!q || q.length < 2) { acDropdown.classList.remove('show'); return; }
+        var results = [];
+        // Match teams
+        AC_TEAMS.forEach(function(t) {
+            if (t.n.toLowerCase().indexOf(q) >= 0 || t.s.indexOf(q) >= 0) {
+                results.push({type:'team', slug:t.s, name:t.n, logo:t.l, meta:t.lg});
+            }
+        });
+        // Match leagues
+        AC_LEAGUES.forEach(function(l) {
+            if (l.n.toLowerCase().indexOf(q) >= 0 || l.s.indexOf(q) >= 0) {
+                results.push({type:'league', slug:l.s, name:l.n, logo:'', meta:'Liga'});
+            }
+        });
+        if (!results.length) { acDropdown.classList.remove('show'); return; }
+        // Limit to 8
+        results = results.slice(0, 8);
+        var html = '';
+        results.forEach(function(r, i) {
+            var href = r.type === 'team' ? '/equipo/' + r.slug : '/?league=' + r.slug;
+            var icon = r.logo ? '<img src="' + r.logo + '" alt="">' : '<span style="width:24px;text-align:center;">⚽</span>';
+            html += '<a href="' + href + '" class="ac-item" data-idx="' + i + '">' + icon + '<span>' + r.name + '</span><span class="ac-meta">' + r.meta + '</span></a>';
+        });
+        acDropdown.innerHTML = html;
+        acDropdown.classList.add('show');
+        _acIdx = -1;
+    }
 
     searchInput?.addEventListener('input', function() {
         var q = this.value.trim().toLowerCase();
+
+        // Show autocomplete
+        showAutocomplete(q);
 
         // Filter game cards
         document.querySelectorAll('.game-card').forEach(function(card) {
@@ -1964,6 +2164,33 @@
                 })
                 .catch(function() { teamPanel.style.display = 'none'; });
         }, 300);
+    });
+
+    // Keyboard navigation for autocomplete
+    searchInput?.addEventListener('keydown', function(e) {
+        var items = acDropdown.querySelectorAll('.ac-item');
+        if (!items.length || !acDropdown.classList.contains('show')) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            _acIdx = Math.min(_acIdx + 1, items.length - 1);
+            items.forEach(function(it, i) { it.classList.toggle('ac-active', i === _acIdx); });
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            _acIdx = Math.max(_acIdx - 1, 0);
+            items.forEach(function(it, i) { it.classList.toggle('ac-active', i === _acIdx); });
+        } else if (e.key === 'Enter' && _acIdx >= 0) {
+            e.preventDefault();
+            items[_acIdx].click();
+        } else if (e.key === 'Escape') {
+            acDropdown.classList.remove('show');
+        }
+    });
+
+    // Close autocomplete on click outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#heroSearch')) {
+            acDropdown.classList.remove('show');
+        }
     });
 
     function _buildTeamPanel(d) {

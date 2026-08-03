@@ -657,10 +657,13 @@ async def parse_espn_events_enriched(
 
         # Status
         status_type = ev.get("status", {}).get("type", {})
+        status_raw = ev.get("status", {})
         status = {
             "state": status_type.get("state", "pre"),
-            "detail": ev.get("status", {}).get("type", {}).get("detail", ""),
+            "detail": status_type.get("detail", ""),
             "display": status_type.get("description", "Scheduled"),
+            "clock": status_raw.get("displayClock", ""),
+            "period": status_raw.get("period", 0),
         }
 
         venue_raw = comp.get("venue", {})

@@ -766,6 +766,26 @@ async def api_games(
     return JSONResponse({"games": games, "count": len(games)})
 
 
+@app.get("/api/live-scores")
+async def api_live_scores():
+    """Lightweight endpoint for live score polling — only returns games in progress or recently finished."""
+    games = await get_todays_games()
+    live = []
+    for g in games:
+        state = g["status"]["state"]
+        if state in ("in", "post"):
+            live.append({
+                "id": g["id"],
+                "home_score": g["home"]["score"],
+                "away_score": g["away"]["score"],
+                "state": state,
+                "clock": g["status"].get("clock", ""),
+                "period": g["status"].get("period", 0),
+                "detail": g["status"].get("detail", ""),
+            })
+    return JSONResponse({"games": live, "ts": datetime.now(TZ_MX).isoformat()})
+
+
 @app.get("/api/instagram-image")
 async def api_instagram_image(date: Optional[str] = None):
     """Generate Instagram daily image and return public URL.
