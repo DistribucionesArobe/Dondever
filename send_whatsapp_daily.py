@@ -590,38 +590,30 @@ async def compose_template_variables() -> dict | None:
     if remaining > 0:
         v3_games += f" · +{remaining} mas en dondever.app"
 
-    # Build nicely formatted single-param value for dondever_picks_diarios
-    # WhatsApp renders newlines and *bold* within parameter values
-    var1_lines = [
-        f"*{weekday} {date_display}*",
-        f"{len(upcoming)} juegos programados hoy",
-        "",
-        f"*Juego destacado*",
-        f"*{first} vs {second}*",
-        f"{pick.get('league_name', '')} — {time_str} MX",
-        channels,
+    # Build single-param value for dondever_picks_diarios
+    # NOTE: Meta WhatsApp API does NOT allow newlines/tabs in template param values.
+    # Use " · " as separator for readability within a single line.
+    var1_parts = [
+        f"{weekday} {date_display} — {len(upcoming)} juegos",
+        f"{first} vs {second} · {pick.get('league_name', '')} {time_str} MX · {channels}",
         f"{pick_tip['pick']} ({pick_tip['confidence']}) — {pick_tip['reason']}",
     ]
     if pick_tip.get("extra_market"):
-        var1_lines.append(pick_tip["extra_market"])
+        var1_parts.append(pick_tip["extra_market"])
 
     # Other games section
     if v3_games_parts:
-        var1_lines.append("")
-        var1_lines.append("*Otros juegos*")
-        for gp in v3_games_parts:
-            var1_lines.append(gp)
+        other_str = "Otros: " + " | ".join(v3_games_parts)
         if remaining > 0:
-            var1_lines.append(f"+{remaining} mas en dondever.app")
+            other_str += f" +{remaining} mas"
+        var1_parts.append(other_str)
     elif remaining > 0:
-        var1_lines.append("")
-        var1_lines.append(f"+{remaining} mas en dondever.app")
+        var1_parts.append(f"+{remaining} mas en dondever.app")
 
-    var1_lines.append("")
-    var1_lines.append("Mas detalles en dondever.app")
+    var1_parts.append("dondever.app")
 
     return {
-        "var1": "\n".join(var1_lines),
+        "var1": " · ".join(var1_parts),
         "v3_header": f"{weekday} {date_display} - {len(upcoming)} juegos",
         "v3_pick": v3_pick,
         "v3_games": v3_games,
