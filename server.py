@@ -300,13 +300,14 @@ async def home(
                 odds_by_league[ls] = ol
         except Exception:
             pass
-    # Attach odds to each game
+    # Attach odds to each game + quick prediction from odds
     for g in games:
         ls = g.get("league_slug", "")
         if g["status"]["state"] == "pre" and ls in odds_by_league:
             g["odds"] = match_odds_to_game(g, odds_by_league[ls])
         else:
             g["odds"] = None
+        g["prediction"] = _quick_prediction_from_odds(g) if g.get("odds") else None
 
     # Pick del dia — choose most interesting upcoming game
     pick_game = None
@@ -2515,6 +2516,55 @@ def _slugify_team(name: str) -> str:
     s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
     s = re.sub(r"[^\w\s-]", "", s.lower().strip())
     return re.sub(r"[-\s]+", "-", s)
+
+
+def _quick_prediction_from_odds(game: dict) -> dict | None:
+    """
+    Fast prediction from odds only — no API calls, no standings.
+    Used on homepage cards to show '🤖 Houston 63% favorito'.
+    """
+    odds = game.get("odds")
+    if not odds:
+        return None
+    h_str = odds.get("home_odds", "")
+    a_str = odds.get("away_odds", "")
+    if not h_str or not a_str:
+        return None
+    try:
+        h_num = int(str(h_str).replace("+", ""))
+        a_num = int(str(a_str).replace("+", ""))
+    except (ValueError, TypeError):
+        return None
+    # Implied probability from American odds
+    h_prob = abs(h_num) / (abs(h_num) + 100) if h_num < 0 else 100 / (h_num + 100)
+    a_prob = abs(a_num) / (abs(a_num) + 100) if a_num < 0 else 100 / (a_num + 100)
+    total = h_prob + a_prob
+    if total == 0:
+        return None
+    h_prob /= total
+    a_prob /= total
+    if h_prob >= a_prob:
+        pick, prob, pick_odds = game["home"]["name"], int(h_prob * 100), h_str
+        underdog, dog_odds = game["away"]["name"], a_str
+    else:
+        pick, prob, pick_odds = game["away"]["name"], int(a_prob * 100), a_str
+        underdog, dog_odds = game["home"]["name"], h_str
+    # Value detection: underdog with positive odds
+    value = None
+    try:
+        dog_num = int(str(dog_odds).replace("+", ""))
+        if dog_num > 0 and dog_num >= 140:
+            value = {"team": underdog, "odds": dog_odds}
+    except (ValueError, TypeError):
+        pass
+    return {
+        "pick": pick,
+        "prob": prob,
+        "pick_odds": pick_odds,
+        "underdog": underdog,
+        "dog_odds": dog_odds,
+        "value": value,
+    }
 
 
 def _build_matchup_context(game, home_stats, away_stats, prediction, summary):
