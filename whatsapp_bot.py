@@ -277,6 +277,22 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     if body_clean in ("ayuda", "help", "hola", "hi", "menu", "inicio"):
         return "__BUTTONS_WELCOME__"
 
+    # VER — triggered by reply to daily template broadcast.
+    # Sends the full daily message (with newlines, bold) as freeform.
+    if body_clean in ("ver", "ver picks", "ver resumen", "ver juegos"):
+        subscribe(from_number)
+        try:
+            from send_whatsapp_daily import compose_daily_message
+            import meta_whatsapp
+            picks_msg = await compose_daily_message()
+            if picks_msg and meta_whatsapp.is_configured():
+                result = meta_whatsapp.send_text(from_number, picks_msg)
+                logger.info(f"VER picks sent via Meta to {from_number}: {result.get('ok')}")
+                return "__SENT_DIRECTLY__"  # signal webhook not to send duplicate
+        except Exception as e:
+            logger.exception(f"Failed to send VER picks: {e}")
+        return f"Checa tus picks en dondever.app"
+
     # Picks del dia (auto-subscribe anyone who asks for picks) + button reply
     if body_clean in ("picks", "pick", "pick del dia", "sugerencia", "tip", "btn_picks"):
         subscribe(from_number)  # silent auto-subscribe

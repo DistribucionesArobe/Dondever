@@ -1043,6 +1043,11 @@ async def whatsapp_webhook(
 
     logger.info(f"WhatsApp reply to {From}: {response_text[:100]}...")
 
+    if response_text == "__SENT_DIRECTLY__":
+        # Already sent via Meta API — return empty TwiML
+        twiml = MessagingResponse()
+        return HTMLResponse(content=str(twiml), media_type="application/xml")
+
     twiml = MessagingResponse()
     twiml.message(response_text)
     return HTMLResponse(content=str(twiml), media_type="application/xml")
@@ -1119,6 +1124,11 @@ async def meta_whatsapp_webhook(request: Request):
                 "No entendi. Escribe *ayuda* para ver comandos, "
                 "*hoy* para juegos, o *picks* para el pick del dia."
             )
+
+        # Special markers — already handled or need special treatment
+        if response_text == "__SENT_DIRECTLY__":
+            logger.info(f"Meta WA: already sent directly to {from_number}, skipping duplicate")
+            continue
 
         # Special marker: send interactive buttons instead of plain text
         if response_text == "__BUTTONS_WELCOME__":
@@ -2494,6 +2504,44 @@ def _slugify_team(name: str) -> str:
     return re.sub(r"[-\s]+", "-", s)
 
 
+def _build_matchup_context(game, home_stats, away_stats, prediction, summary):
+    """Build a 1-2 line narrative about why this game matters."""
+    home_left = game.get("sport", "") in ("soccer", "boxing", "mma")
+    first = game["home"]["name"] if home_left else game["away"]["name"]
+    second = game["away"]["name"] if home_left else game["home"]["name"]
+    league = game.get("league_name", "")
+    parts = []
+
+    # Standings-based context
+    for stats, team in [(home_stats, game["home"]["name"]), (away_stats, game["away"]["name"])]:
+        record = stats.get("record", "")
+        standing = stats.get("standing", "")
+        if standing and "1" in str(standing)[:2]:
+            parts.append(f"{team} llega como lider")
+        elif record:
+            parts.append(f"{team} ({record})")
+
+    # Streak context from prediction
+    if prediction:
+        reason = prediction.get("reason", "")
+        if "racha" in reason.lower():
+            parts.append(reason.split("|")[0].strip())
+
+    # H2H context
+    h2h = summary.get("seasonseries", [])
+    if h2h:
+        for series in h2h:
+            events = series.get("events", [])
+            if events:
+                parts.append(f"{len(events)} enfrentamientos esta temporada")
+                break
+
+    if not parts:
+        parts.append(f"Partido de {league}")
+
+    return " — ".join(parts[:2]) + "."
+
+
 @app.get("/donde-ver/{matchup_slug}", response_class=HTMLResponse)
 async def matchup_page(request: Request, matchup_slug: str):
     """
@@ -2552,13 +2600,58 @@ async def matchup_page(request: Request, matchup_slug: str):
 
     # Fetch odds for the game
     odds = None
+    league_slug = matched_game.get("league_slug", "")
     if matched_game["status"]["state"] == "pre":
         try:
-            league_slug = matched_game.get("league_slug", "")
             odds_list = await fetch_odds(league_slug)
             odds = match_odds_to_game(matched_game, odds_list)
         except Exception:
             pass
+
+    # ── Enriched data: team stats, ESPN summary, AI prediction ──
+    home_slug = _team_name_to_slug(matched_game["home"]["name"])
+    away_slug = _team_name_to_slug(matched_game["away"]["name"])
+
+    home_stats = {}
+    away_stats = {}
+    try:
+        if home_slug:
+            home_stats = await get_team_stats(home_slug)
+        if away_slug:
+            away_stats = await get_team_stats(away_slug)
+    except Exception:
+        pass
+
+    # ESPN event summary (H2H, rosters, standings)
+    summary = {}
+    try:
+        sport = matched_game.get("sport", "")
+        league_info = ALL_LEAGUES.get(league_slug)
+        espn_league = league_info[1] if isinstance(league_info, tuple) else league_slug
+        event_id = matched_game.get("id", "")
+        if sport and espn_league and event_id:
+            summary = await fetch_espn_event_summary(sport, espn_league, event_id)
+    except Exception:
+        pass
+
+    # AI prediction using stat tip engine
+    prediction = None
+    try:
+        from send_whatsapp_daily import _generate_stat_tip, _find_team_in_standings
+        from send_whatsapp_daily import fetch_standings, LEAGUE_ESPN_MAP
+        standings = []
+        espn_info = LEAGUE_ESPN_MAP.get(league_slug)
+        if espn_info:
+            s_sport, s_league = espn_info
+            standings = await fetch_standings(s_sport, s_league)
+        prediction = await _generate_stat_tip(matched_game, odds, standings)
+    except Exception as e:
+        logger.warning(f"Prediction failed for matchup {matchup_slug}: {e}")
+
+    # Context narrative — 1-2 lines about why this game matters
+    context_narrative = _build_matchup_context(
+        matched_game, home_stats, away_stats, prediction, summary
+    )
 
     return templates.TemplateResponse(
         request, "matchup.html",
@@ -2566,6 +2659,13 @@ async def matchup_page(request: Request, matchup_slug: str):
             "game": matched_game,
             "odds": odds,
             "matchup_slug": matchup_slug,
+            "home_slug": home_slug,
+            "away_slug": away_slug,
+            "home_stats": home_stats,
+            "away_stats": away_stats,
+            "summary": summary,
+            "prediction": prediction,
+            "context_narrative": context_narrative,
         },
     )
 

@@ -591,29 +591,12 @@ async def compose_template_variables() -> dict | None:
         v3_games += f" · +{remaining} mas en dondever.app"
 
     # Build single-param value for dondever_picks_diarios
-    # NOTE: Meta WhatsApp API does NOT allow newlines/tabs in template param values.
-    # Use " · " as separator for readability within a single line.
-    var1_parts = [
-        f"{weekday} {date_display} — {len(upcoming)} juegos",
-        f"{first} vs {second} · {pick.get('league_name', '')} {time_str} MX · {channels}",
-        f"{pick_tip['pick']} ({pick_tip['confidence']}) — {pick_tip['reason']}",
-    ]
-    if pick_tip.get("extra_market"):
-        var1_parts.append(pick_tip["extra_market"])
-
-    # Other games section
-    if v3_games_parts:
-        other_str = "Otros: " + " | ".join(v3_games_parts)
-        if remaining > 0:
-            other_str += f" +{remaining} mas"
-        var1_parts.append(other_str)
-    elif remaining > 0:
-        var1_parts.append(f"+{remaining} mas en dondever.app")
-
-    var1_parts.append("dondever.app")
+    # SHORT teaser — full details sent as freeform when user replies VER.
+    # Meta WhatsApp API rejects newlines/tabs in template param values (error 132018).
+    var1 = f"Hoy hay {len(upcoming)} juegos. Responde VER para tus picks completos."
 
     return {
-        "var1": " · ".join(var1_parts),
+        "var1": var1,
         "v3_header": f"{weekday} {date_display} - {len(upcoming)} juegos",
         "v3_pick": v3_pick,
         "v3_games": v3_games,
