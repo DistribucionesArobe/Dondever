@@ -38,9 +38,9 @@ _cache = TTLCache(maxsize=500, ttl=300)
 _tv_cache = TTLCache(maxsize=1000, ttl=14400)
 # Track when TheSportsDB is rate-limiting us to avoid flooding with 429s
 _sportsdb_blocked_until = 0  # timestamp when we can retry
-# Odds cache: 8 hour TTL — free tier only has 500 req/month, must conserve
+# Odds cache: 12 hour TTL — free tier only has 500 req/month, must conserve
 # ALWAYS fetch h2h,spreads,totals so homepage and game page share the same cache key
-_odds_cache = TTLCache(maxsize=200, ttl=28800)  # 8 hours
+_odds_cache = TTLCache(maxsize=200, ttl=43200)  # 12 hours
 _odds_request_count = 0  # track requests this process lifetime
 _ODDS_MONTHLY_BUDGET = 450  # leave 50 buffer from the 500 limit
 
@@ -49,16 +49,33 @@ ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
 ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports"
 
 # Map our league slugs to the-odds-api sport keys
-# Only top leagues that matter to our MX/LATAM audience
-# Budget: 4 leagues × 3 req/day (8h cache) = 12/day × 30 = 360/month (safe)
+# All leagues with odds coverage — 12h cache keeps budget under 500 req/month
 ODDS_SPORT_MAP = {
+    # Futbol
     "liga-mx": "soccer_mexico_ligamx",
     "premier-league": "soccer_epl",
-    "nfl": "americanfootball_nfl",
-    "nba": "basketball_nba",
-    "mlb": "baseball_mlb",
-    "champions": "soccer_uefa_champs_league",
     "la-liga": "soccer_spain_la_liga",
+    "serie-a": "soccer_italy_serie_a",
+    "bundesliga": "soccer_germany_bundesliga",
+    "ligue-1": "soccer_france_ligue_one",
+    "champions": "soccer_uefa_champs_league",
+    "europa-league": "soccer_uefa_europa_league",
+    "mls": "soccer_usa_mls",
+    "liga-argentina": "soccer_argentina_primera_division",
+    "liga-colombia": "soccer_colombia_primera_a",
+    "libertadores": "soccer_conmebol_copa_libertadores",
+    # Futbol americano
+    "nfl": "americanfootball_nfl",
+    "college-football": "americanfootball_ncaaf",
+    # Basquetbol
+    "nba": "basketball_nba",
+    "wnba": "basketball_wnba",
+    # Beisbol
+    "mlb": "baseball_mlb",
+    # Hockey
+    "nhl": "icehockey_nhl",
+    # Combate
+    "ufc": "mma_mixed_martial_arts",
 }
 
 

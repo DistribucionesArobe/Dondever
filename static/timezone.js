@@ -236,9 +236,18 @@
       el.style.display = show ? (el.getAttribute('data-display') || '') : 'none';
     });
 
+    // Rewrite /go/bet geo-smart links to use detected affiliate
+    var target = GEO_MAP[region];
+    document.querySelectorAll('a[href*="/go/bet"]').forEach(function(a) {
+      var href = a.getAttribute('href') || '';
+      // Match /go/bet but NOT /go/betsson or /go/bet365 etc.
+      if (href.match(/\/go\/bet(\?|$)/)) {
+        a.setAttribute('href', href.replace('/go/bet', '/go/' + target.key));
+      }
+    });
+
     // Rewrite untagged affiliate links (odds buttons etc.)
     // Store original href on first run so we can re-run when IP overrides TZ
-    var target = GEO_MAP[region];
     document.querySelectorAll('a[data-affiliate]:not([data-geo])').forEach(function(a) {
       if (!a.getAttribute('data-orig-href')) {
         a.setAttribute('data-orig-href', a.href);
@@ -246,9 +255,9 @@
       }
       var origHref = a.getAttribute('data-orig-href');
       var origName = a.getAttribute('data-orig-name');
-      a.href = origHref.replace(/\/go\/betsson/, '/go/' + target.key);
+      a.href = origHref.replace(/\/go\/(betsson|jubilee|vivento|1xbet)/, '/go/' + target.key);
       a.setAttribute('data-affiliate', target.key);
-      a.innerHTML = origName.replace(/Betsson/g, target.name);
+      a.innerHTML = origName.replace(/(Betsson|Jubilee|Vivento|1xBet)/g, target.name);
     });
 
     // Update smart search brand if present
