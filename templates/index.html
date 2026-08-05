@@ -627,21 +627,22 @@
             flex-wrap: wrap;
         }
         .bet-ai-badge {
-            font-size: 0.55rem;
+            font-size: 0.7rem;
             font-weight: 800;
             color: #a78bfa;
             background: rgba(167,139,250,0.15);
             padding: 0.12rem 0.4rem;
             border-radius: 4px;
             letter-spacing: 0.03em;
+            text-shadow: 0 0 6px rgba(167,139,250,0.5);
         }
         .bet-ai-pick {
-            font-size: 0.65rem;
+            font-size: 0.85rem;
             font-weight: 700;
             color: #e2e8f0;
         }
         .bet-value-badge {
-            font-size: 0.55rem;
+            font-size: 0.65rem;
             font-weight: 700;
             color: #34d399;
             background: rgba(52,211,153,0.12);
@@ -677,13 +678,14 @@
             gap: 0.25rem;
             background: linear-gradient(135deg, #ea580c, #dc2626);
             color: white !important;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             font-weight: 800;
-            padding: 0.4rem 0.75rem;
+            padding: 0.5rem 1rem;
             border-radius: 8px;
             text-decoration: none !important;
             white-space: nowrap;
             transition: opacity 0.15s;
+            box-shadow: 0 0 10px rgba(234,88,12,0.4), 0 2px 6px rgba(220,38,38,0.3);
         }
         .bet-cta-main:hover { opacity: 0.85; }
 
@@ -1157,7 +1159,7 @@
         <!-- Sport Cards Grid -->
         <div class="sport-cards">
             <a href="/" class="sport-card {% if not current_sport and not current_league %}active{% endif %}">
-                <span class="sc-emoji">&#128247;</span>
+                <span class="sc-emoji">&#127942;</span>
                 <span class="sc-label">Todos</span>
                 <span class="sc-count">{% if sport_counts.get('all') %}{{ sport_counts['all'] }} hoy{% endif %}</span>
             </a>
