@@ -83,6 +83,15 @@ AFFILIATES = {
         "cta_twitter": "Cuotas mejoradas y Pago anticipado en Vivento",
         "bonus": "Cuotas mejoradas + Pago anticipado + Acumulador",
     },
+    "1xbet": {
+        "name": "1xBet",
+        "url": os.getenv("AFFILIATE_1XBET", "") or "https://reffpa.com/L?tag=d_5182312m_1599c_&site=5182312&ad=1599",
+        "logo": "/static/affiliates/1xbet.svg",
+        "cta": "Apuesta en 1xBet — Bono de bienvenida hasta $6,500 MXN",
+        "cta_short": "Bono hasta $6,500",
+        "cta_twitter": "Bono de bienvenida en 1xBet",
+        "bonus": "Bono primer deposito hasta $6,500 MXN",
+    },
 }
 
 # ── MercadoLibre Afiliados (Mexico / LATAM) ──────────────

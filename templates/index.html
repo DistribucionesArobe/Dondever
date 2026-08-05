@@ -610,6 +610,7 @@
         .bet-pill.bp-betsson { background: #ea580c; }
         .bet-pill.bp-jubilee { background: #d97706; }
         .bet-pill.bp-vivento { background: #dc2626; }
+        .bet-pill.bp-1xbet { background: #1a5276; }
 
         /* ── Actions row (calendar + share + detail) ── */
         .gc-actions {
@@ -1304,6 +1305,7 @@
                     <a href="/go/betsson?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" class="bet-pill bp-betsson" style="display:none;" onclick="event.stopPropagation();">Betsson</a>
                     <a href="/go/jubilee?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-pill bp-jubilee" onclick="event.stopPropagation();">Jubilee</a>
                     <a href="/go/vivento?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" data-geo="mx" class="bet-pill bp-vivento" onclick="event.stopPropagation();">Vivento</a>
+                    <a href="/go/1xbet?s=home-bet" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" data-geo="latam" class="bet-pill bp-1xbet" style="display:none;" onclick="event.stopPropagation();">1xBet</a>
                 </div>
                 {% endif %}
 
@@ -2338,7 +2340,7 @@
         // ── Action buttons ──
         html += '<div class="tp-actions">';
         html += '<a href="/equipo/' + d.slug + '" class="tp-btn tp-btn-primary">Ver todo sobre ' + d.name + ' ↗</a>';
-        var _betBrand = window.__geoMX === false ? ['betsson','Betsson'] : ['jubilee','Jubilee'];
+        var _betBrand = window.__geoRegion === 'us' ? ['betsson','Betsson'] : window.__geoRegion === 'latam' ? ['1xbet','1xBet'] : ['jubilee','Jubilee'];
         html += '<a href="/go/' + _betBrand[0] + '?s=search-panel" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="' + _betBrand[0] + '" data-placement="search-panel">Momios en ' + _betBrand[1] + ' ↗</a>';
         html += '</div>';
 
@@ -2462,25 +2464,32 @@ function emailSubscribe(e) {
 <script src="/static/timezone.js" defer></script>
 
 <script>
-/* Geo-targeting de casinos: MX → Jubilee/Vivento, USA → Betsson.
-   Usa la zona horaria del navegador — sin APIs externas ni permisos. */
+/* Geo-targeting 3 niveles: MX → Jubilee/Vivento, US → Betsson, LATAM → 1xBet */
 (function(){
   var MX_TZ = ["America/Mexico_City","America/Monterrey","America/Tijuana","America/Cancun","America/Chihuahua","America/Hermosillo","America/Matamoros","America/Mazatlan","America/Merida","America/Ojinaga","America/Bahia_Banderas","America/Ciudad_Juarez"];
+  var US_TZ = ["America/New_York","America/Chicago","America/Denver","America/Los_Angeles","America/Phoenix","America/Anchorage","Pacific/Honolulu","America/Boise","America/Indiana/Indianapolis","America/Detroit"];
   var tz = "";
   try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch(e){}
-  var isMX = !tz || MX_TZ.indexOf(tz) !== -1;   /* default MX si no detecta */
-  window.__geoMX = isMX;
+  var region = "latam";
+  if (!tz || MX_TZ.indexOf(tz) !== -1) region = "mx";
+  else if (US_TZ.indexOf(tz) !== -1) region = "us";
+  window.__geoMX = (region === "mx");
+  window.__geoRegion = region;
   document.querySelectorAll('[data-geo]').forEach(function(el){
-    var forUS = el.getAttribute('data-geo') === 'us';
-    var show = forUS ? !isMX : isMX;
+    var show = el.getAttribute('data-geo') === region;
     el.style.display = show ? (el.getAttribute('data-display') || '') : 'none';
   });
-  if (isMX) {
-    /* Reescribir links de Betsson sin marca visible (botones de momios) a Jubilee */
+  if (region === "mx") {
     document.querySelectorAll('a[data-affiliate="betsson"]:not([data-geo])').forEach(function(a){
       a.href = a.href.replace("/go/betsson", "/go/jubilee");
       a.setAttribute("data-affiliate", "jubilee");
       a.innerHTML = a.innerHTML.replace(/Betsson/g, "Jubilee");
+    });
+  } else if (region === "latam") {
+    document.querySelectorAll('a[data-affiliate="betsson"]:not([data-geo])').forEach(function(a){
+      a.href = a.href.replace("/go/betsson", "/go/1xbet");
+      a.setAttribute("data-affiliate", "1xbet");
+      a.innerHTML = a.innerHTML.replace(/Betsson/g, "1xBet");
     });
   }
 })();

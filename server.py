@@ -531,8 +531,8 @@ async def affiliate_redirect(key: str, s: str = "web", request: Request = None):
     Uso: /go/betsson?s=twitter  →  link afiliado real + sub1=twitter
 
     /go/bet = link geo-inteligente: decide el casino según el país
-    del visitante (Accept-Language / Cloudflare header si existe).
-    MX → Jubilee/Vivento (rotado), resto → Betsson.
+    del visitante (Cloudflare / Vercel header / Accept-Language).
+    MX → Jubilee/Vivento, US → Betsson, LATAM → 1xBet.
     """
     from fastapi.responses import RedirectResponse
     from config import get_affiliate_url
@@ -548,12 +548,25 @@ async def affiliate_redirect(key: str, s: str = "web", request: Request = None):
             country = (request.headers.get("cf-ipcountry")
                        or request.headers.get("x-vercel-ip-country") or "").upper()
             al = (request.headers.get("accept-language") or "").lower()
+        LATAM_COUNTRIES = {"VE","PA","DO","CO","NI","CL","AR","PE","CR","EC",
+                           "GT","HN","SV","CU","BO","PY","UY","BR","ES","PR"}
         if country:
-            is_mx = country == "MX"
+            if country == "MX":
+                key = _random.choice(["jubilee", "vivento"])
+            elif country == "US":
+                key = "betsson"
+            elif country in LATAM_COUNTRIES:
+                key = "1xbet"
+            else:
+                key = "1xbet"  # default resto del mundo → 1xBet
         else:
-            # Heurística por idioma: es-MX o español genérico → México
-            is_mx = "es-mx" in al or "es-419" in al or al.startswith("es")
-        key = _random.choice(["jubilee", "vivento"]) if is_mx else "betsson"
+            # Heurística por idioma
+            if "es-mx" in al:
+                key = _random.choice(["jubilee", "vivento"])
+            elif "en-us" in al or "en-gb" in al or al.startswith("en"):
+                key = "betsson"
+            else:
+                key = "1xbet"  # español genérico u otro → 1xBet
     _track_click(key, s)  # track antes de redirigir
     target = get_affiliate_url(key, source=s)
     if target == "#":
