@@ -219,11 +219,50 @@
     xhr.send();
   }
 
+  // ── Affiliate geo-targeting (MX/US/LATAM) ──────────────
+  var GEO_MAP = { 'mx': {key:'jubilee', name:'Jubilee'}, 'us': {key:'betsson', name:'Betsson'}, 'latam': {key:'1xbet', name:'1xBet'} };
+
+  function applyAffiliateGeo(country) {
+    var region = 'latam'; // default for all LATAM + rest of world
+    if (country === 'MX') region = 'mx';
+    else if (country === 'US') region = 'us';
+
+    window.__geoMX = (region === 'mx');
+    window.__geoRegion = region;
+
+    // Show/hide geo-targeted elements
+    document.querySelectorAll('[data-geo]').forEach(function(el) {
+      var show = el.getAttribute('data-geo') === region;
+      el.style.display = show ? (el.getAttribute('data-display') || '') : 'none';
+    });
+
+    // Rewrite untagged affiliate links (odds buttons etc.)
+    // Store original href on first run so we can re-run when IP overrides TZ
+    var target = GEO_MAP[region];
+    document.querySelectorAll('a[data-affiliate]:not([data-geo])').forEach(function(a) {
+      if (!a.getAttribute('data-orig-href')) {
+        a.setAttribute('data-orig-href', a.href);
+        a.setAttribute('data-orig-name', a.innerHTML);
+      }
+      var origHref = a.getAttribute('data-orig-href');
+      var origName = a.getAttribute('data-orig-name');
+      a.href = origHref.replace(/\/go\/betsson/, '/go/' + target.key);
+      a.setAttribute('data-affiliate', target.key);
+      a.innerHTML = origName.replace(/Betsson/g, target.name);
+    });
+
+    // Update smart search brand if present
+    if (typeof window._updateBetBrand === 'function') {
+      window._updateBetBrand(region);
+    }
+  }
+
   // ── Main init ──────────────────────────────────────────
   function init(country) {
     convertTimes(country);
     updateSelectorUI(country);
     setupSelector();
+    applyAffiliateGeo(country);
   }
 
   // Priority: 1) stored preference, 2) IP geo, 3) browser TZ
@@ -247,5 +286,6 @@
     convertTimes(quickCountry);
     updateSelectorUI(quickCountry);
     setupSelector();
+    applyAffiliateGeo(quickCountry);
   }
 })();

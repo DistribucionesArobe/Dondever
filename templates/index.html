@@ -2605,7 +2605,7 @@ function emailSubscribe(e) {
 <script src="/static/timezone.js" defer></script>
 
 <script>
-/* Geo-targeting 3 niveles: MX → Jubilee/Vivento, US → Betsson, LATAM → 1xBet */
+/* Quick geo fallback (timezone only) — timezone.js overrides with IP detection */
 (function(){
   var MX_TZ = ["America/Mexico_City","America/Monterrey","America/Tijuana","America/Cancun","America/Chihuahua","America/Hermosillo","America/Matamoros","America/Mazatlan","America/Merida","America/Ojinaga","America/Bahia_Banderas","America/Ciudad_Juarez"];
   var US_TZ = ["America/New_York","America/Chicago","America/Denver","America/Los_Angeles","America/Phoenix","America/Anchorage","Pacific/Honolulu","America/Boise","America/Indiana/Indianapolis","America/Detroit"];
@@ -2616,23 +2616,11 @@ function emailSubscribe(e) {
   else if (US_TZ.indexOf(tz) !== -1) region = "us";
   window.__geoMX = (region === "mx");
   window.__geoRegion = region;
+  /* Only show/hide — do NOT rewrite links (timezone.js handles that after IP check) */
   document.querySelectorAll('[data-geo]').forEach(function(el){
     var show = el.getAttribute('data-geo') === region;
     el.style.display = show ? (el.getAttribute('data-display') || '') : 'none';
   });
-  if (region === "mx") {
-    document.querySelectorAll('a[data-affiliate="betsson"]:not([data-geo])').forEach(function(a){
-      a.href = a.href.replace("/go/betsson", "/go/jubilee");
-      a.setAttribute("data-affiliate", "jubilee");
-      a.innerHTML = a.innerHTML.replace(/Betsson/g, "Jubilee");
-    });
-  } else if (region === "latam") {
-    document.querySelectorAll('a[data-affiliate="betsson"]:not([data-geo])').forEach(function(a){
-      a.href = a.href.replace("/go/betsson", "/go/1xbet");
-      a.setAttribute("data-affiliate", "1xbet");
-      a.innerHTML = a.innerHTML.replace(/Betsson/g, "1xBet");
-    });
-  }
 })();
 </script>
 </body>
