@@ -46,39 +46,27 @@
       ]
     }
     </script>
-    <!-- JSON-LD: FAQPage for rich snippets -->
+    <!-- JSON-LD: FAQPage for rich snippets (dynamic, data-driven) -->
+    {% if faq_items %}
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",
       "mainEntity": [
+        {% for faq in faq_items %}
         {
           "@type": "Question",
-          "name": "¿Dónde ver a {{ team_name }} hoy en vivo?",
+          "name": "{{ faq.q }}",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Consulta en DondeVer.app los canales de TV y plataformas de streaming que transmiten los partidos de {{ team_name }} ({{ team_league }}) en vivo. Actualizamos horarios y canales para México, USA y toda Latinoamérica."
+            "text": "{{ faq.a }}"
           }
-        },
-        {
-          "@type": "Question",
-          "name": "¿En qué canal pasan a {{ team_name }}?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Los partidos de {{ team_name }} se transmiten en diferentes canales según el país. En México generalmente por TUDN, ViX, ESPN o Fox Sports. En USA por ESPN, Fox Sports o las cadenas de la liga. Revisa esta página para ver el canal exacto de cada partido."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "¿A qué hora juega {{ team_name }} hoy?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "El horario del próximo partido de {{ team_name }} se muestra arriba con la hora local de México (CDMX). La página se actualiza automáticamente a tu zona horaria."
-          }
-        }
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
       ]
     }
     </script>
+    {% endif %}
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f8fafc; color:#1a1a2e; }
@@ -257,39 +245,7 @@
         .wa-note { font-size: 0.62rem; color: #9ca3af; margin-top: 0.4rem; }
     </style>
 
-    <!-- FAQPage Schema for rich results -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-            {
-                "@type": "Question",
-                "name": "¿En qué canal pasan a {{ team_name }} hoy?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "{% if games %}Hoy {{ team_name }} juega y se transmite por {% for game in games[:1] %}{% if game.broadcasts %}{% for b in game.broadcasts[:3] %}{{ b.channel }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}canales por confirmar{% endif %}{% endfor %}. Consulta esta página para ver los canales actualizados en tiempo real.{% else %}Hoy {{ team_name }} no tiene partidos programados. Visita DondeVer.app para consultar los próximos juegos y en qué canal se transmiten.{% endif %}"
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "¿Cómo ver a {{ team_name }} en vivo gratis?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "{% if team_sport == 'futbol' %}Algunos partidos de {{ team_name }} se transmiten en TV abierta por Canal 5 o Azteca 7 en México. También puedes ver juegos selectos gratis en ViX (versión gratuita) y en Univisión/TUDN si estás en Estados Unidos.{% elif team_sport == 'beisbol' %}Algunos juegos de {{ team_name }} se pueden ver en TV abierta. En streaming, revisa las opciones gratuitas de ESPN y las transmisiones locales disponibles sin costo.{% elif team_sport == 'basketball' %}Partidos selectos de {{ team_name }} se transmiten en TV abierta y por canales gratuitos. Revisa las opciones de streaming con prueba gratuita como NBA League Pass.{% elif team_sport == 'futbol americano' %}Juegos selectos de {{ team_name }} se transmiten por TV abierta en Canal 5 y Azteca 7. En USA, algunos juegos están disponibles gratis en las apps de NBC, CBS y Fox.{% else %}Consulta DondeVer.app para ver las opciones gratuitas de transmisión de {{ team_name }}.{% endif %}"
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "¿A qué hora juega {{ team_name }} hoy?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "{% if games %}{{ team_name }} juega hoy. {% for game in games[:2] %}{{ game.home.name }} vs {{ game.away.name }} — revisa el horario exacto en hora de México arriba en esta página.{% if not loop.last %} {% endif %}{% endfor %}{% else %}{{ team_name }} no juega hoy. Activa alertas por WhatsApp en DondeVer.app para recibir notificaciones antes de cada partido.{% endif %}"
-                }
-            }
-        ]
-    }
-    </script>
+    <!-- FAQPage JSON-LD is in <head> — no duplicate here -->
 </head>
 <body>
 <div class="header">
@@ -887,33 +843,17 @@
                 <p style="font-size:0.8rem;color:#6b7280;margin-top:0.5rem;">Nota: la disponibilidad de canales puede variar según el partido y la fecha. En DondeVer.app actualizamos la información diariamente.</p>
             </div>
 
+            {% if faq_items %}
             <div class="faq-section" style="margin:0.75rem 0 0;">
                 <h2 style="font-size:0.95rem;">Preguntas frecuentes sobre {{ team_name }}</h2>
+                {% for faq in faq_items %}
                 <div class="faq-item">
-                    <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">¿En qué canal pasan a {{ team_name }} hoy?</div>
-                    <div class="faq-answer">
-                        {% if games %}Hoy {{ team_name }} juega y se transmite por {% for game in games[:1] %}{% if game.broadcasts %}{% for b in game.broadcasts[:3] %}{{ b.channel }}{% if not loop.last %}, {% endif %}{% endfor %}.{% else %}canales aún por confirmar.{% endif %}{% endfor %} Revisa la sección de partidos arriba para ver todos los canales actualizados.
-                        {% else %}Hoy {{ today_date_str }} no hay partidos de {{ team_name }} programados. Visita esta página el día que jueguen o activa alertas por WhatsApp.{% endif %}
-                    </div>
+                    <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">{{ faq.q }}</div>
+                    <div class="faq-answer">{{ faq.a }}</div>
                 </div>
-                <div class="faq-item">
-                    <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">¿Cómo ver a {{ team_name }} en vivo gratis?</div>
-                    <div class="faq-answer">
-                        {% if team_sport == 'futbol' %}Algunos partidos de {{ team_name }} se transmiten en TV abierta por Canal 5 o Azteca 7 en México. También ViX ofrece algunos juegos en su versión gratuita. En Estados Unidos, partidos selectos se transmiten por Univision.
-                        {% elif team_sport == 'beisbol' %}Algunos juegos de {{ team_name }} se transmiten por TV abierta. MLB.TV y Apple TV+ ocasionalmente ofrecen juegos gratuitos.
-                        {% elif team_sport == 'basketball' %}Partidos selectos de {{ team_name }} se transmiten en TV abierta. NBA League Pass ofrece periodos de prueba gratuita. En USA, juegos por ABC son gratuitos con antena.
-                        {% elif team_sport == 'futbol americano' %}Varios juegos de {{ team_name }} se transmiten en TV abierta en México por Canal 5 y Azteca 7. En USA, los juegos por CBS, Fox y NBC son gratuitos con antena.
-                        {% else %}Consulta DondeVer.app para ver las opciones gratuitas de transmisión de {{ team_name }}.{% endif %}
-                    </div>
-                </div>
-                <div class="faq-item">
-                    <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">¿A qué hora juega {{ team_name }} hoy?</div>
-                    <div class="faq-answer">
-                        {% if games %}{{ team_name }} tiene {{ games|length }} partido{{ 's' if games|length > 1 else '' }} hoy. Revisa los horarios actualizados arriba en esta página.
-                        {% else %}{{ team_name }} no juega hoy {{ today_date_str }}. Activa alertas por WhatsApp para que te avisemos antes de cada partido.{% endif %}
-                    </div>
-                </div>
+                {% endfor %}
             </div>
+            {% endif %}
         </div>
     </div>
 

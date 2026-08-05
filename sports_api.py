@@ -96,6 +96,17 @@ DEFAULT_LEAGUE_CHANNELS = {
     "copa-america": ["TUDN", "Canal 5", "ViX"],
     "world-cup": ["TUDN", "Canal 5", "Azteca 7", "ViX"],
     "club-friendly": ["TUDN", "ViX"],
+    # Futbol LATAM
+    "liga-colombia": ["Win Sports+", "ESPN"],
+    "liga-argentina": ["ESPN", "TNT Sports", "Disney+"],
+    "liga-ecuador": ["GOLTV", "ESPN"],
+    "liga-panama": ["TVMax", "RPC"],
+    "liga-chile": ["TNT Sports", "ESPN"],
+    "liga-peru": ["GOLPERU", "Liga1 Max"],
+    "libertadores": ["ESPN", "Paramount+", "Fox Sports MX"],
+    "sudamericana": ["ESPN", "Paramount+"],
+    "liga-portugal": ["ESPN MX"],
+    "eredivisie": ["ESPN MX"],
     # Futbol americano
     "nfl": ["ESPN MX", "Fox Sports MX", "TUDN", "Canal 5"],
     "college-football": ["ESPN MX"],

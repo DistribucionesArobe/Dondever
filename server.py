@@ -627,6 +627,17 @@ async def league_page(request: Request, league_slug: str):
         if info.get("league") == league_slug
     }
 
+    # Collect actual channels from today's games for this league
+    league_channels_today = []
+    for g in games:
+        for b in g.get("broadcasts", []):
+            ch = b.get("channel", "")
+            if ch and ch not in league_channels_today:
+                league_channels_today.append(ch)
+    # Fallback to default channels if no games today
+    from sports_api import DEFAULT_LEAGUE_CHANNELS
+    default_channels = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
+
     return templates.TemplateResponse(
         request, "league.html", context={
             "league_slug": league_slug,
@@ -639,6 +650,8 @@ async def league_page(request: Request, league_slug: str):
             "league_teams": league_teams,
             "recent_results": recent_results,
             "upcoming_games": upcoming_games,
+            "league_channels_today": league_channels_today[:8],
+            "default_channels": default_channels,
         }
     )
 
@@ -2518,6 +2531,179 @@ def _slugify_team(name: str) -> str:
     return re.sub(r"[-\s]+", "-", s)
 
 
+def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
+                    upcoming_games, recent_results, today_date_str) -> list[dict]:
+    """Build unique FAQ items from real team data — no boilerplate."""
+    faq = []
+
+    # ── 1. Canales — use ACTUAL broadcast data from today's games ──
+    channels_today = []
+    if games:
+        for g in games[:2]:
+            for b in g.get("broadcasts", []):
+                ch = b.get("channel", "")
+                if ch and ch not in channels_today:
+                    channels_today.append(ch)
+    if channels_today:
+        ch_str = ", ".join(channels_today[:5])
+        faq.append({
+            "q": f"¿En qué canal pasan a {team_name} hoy?",
+            "a": f"Hoy {team_name} se transmite por {ch_str}. "
+                 f"Los canales pueden variar según el partido — en DondeVer.app actualizamos esta información en tiempo real."
+        })
+    else:
+        faq.append({
+            "q": f"¿En qué canal transmiten los partidos de {team_name}?",
+            "a": f"Hoy {today_date_str} no hay partidos de {team_name} programados. "
+                 f"Los partidos de {team_league} se transmiten en distintos canales según el país — "
+                 f"consulta esta página el día del juego para ver el canal exacto."
+        })
+
+    # ── 2. Record/posición — use standings data ──
+    if stats:
+        record = stats.get("record", "")
+        pos = stats.get("position", "")
+        wins = stats.get("wins", 0)
+        losses = stats.get("losses", 0)
+        sport_type = stats.get("sport_type", "")
+        if sport_type == "soccer":
+            pts = stats.get("points", "")
+            gd = stats.get("goal_diff", "")
+            answer = f"{team_name} está en la posición #{pos} de {team_league}"
+            if record:
+                answer += f" con récord {record}"
+            if pts:
+                answer += f" ({pts} puntos"
+                if gd:
+                    answer += f", diferencia de goles {gd}"
+                answer += ")"
+            answer += ". Estos datos se actualizan automáticamente después de cada jornada."
+            faq.append({"q": f"¿Cómo va {team_name} en la tabla de {team_league}?", "a": answer})
+        elif record:
+            answer = f"{team_name} tiene récord de {record} (posición #{pos} en {team_league})"
+            if wins or losses:
+                answer += f" — {wins} victorias y {losses} derrotas"
+            answer += ". Las estadísticas se actualizan después de cada juego."
+            faq.append({"q": f"¿Cuál es el récord de {team_name} esta temporada?", "a": answer})
+
+    # ── 3. Próximo partido — use upcoming_games ──
+    if upcoming_games:
+        nxt = upcoming_games[0]
+        opp = nxt["away"] if team_name.lower() in nxt["home"].lower() else nxt["home"]
+        venue = "local" if team_name.lower() in nxt["home"].lower() else "visitante"
+        faq.append({
+            "q": f"¿Cuándo es el próximo partido de {team_name}?",
+            "a": f"El próximo juego de {team_name} es contra {opp} como {venue}. "
+                 f"Consulta la sección de próximos partidos arriba para ver la fecha, hora y canal exactos."
+        })
+    elif games:
+        faq.append({
+            "q": f"¿A qué hora juega {team_name} hoy?",
+            "a": f"{team_name} tiene {len(games)} partido{'s' if len(games) > 1 else ''} hoy. "
+                 f"Revisa los horarios arriba — se muestran en tu hora local automáticamente."
+        })
+
+    # ── 4. Últimos resultados — use recent_results ──
+    if recent_results:
+        last = recent_results[0]
+        score = f"{last['home']} {last.get('home_score', '?')} - {last.get('away_score', '?')} {last['away']}"
+        streak_w = sum(1 for r in recent_results if _team_won(r, team_name))
+        streak_l = sum(1 for r in recent_results if _team_lost(r, team_name))
+        form_str = f"{streak_w}G {len(recent_results) - streak_w - streak_l}E {streak_l}P"
+        faq.append({
+            "q": f"¿Cómo le fue a {team_name} en su último partido?",
+            "a": f"El resultado más reciente fue {score}. "
+                 f"En sus últimos {len(recent_results)} partidos: {form_str}."
+        })
+
+    # ── 5. Streaming gratis — sport-specific with real platforms ──
+    if team_sport == "futbol":
+        if "Liga MX" in team_league:
+            answer = (f"Algunos partidos de {team_name} se transmiten en TV abierta por Canal 5 o Azteca 7, "
+                      f"dependiendo de los derechos del equipo local. ViX ofrece partidos selectos en su versión gratuita. "
+                      f"En USA, Univision transmite algunos juegos sin costo.")
+        elif "Premier" in team_league or "Champions" in team_league:
+            answer = (f"La {team_league} no suele tener transmisiones gratuitas en México. "
+                      f"Puedes verla por ESPN (con suscripción de TV de paga) o Paramount+. "
+                      f"Algunos partidos se transmiten en abierto en temporadas especiales.")
+        elif any(x in team_league for x in ["Argentina", "Colombia", "Ecuador", "Chile", "Perú"]):
+            answer = (f"Los partidos de {team_league} se transmiten localmente por TV de paga. "
+                      f"En streaming puedes verlos por ESPN, TNT Sports o las plataformas locales de cada país.")
+        else:
+            answer = (f"La disponibilidad gratuita de {team_league} varía por país. "
+                      f"Consulta esta página el día del partido para ver las opciones de transmisión disponibles.")
+    elif team_sport == "beisbol":
+        answer = (f"MLB.TV y Apple TV+ ocasionalmente ofrecen juegos gratuitos de {team_name}. "
+                  f"En TV de paga, ESPN transmite juegos selectos. El 'Free Game of the Day' de MLB.TV "
+                  f"rota entre diferentes equipos.")
+    elif team_sport == "basketball":
+        answer = (f"Juegos selectos de {team_name} se transmiten por ABC en USA (gratis con antena). "
+                  f"NBA League Pass ofrece prueba gratuita al inicio de temporada. "
+                  f"En México, ESPN transmite partidos selectos con suscripción de TV de paga.")
+    elif team_sport == "futbol americano":
+        answer = (f"En México, Canal 5 y Azteca 7 transmiten juegos de NFL cada semana en abierto. "
+                  f"En USA, CBS, Fox y NBC transmiten juegos gratis con antena. "
+                  f"Amazon Prime tiene Thursday Night Football (requiere suscripción).")
+    else:
+        answer = f"Consulta DondeVer.app el día del partido para ver las opciones de transmisión de {team_name}."
+    faq.append({"q": f"¿Cómo ver a {team_name} en vivo gratis?", "a": answer})
+
+    # ── 6. Liga-specific bonus question ──
+    if team_sport == "futbol" and "Liga MX" in team_league:
+        faq.append({
+            "q": f"¿Qué necesita {team_name} para calificar a liguilla?",
+            "a": f"La calificación a liguilla depende de la posición en la tabla general. "
+                 f"Los primeros 4 clasifican directo a cuartos de final, del 5° al 12° van a Play-In. "
+                 f"Consulta la posición actual de {team_name} en la tabla arriba."
+        })
+    elif team_sport == "beisbol":
+        faq.append({
+            "q": f"¿Qué posición tiene {team_name} en su división?",
+            "a": f"En MLB, cada división tiene 5 equipos y los ganadores de cada una clasifican a postemporada. "
+                 f"También hay 3 Wild Cards por liga. Consulta las estadísticas de {team_name} arriba para ver su posición actual."
+        })
+    elif team_sport == "basketball":
+        faq.append({
+            "q": f"¿{team_name} va a Playoffs?",
+            "a": f"En la NBA, los primeros 6 de cada conferencia clasifican directo a Playoffs, "
+                 f"y del 7° al 10° van al Play-In Tournament. Consulta el récord actual de {team_name} arriba."
+        })
+
+    return faq
+
+
+def _team_won(result: dict, team_name: str) -> bool:
+    """Check if team won a recent result."""
+    tn = team_name.lower()
+    hs = result.get("home_score", 0)
+    as_ = result.get("away_score", 0)
+    try:
+        hs, as_ = int(hs), int(as_)
+    except (ValueError, TypeError):
+        return False
+    if tn in result.get("home", "").lower():
+        return hs > as_
+    elif tn in result.get("away", "").lower():
+        return as_ > hs
+    return False
+
+
+def _team_lost(result: dict, team_name: str) -> bool:
+    """Check if team lost a recent result."""
+    tn = team_name.lower()
+    hs = result.get("home_score", 0)
+    as_ = result.get("away_score", 0)
+    try:
+        hs, as_ = int(hs), int(as_)
+    except (ValueError, TypeError):
+        return False
+    if tn in result.get("home", "").lower():
+        return hs < as_
+    elif tn in result.get("away", "").lower():
+        return as_ < hs
+    return False
+
+
 def _quick_prediction_from_odds(game: dict) -> dict | None:
     """
     Fast prediction from odds only — no API calls, no standings.
@@ -2999,6 +3185,18 @@ async def team_page(request: Request, team_slug: str):
     except Exception:
         pass
 
+    # Build dynamic FAQ based on real data (not boilerplate)
+    faq_items = _build_team_faq(
+        team_name=team_name,
+        team_sport=team_sport,
+        team_league=team_league or team_league_seo,
+        stats=stats,
+        games=games,
+        upcoming_games=upcoming_games,
+        recent_results=recent_results,
+        today_date_str=today_date_str,
+    )
+
     return templates.TemplateResponse(request, "team.html", {
         "team_name": team_name,
         "team_slug": team_slug,
@@ -3018,6 +3216,7 @@ async def team_page(request: Request, team_slug: str):
         "meli_jersey": meli_jersey,
         "meli_gorra": meli_gorra,
         "meli_acc": meli_acc,
+        "faq_items": faq_items,
     })
 
 
