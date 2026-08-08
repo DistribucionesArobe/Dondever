@@ -38,19 +38,19 @@ _cache = TTLCache(maxsize=500, ttl=300)
 _tv_cache = TTLCache(maxsize=1000, ttl=14400)
 # Track when TheSportsDB is rate-limiting us to avoid flooding with 429s
 _sportsdb_blocked_until = 0  # timestamp when we can retry
-# Odds cache: 24 hour TTL — free tier only has 500 req/month, must conserve
-# ALWAYS fetch h2h,spreads,totals so homepage and game page share the same cache key
-_odds_cache = TTLCache(maxsize=200, ttl=86400)  # 24 hours
+# Odds cache: 6h TTL — paid plan (20K credits/month)
+# 3 markets (h2h,spreads,totals) = 3 credits per request
+# 19 leagues × 4 refreshes/day × 3 credits × 31 days = ~7K credits/month (safe under 20K)
+_odds_cache = TTLCache(maxsize=200, ttl=21600)  # 6 hours
 _odds_request_count = 0  # track requests this process lifetime
-_ODDS_MONTHLY_BUDGET = 450  # leave 50 buffer from the 500 limit
+_ODDS_MONTHLY_BUDGET = 6000  # ~6,666 effective requests with 3-market calls
 
 # ── Odds API (the-odds-api.com) ────────────────────────
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
 ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports"
 
 # Map our league slugs to the-odds-api sport keys
-# Priority leagues get odds first; secondary only if budget allows.
-# With 24h cache + ~10 priority leagues = ~300 req/month (safe under 500).
+# Paid plan: all 19 leagues with 6h cache, ~7K credits/month of 20K budget.
 ODDS_SPORT_MAP = {
     # Futbol
     "liga-mx": "soccer_mexico_ligamx",
