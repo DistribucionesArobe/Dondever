@@ -65,6 +65,22 @@ ODDS_SPORT_MAP = {
     "liga-argentina": "soccer_argentina_primera_division",
     "liga-colombia": "soccer_colombia_primera_a",
     "libertadores": "soccer_conmebol_copa_libertadores",
+    "sudamericana": "soccer_conmebol_copa_sudamericana",
+    "copa-america": "soccer_conmebol_copa_america",
+    # Copas domésticas
+    "copa-del-rey": "soccer_spain_copa_del_rey",
+    "fa-cup": "soccer_fa_cup",
+    "carabao-cup": "soccer_england_efl_cup",
+    "dfb-pokal": "soccer_germany_dfb_pokal",
+    "coppa-italia": "soccer_italy_coppa_italia",
+    "coupe-de-france": "soccer_france_coupe_de_france",
+    # Copas internacionales
+    "leagues-cup": "soccer_concacaf_leagues_cup",
+    "club-world-cup": "soccer_fifa_club_world_cup",
+    # Selecciones
+    "euro": "soccer_uefa_european_championship",
+    "nations-league": "soccer_uefa_nations_league",
+    "gold-cup": "soccer_concacaf_gold_cup",
     # Futbol americano
     "nfl": "americanfootball_nfl",
     "college-football": "americanfootball_ncaaf",
@@ -102,6 +118,25 @@ DEFAULT_LEAGUE_CHANNELS = {
     "copa-america": ["TUDN", "Canal 5", "ViX"],
     "world-cup": ["TUDN", "Canal 5", "Azteca 7", "ViX"],
     "club-friendly": ["TUDN", "ViX"],
+    # Copas domésticas
+    "copa-del-rey": ["ESPN MX"],
+    "fa-cup": ["ESPN MX"],
+    "carabao-cup": ["ESPN MX"],
+    "dfb-pokal": ["ESPN MX"],
+    "coppa-italia": ["ESPN MX", "Paramount+"],
+    "coupe-de-france": ["ESPN MX"],
+    "us-open-cup": ["ESPN+", "Apple TV+"],
+    "copa-argentina": ["ESPN", "TNT Sports"],
+    # Copas internacionales
+    "leagues-cup": ["Apple TV+", "MLS Season Pass"],
+    "club-world-cup": ["TUDN", "ViX", "Fox Sports MX"],
+    # Selecciones
+    "euro": ["ESPN MX", "SKY", "ViX"],
+    "gold-cup": ["TUDN", "Canal 5", "ViX"],
+    "wcq-conmebol": ["ESPN MX", "TUDN", "ViX"],
+    "wcq-concacaf": ["TUDN", "Canal 5", "ViX"],
+    "nations-league": ["ESPN MX"],
+    "concacaf-nations": ["TUDN", "ViX", "Paramount+"],
     # Futbol LATAM
     "liga-colombia": ["Win Sports+", "ESPN"],
     "liga-argentina": ["ESPN", "TNT Sports", "Disney+"],

@@ -698,6 +698,25 @@ LEAGUES = {
     "liga-peru":      ("soccer", "per.1",         "Liga 1 Per\u00fa", "\u26bd"),
     "libertadores":   ("soccer", "conmebol.libertadores", "Copa Libertadores", "\u26bd"),
     "sudamericana":   ("soccer", "conmebol.sudamericana", "Copa Sudamericana", "\u26bd"),
+    # Copas dom\u00e9sticas
+    "copa-del-rey":   ("soccer", "esp.copa_del_rey",     "Copa del Rey",      "\u26bd"),
+    "fa-cup":         ("soccer", "eng.fa",               "FA Cup",            "\u26bd"),
+    "carabao-cup":    ("soccer", "eng.league_cup",       "Carabao Cup",       "\u26bd"),
+    "dfb-pokal":      ("soccer", "ger.dfb_pokal",        "DFB-Pokal",         "\u26bd"),
+    "coppa-italia":   ("soccer", "ita.coppa_italia",     "Coppa Italia",      "\u26bd"),
+    "coupe-de-france":("soccer", "fra.coupe_de_france",  "Coupe de France",   "\u26bd"),
+    "us-open-cup":    ("soccer", "usa.open",             "US Open Cup",       "\u26bd"),
+    "copa-argentina": ("soccer", "arg.copa",             "Copa Argentina",    "\u26bd"),
+    # Copas internacionales
+    "leagues-cup":    ("soccer", "concacaf.leagues.cup",  "Leagues Cup",       "\u26bd"),
+    "club-world-cup": ("soccer", "fifa.cwc",             "Club World Cup",    "\u26bd"),
+    # Selecciones
+    "euro":           ("soccer", "uefa.euro",            "Eurocopa",          "\u26bd"),
+    "gold-cup":       ("soccer", "concacaf.gold",        "Copa Oro",          "\u26bd"),
+    "wcq-conmebol":   ("soccer", "fifa.worldq.conmebol", "Eliminatorias CONMEBOL", "\u26bd"),
+    "wcq-concacaf":   ("soccer", "fifa.worldq.concacaf", "Eliminatorias CONCACAF", "\u26bd"),
+    "nations-league": ("soccer", "uefa.nations",         "UEFA Nations League", "\u26bd"),
+    "concacaf-nations":("soccer","concacaf.nations.league","CONCACAF Nations League","\u26bd"),
     "club-friendly": ("soccer", "fifa.friendly", "Amistosos",        "\u26bd"),
     # Futbol Americano
     "nfl":           ("football", "nfl",         "NFL",              "NFL"),
