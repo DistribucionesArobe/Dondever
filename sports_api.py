@@ -38,9 +38,9 @@ _cache = TTLCache(maxsize=500, ttl=300)
 _tv_cache = TTLCache(maxsize=1000, ttl=14400)
 # Track when TheSportsDB is rate-limiting us to avoid flooding with 429s
 _sportsdb_blocked_until = 0  # timestamp when we can retry
-# Odds cache: 12 hour TTL — free tier only has 500 req/month, must conserve
+# Odds cache: 24 hour TTL — free tier only has 500 req/month, must conserve
 # ALWAYS fetch h2h,spreads,totals so homepage and game page share the same cache key
-_odds_cache = TTLCache(maxsize=200, ttl=43200)  # 12 hours
+_odds_cache = TTLCache(maxsize=200, ttl=86400)  # 24 hours
 _odds_request_count = 0  # track requests this process lifetime
 _ODDS_MONTHLY_BUDGET = 450  # leave 50 buffer from the 500 limit
 
@@ -49,7 +49,8 @@ ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
 ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports"
 
 # Map our league slugs to the-odds-api sport keys
-# All leagues with odds coverage — 12h cache keeps budget under 500 req/month
+# Priority leagues get odds first; secondary only if budget allows.
+# With 24h cache + ~10 priority leagues = ~300 req/month (safe under 500).
 ODDS_SPORT_MAP = {
     # Futbol
     "liga-mx": "soccer_mexico_ligamx",
@@ -77,6 +78,11 @@ ODDS_SPORT_MAP = {
     # Combate
     "ufc": "mma_mixed_martial_arts",
 }
+# Priority order: fetch these first when budget is tight
+ODDS_PRIORITY_LEAGUES = [
+    "mlb", "nfl", "nba", "liga-mx", "premier-league",
+    "champions", "la-liga", "mls", "nhl", "wnba",
+]
 
 
 # ── Default TV channels per league (fallback when ESPN has no broadcast info) ──

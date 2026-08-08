@@ -291,9 +291,14 @@ async def home(
     for g in games:
         if g["status"]["state"] == "pre":
             odds_leagues.add(g.get("league_slug", ""))
-    # Fetch odds for each league (cached, so cheap after first call)
+    # Fetch priority leagues first (MLB, NFL, NBA, etc.), then secondary
+    from sports_api import ODDS_PRIORITY_LEAGUES
+    sorted_leagues = sorted(
+        odds_leagues,
+        key=lambda ls: ODDS_PRIORITY_LEAGUES.index(ls) if ls in ODDS_PRIORITY_LEAGUES else 99
+    )
     odds_by_league: dict[str, list] = {}
-    for ls in odds_leagues:
+    for ls in sorted_leagues:
         try:
             ol = await fetch_odds(ls)
             if ol:
