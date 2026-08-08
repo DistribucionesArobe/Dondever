@@ -286,10 +286,10 @@ async def home(
         sports_grouped[league_name]["games"].append(game)
 
     # ── Fetch odds for homepage games ────────────────────
-    # Collect unique league slugs that have upcoming games
+    # Collect unique league slugs from upcoming AND live games (live betting)
     odds_leagues = set()
     for g in games:
-        if g["status"]["state"] == "pre":
+        if g["status"]["state"] in ("pre", "in"):
             odds_leagues.add(g.get("league_slug", ""))
     # Fetch priority leagues first (MLB, NFL, NBA, etc.), then secondary
     from sports_api import ODDS_PRIORITY_LEAGUES
@@ -305,10 +305,10 @@ async def home(
                 odds_by_league[ls] = ol
         except Exception:
             pass
-    # Attach odds to each game + quick prediction from odds
+    # Attach odds to each game (pre + live) + quick prediction from odds
     for g in games:
         ls = g.get("league_slug", "")
-        if g["status"]["state"] == "pre" and ls in odds_by_league:
+        if g["status"]["state"] in ("pre", "in") and ls in odds_by_league:
             g["odds"] = match_odds_to_game(g, odds_by_league[ls])
         else:
             g["odds"] = None

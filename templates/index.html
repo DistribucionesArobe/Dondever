@@ -1356,8 +1356,8 @@
                 </span>
             </div>
 
-            {# ── BETTING PREVIEW — visible on closed card ── #}
-            {% if state == 'pre' and game.odds %}
+            {# ── BETTING PREVIEW — visible on closed card (pre + live) ── #}
+            {% if state != 'post' and game.odds %}
             <div class="gc-bet-preview" onclick="event.stopPropagation();">
                 {% if game.prediction %}
                 <div class="bet-ai-row">
