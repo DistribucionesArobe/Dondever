@@ -2290,14 +2290,19 @@ async def sitemap_xml():
         f'    <priority>0.9</priority>\n  </url>'
     )
 
-    # Team pages (SEO goldmine)
+    # Team pages (SEO goldmine — all POPULAR_TEAMS + any discovered from today's games)
     urls.append(
         f'  <url>\n    <loc>{APP_URL}/equipos</loc>\n'
         f'    <lastmod>{today_str}</lastmod>\n'
         f'    <changefreq>daily</changefreq>\n'
         f'    <priority>0.8</priority>\n  </url>'
     )
-    for team_slug in POPULAR_TEAMS:
+    all_team_slugs = set(POPULAR_TEAMS.keys())
+    for game in games:
+        for side in ("home", "away"):
+            all_team_slugs.add(_slugify_team(game[side]["name"]))
+    all_team_slugs.discard("")
+    for team_slug in sorted(all_team_slugs):
         urls.append(
             f'  <url>\n    <loc>{APP_URL}/equipo/{team_slug}</loc>\n'
             f'    <lastmod>{today_str}</lastmod>\n'
@@ -3358,20 +3363,54 @@ async def team_page(request: Request, team_slug: str):
 
 @app.get("/equipos", response_class=HTMLResponse)
 async def teams_list(request: Request):
-    """List all popular teams for SEO indexing."""
-    teams_by_league = {
-        "Liga MX": ["chivas", "america", "cruz-azul", "pumas", "tigres", "monterrey", "toluca", "santos", "leon", "pachuca", "atlas", "necaxa", "puebla", "queretaro"],
-        "Premier League": ["liverpool", "manchester-city", "manchester-united", "arsenal", "chelsea"],
-        "La Liga": ["real-madrid", "barcelona"],
-        "Serie A": ["juventus", "inter-milan"],
-        "Bundesliga": ["bayern"],
-        "Ligue 1": ["psg"],
-        "NBA": ["lakers", "celtics", "warriors", "bulls", "heat", "knicks"],
-        "NFL": ["cowboys", "chiefs", "49ers", "eagles", "packers"],
-        "MLB": ["dodgers", "yankees", "red-sox", "astros"],
-    }
+    """List ALL teams for SEO indexing — auto-generated from POPULAR_TEAMS + today's games."""
+    # Build teams_by_league from all POPULAR_TEAMS
+    teams_by_league: dict[str, list[dict]] = {}
+    for slug, info in POPULAR_TEAMS.items():
+        league = info.get("league", "Otros")
+        if league not in teams_by_league:
+            teams_by_league[league] = []
+        teams_by_league[league].append({"slug": slug, "name": info["name"]})
+
+    # Also discover teams from today's games that aren't in POPULAR_TEAMS
+    try:
+        today_games = await get_todays_games()
+        for g in today_games:
+            for side in ("home", "away"):
+                tname = g[side]["name"]
+                tslug = _slugify_team(tname)
+                league_name = g.get("league_name", "Otros")
+                if tslug not in POPULAR_TEAMS:
+                    if league_name not in teams_by_league:
+                        teams_by_league[league_name] = []
+                    # Avoid duplicates within the league
+                    if not any(t["slug"] == tslug for t in teams_by_league[league_name]):
+                        teams_by_league[league_name].append({"slug": tslug, "name": tname})
+    except Exception:
+        pass
+
+    # Sort teams within each league alphabetically
+    for league in teams_by_league:
+        teams_by_league[league].sort(key=lambda t: t["name"])
+
+    # Order leagues: popular first, then alphabetical
+    league_order = ["Liga MX", "Premier League", "La Liga", "Serie A", "Bundesliga",
+                    "Ligue 1", "MLS", "NFL", "NBA", "MLB", "NHL", "WNBA",
+                    "Liga Argentina", "Liga BetPlay", "LigaPro Ecuador",
+                    "Primera Chile", "Liga 1 Perú", "Liga Portugal", "Eredivisie"]
+    sorted_leagues = {}
+    for lo in league_order:
+        if lo in teams_by_league:
+            sorted_leagues[lo] = teams_by_league.pop(lo)
+    # Add remaining leagues alphabetically
+    for lo in sorted(teams_by_league.keys()):
+        sorted_leagues[lo] = teams_by_league[lo]
+
+    total_teams = sum(len(t) for t in sorted_leagues.values())
+
     return templates.TemplateResponse(request, "teams_list.html", {
-        "teams_by_league": teams_by_league,
+        "teams_by_league": sorted_leagues,
+        "total_teams": total_teams,
         "POPULAR_TEAMS": POPULAR_TEAMS,
     })
 

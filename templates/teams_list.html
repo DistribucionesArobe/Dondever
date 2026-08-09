@@ -3,57 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todos los equipos | DondeVer.app</title>
-    <meta name="description" content="Encuentra donde ver partidos de tu equipo favorito en vivo. Liga MX, Premier League, NBA, NFL, MLB y mas.">
-    <meta property="og:title" content="Todos los equipos - DondeVer.app">
-    <meta property="og:description" content="Encuentra donde ver partidos de tu equipo favorito en vivo. Liga MX, NBA, NFL, MLB y mas.">
+    <title>Todos los equipos ({{ total_teams }}) — Dónde ver partidos en vivo | DondeVer.app</title>
+    <meta name="description" content="Encuentra dónde ver partidos de {{ total_teams }} equipos en vivo. Liga MX, Premier League, La Liga, NBA, NFL, MLB y más. Horarios y canales actualizados.">
+    <meta property="og:title" content="Todos los equipos ({{ total_teams }}) — DondeVer.app">
+    <meta property="og:description" content="{{ total_teams }} equipos con horarios y canales actualizados. Liga MX, Premier League, NBA, NFL y más.">
     <meta property="og:image" content="https://dondever.app/static/og-image.png">
     <meta property="og:url" content="https://dondever.app/equipos">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="es_MX">
     <meta property="og:site_name" content="DondeVer.app">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Todos los equipos | DondeVer.app">
-    <meta name="twitter:description" content="Encuentra donde ver partidos de tu equipo favorito en vivo.">
+    <meta name="twitter:title" content="Todos los equipos ({{ total_teams }}) | DondeVer.app">
+    <meta name="twitter:description" content="{{ total_teams }} equipos con horarios y canales en vivo.">
     <meta name="twitter:image" content="https://dondever.app/static/og-image.png">
     <link rel="canonical" href="https://dondever.app/equipos">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://dondever.app/"},
+        {"@type": "ListItem", "position": 2, "name": "Equipos", "item": "https://dondever.app/equipos"}
+      ]
+    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f8fafc; color:#1a1a2e; }
-        .header { background:linear-gradient(135deg,#1a1a2e,#16213e); color:white; padding:1.25rem; text-align:center; }
-        .header h1 { font-size:1.1rem; }
-        .header a { color:#10b981; text-decoration:none; }
-        .container { max-width:900px; margin:0 auto; padding:1rem; }
-        h2 { font-size:1rem; margin:1.25rem 0 0.5rem; color:#1a1a2e; border-bottom:2px solid #10b981; padding-bottom:0.3rem; }
-        .teams-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:0.5rem; }
+        body { font-family:'Inter',sans-serif; background:#f8f9fb; color:#1a1a2e; min-height:100vh; }
+        .header { background:#1a1a2e; padding:0.6rem 0; }
+        .header-inner { max-width:900px; margin:0 auto; padding:0 1rem; display:flex; align-items:center; justify-content:space-between; }
+        .logo { font-size:1.2rem; font-weight:800; color:#10b981; text-decoration:none; }
+        .logo span { color:#f8f9fb; }
+        .back { color:#10b981; text-decoration:none; font-weight:600; font-size:0.85rem; }
+        .breadcrumb { max-width:900px; margin:0 auto; padding:0.6rem 1rem 0; font-size:0.7rem; color:#9ca3af; }
+        .breadcrumb a { color:#10b981; text-decoration:none; }
+        .hero { max-width:900px; margin:0 auto; padding:2rem 1rem 1rem; text-align:center; }
+        .hero h1 { font-size:1.5rem; font-weight:800; margin-bottom:0.4rem; }
+        .hero p { color:#6b7280; font-size:0.88rem; max-width:600px; margin:0 auto; line-height:1.6; }
+        .container { max-width:900px; margin:0 auto; padding:0 1rem 2rem; }
+        .league-section { margin-bottom:1.5rem; }
+        .league-header {
+            font-size:0.85rem; font-weight:800; color:#374151;
+            margin-bottom:0.5rem; padding-bottom:0.3rem; border-bottom:2px solid #10b981;
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        .league-count { font-size:0.7rem; font-weight:600; color:#9ca3af; }
+        .teams-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:0.5rem; }
         .team-link {
             display:block; background:white; border:1px solid #e5e7eb; border-radius:8px;
-            padding:0.6rem 0.8rem; text-decoration:none; color:#1a1a2e; font-weight:600;
-            font-size:0.85rem; transition:all 0.15s;
+            padding:0.55rem 0.75rem; text-decoration:none; color:#1a1a2e; font-weight:600;
+            font-size:0.82rem; transition:all 0.15s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
         }
-        .team-link:hover { border-color:#10b981; background:#f0fdf4; }
-        footer { text-align:center; padding:1.5rem; font-size:0.7rem; color:#9ca3af; }
-        footer a { color:#10b981; text-decoration:none; }
+        .team-link:hover { border-color:#10b981; background:#f0fdf4; transform:translateY(-1px); box-shadow:0 2px 8px rgba(16,185,129,0.1); }
+        .search-box { max-width:400px; margin:0 auto 1.5rem; }
+        .search-input {
+            width:100%; padding:0.6rem 1rem; border:1px solid #d1d5db; border-radius:8px;
+            font-size:0.85rem; font-family:inherit; outline:none; transition:border 0.15s;
+        }
+        .search-input:focus { border-color:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,0.1); }
+        .no-results { text-align:center; padding:2rem; color:#9ca3af; font-size:0.85rem; display:none; }
+        .footer { background:#1a1a2e; color:#9ca3af; text-align:center; padding:1.5rem 1rem; font-size:0.75rem; margin-top:2rem; }
+        .footer a { color:#10b981; text-decoration:none; }
     </style>
 </head>
 <body>
-<div class="header">
-    <h1><a href="/">DondeVer.app</a> / Equipos</h1>
-</div>
-<div class="container">
-    <p style="font-size:0.9rem;color:#4b5563;margin-bottom:1rem;">Selecciona tu equipo para ver sus proximos partidos y en que canal los pasan.</p>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+        <a href="/" class="back">&larr; Inicio</a>
+    </div>
+</header>
 
-    {% for league, slugs in teams_by_league.items() %}
-    <h2>{{ league }}</h2>
-    <div class="teams-grid">
-        {% for slug in slugs %}
-        <a href="/equipo/{{ slug }}" class="team-link">{{ POPULAR_TEAMS[slug].name if slug in POPULAR_TEAMS else slug }}</a>
-        {% endfor %}
+<nav class="breadcrumb">
+    <a href="/">Inicio</a> &rsaquo; Equipos
+</nav>
+
+<div class="hero">
+    <h1>&#9917; {{ total_teams }} equipos</h1>
+    <p>Selecciona tu equipo para ver sus próximos partidos, resultados recientes y en qué canal los pasan.</p>
+</div>
+
+<div class="container">
+    <div class="search-box">
+        <input type="text" class="search-input" id="teamSearch" placeholder="Buscar equipo..." autocomplete="off">
+    </div>
+    <div id="noResults" class="no-results">No se encontraron equipos con ese nombre.</div>
+
+    {% for league, teams in teams_by_league.items() %}
+    <div class="league-section" data-league>
+        <div class="league-header">
+            {{ league }}
+            <span class="league-count">{{ teams|length }} equipos</span>
+        </div>
+        <div class="teams-grid">
+            {% for team in teams %}
+            <a href="/equipo/{{ team.slug }}" class="team-link" data-name="{{ team.name|lower }}">{{ team.name }}</a>
+            {% endfor %}
+        </div>
     </div>
     {% endfor %}
 </div>
-<footer>
-    <p><a href="/">DondeVer.app</a> &middot; <a href="/streaming">Comparar Streaming</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
+
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>
+    <p style="margin-top:0.3rem;"><a href="/canales">Canales</a> &middot; <a href="/streaming">Streaming</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
 </footer>
+
+<script>
+document.getElementById('teamSearch').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    const sections = document.querySelectorAll('[data-league]');
+    let anyVisible = false;
+    sections.forEach(sec => {
+        const links = sec.querySelectorAll('.team-link');
+        let sectionVisible = false;
+        links.forEach(link => {
+            const match = !q || link.dataset.name.includes(q);
+            link.style.display = match ? '' : 'none';
+            if (match) sectionVisible = true;
+        });
+        sec.style.display = sectionVisible ? '' : 'none';
+        if (sectionVisible) anyVisible = true;
+    });
+    document.getElementById('noResults').style.display = anyVisible ? 'none' : 'block';
+});
+</script>
 </body>
 </html>
