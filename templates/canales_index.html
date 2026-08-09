@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canales deportivos hoy — TV y Streaming | DondeVer.app</title>
+    <meta name="description" content="Todos los canales de TV y streaming con deportes hoy: {{ total_channels }} canales transmitiendo {{ total_games }} partidos. TUDN, ESPN, ViX, Fox Sports, Canal 5 y más.">
+    <meta property="og:title" content="Canales deportivos hoy — TV y Streaming | DondeVer">
+    <meta property="og:description" content="{{ total_channels }} canales con {{ total_games }} partidos hoy. Encuentra qué pasan en cada canal.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ app_url }}/canales">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta property="og:locale" content="es_MX">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@dondeverapp">
+    <link rel="canonical" href="{{ app_url }}/canales">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ app_url }}/"},
+        {"@type": "ListItem", "position": 2, "name": "Canales", "item": "{{ app_url }}/canales"}
+      ]
+    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; min-height: 100vh; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .hero { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 1.2rem; text-align: center; }
+        .hero h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .hero p { color: #6b7280; font-size: 0.88rem; max-width: 550px; margin: 0 auto; line-height: 1.6; }
+        .main { max-width: 900px; margin: 0 auto; padding: 0 1rem 2rem; }
+        .section-label { font-size: 0.8rem; font-weight: 800; color: #374151; margin-bottom: 0.6rem; padding-bottom: 0.3rem; border-bottom: 2px solid #10b981; }
+        .channels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.6rem; margin-bottom: 1.5rem; }
+        .ch-card {
+            background: white; border: 1px solid #e5e7eb; border-radius: 10px;
+            padding: 0.9rem; text-decoration: none; color: inherit;
+            transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+        }
+        .ch-card:hover { border-color: #10b981; box-shadow: 0 2px 10px rgba(16,185,129,0.12); transform: translateY(-1px); }
+        .ch-name { font-weight: 700; font-size: 0.9rem; text-align: center; }
+        .ch-badge {
+            display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .ch-count { font-size: 0.75rem; color: #6b7280; }
+        .ch-count strong { color: #1a1a2e; }
+        .footer { background: #1a1a2e; color: #9ca3af; text-align: center; padding: 1.5rem 1rem; font-size: 0.75rem; margin-top: 2rem; }
+        .footer a { color: #10b981; text-decoration: none; }
+        .breadcrumb { max-width: 900px; margin: 0 auto; padding: 0.6rem 1rem 0; font-size: 0.7rem; color: #9ca3af; }
+        .breadcrumb a { color: #10b981; text-decoration: none; }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+        <a href="/" class="back">&larr; Inicio</a>
+    </div>
+</header>
+
+<nav class="breadcrumb">
+    <a href="/">Inicio</a> &rsaquo; Canales
+</nav>
+
+<div class="hero">
+    <h1>&#128250; Canales deportivos hoy</h1>
+    <p>{{ total_channels }} canales transmitiendo {{ total_games }} partidos hoy. Toca un canal para ver su programación completa.</p>
+</div>
+
+<main class="main">
+    {# Split into streaming and TV #}
+    {% set streaming = [] %}
+    {% set tv = [] %}
+    {% for ch in channels %}
+        {% if ch.is_streaming %}
+            {% set _ = streaming.append(ch) %}
+        {% else %}
+            {% set _ = tv.append(ch) %}
+        {% endif %}
+    {% endfor %}
+
+    {% if streaming %}
+    <div class="section-label">&#128241; Streaming</div>
+    <div class="channels-grid">
+        {% for ch in streaming %}
+        <a href="/canal/{{ ch.slug }}" class="ch-card">
+            <span class="ch-badge" style="background:{{ ch.bg }};color:{{ ch.color }};">{{ ch.name }}</span>
+            <span class="ch-count"><strong>{{ ch.games|length }}</strong> partido{{ 's' if ch.games|length != 1 else '' }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if tv %}
+    <div class="section-label">&#128250; TV</div>
+    <div class="channels-grid">
+        {% for ch in tv %}
+        <a href="/canal/{{ ch.slug }}" class="ch-card">
+            <span class="ch-badge" style="background:#1e293b;color:white;">{{ ch.name }}</span>
+            <span class="ch-count"><strong>{{ ch.games|length }}</strong> partido{{ 's' if ch.games|length != 1 else '' }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</main>
+
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>
+    <p style="margin-top:0.3rem;">Horarios para zona centro de México (CT). La disponibilidad de canales puede variar por país y proveedor.</p>
+</footer>
+</body>
+</html>

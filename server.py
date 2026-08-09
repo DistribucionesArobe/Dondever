@@ -398,8 +398,8 @@ async def home(
     )
 
 
-@app.get("/canales", response_class=HTMLResponse)
-async def canales_page(request: Request):
+@app.get("/canales-tv", response_class=HTMLResponse)
+async def canales_ads_page(request: Request):
     """Clean landing page for Google Ads — no betting/affiliate content."""
     games = await get_todays_games()
 
@@ -420,6 +420,117 @@ async def canales_page(request: Request):
             "games": games,
             "sports_grouped": sports_grouped,
             "total_games": len(games),
+        },
+    )
+
+
+def _slugify_channel(name: str) -> str:
+    """Turn a channel name into a URL-safe slug: 'ESPN MX' -> 'espn-mx'."""
+    import re, unicodedata
+    s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    s = re.sub(r"[^\w\s-]", "", s).strip().lower()
+    return re.sub(r"[\s_]+", "-", s)
+
+
+@app.get("/canales", response_class=HTMLResponse)
+async def canales_index(request: Request):
+    """Channel index — list all channels broadcasting today with game counts."""
+    games = await get_todays_games()
+
+    # Build channel -> games mapping
+    channels: dict[str, dict] = {}
+    for g in games:
+        for b in g.get("broadcasts", []):
+            ch = b["channel"]
+            slug = _slugify_channel(ch)
+            if slug not in channels:
+                saff = STREAMING_AFFILIATES.get(ch)
+                channels[slug] = {
+                    "name": ch,
+                    "slug": slug,
+                    "games": [],
+                    "is_streaming": saff is not None,
+                    "bg": saff["bg"] if saff else "#6b7280",
+                    "color": saff["color"] if saff else "white",
+                }
+            channels[slug]["games"].append(g)
+
+    # Sort: most games first
+    sorted_channels = sorted(channels.values(), key=lambda c: len(c["games"]), reverse=True)
+
+    return templates.TemplateResponse(
+        request,
+        "canales_index.html",
+        context={
+            "channels": sorted_channels,
+            "total_channels": len(sorted_channels),
+            "total_games": len(games),
+        },
+    )
+
+
+@app.get("/canal/{channel_slug}", response_class=HTMLResponse)
+async def canal_page(request: Request, channel_slug: str, date: Optional[str] = Query(None)):
+    """Per-channel page — all games airing on a specific channel today."""
+    games = await get_todays_games(date_str=date)
+
+    today = datetime.now(TZ_MX)
+    if date:
+        try:
+            viewing_date = datetime.strptime(date, "%Y%m%d").replace(tzinfo=TZ_MX)
+        except ValueError:
+            viewing_date = today
+    else:
+        viewing_date = today
+    prev_date = (viewing_date - timedelta(days=1)).strftime("%Y%m%d")
+    next_date = (viewing_date + timedelta(days=1)).strftime("%Y%m%d")
+
+    # Find channel name from slug, and filter games
+    channel_name = None
+    channel_games = []
+    for g in games:
+        for b in g.get("broadcasts", []):
+            if _slugify_channel(b["channel"]) == channel_slug:
+                if not channel_name:
+                    channel_name = b["channel"]
+                if g not in channel_games:
+                    channel_games.append(g)
+
+    if not channel_name:
+        # Try to reconstruct name from slug for SEO even with no games today
+        channel_name = channel_slug.replace("-", " ").title()
+
+    # Check if this is a streaming platform with affiliate
+    saff = STREAMING_AFFILIATES.get(channel_name)
+
+    # Group by league
+    sports_grouped = {}
+    for g in channel_games:
+        ln = g["league_name"]
+        if ln not in sports_grouped:
+            sports_grouped[ln] = {"emoji": g["emoji"], "games": []}
+        sports_grouped[ln]["games"].append(g)
+
+    # Live / upcoming counts
+    live_count = sum(1 for g in channel_games if g["status"]["state"] == "in")
+    upcoming_count = sum(1 for g in channel_games if g["status"]["state"] == "pre")
+
+    return templates.TemplateResponse(
+        request,
+        "canal.html",
+        context={
+            "channel_name": channel_name,
+            "channel_slug": channel_slug,
+            "channel_games": channel_games,
+            "sports_grouped": sports_grouped,
+            "total_games": len(channel_games),
+            "live_count": live_count,
+            "upcoming_count": upcoming_count,
+            "saff": saff,
+            "current_date": date or today.strftime("%Y%m%d"),
+            "today_display": viewing_date.strftime("%A %d de %B, %Y"),
+            "prev_date": prev_date,
+            "next_date": next_date,
         },
     )
 
