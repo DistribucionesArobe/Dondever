@@ -319,11 +319,8 @@ def _odds_to_number(odds_str: str) -> int | None:
 
 async def compose_daily_message() -> str | None:
     """
-    Compose the daily WhatsApp message with:
-    - Top pick with statistical analysis
-    - 3-5 more games with quick tips
-    - Momios (odds) for each game
-    - Betsson affiliate link
+    Compose the daily WhatsApp VER response — clean and scannable.
+    Top 10 games with one-line picks + casino link + page link.
     """
     games = await get_todays_games()
     now = datetime.now(TZ_MX)
@@ -333,19 +330,17 @@ async def compose_daily_message() -> str | None:
     if not games:
         return None
 
-    # Filter upcoming games only
     upcoming = [g for g in games if g["status"]["state"] == "pre"]
     if not upcoming:
         return None
 
-    # Fetch odds for all relevant leagues
+    # Fetch odds + standings for all relevant leagues
     leagues_in_play = set(g.get("league_slug", "") for g in upcoming)
     odds_by_league = {}
     for league_slug in leagues_in_play:
         if league_slug in ODDS_SPORT_MAP:
             odds_by_league[league_slug] = await fetch_odds(league_slug)
 
-    # Fetch standings for all relevant leagues
     standings_by_league = {}
     for league_slug in leagues_in_play:
         espn_info = LEAGUE_ESPN_MAP.get(league_slug)
@@ -356,97 +351,61 @@ async def compose_daily_message() -> str | None:
             except Exception:
                 standings_by_league[league_slug] = []
 
-    # Pick the featured game (highest priority league)
-    pick = None
+    # Select top 10 games by priority
+    top_games = []
     for pl in LEAGUE_PRIORITY:
-        pick = next((g for g in upcoming if g.get("league_slug") == pl), None)
-        if pick:
-            break
-    if not pick:
-        pick = upcoming[0]
-
-    # Generate statistical tip for the pick
-    pick_league = pick.get("league_slug", "")
-    pick_odds_list = odds_by_league.get(pick_league, [])
-    pick_odds = match_odds_to_game(pick, pick_odds_list) if pick_odds_list else None
-    pick_standings = standings_by_league.get(pick_league, [])
-    pick_tip = await _generate_stat_tip(pick, pick_odds, pick_standings)
-
-    # Build message
-    lines = []
-    lines.append(f"*DONDE VER — {weekday} {date_display}*")
-    lines.append(f"_{len(upcoming)} juegos hoy_")
-
-    # ── Featured Pick ──
-    first, second = _team_order(pick)
-    time_str = _fmt_time(pick["date"])
-    channels = _format_channels(pick["broadcasts"])
-
-    lines.append("")
-    lines.append("*PICK DEL DIA*")
-    lines.append(f"*{first} vs {second}*")
-    lines.append(f"{pick.get('league_name', '')} — {time_str} MX")
-    lines.append(f"TV: {channels}")
-    if pick_tip["odds_display"]:
-        lines.append(f"Momios: {pick_tip['odds_display']}")
-    lines.append(f"Ganador: *{pick_tip['pick']}* (Confianza: {pick_tip['confidence']})")
-    lines.append(f"Razón: _{pick_tip['reason']}_")
-    lines.append(f"Mercado extra: {pick_tip['extra_market']}")
-
-    # ── More games with quick tips ──
-    other_games = [g for g in upcoming if g["id"] != pick["id"]]
-    top_others = []
-    # Prioritize by league order
-    for pl in LEAGUE_PRIORITY:
-        for g in other_games:
-            if g.get("league_slug") == pl and g not in top_others:
-                top_others.append(g)
-                if len(top_others) >= 5:
+        for g in upcoming:
+            if g.get("league_slug") == pl and g not in top_games:
+                top_games.append(g)
+                if len(top_games) >= 10:
                     break
-        if len(top_others) >= 5:
+        if len(top_games) >= 10:
             break
     # Fill remaining from any league
-    for g in other_games:
-        if g not in top_others:
-            top_others.append(g)
-            if len(top_others) >= 5:
+    for g in upcoming:
+        if g not in top_games:
+            top_games.append(g)
+            if len(top_games) >= 10:
                 break
 
-    if top_others:
-        lines.append("")
-        lines.append("*MAS JUEGOS + TIPS*")
-        for g in top_others:
-            f1, f2 = _team_order(g)
-            t = _fmt_time(g["date"])
-            ch = _format_channels(g["broadcasts"])
-            league_slug = g.get("league_slug", "")
-
-            # Quick odds lookup
-            g_odds_list = odds_by_league.get(league_slug, [])
-            g_odds = match_odds_to_game(g, g_odds_list) if g_odds_list else None
-            g_standings = standings_by_league.get(league_slug, [])
-            g_tip = await _generate_stat_tip(g, g_odds, g_standings)
-
-            lines.append(f"  {f1} vs {f2} — {t}")
-            lines.append(f"  TV: {ch}")
-            tip_line = f"  Tip: *{g_tip['pick']}* ({g_tip['confidence']}) — {g_tip['extra_market']}"
-            lines.append(tip_line)
-
-    # ── Affiliates CTA ──
-    jubilee_url = get_short_affiliate_url("jubilee", source="whatsapp")
-    vivento_url = get_short_affiliate_url("vivento", source="whatsapp")
+    # Build message — compact, one game per block
+    lines = []
+    lines.append(f"*🏆 TOP 10 PICKS — {weekday} {date_display}*")
     lines.append("")
-    lines.append("Ver momios y apostar:")
-    lines.append(f"Jubilee: {jubilee_url}")
-    lines.append(f"Vivento: {vivento_url}")
+
+    for i, g in enumerate(top_games, 1):
+        f1, f2 = _team_order(g)
+        t = _fmt_time(g["date"])
+        ch = _format_channels(g["broadcasts"])
+        league_slug = g.get("league_slug", "")
+        league_name = g.get("league_name", "")
+
+        g_odds_list = odds_by_league.get(league_slug, [])
+        g_odds = match_odds_to_game(g, g_odds_list) if g_odds_list else None
+        g_standings = standings_by_league.get(league_slug, [])
+        g_tip = await _generate_stat_tip(g, g_odds, g_standings)
+
+        # Compact format: number + teams + time + channel + tip
+        lines.append(f"*{i}. {f1} vs {f2}*")
+        lines.append(f"⏰ {t} · 📺 {ch} · {league_name}")
+        lines.append(f"👉 *{g_tip['pick']}* ({g_tip['confidence']}) — {g_tip['extra_market']}")
+        lines.append("")
+
+    remaining = len(upcoming) - len(top_games)
+    if remaining > 0:
+        lines.append(f"_...y {remaining} juegos más en dondever.app_")
+        lines.append("")
+
+    # ── Casino CTA ──
+    jubilee_url = get_short_affiliate_url("jubilee", source="whatsapp")
+    lines.append(f"💰 Ver cuotas → {jubilee_url}")
+    lines.append("")
 
     # ── Footer ──
-    lines.append("")
-    lines.append("Ver todos los juegos, canales y horarios:")
+    lines.append("📱 Todos los juegos y canales:")
     lines.append("dondever.app")
     lines.append("")
-    lines.append("_Solo entretenimiento. Apuesta responsable. +18_")
-    lines.append("_Escribe SALIR para dejar de recibir._")
+    lines.append("_+18 · Apuesta responsable · Escribe SALIR para cancelar_")
 
     return "\n".join(lines)
 
@@ -591,9 +550,16 @@ async def compose_template_variables() -> dict | None:
         v3_games += f" · +{remaining} mas en dondever.app"
 
     # Build single-param value for dondever_picks_diarios
-    # SHORT teaser — full details sent as freeform when user replies VER.
+    # SHORT teaser with PICK DEL DIA — full details sent as freeform when user replies VER.
     # Meta WhatsApp API rejects newlines/tabs in template param values (error 132018).
-    var1 = f"Hoy hay {len(upcoming)} juegos. Responde VER para tus picks completos."
+    channels_str = _format_channels(pick["broadcasts"])
+    pick_emoji = "⚽" if pick.get("sport") == "soccer" else "⚾" if pick.get("sport") == "baseball" else "🏀" if pick.get("sport") == "basketball" else "🏈"
+    var1 = (
+        f"Hoy hay {len(upcoming)} juegos. "
+        f"{pick_emoji} PICK: {first} vs {second} · {pick.get('league_name', '')} {time_str} MX · {channels_str} · "
+        f"Tip: {pick_tip['pick']} ({pick_tip['confidence']}). "
+        f"Responde VER para los 10 mejores picks de hoy."
+    )
 
     return {
         "var1": var1,
