@@ -314,24 +314,42 @@ async def home(
             g["odds"] = None
         g["prediction"] = _quick_prediction_from_odds(g) if g.get("odds") else None
 
-    # Pick del dia — choose most interesting upcoming game
-    pick_game = None
-    priority_leagues = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga", "mlb"]
-    upcoming = [g for g in games if g["status"]["state"] == "pre" and g["broadcasts"]]
-    if upcoming:
-        # Try priority leagues first
-        for pl in priority_leagues:
-            pick = next((g for g in upcoming if g["league_slug"] == pl), None)
-            if pick:
-                pick_game = pick
-                break
-        if not pick_game:
-            pick_game = upcoming[0]
-    elif games:
-        # If no upcoming, pick a live game
-        live = [g for g in games if g["status"]["state"] == "in"]
-        if live:
-            pick_game = live[0]
+    # ── Live games section ──────────────────────────────
+    live_games = [g for g in games if g["status"]["state"] == "in"]
+
+    # ── Featured games (DESTACADOS) ───────────────────────
+    # Algorithmically pick 5-8 of the most interesting upcoming games
+    priority_leagues = ["liga-mx", "premier-league", "champions", "nfl", "nba",
+                        "la-liga", "mlb", "nhl", "mls", "liga-argentina",
+                        "copa-del-rey", "fa-cup", "leagues-cup", "euro"]
+    upcoming = [g for g in games if g["status"]["state"] == "pre"]
+    featured_games = []
+    # 1. Priority leagues with broadcasts first
+    for pl in priority_leagues:
+        for g in upcoming:
+            if g["league_slug"] == pl and g not in featured_games:
+                featured_games.append(g)
+                if len(featured_games) >= 8:
+                    break
+        if len(featured_games) >= 8:
+            break
+    # 2. Fill up to 8 with any upcoming game that has odds
+    if len(featured_games) < 8:
+        for g in upcoming:
+            if g not in featured_games and g.get("odds"):
+                featured_games.append(g)
+                if len(featured_games) >= 8:
+                    break
+    # 3. Still short? add any upcoming with broadcasts
+    if len(featured_games) < 5:
+        for g in upcoming:
+            if g not in featured_games and g["broadcasts"]:
+                featured_games.append(g)
+                if len(featured_games) >= 5:
+                    break
+
+    # Pick del dia — best single game for the card
+    pick_game = featured_games[0] if featured_games else (live_games[0] if live_games else None)
 
     # Available sports for filter
     sport_types = sorted(set(v[0] for v in LEAGUES.values()))
@@ -373,6 +391,8 @@ async def home(
             "next_date": next_date,
             "total_games": len(games),
             "pick_game": pick_game,
+            "live_games": live_games,
+            "featured_games": featured_games,
             "sport_counts": sport_counts,
         },
     )
