@@ -655,108 +655,136 @@
 
         /* ── Betting Preview (visible on closed card) ── */
         .gc-bet-preview {
-            margin: 0.45rem 0 -0.25rem;
-            padding: 0.4rem 0.5rem;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            margin: 0.5rem 0 -0.25rem;
+            padding: 0.5rem;
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border: 1px solid #fbbf24;
+            border-radius: 10px;
         }
         .bet-ai-row {
             display: flex;
             align-items: center;
             gap: 0.35rem;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.4rem;
             flex-wrap: wrap;
         }
         .bet-ai-badge {
-            font-size: 0.6rem;
-            font-weight: 700;
+            font-size: 0.62rem;
+            font-weight: 800;
             color: #7c3aed;
-            background: rgba(124,58,237,0.08);
-            padding: 0.1rem 0.35rem;
+            background: rgba(124,58,237,0.1);
+            padding: 0.12rem 0.4rem;
             border-radius: 4px;
             letter-spacing: 0.02em;
         }
         .bet-ai-pick {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #374151;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #1f2937;
         }
         .bet-value-badge {
-            font-size: 0.58rem;
-            font-weight: 600;
+            font-size: 0.6rem;
+            font-weight: 700;
             color: #059669;
-            background: rgba(5,150,105,0.08);
-            padding: 0.1rem 0.35rem;
+            background: rgba(5,150,105,0.1);
+            padding: 0.12rem 0.4rem;
             border-radius: 4px;
+        }
+        .bet-best-label {
+            font-size: 0.58rem;
+            font-weight: 700;
+            color: #92400e;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin-bottom: 0.25rem;
         }
         .bet-odds-row {
             display: flex;
-            align-items: center;
-            gap: 0.4rem;
+            align-items: stretch;
+            gap: 0.3rem;
         }
         .bet-odds-chips {
             display: flex;
-            gap: 0.2rem;
+            gap: 0.25rem;
             flex: 1;
         }
         .bet-odd-chip {
             flex: 1;
-            text-align: center;
-            font-size: 0.55rem;
-            color: #6b7280;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.1rem;
+            font-size: 0.58rem;
+            color: #78716c;
             background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            padding: 0.22rem 0.25rem;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0.35rem 0.2rem;
             text-decoration: none !important;
             cursor: pointer;
             transition: all 0.15s;
         }
-        a.bet-odd-chip:hover { border-color: #10b981; background: #f0fdf4; }
-        .bet-odd-chip strong { color: #1f2937; font-size: 0.65rem; }
-        .bet-odd-chip.draw { border-color: rgba(249,115,22,0.25); }
+        a.bet-odd-chip:hover { border-color: #10b981; background: #f0fdf4; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .bet-odd-chip strong { color: #111827; font-size: 0.78rem; font-weight: 800; display: block; }
+        .bet-odd-chip.draw { border-color: rgba(249,115,22,0.35); }
         .bet-odd-chip.draw strong { color: #ea580c; }
         a.bet-odd-chip.draw:hover { border-color: #ea580c; background: #fff7ed; }
-        .bet-casino-line {
+        .bet-cta-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            min-width: 80px;
+        }
+        .bet-cta-main {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.25rem;
-            margin-top: 0.3rem;
-            font-size: 0.58rem;
-            color: #9ca3af;
-        }
-        .bet-casino-line a {
-            color: #ea580c;
-            font-weight: 700;
-            text-decoration: none !important;
-            transition: opacity 0.15s;
-        }
-        .bet-casino-line a:hover { opacity: 0.75; }
-        .bet-cta-main {
-            display: inline-flex;
-            align-items: center;
             gap: 0.2rem;
-            background: #ea580c;
+            background: linear-gradient(135deg, #ea580c, #dc2626);
             color: white !important;
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 0.35rem 0.7rem;
-            border-radius: 6px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 0.4rem 0.5rem;
+            border-radius: 8px;
             text-decoration: none !important;
             white-space: nowrap;
-            transition: opacity 0.15s;
+            transition: all 0.15s;
+            flex: 1;
+            text-align: center;
         }
-        .bet-cta-main:hover { opacity: 0.85; }
+        .bet-cta-main:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(234,88,12,0.3); }
+        .bet-cta-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.55rem;
+            font-weight: 600;
+            color: #92400e;
+            text-decoration: none !important;
+            transition: color 0.15s;
+        }
+        .bet-cta-secondary:hover { color: #ea580c; }
+        .bet-casas-count {
+            text-align: center;
+            font-size: 0.52rem;
+            color: #9ca3af;
+            margin-top: 0.3rem;
+        }
+        .bet-responsible {
+            text-align: center;
+            font-size: 0.45rem;
+            color: #d1d5db;
+            margin-top: 0.15rem;
+        }
 
-        /* ── Betting Full (inside accordion, section #1) ── */
+        /* ── Betting Full (inside accordion — bookmaker comparison) ── */
         .gc-bet-full {
             padding: 0.6rem 0;
             border-bottom: 1px solid #f3f4f6;
         }
         .gc-bet-full-header {
-            font-size: 0.65rem;
+            font-size: 0.68rem;
             font-weight: 800;
             color: #ea580c;
             text-transform: uppercase;
@@ -776,22 +804,72 @@
             align-items: center;
             gap: 0.15rem;
             background: #f9fafb;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0.5rem 0.3rem;
+            text-decoration: none !important;
+            transition: all 0.15s;
+        }
+        .bet-full-chip:hover { border-color: #10b981; background: #f0fdf4; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .bet-full-chip.draw:hover { border-color: #f97316; background: #fff7ed; }
+        .bfc-team { font-size: 0.58rem; color: #6b7280; font-weight: 600; }
+        .bfc-odds { font-size: 0.85rem; font-weight: 800; color: #111827; }
+        .bet-full-chip.draw .bfc-odds { color: #ea580c; }
+        /* Bookmakers comparison table */
+        .bet-compare-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.62rem;
+            margin: 0.5rem 0;
             border: 1px solid #e5e7eb;
             border-radius: 8px;
-            padding: 0.45rem 0.3rem;
-            text-decoration: none !important;
-            transition: border-color 0.15s, background 0.15s;
+            overflow: hidden;
         }
-        .bet-full-chip:hover { border-color: #10b981; background: #f0fdf4; }
-        .bet-full-chip.draw:hover { border-color: #f97316; background: #fff7ed; }
-        .bfc-team { font-size: 0.55rem; color: #6b7280; font-weight: 600; }
-        .bfc-odds { font-size: 0.8rem; font-weight: 800; color: #111827; }
-        .bet-full-chip.draw .bfc-odds { color: #ea580c; }
+        .bet-compare-table th {
+            background: #f9fafb;
+            color: #6b7280;
+            font-weight: 700;
+            padding: 0.35rem 0.4rem;
+            text-align: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .bet-compare-table th:first-child { text-align: left; }
+        .bet-compare-table td {
+            padding: 0.35rem 0.4rem;
+            text-align: center;
+            border-bottom: 1px solid #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+        }
+        .bet-compare-table td:first-child {
+            text-align: left;
+            font-weight: 700;
+            color: #111827;
+        }
+        .bet-compare-table tr:last-child td { border-bottom: none; }
+        .bet-compare-table tr:hover td { background: #fefce8; }
+        .bet-compare-best { color: #059669 !important; font-weight: 800 !important; }
         .gc-bet-full-casinos {
             display: flex;
             justify-content: center;
             gap: 0.3rem;
+            margin-top: 0.5rem;
         }
+        .bet-full-cta {
+            display: block;
+            text-align: center;
+            background: linear-gradient(135deg, #ea580c, #dc2626);
+            color: white !important;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 0.55rem 1rem;
+            border-radius: 8px;
+            text-decoration: none !important;
+            margin: 0.5rem 0 0.3rem;
+            transition: all 0.15s;
+        }
+        .bet-full-cta:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(234,88,12,0.3); }
 
         /* ── Actions row (calendar + share + detail) ── */
         .gc-actions {
@@ -1386,14 +1464,30 @@
             </div>
             {% if game.odds %}
             <div class="gc-bet-preview" onclick="event.stopPropagation();">
+                {% if game.prediction %}
+                <div class="bet-ai-row">
+                    <span class="bet-ai-badge">&#129302; IA</span>
+                    <span class="bet-ai-pick">{{ game.prediction.pick }} {{ game.prediction.prob }}%</span>
+                    {% if game.prediction.value %}
+                    <span class="bet-value-badge">&#128176; Valor {{ game.prediction.value.team }} {{ game.prediction.value.odds }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="bet-best-label">&#128293; Mejores cuotas</div>
                 <div class="bet-odds-row">
                     <div class="bet-odds-chips">
                         <a href="/go/bet?s=live-odds" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
                         {% if game.odds.draw_odds %}<a href="/go/bet?s=live-odds" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip draw">EMP <strong>{{ game.odds.draw_odds }}</strong></a>{% endif %}
                         <a href="/go/bet?s=live-odds" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
                     </div>
+                    <div class="bet-cta-col">
+                        <a href="/go/bet?s=live-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">&#128176; Apostar</a>
+                        {% if game.odds.total_bookmakers %}
+                        <a href="/juego/{{ game.id }}" class="bet-cta-secondary">{{ game.odds.total_bookmakers }} casas &rarr;</a>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="bet-casino-line">Apostar en <a href="/go/bet?s=live-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx">Jubilee</a></div>
+                <div class="bet-responsible">18+ | Juega responsablemente</div>
             </div>
             {% endif %}
         </a>
@@ -1434,14 +1528,30 @@
             </div>
             {% if game.odds %}
             <div class="gc-bet-preview" onclick="event.stopPropagation();">
+                {% if game.prediction %}
+                <div class="bet-ai-row">
+                    <span class="bet-ai-badge">&#129302; IA</span>
+                    <span class="bet-ai-pick">{{ game.prediction.pick }} {{ game.prediction.prob }}%</span>
+                    {% if game.prediction.value %}
+                    <span class="bet-value-badge">&#128176; Valor {{ game.prediction.value.team }} {{ game.prediction.value.odds }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="bet-best-label">&#128293; Mejores cuotas</div>
                 <div class="bet-odds-row">
                     <div class="bet-odds-chips">
                         <a href="/go/bet?s=feat-odds" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
                         {% if game.odds.draw_odds %}<a href="/go/bet?s=feat-odds" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip draw">EMP <strong>{{ game.odds.draw_odds }}</strong></a>{% endif %}
                         <a href="/go/bet?s=feat-odds" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
                     </div>
+                    <div class="bet-cta-col">
+                        <a href="/go/bet?s=feat-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">&#128176; Apostar</a>
+                        {% if game.odds.total_bookmakers %}
+                        <a href="/juego/{{ game.id }}" class="bet-cta-secondary">{{ game.odds.total_bookmakers }} casas &rarr;</a>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="bet-casino-line">Apostar en <a href="/go/bet?s=feat-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx">Jubilee</a></div>
+                <div class="bet-responsible">18+ | Juega responsablemente</div>
             </div>
             {% endif %}
         </a>
@@ -1523,10 +1633,11 @@
                     <span class="bet-ai-badge">&#129302; IA</span>
                     <span class="bet-ai-pick">{{ game.prediction.pick }} {{ game.prediction.prob }}%</span>
                     {% if game.prediction.value %}
-                    <span class="bet-value-badge">&#9989; Valor {{ game.prediction.value.team }} {{ game.prediction.value.odds }}</span>
+                    <span class="bet-value-badge">&#128176; Valor {{ game.prediction.value.team }} {{ game.prediction.value.odds }}</span>
                     {% endif %}
                 </div>
                 {% endif %}
+                <div class="bet-best-label">&#128293; Mejores cuotas</div>
                 <div class="bet-odds-row">
                     <div class="bet-odds-chips">
                         <a href="/go/bet?s=card-odds" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
@@ -1535,41 +1646,82 @@
                         {% endif %}
                         <a href="/go/bet?s=card-odds" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
                     </div>
-                    <a href="/go/bet?s=card-bet" target="_blank" rel="sponsored nofollow noopener" class="bet-cta-main">Apostar &rarr;</a>
+                    <div class="bet-cta-col">
+                        <a href="/go/bet?s=card-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">&#128176; Apostar</a>
+                        {% if game.odds.total_bookmakers %}
+                        <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="bet-cta-secondary">{{ game.odds.total_bookmakers }} casas &rarr;</a>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="bet-casino-line">en <a href="/go/bet?s=card-casino-link" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx">Jubilee</a></div>
+                <div class="bet-responsible">18+ | Juega responsablemente</div>
             </div>
             {% endif %}
 
             {# ── Accordion (hidden by default) ── #}
             <div class="gc-accordion">
-                {# ── 1. APUESTAS (first section — highest revenue) ── #}
+                {# ── 1. APUESTAS — bookmaker comparison table ── #}
                 {% if state != 'post' and game.odds %}
                 <div class="gc-bet-full" onclick="event.stopPropagation();">
-                    <div class="gc-bet-full-header">Cuotas del partido</div>
+                    <div class="gc-bet-full-header">&#128200; Comparar cuotas — {{ game.odds.total_bookmakers or '' }} casas</div>
+
+                    {# Best odds big chips #}
                     <div class="gc-bet-full-odds">
-                        <a href="/go/bet?s=card-odds-home" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="bet-full-chip">
+                        <a href="/go/bet?s=acc-odds-home" target="_blank" rel="sponsored nofollow noopener" class="bet-full-chip">
                             <span class="bfc-team">{{ top_team.name }}</span>
                             <span class="bfc-odds">{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</span>
                         </a>
                         {% if game.odds.draw_odds %}
-                        <a href="/go/bet?s=card-odds-draw" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="bet-full-chip draw">
+                        <a href="/go/bet?s=acc-odds-draw" target="_blank" rel="sponsored nofollow noopener" class="bet-full-chip draw">
                             <span class="bfc-team">Empate</span>
                             <span class="bfc-odds">{{ game.odds.draw_odds }}</span>
                         </a>
                         {% endif %}
-                        <a href="/go/bet?s=card-odds-away" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="bet-full-chip">
+                        <a href="/go/bet?s=acc-odds-away" target="_blank" rel="sponsored nofollow noopener" class="bet-full-chip">
                             <span class="bfc-team">{{ bottom_team.name }}</span>
                             <span class="bfc-odds">{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</span>
                         </a>
                     </div>
+
+                    {# Bookmaker comparison table #}
+                    {% if game.odds.bookmakers %}
+                    <table class="bet-compare-table">
+                        <thead>
+                            <tr>
+                                <th>Casa</th>
+                                <th>{{ top_team.name[:10] }}</th>
+                                {% if game.odds.draw_odds %}<th>Empate</th>{% endif %}
+                                <th>{{ bottom_team.name[:10] }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bk in game.odds.bookmakers %}
+                            <tr>
+                                <td>{{ bk.bookmaker }}</td>
+                                <td{% if bk.home_odds == game.odds.home_odds %} class="bet-compare-best"{% endif %}>
+                                    {{ bk.home_odds if home_left else bk.away_odds or '—' }}
+                                </td>
+                                {% if game.odds.draw_odds %}
+                                <td{% if bk.draw_odds == game.odds.draw_odds %} class="bet-compare-best"{% endif %}>
+                                    {{ bk.draw_odds or '—' }}
+                                </td>
+                                {% endif %}
+                                <td{% if bk.away_odds == game.odds.away_odds %} class="bet-compare-best"{% endif %}>
+                                    {{ bk.away_odds if home_left else bk.home_odds or '—' }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% endif %}
+
+                    <a href="/go/bet?s=acc-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-full-cta">&#128176; Apostar con la mejor cuota</a>
+
                     <div class="gc-bet-full-casinos">
-                        <a href="/go/betsson?s=card-casino" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" class="bet-pill bp-betsson" style="display:none;">Betsson</a>
-                        <a href="/go/jubilee?s=card-casino" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-pill bp-jubilee">Jubilee</a>
-                        <a href="/go/vivento?s=card-casino" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" data-geo="mx" class="bet-pill bp-vivento">Vivento</a>
-                        <a href="/go/1xbet?s=card-casino" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" data-geo="latam" class="bet-pill bp-1xbet" style="display:none;">1xBet</a>
+                        <a href="/go/betsson?s=acc-casino" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" class="bet-pill bp-betsson" style="display:none;">Betsson</a>
+                        <a href="/go/jubilee?s=acc-casino" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-pill bp-jubilee">Jubilee</a>
+                        <a href="/go/1xbet?s=acc-casino" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" data-geo="latam" class="bet-pill bp-1xbet" style="display:none;">1xBet</a>
                     </div>
-                    <div style="font-size:0.5rem;color:#9ca3af;text-align:center;margin-top:0.35rem;">+18 · Publicidad · Apuesta responsablemente</div>
+                    <div style="font-size:0.5rem;color:#9ca3af;text-align:center;margin-top:0.35rem;">+18 · Publicidad · Juega responsablemente</div>
                 </div>
                 {% endif %}
 

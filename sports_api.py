@@ -1357,11 +1357,45 @@ async def fetch_odds(league_slug: str, markets: str = "h2h,spreads,totals") -> l
         return []
 
 
+def _extract_h2h_from_bookie(bookie: dict, home_name: str, away_name: str) -> dict | None:
+    """Extract h2h odds from a single bookmaker."""
+    markets = bookie.get("markets", [])
+    h2h = next((m for m in markets if m["key"] == "h2h"), None)
+    if not h2h:
+        return None
+    outcomes = h2h.get("outcomes", [])
+    if len(outcomes) < 2:
+        return None
+    r = {"bookmaker": bookie.get("title", ""), "home_odds": None, "away_odds": None, "draw_odds": None,
+         "home_price": 0, "away_price": 0, "draw_price": 0}
+    for outcome in outcomes:
+        name = outcome.get("name", "").lower()
+        price = outcome.get("price", 0)
+        if "draw" in name:
+            r["draw_odds"] = _format_american_odds(price)
+            r["draw_price"] = price
+        elif any(w in name for w in home_name.split() if len(w) > 3):
+            r["home_odds"] = _format_american_odds(price)
+            r["home_price"] = price
+        elif any(w in name for w in away_name.split() if len(w) > 3):
+            r["away_odds"] = _format_american_odds(price)
+            r["away_price"] = price
+    # Fallback by position
+    if not r["home_odds"] and len(outcomes) >= 2:
+        r["home_odds"] = _format_american_odds(outcomes[0].get("price", 0))
+        r["home_price"] = outcomes[0].get("price", 0)
+        r["away_odds"] = _format_american_odds(outcomes[1].get("price", 0))
+        r["away_price"] = outcomes[1].get("price", 0)
+        if len(outcomes) >= 3:
+            r["draw_odds"] = _format_american_odds(outcomes[2].get("price", 0))
+            r["draw_price"] = outcomes[2].get("price", 0)
+    return r
+
+
 def match_odds_to_game(game: dict, odds_list: list[dict]) -> dict | None:
     """
     Match a game (from ESPN) to odds data (from the-odds-api).
-    Returns dict with odds info or None if no match found.
-    Uses fuzzy team name matching.
+    Returns dict with best odds across ALL bookmakers + list of individual bookmaker odds.
     """
     if not odds_list:
         return None
@@ -1384,50 +1418,57 @@ def match_odds_to_game(game: dict, odds_list: list[dict]) -> dict | None:
         )
 
         if home_match and away_match:
-            # Extract best odds from first bookmaker
             bookmakers = odds_game.get("bookmakers", [])
             if not bookmakers:
                 return None
 
-            # Try to find a well-known bookmaker first
-            preferred = ["draftkings", "fanduel", "betmgm", "pinnacle", "bet365"]
-            bookie = None
-            for pref in preferred:
-                bookie = next((b for b in bookmakers if pref in b["key"].lower()), None)
-                if bookie:
-                    break
-            if not bookie:
-                bookie = bookmakers[0]
+            # Collect odds from ALL bookmakers
+            all_bookies: list[dict] = []
+            best_home_price = -99999
+            best_away_price = -99999
+            best_draw_price = -99999
+            best_home_odds = None
+            best_away_odds = None
+            best_draw_odds = None
+            best_home_bookie = ""
+            best_away_bookie = ""
+            best_draw_bookie = ""
 
-            markets = bookie.get("markets", [])
-            h2h = next((m for m in markets if m["key"] == "h2h"), None)
-            if not h2h:
+            for b in bookmakers:
+                extracted = _extract_h2h_from_bookie(b, home_name, away_name)
+                if not extracted or not extracted["home_odds"]:
+                    continue
+                all_bookies.append(extracted)
+                # Track best odds (highest price = best for bettor)
+                if extracted["home_price"] > best_home_price:
+                    best_home_price = extracted["home_price"]
+                    best_home_odds = extracted["home_odds"]
+                    best_home_bookie = extracted["bookmaker"]
+                if extracted["away_price"] > best_away_price:
+                    best_away_price = extracted["away_price"]
+                    best_away_odds = extracted["away_odds"]
+                    best_away_bookie = extracted["bookmaker"]
+                if extracted["draw_price"] and extracted["draw_price"] > best_draw_price:
+                    best_draw_price = extracted["draw_price"]
+                    best_draw_odds = extracted["draw_odds"]
+                    best_draw_bookie = extracted["bookmaker"]
+
+            if not all_bookies:
                 return None
 
-            outcomes = h2h.get("outcomes", [])
+            # Primary result: best odds across all bookmakers
             result = {
-                "bookmaker": bookie.get("title", ""),
-                "home_odds": None,
-                "away_odds": None,
-                "draw_odds": None,
+                "bookmaker": all_bookies[0]["bookmaker"],
+                "home_odds": best_home_odds,
+                "away_odds": best_away_odds,
+                "draw_odds": best_draw_odds,
+                "best_home_bookie": best_home_bookie,
+                "best_away_bookie": best_away_bookie,
+                "best_draw_bookie": best_draw_bookie,
+                # Top bookmakers for comparison (max 5)
+                "bookmakers": all_bookies[:5],
+                "total_bookmakers": len(all_bookies),
             }
-            for outcome in outcomes:
-                name = outcome.get("name", "").lower()
-                price = outcome.get("price", 0)
-                if "draw" in name:
-                    result["draw_odds"] = _format_american_odds(price)
-                elif any(w in name for w in home_name.split() if len(w) > 3):
-                    result["home_odds"] = _format_american_odds(price)
-                elif any(w in name for w in away_name.split() if len(w) > 3):
-                    result["away_odds"] = _format_american_odds(price)
-
-            # Fallback: assign by position if name matching failed
-            if not result["home_odds"] and len(outcomes) >= 2:
-                result["home_odds"] = _format_american_odds(outcomes[0].get("price", 0))
-                result["away_odds"] = _format_american_odds(outcomes[1].get("price", 0))
-                if len(outcomes) >= 3:
-                    result["draw_odds"] = _format_american_odds(outcomes[2].get("price", 0))
-
             return result
 
     return None
