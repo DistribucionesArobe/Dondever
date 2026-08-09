@@ -2,6 +2,7 @@
 Sports data fetcher — pulls schedules from ESPN's public API
 and enriches with TV broadcast data from TheSportsDB Premium.
 """
+from __future__ import annotations
 
 import httpx
 import asyncio

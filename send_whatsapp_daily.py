@@ -13,6 +13,7 @@ Usage:
   python send_whatsapp_daily.py --preview    # print message, don't send
   python send_whatsapp_daily.py --test 5218341751234   # send to one number
 """
+from __future__ import annotations
 
 import asyncio
 import logging
