@@ -1430,7 +1430,7 @@
     </div>
     {% endif %}
 
-    {# ── EN VIVO section ── #}
+    {# ── EN VIVO section (same card format as league games) ── #}
     {% if live_games %}
     <section class="priority-section" id="secLive">
         <h2 class="priority-header live-header">
@@ -1438,10 +1438,11 @@
             <span class="league-count">{{ live_games|length }} partido{{ 's' if live_games|length != 1 else '' }}</span>
         </h2>
         {% for game in live_games %}
+        {% set state = 'in' %}
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="game-card live" style="text-decoration:none;" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card live" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
             <div class="gc-compact-top">
                 <div class="gc-compact-left">
                     <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
@@ -1451,6 +1452,7 @@
                     {% endif %}
                     <span class="game-card-league-tag">{{ game.emoji }} {{ game.league_name }}</span>
                 </div>
+                <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
             </div>
             <div class="gc-row">
                 {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
@@ -1490,12 +1492,37 @@
                 <div class="bet-responsible">18+ | Juega responsablemente</div>
             </div>
             {% endif %}
-        </a>
+            {# ── Accordion ── #}
+            <div class="gc-accordion">
+                <div class="gc-channels">
+                    <span class="gc-channels-icon">&#128250;</span>
+                    {% if game.broadcasts %}
+                        {% for b in game.broadcasts %}
+                        {% set saff = streaming_aff.get(b.channel) %}
+                        {% if saff %}
+                        <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
+                            {{ b.channel }} &#8599;
+                        </a>
+                        {% else %}
+                        <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
+                            {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <span class="channel-tag unknown">Por confirmar</span>
+                    {% endif %}
+                </div>
+                <div class="gc-actions">
+                    <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="gc-act-detail" onclick="event.stopPropagation();">D&oacute;nde ver &rarr;</a>
+                </div>
+            </div>
+        </div>
         {% endfor %}
     </section>
     {% endif %}
 
-    {# ── DESTACADOS section ── #}
+    {# ── DESTACADOS section (same card format as league games) ── #}
     {% if featured_games %}
     <section class="priority-section" id="secFeatured">
         <h2 class="priority-header featured-header">
@@ -1503,10 +1530,11 @@
             <span class="league-count">{{ featured_games|length }} partido{{ 's' if featured_games|length != 1 else '' }}</span>
         </h2>
         {% for game in featured_games %}
+        {% set state = 'pre' %}
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="game-card" style="text-decoration:none;border-left:3px solid #ea580c;" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card" style="border-left:3px solid #ea580c;" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
             <div class="gc-compact-top">
                 <div class="gc-compact-left">
                     <span class="pre-badge">PR&Oacute;XIMO</span>
@@ -1515,6 +1543,7 @@
                     {% endif %}
                     <span class="game-card-league-tag">{{ game.emoji }} {{ game.league_name }}</span>
                 </div>
+                <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
             </div>
             <div class="gc-row">
                 {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
@@ -1554,7 +1583,48 @@
                 <div class="bet-responsible">18+ | Juega responsablemente</div>
             </div>
             {% endif %}
-        </a>
+            {# ── Accordion ── #}
+            <div class="gc-accordion">
+                <div class="gc-channels">
+                    <span class="gc-channels-icon">&#128250;</span>
+                    {% if game.broadcasts %}
+                        {% for b in game.broadcasts %}
+                        {% set saff = streaming_aff.get(b.channel) %}
+                        {% if saff %}
+                        <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
+                            {{ b.channel }} &#8599;
+                        </a>
+                        {% else %}
+                        <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
+                            {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <span class="channel-tag unknown">Por confirmar</span>
+                    {% endif %}
+                </div>
+                {% set ns = namespace(has_streaming=false) %}
+                {% for b in game.broadcasts %}
+                    {% if streaming_aff.get(b.channel) %}{% set ns.has_streaming = true %}{% endif %}
+                {% endfor %}
+                {% if ns.has_streaming %}
+                <div class="gc-streaming-cta" onclick="event.stopPropagation();">
+                    {% for b in game.broadcasts %}
+                    {% set saff = streaming_aff.get(b.channel) %}
+                    {% if saff %}
+                    <a href="/go/{{ saff.key }}?s=feat-stream" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="stream-btn" style="background:{{ saff.bg }};">
+                        {{ saff.cta }} <span class="stream-label">&#8599;</span>
+                    </a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="gc-actions">
+                    <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="gc-act-detail" onclick="event.stopPropagation();">D&oacute;nde ver &rarr;</a>
+                </div>
+            </div>
+        </div>
         {% endfor %}
     </section>
     {% endif %}

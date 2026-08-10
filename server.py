@@ -186,6 +186,14 @@ def format_mx_time(iso_date: str) -> str:
 
 
 _DAYS_ES_FMT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+_MONTHS_ES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+              "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+
+def format_date_es(dt) -> str:
+    """'Lunes 10 de Agosto, 2026' — fully Spanish date display."""
+    return f"{_DAYS_ES_FMT[dt.weekday()]} {dt.day} de {_MONTHS_ES[dt.month]}, {dt.year}"
+
 
 def format_mx_day_time(iso_date: str) -> str:
     """'Domingo 26 · 7:20 PM' in Mexico City time (Spanish, DST-aware)."""
@@ -386,7 +394,7 @@ async def home(
             "current_sport": sport,
             "current_league": league,
             "current_date": date or today.strftime("%Y%m%d"),
-            "today_display": viewing_date.strftime("%A %d de %B, %Y"),
+            "today_display": format_date_es(viewing_date),
             "prev_date": prev_date,
             "next_date": next_date,
             "total_games": len(games),
@@ -528,7 +536,7 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             "upcoming_count": upcoming_count,
             "saff": saff,
             "current_date": date or today.strftime("%Y%m%d"),
-            "today_display": viewing_date.strftime("%A %d de %B, %Y"),
+            "today_display": format_date_es(viewing_date),
             "prev_date": prev_date,
             "next_date": next_date,
         },
@@ -2426,7 +2434,7 @@ async def channel_page(request: Request, channel_slug: str):
             "channel_slug": channel_slug,
             "games": channel_games,
             "total_games": len(channel_games),
-            "today_display": today.strftime("%A %d de %B, %Y"),
+            "today_display": format_date_es(today),
         },
     )
 
