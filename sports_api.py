@@ -728,12 +728,31 @@ async def parse_espn_events_enriched(
         # Status
         status_type = ev.get("status", {}).get("type", {})
         status_raw = ev.get("status", {})
+        raw_clock = status_raw.get("displayClock", "")
+        detail = status_type.get("detail", "")
+        period = status_raw.get("period", 0)
+        sport_type_tmp = league_info[0] if isinstance(league_info, tuple) else ""
+
+        # Baseball: replace useless "0:00" clock with inning info
+        if sport_type_tmp == "baseball" and status_type.get("state") == "in":
+            detail_lower = detail.lower()
+            if "top" in detail_lower:
+                raw_clock = f"▲{period}"
+            elif "bot" in detail_lower:
+                raw_clock = f"▼{period}"
+            elif "mid" in detail_lower:
+                raw_clock = f"▲▼{period}"
+            elif "end" in detail_lower:
+                raw_clock = f"▼{period}'"
+            else:
+                raw_clock = f"{period}°"
+
         status = {
             "state": status_type.get("state", "pre"),
-            "detail": status_type.get("detail", ""),
+            "detail": detail,
             "display": status_type.get("description", "Scheduled"),
-            "clock": status_raw.get("displayClock", ""),
-            "period": status_raw.get("period", 0),
+            "clock": raw_clock,
+            "period": period,
         }
 
         venue_raw = comp.get("venue", {})
