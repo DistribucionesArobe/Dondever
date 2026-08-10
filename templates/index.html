@@ -203,35 +203,34 @@
         .sport-card .sc-count { font-size: 0.5rem; font-weight: 700; color: #64748b; }
         .sport-card.active .sc-count { color: #6ee7b7; }
 
-        /* ── Search Bar (hero-integrated) ──── */
+        /* ── Search Bar (hero-integrated, prominent) ──── */
         .hero-search {
-            max-width: 420px;
+            max-width: 500px;
             margin: 0 auto 0.6rem;
             position: relative;
         }
         .search-box {
-            background: rgba(255,255,255,0.08);
-            border: 1.5px solid rgba(255,255,255,0.12);
-            border-radius: 12px;
-            padding: 0.55rem 0.85rem;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(16,185,129,0.3);
+            border-radius: 14px;
+            padding: 0.65rem 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
         }
-        .search-box:focus-within { border-color: #10b981; background: rgba(255,255,255,0.12); }
-        .search-box::before { content: "🔍"; font-size: 0.85rem; }
+        .search-box:focus-within { border-color: #10b981; background: rgba(255,255,255,0.15); box-shadow: 0 2px 16px rgba(16,185,129,0.2); }
         .search-input {
             width: 100%;
             border: none;
             outline: none;
-            font-size: 0.85rem;
+            font-size: 0.95rem;
             font-family: inherit;
             color: #fff;
             background: transparent;
         }
-        .search-input::placeholder { color: #64748b; }
-        .search-or { font-size: 0.65rem; color: #64748b; margin-bottom: 0.4rem; font-weight: 600; }
+        .search-input::placeholder { color: #94a3b8; }
 
         /* Autocomplete dropdown */
         .ac-dropdown {
@@ -1295,6 +1294,16 @@
             <span class="country-btn" data-country="ES">&#127466;&#127480; Espa&ntilde;a</span>
         </div>
 
+        <!-- Search (prominent, above sport cards) -->
+        <div class="hero-search" id="heroSearch" style="margin-bottom:0.8rem;">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="&#128269; Buscar equipo, partido o canal..." id="searchInput" autocomplete="off" style="font-size:0.95rem;">
+            </div>
+            <div class="ac-dropdown" id="acDropdown"></div>
+        </div>
+        <!-- Team Quick Panel -->
+        <div id="teamPanel" class="team-panel" style="display:none;"></div>
+
         <!-- Sport Cards Grid -->
         <div class="sport-cards">
             <a href="/" class="sport-card {% if not current_sport and not current_league %}active{% endif %}">
@@ -1341,17 +1350,6 @@
 
         <!-- Fav filter (hidden, shown by JS if user has favs) -->
         <button class="filter-pill" id="favFilter" onclick="toggleFavFilter()" style="cursor:pointer;border:none;display:none;background:rgba(255,255,255,0.08);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);border-radius:2rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;margin-bottom:0.5rem;">&#11088; Mis equipos</button>
-
-        <!-- Search -->
-        <div class="search-or">o busca tu equipo</div>
-        <div class="hero-search" id="heroSearch">
-            <div class="search-box">
-                <input type="text" class="search-input" placeholder="Buscar equipo, liga, canal..." id="searchInput" autocomplete="off">
-            </div>
-            <div class="ac-dropdown" id="acDropdown"></div>
-        </div>
-        <!-- Team Quick Panel -->
-        <div id="teamPanel" class="team-panel" style="display:none;"></div>
 
         <!-- Date nav -->
         <nav class="date-nav">
@@ -2636,9 +2634,13 @@
         // Show autocomplete
         showAutocomplete(q);
 
-        // Filter game cards
+        // Filter game cards + hide empty league sections
         document.querySelectorAll('.game-card').forEach(function(card) {
             card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+        document.querySelectorAll('.league-section, .priority-section').forEach(function(sec) {
+            var visibleCards = sec.querySelectorAll('.game-card:not([style*="display: none"])');
+            sec.style.display = visibleCards.length ? '' : 'none';
         });
 
         // Clear panel if search is empty
