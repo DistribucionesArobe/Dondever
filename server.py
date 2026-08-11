@@ -16,6 +16,7 @@ from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
 from config import AFFILIATES, STREAMING_AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES, TEAM_SHOP, MELI_AFF_PARAM, TEAM_SHOP_MELI, POPULAR_TEAMS
+from db import init_db, persist_games, get_team_history, get_team_upcoming, get_team_channels
 from sports_api import (
     get_todays_games, search_games, get_team_stats, get_league_standings,
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
@@ -1905,6 +1906,13 @@ try:
 
     @app.on_event("startup")
     async def start_scheduler():
+        # ── Init database tables ──
+        try:
+            await init_db()
+            logger.info("Database initialized")
+        except Exception as e:
+            logger.warning(f"DB init failed (non-fatal): {e}")
+
         # Twitter bot (only if credentials set)
         if os.getenv("TWITTER_API_KEY"):
             setup_twitter_scheduler(scheduler)
@@ -3349,6 +3357,33 @@ async def team_page(request: Request, team_slug: str):
         except Exception:
             pass
 
+    # ── DB fallback: if ESPN returned nothing, use historical DB data ──
+    top_channels = []
+    try:
+        if not recent_results:
+            db_history = await get_team_history(team_name, limit=5)
+            for h in db_history:
+                recent_results.append({
+                    "home": h["home_name"], "away": h["away_name"],
+                    "home_score": h["home_score"], "away_score": h["away_score"],
+                    "date": h["game_date"], "league": h.get("league_name", ""),
+                })
+        if not upcoming_games:
+            db_upcoming = await get_team_upcoming(team_name, limit=5)
+            for u in db_upcoming:
+                import json as _json_mod
+                ch_list = _json_mod.loads(u.get("channels_json", "[]")) if u.get("channels_json") else []
+                upcoming_games.append({
+                    "home": u["home_name"], "away": u["away_name"],
+                    "date_utc": str(u.get("date_utc", "")),
+                    "league": u.get("league_name", ""),
+                    "channels": ch_list,
+                })
+        # Top channels for this team (always try)
+        top_channels = await get_team_channels(team_name)
+    except Exception:
+        pass  # DB unavailable — degrade gracefully
+
     # Fetch team news from ESPN
     team_news = []
     if league_info_map:
@@ -3407,6 +3442,7 @@ async def team_page(request: Request, team_slug: str):
         "meli_gorra": meli_gorra,
         "meli_acc": meli_acc,
         "faq_items": faq_items,
+        "top_channels": top_channels,
     })
 
 

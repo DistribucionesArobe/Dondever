@@ -754,6 +754,18 @@
     </div>
     {% endif %}
 
+    {# ══ CANALES FRECUENTES (desde DB) ══ #}
+    {% if top_channels %}
+    <div class="related-teams" style="margin-bottom:1rem;">
+        <h2>Canales donde más se transmite a {{ team_name }}</h2>
+        <div class="related-grid">
+            {% for ch_name, ch_count in top_channels %}
+            <a href="/canal/{{ ch_name|lower|replace(' ', '-')|replace('+', '-plus') }}">{{ ch_name }} <span style="font-size:0.75rem;color:var(--text-muted)">({{ ch_count }})</span></a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     {# ══ EQUIPOS RELACIONADOS ══ #}
     {% if related_teams %}
     <div class="related-teams">

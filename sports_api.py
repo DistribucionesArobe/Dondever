@@ -880,6 +880,14 @@ async def get_todays_games(
         all_events.extend(events)
 
     all_events.sort(key=lambda e: e.get("date", ""))
+
+    # ── Persist to DB (fire-and-forget) ──
+    try:
+        from db import persist_games
+        asyncio.create_task(persist_games(all_events, date_str))
+    except Exception:
+        pass  # DB unavailable — degrade gracefully
+
     return all_events
 
 
