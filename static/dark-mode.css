@@ -1,0 +1,369 @@
+/* ── DondeVer Dark Mode ─────────────────────────── */
+:root {
+  --bg-body: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f0fdf4;
+  --bg-muted: #f3f4f6;
+  --bg-input: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --border-main: #e5e7eb;
+  --border-light: #f3f4f6;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.04);
+  /* Accent stays same */
+  --accent: #10b981;
+  --accent-light: #d1fae5;
+  --accent-dark: #059669;
+  /* Game card states (light) */
+  --live-bg: #fef8f8;
+  --live-border: #fecaca;
+  --final-bg: #fafafa;
+  /* Info card */
+  --info-bg: #f8fafc;
+  /* Odds/bet */
+  --odds-bg: #f9fafb;
+  --odds-border: #eef0f2;
+  /* Channel tags */
+  --tag-cable-bg: #dbeafe;
+  --tag-cable-color: #1d4ed8;
+  --tag-stream-bg: #ede9fe;
+  --tag-stream-color: #6d28d9;
+  --tag-broadcast-bg: #d1fae5;
+  --tag-broadcast-color: #059669;
+  --tag-unknown-bg: #f3f4f6;
+  --tag-unknown-color: #9ca3af;
+}
+
+[data-theme="dark"] {
+  --bg-body: #0b1120;
+  --bg-card: #1e293b;
+  --bg-card-hover: rgba(16,185,129,0.08);
+  --bg-muted: #1e293b;
+  --bg-input: #334155;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border-main: #334155;
+  --border-light: #1e293b;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3);
+  --accent-light: rgba(16,185,129,0.15);
+  /* Game card states (dark) */
+  --live-bg: rgba(239,68,68,0.08);
+  --live-border: rgba(239,68,68,0.3);
+  --final-bg: #151e2e;
+  /* Info card */
+  --info-bg: #1e293b;
+  /* Odds/bet */
+  --odds-bg: #1e293b;
+  --odds-border: #334155;
+  /* Channel tags (dark) */
+  --tag-cable-bg: rgba(59,130,246,0.15);
+  --tag-cable-color: #60a5fa;
+  --tag-stream-bg: rgba(139,92,246,0.15);
+  --tag-stream-color: #a78bfa;
+  --tag-broadcast-bg: rgba(16,185,129,0.15);
+  --tag-broadcast-color: #6ee7b7;
+  --tag-unknown-bg: rgba(100,116,139,0.15);
+  --tag-unknown-color: #64748b;
+}
+
+/* ── Apply variables to common elements ── */
+[data-theme="dark"] body {
+  background: var(--bg-body) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .game-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .game-card:hover {
+  background: var(--bg-card-hover) !important;
+}
+[data-theme="dark"] .game-card.live {
+  background: var(--live-bg) !important;
+  border-color: var(--live-border) !important;
+}
+[data-theme="dark"] .game-card.final {
+  background: var(--final-bg) !important;
+}
+[data-theme="dark"] .game-card.final .team-name {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .team-name {
+  color: var(--text-primary) !important;
+}
+[data-theme="dark"] .team-score {
+  color: #34d399 !important;
+}
+[data-theme="dark"] .game-card.final .team-score {
+  color: var(--text-secondary) !important;
+}
+
+/* Borders & dividers */
+[data-theme="dark"] .gc-channels,
+[data-theme="dark"] .gc-streaming-cta,
+[data-theme="dark"] .gc-actions,
+[data-theme="dark"] .odds-mini,
+[data-theme="dark"] .bet-strip,
+[data-theme="dark"] .gc-bet-full {
+  border-color: var(--border-light) !important;
+}
+
+/* Channel tags */
+[data-theme="dark"] .channel-tag.cable { background: var(--tag-cable-bg) !important; color: var(--tag-cable-color) !important; }
+[data-theme="dark"] .channel-tag.streaming { background: var(--tag-stream-bg) !important; color: var(--tag-stream-color) !important; }
+[data-theme="dark"] .channel-tag.broadcast { background: var(--tag-broadcast-bg) !important; color: var(--tag-broadcast-color) !important; }
+[data-theme="dark"] .channel-tag.unknown { background: var(--tag-unknown-bg) !important; color: var(--tag-unknown-color) !important; }
+
+/* Odds chips */
+[data-theme="dark"] .odds-chip,
+[data-theme="dark"] .bet-odd-chip,
+[data-theme="dark"] .bet-full-chip {
+  background: var(--odds-bg) !important;
+  border-color: var(--odds-border) !important;
+  color: var(--text-secondary) !important;
+}
+[data-theme="dark"] .bet-odd-chip strong,
+[data-theme="dark"] .bfc-odds {
+  color: var(--text-primary) !important;
+}
+
+/* Bet preview */
+[data-theme="dark"] .gc-bet-preview {
+  background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.04)) !important;
+  border-color: rgba(251,191,36,0.25) !important;
+}
+
+/* League headers */
+[data-theme="dark"] .league-header {
+  color: var(--text-primary) !important;
+}
+
+/* Info sections */
+[data-theme="dark"] .info-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+}
+[data-theme="dark"] .info-card p { color: var(--text-secondary) !important; }
+[data-theme="dark"] .info-item { background: var(--bg-muted) !important; }
+
+/* WhatsApp CTA */
+[data-theme="dark"] .wa-cta-inner {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+}
+[data-theme="dark"] .wa-form input[type="tel"] {
+  background: var(--bg-input) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Team chips */
+[data-theme="dark"] .team-chip {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Footer */
+[data-theme="dark"] .footer {
+  border-color: var(--border-main) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Sub-filter bar */
+[data-theme="dark"] .sub-filter-inner {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+}
+[data-theme="dark"] .sub-chip {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Subfilter pills */
+[data-theme="dark"] .subfilter-pill {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+[data-theme="dark"] .subfilter-pill:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Actions row */
+[data-theme="dark"] .gc-act {
+  background: var(--bg-muted) !important;
+  color: var(--text-secondary) !important;
+}
+[data-theme="dark"] .gc-act:hover {
+  background: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Toggle button */
+[data-theme="dark"] .gc-toggle {
+  color: var(--text-muted) !important;
+}
+
+/* Bet compare table */
+[data-theme="dark"] .bet-compare-table {
+  border-color: var(--border-main) !important;
+}
+[data-theme="dark"] .bet-compare-table th {
+  background: var(--bg-muted) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-main) !important;
+}
+[data-theme="dark"] .bet-compare-table td {
+  color: var(--text-secondary) !important;
+  border-color: var(--border-light) !important;
+}
+[data-theme="dark"] .bet-compare-table td:first-child {
+  color: var(--text-primary) !important;
+}
+[data-theme="dark"] .bet-compare-table tr:hover td {
+  background: rgba(16,185,129,0.06) !important;
+}
+
+/* Fav bar */
+[data-theme="dark"] .fav-bar-inner {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+}
+
+/* Standings table */
+[data-theme="dark"] .standings-table th {
+  background: var(--bg-muted) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-main) !important;
+}
+[data-theme="dark"] .standings-table td {
+  color: var(--text-secondary) !important;
+  border-color: var(--border-light) !important;
+}
+
+/* Ad slot */
+[data-theme="dark"] .ad-slot-link {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+}
+
+/* Primary channel */
+[data-theme="dark"] .gc-primary-channel {
+  color: var(--text-muted) !important;
+}
+
+/* Dark-mode toggle button */
+.dm-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 8px;
+  color: #94a3b8;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+.dm-toggle:hover {
+  background: rgba(255,255,255,0.1);
+  color: #e2e8f0;
+}
+
+/* Streak badges (tendencias/rachas) */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+.streak-badge.win { background: rgba(5,150,105,0.12); color: #059669; }
+.streak-badge.lose { background: rgba(239,68,68,0.1); color: #ef4444; }
+.streak-badge.draw { background: rgba(249,115,22,0.1); color: #f97316; }
+[data-theme="dark"] .streak-badge.win { background: rgba(52,211,153,0.15); color: #6ee7b7; }
+[data-theme="dark"] .streak-badge.lose { background: rgba(239,68,68,0.15); color: #fca5a5; }
+[data-theme="dark"] .streak-badge.draw { background: rgba(249,115,22,0.15); color: #fdba74; }
+
+/* Standings compact section on home */
+.standings-compact {
+  max-width: 1100px;
+  margin: 0 auto 1.25rem;
+  padding: 0 1rem;
+}
+.standings-compact h2 {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 0.6rem;
+}
+.standings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+.standings-mini-card {
+  background: var(--bg-card, white);
+  border: 1px solid var(--border-main, #e5e7eb);
+  border-radius: 12px;
+  padding: 0.75rem;
+  box-shadow: var(--shadow-card, 0 1px 3px rgba(0,0,0,0.04));
+}
+.standings-mini-header {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.standings-mini-header a {
+  font-size: 0.65rem;
+  color: var(--accent, #10b981);
+  text-decoration: none;
+  font-weight: 600;
+}
+.standings-mini-header a:hover { text-decoration: underline; }
+.standings-mini-table {
+  width: 100%;
+  font-size: 0.65rem;
+  border-collapse: collapse;
+}
+.standings-mini-table th {
+  text-align: left;
+  color: var(--text-muted, #9ca3af);
+  font-weight: 600;
+  padding: 0.2rem 0.3rem;
+  border-bottom: 1px solid var(--border-main, #e5e7eb);
+  text-transform: uppercase;
+  font-size: 0.55rem;
+}
+.standings-mini-table th:not(:first-child) { text-align: center; }
+.standings-mini-table td {
+  padding: 0.25rem 0.3rem;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
+  font-weight: 600;
+}
+.standings-mini-table td:not(:first-child) { text-align: center; }
+.standings-mini-table td:first-child {
+  color: var(--text-primary, #0f172a);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.standings-mini-table tr:last-child td { border-bottom: none; }
+.standings-mini-table .st-logo { width: 16px; height: 16px; border-radius: 50%; object-fit: contain; }
+.standings-mini-table .st-rank { color: var(--text-muted, #9ca3af); font-weight: 600; min-width: 14px; }

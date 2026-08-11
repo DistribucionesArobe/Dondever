@@ -401,6 +401,28 @@ async def home(
         s = LEAGUES.get(ls, ("other",))[0] if ls in LEAGUES else "other"
         sport_counts[s] = sport_counts.get(s, 0) + 1
 
+    # ── Compact standings for home page ────────────────
+    home_standings: dict = {}
+    _STANDINGS_LEAGUES = [
+        ("liga-mx", "soccer", "mex.1", "Liga MX", "⚽"),
+        ("premier-league", "soccer", "eng.1", "Premier League", "⚽"),
+        ("mlb", "baseball", "mlb", "MLB", "⚾"),
+        ("nba", "basketball", "nba", "NBA", "🏀"),
+    ]
+    active_sports = set(sport_counts.keys()) - {"all"}
+    standings_tasks = []
+    standings_keys = []
+    for ls, sp, lid, nm, em in _STANDINGS_LEAGUES:
+        if sp in active_sports or "soccer" in active_sports:
+            standings_tasks.append(get_league_standings(sp, lid, limit=5))
+            standings_keys.append((ls, sp, nm, em))
+    if standings_tasks:
+        standings_results = await asyncio.gather(*standings_tasks, return_exceptions=True)
+        for (ls, sp, nm, em), result in zip(standings_keys, standings_results):
+            if isinstance(result, Exception) or not result:
+                continue
+            home_standings[ls] = {"name": nm, "emoji": em, "sport": sp, "entries": result}
+
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -420,6 +442,7 @@ async def home(
             "live_games": live_games,
             "featured_games": featured_games,
             "sport_counts": sport_counts,
+            "home_standings": home_standings,
         },
     )
 

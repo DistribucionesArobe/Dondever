@@ -56,6 +56,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script>
+    /* Apply dark mode ASAP to prevent flash */
+    (function(){var t=localStorage.getItem('dv-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -100,7 +105,7 @@
         }
         .logo-text .donde { color: #f8f9fb; }
         .logo-text .ver { color: #10b981; }
-        .header-right { display: none; }
+        .header-right { display: flex; align-items: center; gap: 0.3rem; }
         /* ── Country Picker (centered) ────────── */
         .country-picker-wrap {
             display: flex;
@@ -1263,7 +1268,9 @@
             <img src="/static/logo-full.png" alt="DondeVer">
             <span class="logo-text"><span class="donde">Donde</span><span class="ver">Ver</span></span>
         </a>
-        <div class="header-right"></div>
+        <div class="header-right">
+            <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button>
+        </div>
     </div>
 </header>
 
@@ -1689,13 +1696,13 @@
                 {% if top_team.logo %}
                 <img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">
                 {% endif %}
-                <span class="team-name">{{ top_team.name }}</span>
+                <span class="team-name">{{ top_team.name }}{% if top_team.record %} <span style="font-size:0.6rem;font-weight:600;color:#9ca3af;margin-left:0.2rem;">({{ top_team.record }})</span>{% endif %}</span>
                 <span class="gc-right">
                     {% if state == 'pre' %}
                         <span class="gc-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</span>
                         <div class="countdown" data-kickoff="{{ game.date }}"></div>
                     {% else %}
-                        <span class="team-score">{{ top_team.score }}</span>
+                        <span class="team-score score-{{ 'home' if home_left else 'away' }}">{{ top_team.score }}</span>
                     {% endif %}
                 </span>
             </div>
@@ -1703,12 +1710,12 @@
                 {% if bottom_team.logo %}
                 <img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">
                 {% endif %}
-                <span class="team-name">{{ bottom_team.name }}</span>
+                <span class="team-name">{{ bottom_team.name }}{% if bottom_team.record %} <span style="font-size:0.6rem;font-weight:600;color:#9ca3af;margin-left:0.2rem;">({{ bottom_team.record }})</span>{% endif %}</span>
                 <span class="gc-right">
                     {% if state == 'pre' %}
                         <span class="gc-sub tz-hora-label">HORA MX</span>
                     {% else %}
-                        <span class="team-score">{{ bottom_team.score }}</span>
+                        <span class="team-score score-{{ 'away' if home_left else 'home' }}">{{ bottom_team.score }}</span>
                     {% endif %}
                 </span>
             </div>
@@ -1892,6 +1899,57 @@
     {% endif %}
     {% endfor %}
 </main>
+
+<!-- Standings compactos -->
+{% if home_standings %}
+<div class="standings-compact">
+    <h2>&#127942; Tablas de posiciones</h2>
+    <div class="standings-grid">
+        {% for league_slug, st_data in home_standings.items() %}
+        <div class="standings-mini-card">
+            <div class="standings-mini-header">
+                <span>{{ st_data.emoji }} {{ st_data.name }}</span>
+                <a href="/liga/{{ league_slug }}">Ver completa &rarr;</a>
+            </div>
+            <table class="standings-mini-table">
+                <thead>
+                    <tr>
+                        <th>Equipo</th>
+                        {% if st_data.sport == 'soccer' %}
+                        <th>PJ</th><th>G</th><th>E</th><th>P</th><th>Pts</th>
+                        {% else %}
+                        <th>G</th><th>P</th><th>%</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for team in st_data.entries[:5] %}
+                    <tr>
+                        <td>
+                            <span class="st-rank">{{ loop.index }}</span>
+                            {% if team.team_logo %}<img src="{{ team.team_logo }}" class="st-logo" loading="lazy">{% endif %}
+                            {{ team.team_short or team.team_name[:12] }}
+                        </td>
+                        {% if st_data.sport == 'soccer' %}
+                        <td>{{ team.games_played }}</td>
+                        <td>{{ team.wins }}</td>
+                        <td>{{ team.ties }}</td>
+                        <td>{{ team.losses }}</td>
+                        <td><strong>{{ team.points }}</strong></td>
+                        {% else %}
+                        <td>{{ team.wins }}</td>
+                        <td>{{ team.losses }}</td>
+                        <td>{{ team.win_pct or '' }}</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <!-- WhatsApp CTA -->
 <div class="wa-cta" id="wa-subscribe">
@@ -3006,6 +3064,7 @@ function emailSubscribe(e) {
   return false;
 }
 </script>
+<script src="/static/dark-mode.js" defer></script>
 <script src="/static/timezone.js" defer></script>
 
 <script>

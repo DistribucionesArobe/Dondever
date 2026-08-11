@@ -101,6 +101,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script>
+    /* Apply dark mode ASAP to prevent flash */
+    (function(){var t=localStorage.getItem('dv-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; min-height: 100vh; }
@@ -212,13 +217,106 @@
     .wa-msg.success { display: block; background: #f0fdf4; color: #166534; }
     .wa-msg.error { display: block; background: #fef2f2; color: #991b1b; }
     .wa-note { font-size: 0.62rem; color: #9ca3af; margin-top: 0.4rem; }
+
+    /* ── Dark Mode — Game Page ────────────── */
+    [data-theme="dark"] body { background: var(--bg-body) !important; color: var(--text-primary) !important; }
+    [data-theme="dark"] .header { background: #0b1120 !important; }
+    [data-theme="dark"] .game-hero {
+        background: var(--bg-card) !important;
+        border-color: var(--border-main) !important;
+        box-shadow: var(--shadow-card) !important;
+    }
+    [data-theme="dark"] .game-hero .name { color: var(--text-primary) !important; }
+    [data-theme="dark"] .game-hero .score { color: #34d399 !important; }
+    [data-theme="dark"] .league-badge { background: rgba(16,185,129,0.15) !important; color: #6ee7b7 !important; }
+    [data-theme="dark"] .vs { color: var(--text-muted) !important; }
+    [data-theme="dark"] .time-block .tz { color: var(--text-secondary) !important; }
+    [data-theme="dark"] .channels-section h3 { color: #6ee7b7 !important; }
+    [data-theme="dark"] .channel-pill.cable { background: var(--tag-cable-bg) !important; color: var(--tag-cable-color) !important; }
+    [data-theme="dark"] .channel-pill.streaming { background: var(--tag-stream-bg) !important; color: var(--tag-stream-color) !important; }
+    [data-theme="dark"] .channel-pill.broadcast { background: var(--tag-broadcast-bg) !important; color: var(--tag-broadcast-color) !important; }
+    [data-theme="dark"] .channel-pill.unknown { background: var(--tag-unknown-bg) !important; color: var(--tag-unknown-color) !important; }
+    [data-theme="dark"] .country-label { background: var(--bg-muted) !important; color: var(--text-secondary) !important; }
+    [data-theme="dark"] .country-label.free-label { background: #059669 !important; color: white !important; }
+    [data-theme="dark"] .venue { color: var(--text-secondary) !important; }
+    [data-theme="dark"] .footer { color: var(--text-muted) !important; }
+    [data-theme="dark"] .footer a { color: var(--accent) !important; }
+    /* Game detail cards (stats, rosters, standings, h2h, boxscore) */
+    [data-theme="dark"] .gd-card {
+        background: var(--bg-card) !important;
+        border-color: var(--border-main) !important;
+        box-shadow: var(--shadow-card) !important;
+    }
+    [data-theme="dark"] .gd-card table th { color: var(--text-muted) !important; }
+    [data-theme="dark"] .gd-card table td { color: var(--text-secondary) !important; }
+    [data-theme="dark"] .gd-card table tr { border-color: var(--border-light) !important; }
+    /* Email CTA */
+    [data-theme="dark"] .wa-cta-inner {
+        background: var(--bg-card) !important;
+        border-color: var(--border-main) !important;
+    }
+    [data-theme="dark"] .wa-form input[type="email"] {
+        background: var(--bg-input) !important;
+        border-color: var(--border-main) !important;
+        color: var(--text-primary) !important;
+    }
+    [data-theme="dark"] .wa-cta-title { color: var(--text-primary) !important; }
+    [data-theme="dark"] .wa-cta-sub { color: var(--text-secondary) !important; }
+    [data-theme="dark"] .wa-cta-features span { background: rgba(16,185,129,0.1) !important; color: var(--text-secondary) !important; }
+    /* Calendar/Share buttons */
+    [data-theme="dark"] .game-hero button[onclick="dvCal()"],
+    [data-theme="dark"] #copyBtn {
+        background: var(--bg-muted) !important;
+        border-color: var(--border-main) !important;
+        color: var(--text-secondary) !important;
+    }
+    /* Inline text overrides inside gd-card */
+    [data-theme="dark"] .gd-card span[style*="color:#1a1a2e"],
+    [data-theme="dark"] .gd-card div[style*="color:#1a1a2e"],
+    [data-theme="dark"] .gd-card td[style*="color:#1a1a2e"],
+    [data-theme="dark"] .gd-card span[style*="color:#374151"],
+    [data-theme="dark"] .gd-card td[style*="color:#374151"] {
+        color: var(--text-primary) !important;
+    }
+    [data-theme="dark"] .gd-card span[style*="color:#6b7280"],
+    [data-theme="dark"] .gd-card td[style*="color:#6b7280"],
+    [data-theme="dark"] .gd-card div[style*="color:#6b7280"],
+    [data-theme="dark"] .gd-card span[style*="color:#9ca3af"],
+    [data-theme="dark"] .gd-card td[style*="color:#9ca3af"],
+    [data-theme="dark"] .gd-card div[style*="color:#9ca3af"],
+    [data-theme="dark"] .gd-card th[style*="color:#9ca3af"] {
+        color: var(--text-muted) !important;
+    }
+    [data-theme="dark"] .gd-card tr[style*="border-top:1px solid #f3f4f6"],
+    [data-theme="dark"] .gd-card div[style*="border-bottom:1px solid #f3f4f6"],
+    [data-theme="dark"] .gd-card div[style*="border-top:1px solid #f3f4f6"] {
+        border-color: var(--border-light) !important;
+    }
+    [data-theme="dark"] .gd-card div[style*="border-top:1px solid #e5e7eb"] {
+        border-color: var(--border-main) !important;
+    }
+    [data-theme="dark"] .gd-card tr[style*="background:#f0fdf4"] {
+        background: rgba(16,185,129,0.1) !important;
+    }
+    /* Boxscore sticky header cells in dark */
+    [data-theme="dark"] .gd-card th[style*="background:white"],
+    [data-theme="dark"] .gd-card td[style*="background:white"] {
+        background: var(--bg-card) !important;
+    }
+    /* Team block img background */
+    [data-theme="dark"] .team-block img {
+        background: var(--bg-muted) !important;
+    }
 </style>
 </head>
 <body>
     <header class="header">
         <div class="header-inner">
             <a href="/" class="logo">Donde<span>Ver</span></a>
-            <a href="/" class="back">&larr; Todos los juegos</a>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.25rem 0.4rem;border-radius:8px;color:#94a3b8;">&#127769;</button>
+                <a href="/" class="back">&larr; Todos los juegos</a>
+            </div>
         </div>
     </header>
 
@@ -363,7 +461,7 @@
     {# ── Stats Comparison ── #}
     {% if left_stats and right_stats and left_stats.record and right_stats.record %}
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
-        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+        <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
             <div style="text-align:center;margin-bottom:0.75rem;">
                 <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#059669;font-weight:600;">Comparacion de equipos</div>
             </div>
@@ -477,7 +575,7 @@
     {# ── Alineaciones / Rosters ── #}
     {% if summary and summary.rosters %}
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
-        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+        <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
             <div style="text-align:center;margin-bottom:0.75rem;">
                 <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#6366f1;font-weight:600;">Alineaciones</div>
             </div>
@@ -525,7 +623,7 @@
     {# ── Tabla de Posiciones (mini) ── #}
     {% if summary and summary.standings %}
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
-        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+        <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
             <div style="text-align:center;margin-bottom:0.75rem;">
                 <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#059669;font-weight:600;">Tabla de Posiciones</div>
             </div>
@@ -568,7 +666,7 @@
     {# ── Historial H2H / Serie de Temporada ── #}
     {% if summary and summary.seasonseries %}
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
-        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+        <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
             <div style="text-align:center;margin-bottom:0.75rem;">
                 <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#f59e0b;font-weight:600;">Historial entre equipos</div>
             </div>
@@ -601,7 +699,7 @@
     {# ── Boxscore / Stats de Jugadores Clave ── #}
     {% if summary and summary.boxscore_players %}
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
-        <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+        <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
             <div style="text-align:center;margin-bottom:0.75rem;">
                 <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#ef4444;font-weight:600;">Jugadores Clave</div>
             </div>
@@ -1127,6 +1225,7 @@ function dvCopy() {
     });
 }
 </script>
+<script src="/static/dark-mode.js" defer></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
 </body>
 </html>

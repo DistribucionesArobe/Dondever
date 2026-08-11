@@ -650,11 +650,21 @@ async def parse_espn_events_enriched(
 
         home = away = None
         for team_data in competitors:
+            # Extract team record from ESPN (W-L or W-D-L)
+            records = team_data.get("records", [])
+            record_str = ""
+            for rec in records:
+                if rec.get("type") == "total" or rec.get("name") == "overall":
+                    record_str = rec.get("summary", "")
+                    break
+            if not record_str and records:
+                record_str = records[0].get("summary", "")
             team_info = {
                 "name": team_data.get("team", {}).get("displayName", "TBD"),
                 "short": team_data.get("team", {}).get("abbreviation", ""),
                 "logo": team_data.get("team", {}).get("logo", ""),
                 "score": team_data.get("score", ""),
+                "record": record_str,
             }
             if team_data.get("homeAway") == "home":
                 home = team_info
@@ -662,9 +672,9 @@ async def parse_espn_events_enriched(
                 away = team_info
 
         if not home:
-            home = {"name": "TBD", "short": "", "logo": "", "score": ""}
+            home = {"name": "TBD", "short": "", "logo": "", "score": "", "record": ""}
         if not away:
-            away = {"name": "TBD", "short": "", "logo": "", "score": ""}
+            away = {"name": "TBD", "short": "", "logo": "", "score": "", "record": ""}
 
         # 1) Get ESPN broadcast info (normalize truncated names)
         espn_broadcasts = []
