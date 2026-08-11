@@ -17,6 +17,12 @@
     <meta name="twitter:description" content="Compara precios de todas las plataformas de streaming deportivo en Mexico.">
     <meta name="twitter:image" content="https://dondever.app/static/og-image.png">
     <link rel="canonical" href="https://dondever.app/streaming">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f8fafc; color:#1a1a2e; }
@@ -335,5 +341,6 @@
   }, true);
 })();
 </script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
 </body>
 </html>

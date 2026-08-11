@@ -1,0 +1,35 @@
+{
+  "name": "DondeVer — Dónde ver deportes en vivo",
+  "short_name": "DondeVer",
+  "description": "Guía de canales y horarios para ver deportes en vivo en México, USA y Latinoamérica.",
+  "start_url": "/?utm_source=pwa",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es-MX",
+  "categories": ["sports", "entertainment"],
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

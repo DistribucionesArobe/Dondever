@@ -16,6 +16,12 @@
     <meta name="twitter:title" content="Politica de Privacidad - DondeVer.app">
     <meta name="twitter:description" content="Como manejamos tus datos y protegemos tu informacion.">
     <link rel="canonical" href="{{ app_url }}/privacidad">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -81,5 +87,6 @@
         <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a></p>
         <p style="margin-top:0.3rem"><a href="/privacidad">Privacidad</a> &middot; <a href="/terminos">Terminos</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
     </footer>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
 </body>
 </html>

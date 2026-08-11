@@ -265,6 +265,24 @@ async def onesignal_service_worker():
 #         headers={"Service-Worker-Allowed": "/"},
 #     )
 
+# ── PWA ──────────────────────────────────────────────────────
+@app.get("/manifest.json")
+async def pwa_manifest():
+    manifest_path = _Path(__file__).parent / "static" / "manifest.json"
+    return Response(
+        content=manifest_path.read_text(),
+        media_type="application/manifest+json",
+    )
+
+@app.get("/pwa-sw.js")
+async def pwa_service_worker():
+    sw_path = _Path(__file__).parent / "pwa-sw.js"
+    return Response(
+        content=sw_path.read_text(),
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/"},
+    )
+
 
 # ── Web Routes ───────────────────────────────────────────
 
