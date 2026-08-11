@@ -748,11 +748,19 @@ LEAGUES_INDIVIDUAL = {
 ALL_LEAGUES = {**LEAGUES, **LEAGUES_INDIVIDUAL}
 
 
-def get_affiliate_url(key: str, source: str = "web") -> str:
+# Deep link sport slugs per casino
+_BETSSON_SPORTS = {
+    "soccer": "futbol", "baseball": "beisbol", "basketball": "basquetbol",
+    "football": "futbol-americano", "hockey": "hockey-sobre-hielo",
+    "mma": "artes-marciales-mixtas", "boxing": "boxeo",
+    "motorsports": "automovilismo", "tennis": "tenis",
+}
+
+
+def get_affiliate_url(key: str, source: str = "web", sport: str = "") -> str:
     """
-    Get affiliate URL with source tracking parameter.
-    source: 'web', 'twitter', 'whatsapp'
-    Most affiliate networks accept sub-tracking via URL params.
+    Get affiliate URL with source tracking and optional sport deep link.
+    sport: ESPN sport key (soccer, baseball, basketball, etc.)
     """
     aff = AFFILIATES.get(key, {})
     url = aff.get("url", "")
@@ -764,6 +772,21 @@ def get_affiliate_url(key: str, source: str = "web") -> str:
                 break
     if not url or url == "#":
         return "#"
+
+    # Deep link to sport section when possible
+    if sport:
+        if key == "betsson" and sport in _BETSSON_SPORTS:
+            # Betsson: /apuestas-deportivas/{deporte}
+            base = url.split("?")[0].rstrip("/")
+            # Betsson affiliate URL is a tracking redirect — append sport as sub2
+            separator = "&" if "?" in url else "?"
+            return f"{url}{separator}sub1={source}&sub2={sport}"
+        elif key in ("jubilee", "vivento"):
+            # Jubilee/Vivento: /deportes (SPA, no deeper routes)
+            base_domain = "https://www.jubilee.mx" if key == "jubilee" else "https://vivento.mx"
+            separator = "&" if "?" in url else "?"
+            return f"{base_domain}/deportes?sub1={source}&sub2={sport}"
+
     separator = "&" if "?" in url else "?"
     return f"{url}{separator}sub1={source}"
 

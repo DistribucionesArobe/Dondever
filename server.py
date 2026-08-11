@@ -670,7 +670,7 @@ def get_click_stats(days: int = 7) -> dict:
 
 # Branded affiliate redirect — "dondever.app/go/betsson" en vez de links largos
 @app.get("/go/{key}")
-async def affiliate_redirect(key: str, s: str = "web", request: Request = None):
+async def affiliate_redirect(key: str, s: str = "web", sport: str = "", request: Request = None):
     """
     Redirige a la URL del afiliado con tracking de source.
     Uso: /go/betsson?s=twitter  →  link afiliado real + sub1=twitter
@@ -713,7 +713,7 @@ async def affiliate_redirect(key: str, s: str = "web", request: Request = None):
             else:
                 key = "1xbet"  # español genérico u otro → 1xBet
     _track_click(key, s)  # track antes de redirigir
-    target = get_affiliate_url(key, source=s)
+    target = get_affiliate_url(key, source=s, sport=sport)
     if target == "#":
         return RedirectResponse(url="/", status_code=302)
     return RedirectResponse(url=target, status_code=302)
