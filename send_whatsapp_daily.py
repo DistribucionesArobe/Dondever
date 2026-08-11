@@ -556,10 +556,10 @@ async def compose_template_variables() -> dict | None:
     channels_str = _format_channels(pick["broadcasts"])
     pick_emoji = "⚽" if pick.get("sport") == "soccer" else "⚾" if pick.get("sport") == "baseball" else "🏀" if pick.get("sport") == "basketball" else "🏈"
     var1 = (
-        f"Hoy hay {len(upcoming)} juegos. "
-        f"{pick_emoji} PICK: {first} vs {second} · {pick.get('league_name', '')} {time_str} MX · {channels_str} · "
-        f"Tip: {pick_tip['pick']} ({pick_tip['confidence']}). "
-        f"Responde VER para los 10 mejores picks de hoy."
+        f"{pick_emoji} {first} vs {second} · {time_str} MX · "
+        f"{pick_tip['pick']} ({pick_tip['confidence']}). "
+        f"Responde VER para los 10 picks de hoy. "
+        f"https://dondever.app/"
     )
 
     return {
