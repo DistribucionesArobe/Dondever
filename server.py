@@ -768,13 +768,9 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "", request:
 # Redirect 301 permanente a la home para recuperar SEO
 @app.get("/game/{old_id}")
 async def legacy_game_redirect(old_id: str):
-    """Redirect de /game/* (URL vieja) a /juego/* (URL actual) o a home."""
+    """301 incondicional: /game/* → /juego/*. La ruta /juego/ devuelve 410 si ya no existe."""
     from fastapi.responses import RedirectResponse
-    # Si el ID existe hoy, redirige al /juego/{id}, si no, a la home
-    all_games = await get_todays_games()
-    if any(g["id"] == old_id for g in all_games):
-        return RedirectResponse(url=f"/juego/{old_id}", status_code=301)
-    return RedirectResponse(url="/", status_code=301)
+    return RedirectResponse(url=f"/juego/{old_id}", status_code=301)
 
 
 @app.get("/liga/{league_slug}", response_class=HTMLResponse)
