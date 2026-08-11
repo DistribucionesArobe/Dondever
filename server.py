@@ -126,14 +126,13 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                     f'  }});\n'
                     f'</script>\n'
                 )
-            if monetag_zone:
-                snippet += (
-                    f'<meta name="monetag" content="ce90bfedb944d0ac4754ee93708ed15d">\n'
-                    f'<script src="https://5gvci.com/act/files/tag.min.js?z=11479109" data-cfasync="false" async></script>\n'
-                    # Push Notifications — registers sw.js for opt-in browser push
-                    f'<script>(function(s){{s.dataset.zone="11481358",s.src="https://nap5k.com/tag.min.js"}})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement("script")))</script>\n'
-                    # In-Page Push Banner — small notification-style ad in corner
-                )
+            # Monetag SUSPENDED — degradaba UX y afectaba visitas
+            # if monetag_zone:
+            #     snippet += (
+            #         f'<meta name="monetag" content="ce90bfedb944d0ac4754ee93708ed15d">\n'
+            #         f'<script src="https://5gvci.com/act/files/tag.min.js?z=11479109" data-cfasync="false" async></script>\n'
+            #         f'<script>(function(s){{s.dataset.zone="11481358",s.src="https://nap5k.com/tag.min.js"}})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement("script")))</script>\n'
+            #     )
             snippet = snippet.encode("utf-8")
 
             if b"</head>" in body:
@@ -256,14 +255,15 @@ async def onesignal_service_worker():
         headers={"Service-Worker-Allowed": "/"},
     )
 
-@app.get("/sw.js")
-async def monetag_service_worker():
-    sw_path = _Path(__file__).parent / "sw.js"
-    return Response(
-        content=sw_path.read_text(),
-        media_type="application/javascript",
-        headers={"Service-Worker-Allowed": "/"},
-    )
+# Monetag service worker SUSPENDED
+# @app.get("/sw.js")
+# async def monetag_service_worker():
+#     sw_path = _Path(__file__).parent / "sw.js"
+#     return Response(
+#         content=sw_path.read_text(),
+#         media_type="application/javascript",
+#         headers={"Service-Worker-Allowed": "/"},
+#     )
 
 
 # ── Web Routes ───────────────────────────────────────────
