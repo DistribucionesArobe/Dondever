@@ -791,60 +791,29 @@
 
             <div class="como-ver-guide" style="margin:0.75rem 0;border:none;padding:0;">
                 {% if team_sport == 'futbol' %}
-                <h2>Guía: Cómo ver a {{ team_name }} ({{ team_league }}) en Mexico, USA y Latinoamerica</h2>
-                    {% if team_league == 'Liga MX' %}
-                <h3>TV abierta y cable en México</h3>
-                <p>Los partidos de la Liga MX se reparten entre varias televisoras. Dependiendo del equipo y la jornada, puedes encontrar juegos en:</p>
-                <ul><li><strong>TUDN / Canal 5</strong> — Transmite partidos selectos de la Liga MX en TV abierta y por cable.</li><li><strong>TV Azteca (Azteca 7)</strong> — Tiene derechos de transmisión de varios equipos de la Liga MX.</li><li><strong>Fox Sports México</strong> — Cubre partidos de equipos como Pumas, Atlas y más.</li></ul>
-                <h3>Streaming</h3>
-                <ul><li><strong>ViX Premium</strong> — Transmite la mayoría de los partidos de la Liga MX. Algunos juegos están disponibles gratis en ViX.</li><li><strong>TUDN app</strong> — Si tienes suscripción de cable, puedes acceder a los partidos por la app.</li></ul>
-                <h3>En Estados Unidos</h3>
-                <ul><li><strong>Univision / TUDN (USA)</strong> — Principal cadena para Liga MX en español.</li><li><strong>ViX Premium</strong> — Streaming con todos los juegos de la Liga MX.</li><li><strong>ESPN+</strong> — Algunos partidos selectos en inglés.</li></ul>
-                    {% elif team_league in ('Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1') %}
-                <h3>TV y cable en México</h3>
-                <ul><li><strong>SKY Sports</strong> — Transmite partidos de la {{ team_league }} para suscriptores de SKY.</li><li><strong>ESPN México</strong> — Cubre partidos selectos del fútbol europeo.</li></ul>
-                <h3>Streaming</h3>
-                <ul><li><strong>Disney+ / ESPN</strong> — Partidos de la {{ team_league }} disponibles para suscriptores.</li><li><strong>ViX Premium</strong> — Algunos partidos de ligas europeas disponibles.</li><li><strong>Amazon Prime Video</strong> — Tiene derechos de partidos selectos de la {{ team_league }} en algunos mercados.</li></ul>
-                <h3>En Estados Unidos</h3>
-                <ul><li><strong>Peacock / NBC Sports</strong> — Transmite la Premier League en USA.</li><li><strong>ESPN+</strong> — Cubre La Liga, Bundesliga y Serie A.</li><li><strong>Paramount+</strong> — Partidos de Champions League y algunas ligas.</li></ul>
-                    {% elif team_league == 'MLS' %}
-                <h3>TV y streaming</h3>
-                <ul><li><strong>Apple TV (MLS Season Pass)</strong> — Todos los partidos de la MLS en vivo y sin restricciones geográficas.</li><li><strong>Fox Sports México</strong> — Partidos selectos de la MLS.</li><li><strong>TUDN / Univision</strong> — Juegos selectos en español en USA.</li></ul>
-                    {% endif %}
+                <h2>Cómo ver a {{ team_name }} ({{ team_league }}) en Mexico, USA y Latinoamerica</h2>
+                <p>Los canales que transmiten a {{ team_name }} cambian segun el partido, la jornada y los acuerdos de cada temporada. En DondeVer.app mostramos los canales confirmados para cada juego en tiempo real — consulta la seccion de partidos arriba para ver donde se transmite hoy.</p>
+                <p>Cubrimos TV abierta, cable y plataformas de streaming tanto en Mexico como en Estados Unidos y Latinoamerica.</p>
                 {% elif team_sport == 'beisbol' %}
-                <h2>Guía: Cómo ver a {{ team_name }} (MLB) en Mexico, USA y Latinoamerica</h2>
-                <h3>TV y cable en México</h3>
-                <ul><li><strong>ESPN México</strong> — Transmite partidos selectos de la MLB, especialmente postemporada.</li><li><strong>Fox Sports México</strong> — Cubre juegos selectos durante la temporada regular.</li></ul>
-                <h3>Streaming</h3>
-                <ul><li><strong>ESPN (Disney+)</strong> — Partidos disponibles para suscriptores.</li><li><strong>MLB.TV</strong> — Servicio de streaming oficial de la MLB con todos los juegos fuera de mercado.</li></ul>
-                <h3>En Estados Unidos</h3>
-                <ul><li><strong>ESPN / TBS / Fox</strong> — Cadenas principales que transmiten la MLB.</li><li><strong>MLB.TV</strong> — Streaming oficial con la mayoría de los partidos.</li><li><strong>Apple TV+</strong> — Friday Night Baseball con juegos selectos cada viernes.</li><li><strong>Peacock</strong> — Sunday Leadoff con juegos selectos los domingos.</li></ul>
+                <h2>Cómo ver a {{ team_name }} (MLB) en Mexico, USA y Latinoamerica</h2>
+                <p>Los derechos de transmision de la MLB varian por partido y mercado. Cada juego puede estar en un canal diferente dependiendo del equipo y la fecha. En DondeVer.app te mostramos el canal confirmado para cada juego de {{ team_name }} en tiempo real.</p>
+                <p>Cubrimos opciones de TV y streaming en Mexico, Estados Unidos y Latinoamerica.</p>
                 {% elif team_sport == 'basketball' %}
-                <h2>Guía: Cómo ver a {{ team_name }} (NBA) en Mexico, USA y Latinoamerica</h2>
-                <h3>TV y cable en México</h3>
-                <ul><li><strong>ESPN México</strong> — Principal canal para ver la NBA en México.</li><li><strong>NBA TV</strong> — Disponible en algunos paquetes de cable.</li></ul>
-                <h3>Streaming</h3>
-                <ul><li><strong>Disney+ / ESPN</strong> — Partidos selectos para suscriptores.</li><li><strong>NBA League Pass</strong> — Todos los partidos de la temporada, disponible como suscripción independiente.</li></ul>
-                <h3>En Estados Unidos</h3>
-                <ul><li><strong>ESPN / ABC</strong> — Juegos estelares y playoffs.</li><li><strong>TNT / TBS</strong> — Partidos entre semana y playoffs.</li><li><strong>NBA League Pass</strong> — Todos los juegos fuera de mercado.</li><li><strong>Amazon Prime Video</strong> — Tiene derechos de paquetes selectos de la NBA.</li></ul>
+                <h2>Cómo ver a {{ team_name }} (NBA) en Mexico, USA y Latinoamerica</h2>
+                <p>Los canales de la NBA cambian segun el partido y la semana. En DondeVer.app mostramos el canal confirmado para cada juego de {{ team_name }} actualizado en tiempo real.</p>
+                <p>Cubrimos TV abierta, cable y streaming en Mexico, Estados Unidos y Latinoamerica.</p>
                 {% elif team_sport == 'futbol americano' %}
-                <h2>Guía: Cómo ver a {{ team_name }} (NFL) en Mexico, USA y Latinoamerica</h2>
-                <h3>TV abierta y cable en México</h3>
-                <ul><li><strong>Canal 5 / TUDN</strong> — Transmite partidos selectos de la NFL cada semana.</li><li><strong>TV Azteca (Azteca 7)</strong> — Tiene derechos de juegos selectos incluyendo el Super Bowl.</li><li><strong>ESPN México</strong> — Monday Night Football y partidos entre semana.</li><li><strong>Fox Sports México</strong> — Cubre la NFL con amplia programación.</li></ul>
-                <h3>Streaming</h3>
-                <ul><li><strong>NFL Game Pass</strong> — Plataforma oficial de la NFL con juegos en vivo y repeticiones.</li><li><strong>Disney+ / ESPN</strong> — Monday Night Football para suscriptores.</li><li><strong>ViX</strong> — Algunos juegos disponibles en la plataforma.</li></ul>
-                <h3>En Estados Unidos</h3>
-                <ul><li><strong>NBC (Sunday Night Football)</strong> — Partido principal de cada domingo.</li><li><strong>CBS / Fox</strong> — Juegos dominicales según la conferencia.</li><li><strong>ESPN / ABC (Monday Night Football)</strong> — Partido de lunes por la noche.</li><li><strong>Amazon Prime Video (Thursday Night Football)</strong> — Juego exclusivo cada jueves.</li><li><strong>NFL+ / Peacock</strong> — Streaming con juegos en vivo.</li></ul>
+                <h2>Cómo ver a {{ team_name }} (NFL) en Mexico, USA y Latinoamerica</h2>
+                <p>La NFL reparte sus juegos entre multiples cadenas y plataformas que rotan cada semana. En DondeVer.app te decimos exactamente donde ver cada partido de {{ team_name }} con el canal confirmado en tiempo real.</p>
+                <p>Cubrimos TV abierta, cable y streaming en Mexico, Estados Unidos y Latinoamerica.</p>
                 {% elif team_sport == 'hockey' %}
-                <h2>Guía: Cómo ver a {{ team_name }} (NHL) en Mexico, USA y Latinoamerica</h2>
-                <h3>Opciones de transmisión</h3>
-                <ul><li><strong>ESPN / Disney+</strong> — Partidos selectos de la NHL.</li><li><strong>ESPN+ (USA)</strong> — Amplia cobertura de juegos de la NHL.</li><li><strong>TNT / TBS</strong> — Partidos selectos en USA.</li></ul>
+                <h2>Cómo ver a {{ team_name }} (NHL) en Mexico, USA y Latinoamerica</h2>
+                <p>Los partidos de la NHL se transmiten en diferentes canales segun el juego. En DondeVer.app mostramos el canal confirmado para cada partido de {{ team_name }} en tiempo real.</p>
                 {% elif team_sport == 'MMA' %}
-                <h2>Guía: Cómo ver {{ team_name }} en Mexico, USA y Latinoamerica</h2>
-                <h3>Opciones de transmisión</h3>
-                <ul><li><strong>Fox Sports México</strong> — Transmite carteleras de UFC Fight Night.</li><li><strong>ESPN+ (USA)</strong> — Plataforma principal para eventos de UFC en Estados Unidos.</li><li><strong>PPV</strong> — Los eventos numerados de UFC se compran por separado.</li><li><strong>Disney+ / ESPN</strong> — Algunas carteleras disponibles para suscriptores.</li></ul>
+                <h2>Cómo ver {{ team_name }} en Mexico, USA y Latinoamerica</h2>
+                <p>Los eventos de {{ team_name }} se transmiten en diferentes plataformas segun el tipo de cartelera (numerados, Fight Night, eventos especiales). En DondeVer.app te mostramos donde ver cada evento actualizado al dia de hoy.</p>
                 {% endif %}
-                <p style="font-size:0.8rem;color:#6b7280;margin-top:0.5rem;">Nota: la disponibilidad de canales puede variar según el partido y la fecha. En DondeVer.app actualizamos la información diariamente.</p>
+                <p style="font-size:0.8rem;color:#6b7280;margin-top:0.5rem;">Los canales se actualizan diariamente con informacion confirmada para cada partido.</p>
             </div>
 
             {% if faq_items %}
