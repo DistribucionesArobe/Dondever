@@ -669,6 +669,11 @@ async def parse_espn_events_enriched(
         # 1) Get ESPN broadcast info (normalize truncated names)
         espn_broadcasts = []
         seen_channels = set()
+        # Channels that are the same service (dedup group)
+        _CHANNEL_GROUPS = {
+            "mls season pass": "apple tv+",
+            "apple tv+ mls season pass": "apple tv+",
+        }
         for geo_broadcast in comp.get("geoBroadcasts", []):
             market = geo_broadcast.get("market", {}).get("type", "")
             media = geo_broadcast.get("media", {})
@@ -676,15 +681,22 @@ async def parse_espn_events_enriched(
             if not raw_channel:
                 continue
             channel = _normalize_channel(raw_channel)
-            # Deduplicate (ESPN sometimes lists same channel twice)
-            if channel.lower() in seen_channels:
+            display_name = CHANNEL_ALIASES.get(channel, {}).get("name", channel)
+            # Deduplicate by display name AND by group
+            key = display_name.lower()
+            group_key = _CHANNEL_GROUPS.get(key, key)
+            if group_key in seen_channels:
                 continue
-            seen_channels.add(channel.lower())
+            seen_channels.add(group_key)
+            seen_channels.add(key)
             info = CHANNEL_ALIASES.get(channel, {})
+            # Mark US regional sports networks (not in our known channels + local market)
+            is_us_regional = (not info) and market in ("Home", "Away")
             espn_broadcasts.append({
-                "channel": info.get("name", channel),
+                "channel": display_name,
                 "market": market,
                 "info": info,
+                "is_us_regional": is_us_regional,
             })
 
         # 2) Always merge MX channels from our manual mapping
@@ -717,13 +729,20 @@ async def parse_espn_events_enriched(
         for ch in mx_defaults:
             info = CHANNEL_ALIASES.get(ch, {"name": ch, "type": "cable"})
             display_name = info.get("name", ch)
-            if display_name.lower() not in seen_channels:
-                seen_channels.add(display_name.lower())
-                broadcasts.append({
-                    "channel": display_name,
-                    "market": "National",
-                    "info": info,
-                })
+            key = display_name.lower()
+            group_key = _CHANNEL_GROUPS.get(key, key)
+            if group_key in seen_channels or key in seen_channels:
+                continue
+            seen_channels.add(group_key)
+            seen_channels.add(key)
+            broadcasts.append({
+                "channel": display_name,
+                "market": "National",
+                "info": info,
+            })
+
+        # Sort: known channels first, US regional last
+        broadcasts.sort(key=lambda b: (1 if b.get("is_us_regional") else 0))
 
         # Status
         status_type = ev.get("status", {}).get("type", {})

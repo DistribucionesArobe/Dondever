@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="-6JcmjpKcn306QaeaKG9f58SoBw6hq6_QBGUCjLxFVw" />
-    <title>Donde ver el partido hoy en vivo {{ now().strftime('%d/%m') }} - Mexico, USA y Latinoamerica | DondeVer</title>
+    <title>Donde ver el partido hoy en vivo - Mexico, USA y Latinoamerica | DondeVer</title>
     <meta name="description" content="Hoy {{ total_games }} juegos en vivo. Donde ver Liga MX, NFL, NBA, MLB, Champions en Mexico, USA y Latinoamerica. Horarios, canales TV y streaming. Actualizado.">
     <meta property="og:title" content="DondeVer.app - Donde ver juegos deportivos hoy">
     <meta property="og:description" content="Guia completa de donde ver deportes en vivo. Liga MX, NFL, NBA, MLB, Champions League y mas.">
@@ -1499,7 +1499,11 @@
                 <div class="gc-channels">
                     <span class="gc-channels-icon">&#128250;</span>
                     {% if game.broadcasts %}
+                        {% set ns_reg = namespace(count=0) %}
                         {% for b in game.broadcasts %}
+                        {% if b.get('is_us_regional') %}
+                            {% set ns_reg.count = ns_reg.count + 1 %}
+                        {% else %}
                         {% set saff = streaming_aff.get(b.channel) %}
                         {% if saff %}
                         <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
@@ -1510,7 +1514,11 @@
                             {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
                         </span>
                         {% endif %}
+                        {% endif %}
                         {% endfor %}
+                        {% if ns_reg.count > 0 %}
+                        <span class="channel-tag unknown" title="Canales regionales de EE.UU.">+{{ ns_reg.count }} US</span>
+                        {% endif %}
                     {% else %}
                         <span class="channel-tag unknown">Por confirmar</span>
                     {% endif %}
@@ -1590,7 +1598,11 @@
                 <div class="gc-channels">
                     <span class="gc-channels-icon">&#128250;</span>
                     {% if game.broadcasts %}
+                        {% set ns_reg = namespace(count=0) %}
                         {% for b in game.broadcasts %}
+                        {% if b.get('is_us_regional') %}
+                            {% set ns_reg.count = ns_reg.count + 1 %}
+                        {% else %}
                         {% set saff = streaming_aff.get(b.channel) %}
                         {% if saff %}
                         <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
@@ -1601,7 +1613,11 @@
                             {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
                         </span>
                         {% endif %}
+                        {% endif %}
                         {% endfor %}
+                        {% if ns_reg.count > 0 %}
+                        <span class="channel-tag unknown" title="Canales regionales de EE.UU.">+{{ ns_reg.count }} US</span>
+                        {% endif %}
                     {% else %}
                         <span class="channel-tag unknown">Por confirmar</span>
                     {% endif %}
@@ -1797,11 +1813,15 @@
                 </div>
                 {% endif %}
 
-                {# ── 2. Channels ── #}
+                {# ── 2. Channels (hide US regional, show count) ── #}
                 <div class="gc-channels">
                     <span class="gc-channels-icon">&#128250;</span>
                     {% if game.broadcasts %}
+                        {% set ns_reg = namespace(count=0) %}
                         {% for b in game.broadcasts %}
+                        {% if b.get('is_us_regional') %}
+                            {% set ns_reg.count = ns_reg.count + 1 %}
+                        {% else %}
                         {% set saff = streaming_aff.get(b.channel) %}
                         {% if saff %}
                         <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
@@ -1812,7 +1832,11 @@
                             {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
                         </span>
                         {% endif %}
+                        {% endif %}
                         {% endfor %}
+                        {% if ns_reg.count > 0 %}
+                        <span class="channel-tag unknown" title="Canales regionales de EE.UU.">+{{ ns_reg.count }} US</span>
+                        {% endif %}
                     {% else %}
                         <span class="channel-tag unknown">Por confirmar</span>
                     {% endif %}
