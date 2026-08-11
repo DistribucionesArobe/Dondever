@@ -494,6 +494,11 @@
             align-items: center;
             gap: 0.4rem;
         }
+        .gc-compact-right {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
         .live-badge {
             display: inline-flex; align-items: center; gap: 0.3rem;
             background: #ef4444; color: white;
@@ -1560,7 +1565,10 @@
                     {% endif %}
                     <span class="game-card-league-tag">{{ game.emoji }} {{ game.league_name }}</span>
                 </div>
-                <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
+                <div class="gc-compact-right">
+                    <button class="gc-notify-btn" onclick="event.stopPropagation();dvNotify(this)" data-game-id="{{ game.id }}" data-kickoff="{{ game.date }}" data-title="{{ top_team.name }} vs {{ bottom_team.name }}" data-league="{{ game.league_name }}" data-channels="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}" aria-label="Notificarme">&#128276;</button>
+                    <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
+                </div>
             </div>
             <div class="gc-row">
                 {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
@@ -1688,7 +1696,12 @@
                     </span>
                     {% endif %}
                 </div>
-                <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
+                <div class="gc-compact-right">
+                    {% if state == 'pre' %}
+                    <button class="gc-notify-btn" onclick="event.stopPropagation();dvNotify(this)" data-game-id="{{ game.id }}" data-kickoff="{{ game.date }}" data-title="{{ top_team.name }} vs {{ bottom_team.name }}" data-league="{{ game.league_name }}" data-channels="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}" aria-label="Notificarme">&#128276;</button>
+                    {% endif %}
+                    <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
+                </div>
             </div>
 
             {# ── Teams ── #}
@@ -1719,6 +1732,22 @@
                     {% endif %}
                 </span>
             </div>
+
+            {# ── POST-GAME RECAP — visible on closed card for finished games ── #}
+            {% if state == 'post' and game.recap %}
+            <div class="gc-recap">
+                {% if game.recap.headline %}
+                <p class="recap-headline">{{ game.recap.headline }}</p>
+                {% endif %}
+                {% if game.recap.mvp %}
+                <div class="recap-mvp">
+                    <span class="recap-mvp-label">&#11088; MVP</span>
+                    <span class="recap-mvp-name">{{ game.recap.mvp.short or game.recap.mvp.name }}</span>
+                    <span class="recap-mvp-stat">{{ game.recap.mvp.stat }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
 
             {# ── BETTING PREVIEW — visible on closed card (pre + live) ── #}
             {% if state != 'post' and game.odds %}

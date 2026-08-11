@@ -789,6 +789,35 @@ async def parse_espn_events_enriched(
 
         sport_type = league_info[0] if isinstance(league_info, tuple) else ""
 
+        # ── Post-game recap data ──────────────────
+        recap = {}
+        if status.get("state") == "post":
+            # Headline recap (e.g. "Keaschall hits 2-run HR as Twins top Royals 5-3")
+            headlines = comp.get("headlines", [])
+            if headlines:
+                recap["headline"] = headlines[0].get("shortLinkText", "")
+                recap["description"] = headlines[0].get("description", "")
+            # MVP / top performer (competition-level leader)
+            comp_leaders = comp.get("leaders", [])
+            if comp_leaders:
+                top_cat = comp_leaders[0]
+                top_leaders = top_cat.get("leaders", [])
+                if top_leaders:
+                    mvp_ath = top_leaders[0].get("athlete", {})
+                    recap["mvp"] = {
+                        "name": mvp_ath.get("displayName", ""),
+                        "short": mvp_ath.get("shortName", ""),
+                        "headshot": mvp_ath.get("headshot", ""),
+                        "stat": top_leaders[0].get("displayValue", ""),
+                        "team_id": top_leaders[0].get("team", {}).get("id", ""),
+                    }
+            # Winner flag
+            for team_data in competitors:
+                if team_data.get("winner"):
+                    winner_name = team_data.get("team", {}).get("displayName", "")
+                    recap["winner"] = winner_name
+                    break
+
         events.append({
             "id": ev.get("id", ""),
             "league_slug": league_slug,
@@ -803,6 +832,7 @@ async def parse_espn_events_enriched(
             "status": status,
             "broadcasts": broadcasts,
             "venue": venue,
+            "recap": recap,
             "link": ev.get("links", [{}])[0].get("href", "") if ev.get("links") else "",
         })
 

@@ -76,4 +76,120 @@
   if (hasLiveGames) {
     setInterval(updateLiveScores, POLL_INTERVAL);
   }
+
+  // ── Game Notifications ─────────────────
+  var NOTIFY_KEY = 'dv-notify-games';
+
+  function getNotifyGames() {
+    try {
+      return JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}');
+    } catch(e) { return {}; }
+  }
+
+  function saveNotifyGames(obj) {
+    localStorage.setItem(NOTIFY_KEY, JSON.stringify(obj));
+  }
+
+  // Toggle notification for a game
+  window.dvNotify = function(btn) {
+    var gid = btn.getAttribute('data-game-id');
+    var kickoff = btn.getAttribute('data-kickoff');
+    var title = btn.getAttribute('data-title');
+    var league = btn.getAttribute('data-league');
+    var channels = btn.getAttribute('data-channels');
+    var games = getNotifyGames();
+
+    if (games[gid]) {
+      // Already set — remove it
+      delete games[gid];
+      saveNotifyGames(games);
+      btn.classList.remove('active');
+      btn.innerHTML = '&#128276;';
+      return;
+    }
+
+    // Request notification permission if needed
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(function(perm) {
+        if (perm === 'granted') {
+          addNotifyGame(btn, gid, kickoff, title, league, channels);
+        }
+      });
+    } else {
+      addNotifyGame(btn, gid, kickoff, title, league, channels);
+    }
+  };
+
+  function addNotifyGame(btn, gid, kickoff, title, league, channels) {
+    var games = getNotifyGames();
+    games[gid] = {
+      kickoff: kickoff,
+      title: title,
+      league: league,
+      channels: channels,
+      notified: false
+    };
+    saveNotifyGames(games);
+    btn.classList.add('active');
+    btn.innerHTML = '&#128276; <span class="notify-label">15 min</span>';
+  }
+
+  // Mark already-set notifications on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    var games = getNotifyGames();
+    var now = new Date();
+    var changed = false;
+    // Clean up past games
+    for (var gid in games) {
+      var ko = new Date(games[gid].kickoff);
+      if (ko < now) {
+        delete games[gid];
+        changed = true;
+      }
+    }
+    if (changed) saveNotifyGames(games);
+    // Highlight active bells
+    var btns = document.querySelectorAll('.gc-notify-btn');
+    for (var i = 0; i < btns.length; i++) {
+      var id = btns[i].getAttribute('data-game-id');
+      if (games[id]) {
+        btns[i].classList.add('active');
+        btns[i].innerHTML = '&#128276; <span class="notify-label">15 min</span>';
+      }
+    }
+  });
+
+  // Check every 60s if any saved game is within 15 minutes
+  setInterval(function() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    var games = getNotifyGames();
+    var now = new Date();
+    var changed = false;
+    for (var gid in games) {
+      var g = games[gid];
+      if (g.notified) continue;
+      var ko = new Date(g.kickoff);
+      var diffMin = (ko - now) / 60000;
+      if (diffMin <= 15 && diffMin > -5) {
+        // Fire notification
+        var body = g.league + (g.channels ? ' · ' + g.channels : '') + ' · ¡En ' + Math.max(1, Math.round(diffMin)) + ' min!';
+        try {
+          new Notification('🏟️ ' + g.title, {
+            body: body,
+            icon: '/static/logo.png',
+            tag: 'dv-game-' + gid,
+            data: { url: '/juego/' + gid }
+          });
+        } catch(e) {}
+        g.notified = true;
+        changed = true;
+      }
+      // Clean up old entries
+      if (diffMin < -30) {
+        delete games[gid];
+        changed = true;
+      }
+    }
+    if (changed) saveNotifyGames(games);
+  }, 60000);
 })();
