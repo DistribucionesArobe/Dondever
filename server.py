@@ -806,33 +806,33 @@ async def league_page(request: Request, league_slug: str):
 SPORT_TODAY_PAGES = {
     "futbol-hoy": (
         "soccer", "Futbol", "⚽",
-        "Los partidos de futbol se transmiten en Mexico por TUDN, Canal 5, Azteca 7, Fox Sports Mexico, ESPN Mexico, y ViX Premium. Para ligas europeas como Premier League y La Liga, ESPN y Fox Sports tienen los derechos principales.",
-        "En Estados Unidos, el futbol se ve por ESPN, ESPN+, Fox Sports, Univision, TUDN USA, Peacock, Paramount+ y Apple TV (MLS Season Pass). Los partidos de Champions League se transmiten por CBS y Paramount+.",
-        "Las mejores opciones de streaming para futbol en vivo son ViX Premium (Liga MX y ligas europeas en Mexico), ESPN+ y Peacock (en USA), y Paramount+ para Champions League. Apple TV tiene los derechos exclusivos de la MLS.",
+        "Los canales de futbol en Mexico cambian segun la liga y el partido. Consulta arriba las opciones confirmadas para cada juego de hoy.",
+        "En Estados Unidos los derechos de futbol estan repartidos entre varias cadenas y plataformas. Revisa cada partido para ver el canal confirmado.",
+        "DondeVer actualiza los canales de cada partido en tiempo real. Arriba puedes ver las opciones de streaming confirmadas para los juegos de hoy.",
     ),
     "futbol-americano-hoy": (
         "football", "Futbol Americano", "🏈",
-        "La NFL en Mexico se ve principalmente por ESPN Mexico, Fox Sports Mexico, y TV Azteca para los juegos en Mexico City. Los playoffs y Super Bowl tienen transmision en abierto por Canal 5 o Azteca 7.",
-        "En Estados Unidos, la NFL se transmite por CBS, Fox, NBC (Sunday Night Football), ESPN (Monday Night Football), Amazon Prime Video (Thursday Night Football), y NFL Network. College Football se ve en ESPN, ABC, Fox y CBS.",
-        "Para streaming de futbol americano, NFL+ es la opcion oficial. En USA tambien Peacock, Paramount+, y Amazon Prime Video tienen juegos. ESPN+ transmite College Football selecto.",
+        "Los canales de NFL en Mexico varian por juego y semana. Consulta arriba las transmisiones confirmadas para cada partido de hoy.",
+        "En Estados Unidos la NFL reparte sus juegos entre varias cadenas y plataformas de streaming. Revisa cada partido para ver donde se transmite.",
+        "DondeVer muestra el canal confirmado de cada juego. Arriba puedes ver las opciones de streaming disponibles para los partidos de hoy.",
     ),
     "basquetbol-hoy": (
         "basketball", "Basquetbol", "🏀",
-        "La NBA en Mexico se transmite por ESPN Mexico y NBA League Pass. Algunos juegos de temporada regular y playoffs se transmiten por TV Azteca o Canal 5 en acuerdos especiales.",
-        "En Estados Unidos, la NBA se ve por ESPN, ABC, TNT, NBA TV, y los canales regionales (RSN). Los playoffs y Finals se transmiten en ESPN, ABC y TNT.",
-        "NBA League Pass es la mejor opcion para ver todos los juegos de la NBA en streaming. En Mexico tambien esta disponible ESPN Play. La WNBA se transmite por ESPN, ABC, CBS, y ION Television.",
+        "Los canales de NBA en Mexico varian por partido. Consulta arriba las transmisiones confirmadas para cada juego de hoy.",
+        "En Estados Unidos los derechos de NBA estan repartidos entre varias cadenas. Revisa cada partido para ver el canal confirmado.",
+        "DondeVer muestra el canal confirmado de cada juego en tiempo real. Arriba puedes ver las opciones de streaming para los partidos de hoy.",
     ),
     "beisbol-hoy": (
         "baseball", "Beisbol", "⚾",
-        "La MLB en Mexico se ve por ESPN Mexico y Fox Sports Mexico. Algunos juegos de postemporada se transmiten en abierto. La Liga Mexicana del Pacifico se transmite en canales regionales y Claro Sports.",
-        "En Estados Unidos, la MLB se transmite por ESPN, Fox, TBS, FS1, y los canales regionales de cada equipo. Los playoffs se ven en Fox, TBS y ESPN. Apple TV+ tiene Friday Night Baseball.",
-        "Para streaming de beisbol, MLB.TV es la opcion completa para todos los juegos fuera de mercado. ESPN+ tiene algunos juegos exclusivos. Apple TV+ transmite viernes de beisbol.",
+        "Los canales de MLB en Mexico varian segun el partido. Consulta arriba las transmisiones confirmadas para cada juego de hoy.",
+        "En Estados Unidos la MLB reparte sus juegos entre cadenas nacionales y canales regionales por equipo. Revisa cada partido para ver donde se transmite.",
+        "DondeVer muestra el canal confirmado de cada juego. Arriba puedes ver las opciones de streaming disponibles para los partidos de hoy.",
     ),
     "hockey-hoy": (
         "hockey", "Hockey", "🏒",
-        "La NHL tiene cobertura limitada en Mexico. ESPN Mexico transmite algunos juegos de playoffs y las Stanley Cup Finals.",
-        "En Estados Unidos, la NHL se ve por ESPN, ABC, TNT, y los canales regionales. Los playoffs se transmiten en ESPN, ABC y TNT.",
-        "ESPN+ y Hulu son las principales opciones de streaming para la NHL en Estados Unidos. NHL Center Ice ofrece cobertura de todos los juegos fuera de mercado.",
+        "La NHL tiene cobertura limitada en Mexico. Consulta arriba los canales confirmados para cada juego de hoy.",
+        "En Estados Unidos los juegos de NHL se transmiten por diferentes cadenas segun el partido. Revisa cada juego para ver el canal confirmado.",
+        "DondeVer muestra el canal de cada juego en tiempo real. Arriba puedes ver las opciones de streaming para los partidos de hoy.",
     ),
 }
 
