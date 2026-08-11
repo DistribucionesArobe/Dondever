@@ -423,6 +423,9 @@ async def home(
                 continue
             home_standings[ls] = {"name": nm, "emoji": em, "sport": sp, "entries": result}
 
+    # Is this a non-today date page? (noindex for historical pages)
+    is_historical = bool(date) and date != today.strftime("%Y%m%d")
+
     return templates.TemplateResponse(
         request,
         "index.html",
@@ -443,6 +446,7 @@ async def home(
             "featured_games": featured_games,
             "sport_counts": sport_counts,
             "home_standings": home_standings,
+            "is_historical": is_historical,
         },
     )
 

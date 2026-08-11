@@ -260,12 +260,17 @@
 </head>
 <body>
 <div class="header">
-    <h1><a href="/">DondeVer.app</a> / {{ team_name }}</h1>
+    <a href="/" style="color:#10b981;text-decoration:none;font-size:1.1rem;font-weight:800;">Donde<span style="color:#f8f9fb;">Ver</span></a>
     <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.25rem 0.4rem;border-radius:8px;color:#94a3b8;">&#127769;</button>
 </div>
 
 <div class="container">
-    <a href="/" class="back-link">&larr; Todos los juegos</a>
+    <nav style="font-size:0.7rem;color:#9ca3af;font-weight:500;margin-bottom:0.5rem;">
+        <a href="/" style="color:#10b981;text-decoration:none;">Inicio</a> &rsaquo;
+        <a href="/liga/{{ team_league|lower|replace(' ', '-') }}" style="color:#10b981;text-decoration:none;">{{ team_league }}</a> &rsaquo;
+        <span>{{ team_name }}</span>
+    </nav>
+    <h1 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:0.6rem;">D&oacute;nde ver {{ team_name }} hoy en vivo</h1>
 
     <div class="team-hero">
         {% if team_logo %}

@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="-6JcmjpKcn306QaeaKG9f58SoBw6hq6_QBGUCjLxFVw" />
-    <title>Donde ver el partido hoy en vivo - Mexico, USA y Latinoamerica | DondeVer</title>
-    <meta name="description" content="Hoy {{ total_games }} juegos en vivo. Donde ver Liga MX, NFL, NBA, MLB, Champions en Mexico, USA y Latinoamerica. Horarios, canales TV y streaming. Actualizado.">
-    <meta property="og:title" content="DondeVer.app - Donde ver juegos deportivos hoy">
-    <meta property="og:description" content="Guia completa de donde ver deportes en vivo. Liga MX, NFL, NBA, MLB, Champions League y mas.">
+    <title>D&oacute;nde ver deportes hoy en vivo: TV, horarios y streaming | DondeVer</title>
+    <meta name="description" content="Hoy {{ total_games }} partidos en vivo. D&oacute;nde ver Liga MX, NFL, NBA, MLB, Champions en M&eacute;xico, USA y Latinoam&eacute;rica. Horarios, canales de TV y streaming.">
+    {% if is_historical %}<meta name="robots" content="noindex, follow">{% endif %}
+    <meta property="og:title" content="D&oacute;nde ver deportes hoy en vivo | DondeVer">
+    <meta property="og:description" content="Gu&iacute;a completa de d&oacute;nde ver deportes en vivo. Liga MX, NFL, NBA, MLB, Champions League y m&aacute;s.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ app_url }}/">
     <meta property="og:site_name" content="DondeVer.app">
@@ -1284,7 +1285,7 @@
 {% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
 <div class="hero">
     <div class="hero-inner">
-        <h1>&#191;Qu&eacute; <span class="accent">deporte</span> quieres ver hoy?</h1>
+        <h1>D&oacute;nde ver <span class="accent">deportes en vivo</span> hoy</h1>
         <div class="hero-sub" id="country-toggle">
             Nos ves desde: <span id="current-country" style="cursor:pointer;">&#127474;&#127485; M&eacute;xico &#9662;</span>
         </div>
@@ -1522,9 +1523,9 @@
                             {{ b.channel }} &#8599;
                         </a>
                         {% else %}
-                        <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
+                        <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="text-decoration:none;" onclick="event.stopPropagation();">
                             {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
-                        </span>
+                        </a>
                         {% endif %}
                         {% endif %}
                         {% endfor %}
@@ -1624,9 +1625,9 @@
                             {{ b.channel }} &#8599;
                         </a>
                         {% else %}
-                        <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
+                        <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="text-decoration:none;" onclick="event.stopPropagation();">
                             {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
-                        </span>
+                        </a>
                         {% endif %}
                         {% endif %}
                         {% endfor %}
@@ -1864,9 +1865,9 @@
                             {{ b.channel }} &#8599;
                         </a>
                         {% else %}
-                        <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}">
+                        <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="text-decoration:none;" onclick="event.stopPropagation();">
                             {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
-                        </span>
+                        </a>
                         {% endif %}
                         {% endif %}
                         {% endfor %}
@@ -1979,6 +1980,25 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Canales populares (SEO internal links) -->
+<div class="standings-compact">
+    <h2>&#128250; Canales y plataformas</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+        {% set popular_channels = [
+            ("ViX", "vix"), ("ESPN", "espn"), ("TUDN", "tudn"), ("Canal 5", "canal-5"),
+            ("Fox Sports", "fox-sports"), ("TNT Sports", "tnt-sports"),
+            ("Disney+", "disney-plus"), ("Prime Video", "prime-video"),
+            ("Paramount+", "paramount-plus"), ("Apple TV+", "apple-tv-plus"),
+            ("MLB.tv", "mlb-tv"), ("NBA League Pass", "nba-league-pass"),
+            ("Claro Sports", "claro-sports"), ("TV Azteca", "tv-azteca")
+        ] %}
+        {% for name, slug in popular_channels %}
+        <a href="/canal/{{ slug }}" style="display:inline-block;padding:0.3rem 0.65rem;border-radius:6px;font-size:0.68rem;font-weight:600;background:var(--bg-card,white);border:1px solid var(--border-main,#e5e7eb);color:var(--text-secondary,#6b7280);text-decoration:none;transition:all 0.15s;">{{ name }}</a>
+        {% endfor %}
+        <a href="/canales" style="display:inline-block;padding:0.3rem 0.65rem;border-radius:6px;font-size:0.68rem;font-weight:600;color:#10b981;text-decoration:none;">Ver todos &rarr;</a>
+    </div>
+</div>
 
 <!-- WhatsApp CTA -->
 <div class="wa-cta" id="wa-subscribe">

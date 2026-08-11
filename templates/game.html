@@ -114,6 +114,18 @@
         .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
         .logo span { color: #f8f9fb; }
         .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .breadcrumb {
+            max-width: 900px; margin: 0.75rem auto 0; padding: 0 1rem;
+            font-size: 0.7rem; color: #9ca3af; font-weight: 500;
+        }
+        .breadcrumb a { color: #10b981; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .game-h1 {
+            max-width: 900px; margin: 0.4rem auto 0; padding: 0 1rem;
+            font-size: 1rem; font-weight: 800; color: #0f172a; line-height: 1.3;
+        }
+        [data-theme="dark"] .breadcrumb { color: #64748b; }
+        [data-theme="dark"] .game-h1 { color: #e2e8f0; }
         .game-hero {
             max-width: 650px; margin: 2rem auto; padding: 2rem;
             background: white; border-radius: 14px; border: 1px solid #e5e7eb;
@@ -320,6 +332,14 @@
         </div>
     </header>
 
+    {# ── Breadcrumbs + H1 (SEO) ── #}
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Inicio</a> &rsaquo;
+        <a href="/liga/{{ game.league_slug }}">{{ game.league_name }}</a> &rsaquo;
+        <span>{{ first_team }} vs {{ second_team }}</span>
+    </nav>
+    <h1 class="game-h1">D&oacute;nde ver {{ first_team }} vs {{ second_team }} en vivo &mdash; {{ game.league_name }}</h1>
+
     <div class="game-hero">
         <div class="league-badge">{{ game.emoji }} {{ game.league_name }}</div>
         {# Soccer: Local (home) on LEFT. US sports: Away on LEFT #}
@@ -386,7 +406,7 @@
                 <div class="channel-group">
                     <span class="country-label free-label">TV ABIERTA</span>
                     {% for b in mx_free %}
-                    <span class="channel-pill broadcast">{{ b.channel }}</span>
+                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill broadcast" style="text-decoration:none;">{{ b.channel }}</a>
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -398,7 +418,7 @@
                     {% if saff %}
                     <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
                     {% else %}
-                    <span class="channel-pill {{ b.info.get('type', 'unknown') }}">{{ b.channel }}</span>
+                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
                     {% endif %}
                     {% endfor %}
                 </div>
@@ -412,7 +432,7 @@
                     {% if saff %}
                     <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
                     {% else %}
-                    <span class="channel-pill {{ b.info.get('type', 'unknown') }}">{{ b.channel }}</span>
+                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
                     {% endif %}
                     {% endfor %}
                 </div>
@@ -420,7 +440,7 @@
                 {% if other_channels %}
                 <div class="channel-group">
                     {% for b in other_channels %}
-                    <span class="channel-pill unknown">{{ b.channel }}</span>
+                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill unknown" style="text-decoration:none;">{{ b.channel }}</a>
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -1092,6 +1112,27 @@
             </form>
             <div class="wa-msg" id="emailMsg"></div>
             <div class="wa-note">Sin spam. Solo picks deportivos. Cancela cuando quieras.</div>
+        </div>
+    </div>
+
+    {# ── Internal links (SEO) ── #}
+    <div style="max-width:650px;margin:0 auto 1rem;padding:0 1rem;">
+        <div style="background:var(--bg-card,white);border:1px solid var(--border-main,#e5e7eb);border-radius:10px;padding:0.75rem 1rem;">
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted,#9ca3af);text-transform:uppercase;margin-bottom:0.4rem;">M&aacute;s de {{ game.league_name }}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem;">
+                <a href="/liga/{{ game.league_slug }}" style="font-size:0.72rem;font-weight:600;color:#10b981;text-decoration:none;">{{ game.emoji }} {{ game.league_name }} &rarr;</a>
+            </div>
+            {% if game.broadcasts %}
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted,#9ca3af);text-transform:uppercase;margin-bottom:0.4rem;">Canales</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.3rem;">
+                {% for b in game.broadcasts[:6] %}
+                {% if not b.get('is_us_regional') %}
+                <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" style="font-size:0.68rem;font-weight:600;color:var(--text-secondary,#6b7280);background:var(--bg-muted,#f3f4f6);padding:0.2rem 0.5rem;border-radius:4px;text-decoration:none;">{{ b.channel }}</a>
+                {% endif %}
+                {% endfor %}
+                <a href="/canales" style="font-size:0.68rem;font-weight:600;color:#10b981;padding:0.2rem 0.5rem;text-decoration:none;">Todos &rarr;</a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
