@@ -2044,6 +2044,24 @@
     <p style="margin-top:0.3rem">Los enlaces de apuestas son publicidad. Apuesta responsablemente. Solo mayores de 18.</p>
 </footer>
 
+<!-- PWA Install Banner -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:1rem 1.25rem;box-shadow:0 -4px 20px rgba(0,0,0,0.3);border-radius:16px 16px 0 0;font-family:'Inter',-apple-system,sans-serif;">
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+        <img src="/static/icon-192.png" alt="DondeVer" style="width:44px;height:44px;border-radius:10px;">
+        <div style="flex:1;">
+            <div style="font-size:0.9rem;font-weight:800;">Instala DondeVer</div>
+            <div style="font-size:0.72rem;color:#9ca3af;margin-top:2px;">Acceso directo desde tu pantalla de inicio. Sin tienda, gratis.</div>
+        </div>
+        <button id="pwa-dismiss" onclick="document.getElementById('pwa-banner').style.display='none';localStorage.setItem('pwa-dismissed',Date.now())" style="background:none;border:none;color:#9ca3af;font-size:1.2rem;cursor:pointer;padding:0.25rem;">&times;</button>
+    </div>
+    <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+        <button id="pwa-install-btn" onclick="window.__pwaPrompt&&window.__pwaPrompt.prompt()" style="flex:1;background:#10b981;color:white;border:none;padding:0.6rem;border-radius:8px;font-weight:700;font-size:0.82rem;cursor:pointer;">Instalar app</button>
+    </div>
+    <div id="pwa-ios-hint" style="display:none;margin-top:0.6rem;font-size:0.72rem;color:#d1d5db;text-align:center;">
+        Toca <strong>Compartir</strong> <span style="font-size:0.85rem;">&#x2191;</span> y luego <strong>"Agregar a inicio"</strong>
+    </div>
+</div>
+
 <!-- WhatsApp Float -->
 <a href="#wa-subscribe" class="wa-float" title="Suscribete a picks por WhatsApp" onclick="document.getElementById('wa-subscribe').scrollIntoView({behavior:'smooth'});return false;">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
@@ -2986,5 +3004,45 @@ function emailSubscribe(e) {
 })();
 </script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
+<script>
+(function(){
+  // Don't show if already installed as PWA
+  if(window.matchMedia('(display-mode:standalone)').matches) return;
+  // Don't show if dismissed in last 7 days
+  var d=localStorage.getItem('pwa-dismissed');
+  if(d && Date.now()-Number(d)<7*86400000) return;
+  // Only show on mobile
+  if(!/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) return;
+
+  var banner=document.getElementById('pwa-banner');
+  var installBtn=document.getElementById('pwa-install-btn');
+  var iosHint=document.getElementById('pwa-ios-hint');
+
+  // Android: capture beforeinstallprompt
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();
+    window.__pwaPrompt=e;
+    banner.style.display='block';
+    installBtn.style.display='block';
+  });
+
+  // iOS Safari: show manual instructions
+  var isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent)&&!window.MSStream;
+  var isSafari=/Safari/i.test(navigator.userAgent)&&!/CriOS|FxiOS|OPiOS/i.test(navigator.userAgent);
+  if(isIOS&&isSafari){
+    setTimeout(function(){
+      banner.style.display='block';
+      installBtn.style.display='none';
+      iosHint.style.display='block';
+    },3000);
+  }
+
+  // Hide after successful install
+  window.addEventListener('appinstalled',function(){
+    banner.style.display='none';
+    localStorage.setItem('pwa-dismissed',Date.now());
+  });
+})();
+</script>
 </body>
 </html>
