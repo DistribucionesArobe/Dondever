@@ -8,15 +8,17 @@
     <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal, {{ team_aka }}, {{ team_league }} en vivo">
     <meta property="og:title" content="¿Dónde ver a {{ team_name }} hoy? | DondeVer">
     <meta property="og:description" content="Canales, horario y streaming de {{ team_name }} ({{ team_league }}) en México, USA y Latinoamérica.">
-    <meta property="og:image" content="{{ team_logo or 'https://dondever.app/static/og-image.png' }}">
+    <meta property="og:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:url" content="https://dondever.app/equipo/{{ team_slug }}">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="es_MX">
     <meta property="og:site_name" content="DondeVer.app">
-    <meta name="twitter:card" content="summary">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Dónde ver {{ team_name }} hoy — Canal y horario">
     <meta name="twitter:description" content="Canales, horarios y streaming de {{ team_league }} en México, USA y Latinoamérica.">
-    <meta name="twitter:image" content="{{ team_logo or 'https://dondever.app/static/og-image.png' }}">
+    <meta name="twitter:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
     <link rel="canonical" href="https://dondever.app/equipo/{{ team_slug }}">
     {{ hreflang_tags(request.url) }}
     <!-- JSON-LD: SportsTeam -->

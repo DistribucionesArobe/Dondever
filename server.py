@@ -805,6 +805,130 @@ async def game_detail(request: Request, event_id: str, date: Optional[str] = Que
     return RedirectResponse(url=f"/partido/{_make_game_slug(game)}", status_code=301)
 
 
+# ── Dynamic OG images ────────────────────────────────────
+from og_image import generate_game_og, generate_team_og, _og_cache
+
+
+@app.get("/og/partido/{slug}.png")
+async def og_game_image(slug: str):
+    """Generate a dynamic OG image for a game page."""
+    cache_key = f"og:partido:{slug}"
+    cached = _og_cache.get(cache_key)
+    if cached:
+        return Response(content=cached, media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=3600"})
+
+    # Parse slug to find the game
+    match = re.match(r"^(.+)-vs-(.+)-(\d{4}-\d{2}-\d{2})$", slug)
+    if not match:
+        return Response(status_code=404)
+
+    home_slug_part = match.group(1)
+    away_slug_part = match.group(2)
+    date_str = match.group(3).replace("-", "")
+
+    # Find the game
+    game = None
+    for delta in [0, 1, -1]:
+        try:
+            dt = datetime.strptime(date_str, "%Y%m%d") + timedelta(days=delta)
+            try_date = dt.strftime("%Y%m%d")
+        except ValueError:
+            continue
+        all_games = await get_todays_games(date_str=try_date)
+        for g in all_games:
+            g_home = _slugify(g.get("home", {}).get("name", ""))
+            g_away = _slugify(g.get("away", {}).get("name", ""))
+            if g_home == home_slug_part and g_away == away_slug_part:
+                game = g
+                break
+        if game:
+            break
+
+    if not game:
+        # Fallback: generate with slug parts only
+        home_name = home_slug_part.replace("-", " ").title()
+        away_name = away_slug_part.replace("-", " ").title()
+        date_display = match.group(3)
+        png = await generate_game_og(home_name, away_name, date_str=date_display)
+    else:
+        # Format date in Spanish
+        try:
+            dt = datetime.fromisoformat(game.get("date", "").replace("Z", "+00:00"))
+            dt_mx = dt.astimezone(TZ_MX)
+            MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun",
+                               "jul", "ago", "sep", "oct", "nov", "dic"]
+            date_display = f"{dt_mx.day} {MONTHS_ES_SHORT[dt_mx.month - 1]} {dt_mx.year} · {dt_mx.strftime('%H:%M')} hrs MX"
+        except Exception:
+            date_display = match.group(3)
+
+        png = await generate_game_og(
+            home_name=game["home"]["name"],
+            away_name=game["away"]["name"],
+            home_logo_url=game["home"].get("logo", ""),
+            away_logo_url=game["away"].get("logo", ""),
+            league_name=game.get("league_name", ""),
+            date_str=date_display,
+        )
+
+    _og_cache[cache_key] = png
+    return Response(content=png, media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.get("/og/equipo/{team_slug}.png")
+async def og_team_image(team_slug: str):
+    """Generate a dynamic OG image for a team page."""
+    cache_key = f"og:equipo:{team_slug}"
+    cached = _og_cache.get(cache_key)
+    if cached:
+        return Response(content=cached, media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=3600"})
+
+    team_info = POPULAR_TEAMS.get(team_slug)
+    if team_info:
+        team_name = team_info["name"]
+        team_league = team_info.get("league", "")
+    else:
+        team_name = team_slug.replace("-", " ").title()
+        team_league = ""
+
+    # Find logo from current games or stats
+    search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
+    team_logo_url = ""
+    try:
+        games = await search_games(search_term)
+        for game in games:
+            if search_term.lower() in game["home"]["name"].lower():
+                team_logo_url = game["home"].get("logo", "")
+                if not team_league:
+                    team_league = game.get("league_name", "")
+                break
+            elif search_term.lower() in game["away"]["name"].lower():
+                team_logo_url = game["away"].get("logo", "")
+                if not team_league:
+                    team_league = game.get("league_name", "")
+                break
+    except Exception:
+        pass
+
+    if not team_logo_url:
+        try:
+            stats = await get_team_stats(team_slug)
+            team_logo_url = stats.get("team_logo", "")
+        except Exception:
+            pass
+
+    png = await generate_team_og(
+        team_name=team_name,
+        team_logo_url=team_logo_url,
+        league_name=team_league,
+    )
+    _og_cache[cache_key] = png
+    return Response(content=png, media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
 # ── Affiliate click tracking ──────────────────────────────
 import json as _json
 from pathlib import Path as _Path
