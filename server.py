@@ -2646,6 +2646,36 @@ async def sitemap_xml():
             f'    <priority>0.7</priority>\n  </url>'
         )
 
+    # Team × Country pages (programmatic SEO: "donde ver america en colombia")
+    for team_slug in sorted(POPULAR_TEAMS.keys()):
+        for c_slug in TEAM_COUNTRY_SEO:
+            urls.append(
+                f'  <url>\n    <loc>{APP_URL}/equipo/{team_slug}/en/{c_slug}</loc>\n'
+                f'    <lastmod>{today_str}</lastmod>\n'
+                f'    <changefreq>weekly</changefreq>\n'
+                f'    <priority>0.6</priority>\n  </url>'
+            )
+
+    # Team calendar pages (programmatic SEO: "partidos de america esta semana")
+    for team_slug in sorted(POPULAR_TEAMS.keys()):
+        urls.append(
+            f'  <url>\n    <loc>{APP_URL}/equipo/{team_slug}/calendario</loc>\n'
+            f'    <lastmod>{today_str}</lastmod>\n'
+            f'    <changefreq>daily</changefreq>\n'
+            f'    <priority>0.6</priority>\n  </url>'
+        )
+
+    # Recap pages for finished games today
+    for game in games:
+        if game.get("status", {}).get("state") == "post":
+            recap_loc = f'{APP_URL}/resultado/{_make_game_slug(game)}'
+            urls.append(
+                f'  <url>\n    <loc>{recap_loc}</loc>\n'
+                f'    <lastmod>{today_str}</lastmod>\n'
+                f'    <changefreq>never</changefreq>\n'
+                f'    <priority>0.5</priority>\n  </url>'
+            )
+
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
@@ -3748,6 +3778,424 @@ async def team_page(request: Request, team_slug: str):
         "form_guide": form_guide,
         "faq_items": faq_items,
         "top_channels": top_channels,
+    })
+
+
+# ── Programmatic SEO pages ────────────────────────────────
+
+# Country data for team × country pages
+TEAM_COUNTRY_SEO = {
+    "mexico": {"name": "México", "flag": "🇲🇽", "code": "MX"},
+    "estados-unidos": {"name": "Estados Unidos", "flag": "🇺🇸", "code": "US"},
+    "argentina": {"name": "Argentina", "flag": "🇦🇷", "code": "AR"},
+    "colombia": {"name": "Colombia", "flag": "🇨🇴", "code": "CO"},
+    "chile": {"name": "Chile", "flag": "🇨🇱", "code": "CL"},
+    "peru": {"name": "Perú", "flag": "🇵🇪", "code": "PE"},
+    "ecuador": {"name": "Ecuador", "flag": "🇪🇨", "code": "EC"},
+}
+
+# Channels available per country for each league
+LEAGUE_CHANNELS_BY_COUNTRY = {
+    "Liga MX": {
+        "mexico": [
+            {"name": "TUDN", "type": "Cable", "sports": "Liga MX, Champions, Selección"},
+            {"name": "Canal 5 / Las Estrellas", "type": "TV Abierta", "sports": "Liga MX selectos"},
+            {"name": "Azteca 7", "type": "TV Abierta", "sports": "Liga MX, Selección Mexicana"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa, MLS"},
+            {"name": "Fox Sports MX", "type": "Cable", "sports": "Liga MX selectos"},
+            {"name": "Caliente TV", "type": "Streaming", "sports": "Liga MX selectos"},
+        ],
+        "estados-unidos": [
+            {"name": "Univision / UniMás", "type": "TV Abierta", "sports": "Liga MX en español"},
+            {"name": "TUDN", "type": "Cable", "sports": "Liga MX, Selección"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+            {"name": "FOX Deportes", "type": "Cable", "sports": "Liga MX selectos"},
+        ],
+        "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+        ],
+        "colombia": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+        ],
+        "chile": [
+            {"name": "ESPN Chile", "type": "Cable", "sports": "Liga MX selectos"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+        ],
+        "peru": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+        ],
+        "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+        ],
+    },
+    "Premier League": {
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Premier League completa"},
+        ],
+        "estados-unidos": [
+            {"name": "NBC / USA Network", "type": "Cable/TV", "sports": "Premier League selectos"},
+            {"name": "Peacock", "type": "Streaming", "sports": "Premier League completa"},
+            {"name": "Telemundo", "type": "TV Abierta", "sports": "Premier League en español"},
+        ],
+        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
+        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
+        "chile": [{"name": "ESPN Chile / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
+        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
+        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
+    },
+    "La Liga": {
+        "mexico": [
+            {"name": "SKY Sports", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "Blue To Go", "type": "Streaming", "sports": "La Liga completa"},
+        ],
+        "estados-unidos": [
+            {"name": "ESPN+", "type": "Streaming", "sports": "La Liga completa"},
+            {"name": "ESPN Deportes", "type": "Cable", "sports": "La Liga en español"},
+        ],
+        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
+        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
+        "chile": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
+        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
+        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
+    },
+    "NFL": {
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "Monday Night Football, partidos selectos"},
+            {"name": "Fox Sports MX", "type": "Cable", "sports": "Juegos selectos NFL"},
+            {"name": "TUDN", "type": "Cable", "sports": "Juegos en español"},
+            {"name": "NFL Game Pass", "type": "Streaming", "sports": "Todos los juegos NFL"},
+        ],
+        "estados-unidos": [
+            {"name": "FOX / CBS / NBC / ABC", "type": "TV Abierta", "sports": "Juegos del domingo y especiales"},
+            {"name": "ESPN / ESPN2", "type": "Cable", "sports": "Monday Night Football"},
+            {"name": "Amazon Prime", "type": "Streaming", "sports": "Thursday Night Football"},
+            {"name": "NFL+", "type": "Streaming", "sports": "Juegos locales y out-of-market"},
+            {"name": "Peacock", "type": "Streaming", "sports": "Sunday Night Football, exclusivos"},
+        ],
+        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
+        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
+        "chile": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
+        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
+        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
+    },
+    "NBA": {
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "NBA en vivo"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "NBA selectos"},
+            {"name": "NBA League Pass", "type": "Streaming", "sports": "Todos los juegos NBA"},
+        ],
+        "estados-unidos": [
+            {"name": "ESPN / TNT / ABC", "type": "Cable/TV", "sports": "NBA en vivo"},
+            {"name": "NBA League Pass", "type": "Streaming", "sports": "Todos los juegos fuera de mercado"},
+            {"name": "Max", "type": "Streaming", "sports": "NBA en TNT/TBS"},
+        ],
+        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
+        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
+        "chile": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
+        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
+        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
+    },
+    "MLB": {
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "MLB en vivo"},
+            {"name": "Fox Sports MX", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos MLB"},
+        ],
+        "estados-unidos": [
+            {"name": "FOX / FS1 / TBS", "type": "Cable/TV", "sports": "MLB selectos"},
+            {"name": "ESPN", "type": "Cable", "sports": "Sunday Night Baseball"},
+            {"name": "Apple TV+", "type": "Streaming", "sports": "Friday Night Baseball"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos fuera de mercado"},
+        ],
+        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
+        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
+        "chile": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
+        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
+        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
+    },
+    "MLS": {
+        "mexico": [
+            {"name": "ViX Premium", "type": "Streaming", "sports": "MLS completa"},
+            {"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "Todos los juegos MLS"},
+        ],
+        "estados-unidos": [
+            {"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "Todos los juegos MLS"},
+            {"name": "FOX / FS1", "type": "Cable/TV", "sports": "MLS selectos"},
+        ],
+        "argentina": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
+        "colombia": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
+        "chile": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
+        "peru": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
+        "ecuador": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
+    },
+}
+
+# Default for leagues not mapped above
+_DEFAULT_LATAM_CHANNELS = [
+    {"name": "ESPN Latinoamérica / Disney+", "type": "Cable/Streaming", "sports": "Deportes internacionales"},
+]
+
+
+@app.get("/equipo/{team_slug}/en/{country_slug}", response_class=HTMLResponse)
+async def team_country_page(request: Request, team_slug: str, country_slug: str):
+    """Programmatic SEO: 'Dónde ver [equipo] en [país]'."""
+    country = TEAM_COUNTRY_SEO.get(country_slug)
+    if not country:
+        return templates.TemplateResponse(request, "404.html", status_code=404,
+                                          context={"message": "País no encontrado."})
+
+    team_info = POPULAR_TEAMS.get(team_slug)
+    if team_info:
+        team_name = team_info["name"]
+        team_league = team_info.get("league", "")
+    else:
+        team_name = team_slug.replace("-", " ").title()
+        team_league = ""
+
+    # Get team logo and games
+    search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
+    team_logo = ""
+    games = await search_games(search_term)
+    for game in games:
+        if search_term.lower() in game["home"]["name"].lower():
+            team_logo = game["home"].get("logo", "")
+            if not team_league:
+                team_league = game.get("league_name", "")
+            break
+        elif search_term.lower() in game["away"]["name"].lower():
+            team_logo = game["away"].get("logo", "")
+            if not team_league:
+                team_league = game.get("league_name", "")
+            break
+
+    if not team_logo:
+        try:
+            stats = await get_team_stats(team_slug)
+            team_logo = stats.get("team_logo", "")
+        except Exception:
+            pass
+
+    # Get channels for this league in this country
+    league_channels = LEAGUE_CHANNELS_BY_COUNTRY.get(team_league, {})
+    country_channels = league_channels.get(country_slug, _DEFAULT_LATAM_CHANNELS)
+
+    # Country tip from COUNTRY_PAGES if available
+    cp = COUNTRY_PAGES.get(country_slug, {})
+    country_tip = cp.get("tip", "")
+
+    all_countries = [(cs, cd["name"], cd["flag"]) for cs, cd in TEAM_COUNTRY_SEO.items()]
+
+    return templates.TemplateResponse(request, "team_country.html", {
+        "team_name": team_name,
+        "team_slug": team_slug,
+        "team_logo": team_logo,
+        "team_league": team_league,
+        "country_name": country["name"],
+        "country_slug": country_slug,
+        "country_flag": country["flag"],
+        "country_channels": country_channels,
+        "country_tip": country_tip,
+        "games": games,
+        "all_countries": all_countries,
+        "format_mx_time": format_mx_time,
+    })
+
+
+@app.get("/equipo/{team_slug}/calendario", response_class=HTMLResponse)
+async def team_calendar_page(request: Request, team_slug: str):
+    """Weekly calendar for a team — 7-day view with games."""
+    team_info = POPULAR_TEAMS.get(team_slug)
+    if team_info:
+        team_name = team_info["name"]
+        team_league = team_info.get("league", "")
+        team_sport = team_info.get("sport", "")
+    else:
+        team_name = team_slug.replace("-", " ").title()
+        team_league = ""
+        team_sport = ""
+
+    search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
+    team_logo = ""
+
+    # Build 7-day calendar
+    now_mx = datetime.now(TZ_MX)
+    calendar_days = []
+
+    for delta in range(7):
+        day = now_mx + timedelta(days=delta)
+        day_str = day.strftime("%Y%m%d")
+        day_label = f"{_DAYS_ES_FULL[day.weekday()].title()} {day.day} de {_MONTHS_ES_FULL[day.month]}"
+
+        try:
+            day_games = await get_todays_games(date_str=day_str)
+        except Exception:
+            day_games = []
+
+        # Filter games for this team
+        team_games = []
+        for g in day_games:
+            if (search_term.lower() in g["home"]["name"].lower() or
+                search_term.lower() in g["away"]["name"].lower()):
+                team_games.append(g)
+                if not team_logo:
+                    if search_term.lower() in g["home"]["name"].lower():
+                        team_logo = g["home"].get("logo", "")
+                    else:
+                        team_logo = g["away"].get("logo", "")
+                    if not team_league:
+                        team_league = g.get("league_name", "")
+
+        calendar_days.append({
+            "date": day,
+            "label": day_label,
+            "is_today": delta == 0,
+            "games": team_games,
+        })
+
+    if not team_logo:
+        try:
+            stats = await get_team_stats(team_slug)
+            team_logo = stats.get("team_logo", "")
+        except Exception:
+            pass
+
+    # Get recent results
+    recent_results = []
+    t_sport = team_sport or "soccer"
+    t_league = ""
+    if team_info:
+        for lslug, ldata in ALL_LEAGUES.items():
+            lname = ldata[0] if isinstance(ldata, tuple) else lslug
+            if lname == team_league:
+                t_league = lslug
+                t_sport = ldata[2] if isinstance(ldata, tuple) and len(ldata) > 2 else "soccer"
+                break
+
+    if t_league:
+        try:
+            all_recent = await get_recent_league_results(t_sport, t_league, days=14, limit=30)
+            for r in all_recent:
+                if (search_term.lower() in r["home"].lower() or
+                    search_term.lower() in r["away"].lower()):
+                    # Determine result class
+                    h_score = int(r.get("home_score", 0) or 0)
+                    a_score = int(r.get("away_score", 0) or 0)
+                    is_home = search_term.lower() in r["home"].lower()
+                    team_score = h_score if is_home else a_score
+                    opp_score = a_score if is_home else h_score
+                    if team_score > opp_score:
+                        r["result_class"] = "result-w"
+                    elif team_score < opp_score:
+                        r["result_class"] = "result-l"
+                    else:
+                        r["result_class"] = "result-d"
+                    # Format date
+                    try:
+                        rd = datetime.strptime(r.get("game_date", ""), "%Y%m%d")
+                        r["date_display"] = f"{rd.day}/{rd.month}"
+                    except Exception:
+                        r["date_display"] = r.get("game_date", "")[:6]
+                    recent_results.append(r)
+                if len(recent_results) >= 5:
+                    break
+        except Exception:
+            pass
+
+    # Week range for display
+    end_day = now_mx + timedelta(days=6)
+    week_range = f"{now_mx.day} {_MONTHS_ES_FULL[now_mx.month][:3]} – {end_day.day} {_MONTHS_ES_FULL[end_day.month][:3]} {end_day.year}"
+
+    return templates.TemplateResponse(request, "team_calendar.html", {
+        "team_name": team_name,
+        "team_slug": team_slug,
+        "team_logo": team_logo,
+        "team_league": team_league,
+        "calendar_days": calendar_days,
+        "week_range": week_range,
+        "recent_results": recent_results,
+        "format_mx_time": format_mx_time,
+    })
+
+
+@app.get("/resultado/{slug}", response_class=HTMLResponse)
+async def recap_page(request: Request, slug: str):
+    """Post-match recap page for finished games."""
+    # Reuse the same slug parsing as /partido/
+    match = re.match(r"^(.+)-vs-(.+)-(\d{4}-\d{2}-\d{2})$", slug)
+    if not match:
+        return templates.TemplateResponse(request, "404.html", status_code=404,
+                                          context={"message": "URL de resultado no válida."})
+
+    home_slug_part = match.group(1)
+    away_slug_part = match.group(2)
+    date_str = match.group(3).replace("-", "")
+
+    # Find the game
+    game = None
+    for delta in [0, 1, -1]:
+        try:
+            dt = datetime.strptime(date_str, "%Y%m%d") + timedelta(days=delta)
+            try_date = dt.strftime("%Y%m%d")
+        except ValueError:
+            continue
+        all_games = await get_todays_games(date_str=try_date)
+        for g in all_games:
+            g_home = _slugify(g.get("home", {}).get("name", ""))
+            g_away = _slugify(g.get("away", {}).get("name", ""))
+            if g_home == home_slug_part and g_away == away_slug_part:
+                game = g
+                break
+        if game:
+            break
+
+    if not game:
+        return templates.TemplateResponse(request, "404.html", status_code=410,
+                                          context={"message": "Resultado no encontrado."})
+
+    # Only show recap for finished games
+    if game["status"]["state"] != "post":
+        return RedirectResponse(url=f"/partido/{_make_game_slug(game)}", status_code=302)
+
+    # Fetch ESPN summary
+    summary = {}
+    try:
+        sport = game.get("sport", "")
+        league_slug = game.get("league_slug", "")
+        league_info = ALL_LEAGUES.get(league_slug)
+        espn_league = league_info[1] if isinstance(league_info, tuple) else league_slug
+        if sport and espn_league:
+            summary = await fetch_espn_event_summary(sport, espn_league, game["id"])
+    except Exception as e:
+        logger.warning(f"Recap summary fetch failed: {e}")
+
+    # Format date
+    try:
+        dt = datetime.fromisoformat(game.get("date", "").replace("Z", "+00:00"))
+        dt_mx = dt.astimezone(TZ_MX)
+        date_display = f"{_DAYS_ES_FULL[dt_mx.weekday()].title()} {dt_mx.day} de {_MONTHS_ES_FULL[dt_mx.month]} {dt_mx.year}"
+    except Exception:
+        date_display = match.group(3)
+
+    home_slug = _team_name_to_slug(game["home"]["name"])
+    away_slug = _team_name_to_slug(game["away"]["name"])
+
+    return templates.TemplateResponse(request, "recap.html", {
+        "game": game,
+        "slug": slug,
+        "summary": summary,
+        "date_display": date_display,
+        "home_slug": home_slug,
+        "away_slug": away_slug,
     })
 
 

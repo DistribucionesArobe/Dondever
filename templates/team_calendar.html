@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario de {{ team_name }} — Partidos esta semana | DondeVer</title>
+    <meta name="description" content="Calendario de partidos de {{ team_name }} esta semana. Próximos juegos de {{ team_league }} con horarios, canales y dónde verlos en vivo.">
+    <meta property="og:title" content="Calendario de {{ team_name }} esta semana | DondeVer">
+    <meta property="og:description" content="Próximos partidos de {{ team_name }} ({{ team_league }}). Horarios y canales.">
+    <meta property="og:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
+    <meta property="og:url" content="{{ app_url }}/equipo/{{ team_slug }}/calendario">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="es_MX">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
+    <link rel="canonical" href="{{ app_url }}/equipo/{{ team_slug }}/calendario">
+    {{ hreflang_tags(request.url) }}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ app_url }}/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ team_name }}", "item": "{{ app_url }}/equipo/{{ team_slug }}"},
+        {"@type": "ListItem", "position": 3, "name": "Calendario", "item": "{{ app_url }}/equipo/{{ team_slug }}/calendario"}
+      ]
+    }
+    </script>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script>
+    (function(){var t=localStorage.getItem('dv-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; min-height: 100vh; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .breadcrumb { max-width: 900px; margin: 0 auto; padding: 0.6rem 1rem 0; font-size: 0.7rem; color: #9ca3af; }
+        .breadcrumb a { color: #10b981; text-decoration: none; }
+        .hero { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 1rem; text-align: center; }
+        .hero h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .hero p { color: #6b7280; font-size: 0.9rem; }
+        .team-logo-hero { width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 0.75rem; background: #f3f4f6; object-fit: contain; }
+        .main { max-width: 900px; margin: 1rem auto; padding: 0 1rem 2rem; }
+        .day-section { margin-bottom: 1.2rem; }
+        .day-header { font-size: 0.85rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; padding-bottom: 0.35rem; border-bottom: 2px solid #10b981; display: flex; align-items: center; justify-content: space-between; }
+        .day-header .today-badge { background: #10b981; color: white; font-size: 0.55rem; font-weight: 800; padding: 0.12rem 0.4rem; border-radius: 4px; }
+        .game-card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.7rem 0.9rem; margin-bottom: 0.45rem; display: block; text-decoration: none; color: inherit; transition: all 0.15s; }
+        .game-card:hover { border-color: #10b981; box-shadow: 0 2px 10px rgba(16,185,129,0.1); }
+        .gc-top { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem; }
+        .pre-badge { background: #f3f4f6; color: #374151; font-size: 0.55rem; font-weight: 700; padding: 0.12rem 0.4rem; border-radius: 4px; }
+        .gc-league { font-size: 0.6rem; color: #6b7280; font-weight: 600; margin-left: auto; }
+        .gc-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.15rem 0; }
+        .team-logo { width: 22px; height: 22px; border-radius: 50%; object-fit: contain; background: #f3f4f6; }
+        .team-name { font-weight: 600; font-size: 0.82rem; flex: 1; }
+        .gc-time { font-weight: 700; font-size: 0.78rem; color: #374151; }
+        .gc-channels { font-size: 0.65rem; color: #10b981; font-weight: 600; margin-top: 0.3rem; }
+        .no-games { text-align: center; padding: 3rem 1rem; color: #6b7280; }
+        .results-section { margin-top: 1.5rem; }
+        .result-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem; background: white; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 0.35rem; font-size: 0.8rem; }
+        .result-date { color: #9ca3af; font-size: 0.7rem; min-width: 60px; }
+        .result-teams { flex: 1; font-weight: 600; }
+        .result-score { font-weight: 800; }
+        .result-w { color: #059669; }
+        .result-l { color: #ef4444; }
+        .result-d { color: #f59e0b; }
+        .footer { background: #1a1a2e; color: #9ca3af; text-align: center; padding: 1.5rem 1rem; font-size: 0.75rem; margin-top: 2rem; }
+        .footer a { color: #10b981; text-decoration: none; }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+        <a href="/equipo/{{ team_slug }}" class="back">&larr; {{ team_name }}</a>
+        <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.25rem 0.4rem;border-radius:8px;color:#94a3b8;">&#127769;</button>
+    </div>
+</header>
+
+<nav class="breadcrumb">
+    <a href="/">Inicio</a> &rsaquo; <a href="/equipos">Equipos</a> &rsaquo; <a href="/equipo/{{ team_slug }}">{{ team_name }}</a> &rsaquo; Calendario
+</nav>
+
+<div class="hero">
+    {% if team_logo %}<img src="{{ team_logo }}" alt="{{ team_name }}" class="team-logo-hero" loading="lazy">{% endif %}
+    <h1>Calendario de {{ team_name }}</h1>
+    <p>Próximos partidos de {{ team_league }} &mdash; semana del {{ week_range }}</p>
+</div>
+
+<main class="main">
+    {% if calendar_days %}
+    {% for day in calendar_days %}
+    <section class="day-section">
+        <h2 class="day-header">
+            <span>{{ day.label }}</span>
+            {% if day.is_today %}<span class="today-badge">HOY</span>{% endif %}
+        </h2>
+        {% if day.games %}
+        {% for game in day.games %}
+        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+        {% set top_team = game.home if home_left else game.away %}
+        {% set bottom_team = game.away if home_left else game.home %}
+        <a href="{{ game|game_url }}" class="game-card">
+            <div class="gc-top">
+                <span class="pre-badge">{{ game.league_name }}</span>
+                <span class="gc-league">{{ format_mx_time(game.date) }} hrs MX</span>
+            </div>
+            <div class="gc-row">
+                {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
+                <span class="team-name">{{ top_team.name }}</span>
+            </div>
+            <div class="gc-row">
+                {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">{% endif %}
+                <span class="team-name">{{ bottom_team.name }}</span>
+            </div>
+            {% if game.broadcasts %}
+            <div class="gc-channels">{{ game.broadcasts | map(attribute='channel') | join(', ') }}</div>
+            {% endif %}
+        </a>
+        {% endfor %}
+        {% else %}
+        <p style="color:#9ca3af;font-size:0.8rem;padding:0.5rem 0;">Sin partidos programados</p>
+        {% endif %}
+    </section>
+    {% endfor %}
+    {% else %}
+    <div class="no-games">
+        <h2 style="font-size:1.1rem;margin-bottom:0.4rem;color:#374151;">No hay partidos programados esta semana</h2>
+        <p>Revisa la página de <a href="/equipo/{{ team_slug }}" style="color:#10b981;">{{ team_name }}</a> para más información.</p>
+    </div>
+    {% endif %}
+
+    {% if recent_results %}
+    <section class="results-section">
+        <h2 class="day-header">Resultados recientes</h2>
+        {% for r in recent_results %}
+        <div class="result-row">
+            <span class="result-date">{{ r.date_display }}</span>
+            <span class="result-teams">{{ r.home }} vs {{ r.away }}</span>
+            <span class="result-score {{ r.result_class }}">{{ r.home_score }}-{{ r.away_score }}</span>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+</main>
+
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>
+    <p style="margin-top:0.3rem;">Horarios para zona centro de México (CT).</p>
+</footer>
+<script src="/static/dark-mode.js" defer></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
+</body>
+</html>

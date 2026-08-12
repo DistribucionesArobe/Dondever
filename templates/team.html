@@ -839,6 +839,16 @@
     </div>
     {% endif %}
 
+    {# ══ CALENDARIO Y PAÍSES ══ #}
+    <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:0.9rem 1rem;margin-bottom:1rem;">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;font-weight:700;margin-bottom:0.5rem;">Más de {{ team_name }}</div>
+        <a href="/equipo/{{ team_slug }}/calendario" style="display:inline-block;padding:0.35rem 0.75rem;border-radius:8px;background:#10b981;color:white;text-decoration:none;font-size:0.75rem;font-weight:700;margin-right:0.4rem;margin-bottom:0.3rem;">Calendario semanal</a>
+        <a href="/equipo/{{ team_slug }}/en/mexico" style="display:inline-block;padding:0.35rem 0.75rem;border-radius:8px;background:#f3f4f6;color:#374151;text-decoration:none;font-size:0.75rem;font-weight:600;margin-right:0.4rem;margin-bottom:0.3rem;">Ver en México</a>
+        <a href="/equipo/{{ team_slug }}/en/estados-unidos" style="display:inline-block;padding:0.35rem 0.75rem;border-radius:8px;background:#f3f4f6;color:#374151;text-decoration:none;font-size:0.75rem;font-weight:600;margin-right:0.4rem;margin-bottom:0.3rem;">Ver en USA</a>
+        <a href="/equipo/{{ team_slug }}/en/argentina" style="display:inline-block;padding:0.35rem 0.75rem;border-radius:8px;background:#f3f4f6;color:#374151;text-decoration:none;font-size:0.75rem;font-weight:600;margin-right:0.4rem;margin-bottom:0.3rem;">Ver en Argentina</a>
+        <a href="/equipo/{{ team_slug }}/en/colombia" style="display:inline-block;padding:0.35rem 0.75rem;border-radius:8px;background:#f3f4f6;color:#374151;text-decoration:none;font-size:0.75rem;font-weight:600;margin-bottom:0.3rem;">Ver en Colombia</a>
+    </div>
+
     {# ══ EQUIPOS RELACIONADOS ══ #}
     {% if related_teams %}
     <div class="related-teams">

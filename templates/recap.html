@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+    {% set first_team = game.home.name if home_left else game.away.name %}
+    {% set second_team = game.away.name if home_left else game.home.name %}
+    {% set first_score = game.home.score if home_left else game.away.score %}
+    {% set second_score = game.away.score if home_left else game.home.score %}
+    <title>Resultado {{ first_team }} {{ first_score }}-{{ second_score }} {{ second_team }} — {{ game.league_name }} | DondeVer</title>
+    <meta name="description" content="Resultado final: {{ first_team }} {{ first_score }}-{{ second_score }} {{ second_team }}. {{ game.league_name }}. Resumen, goles y estadísticas del partido.">
+    <meta property="og:title" content="{{ first_team }} {{ first_score }}-{{ second_score }} {{ second_team }} | Resultado">
+    <meta property="og:description" content="{{ game.league_name }} — Resultado final y resumen del partido.">
+    <meta property="og:image" content="{{ app_url }}/og/partido/{{ game|game_url|replace('/partido/', '') }}.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="{{ app_url }}/resultado/{{ slug }}">
+    <meta property="og:type" content="article">
+    <meta property="og:locale" content="es_MX">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{{ app_url }}/og/partido/{{ game|game_url|replace('/partido/', '') }}.png">
+    <link rel="canonical" href="{{ app_url }}/resultado/{{ slug }}">
+    {{ hreflang_tags(request.url) }}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SportsEvent",
+      "name": "{{ first_team }} vs {{ second_team }}",
+      "description": "Resultado: {{ first_team }} {{ first_score }}-{{ second_score }} {{ second_team }}",
+      "startDate": "{{ game.date }}",
+      "eventStatus": "https://schema.org/EventCompleted",
+      "location": {
+        "@type": "Place",
+        "name": "{{ summary.venue.name if summary.venue else game.league_name }}"
+      },
+      "homeTeam": {
+        "@type": "SportsTeam",
+        "name": "{{ game.home.name }}"
+      },
+      "awayTeam": {
+        "@type": "SportsTeam",
+        "name": "{{ game.away.name }}"
+      },
+      "organizer": {
+        "@type": "SportsOrganization",
+        "name": "{{ game.league_name }}"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ app_url }}/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ game.league_name }}", "item": "{{ app_url }}"},
+        {"@type": "ListItem", "position": 3, "name": "{{ first_team }} vs {{ second_team }}", "item": "{{ app_url }}/resultado/{{ slug }}"}
+      ]
+    }
+    </script>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script>
+    (function(){var t=localStorage.getItem('dv-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; min-height: 100vh; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .breadcrumb { max-width: 900px; margin: 0 auto; padding: 0.6rem 1rem 0; font-size: 0.7rem; color: #9ca3af; }
+        .breadcrumb a { color: #10b981; text-decoration: none; }
+        .main { max-width: 900px; margin: 0 auto; padding: 0 1rem 2rem; }
+
+        .scoreboard { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; margin: 1.5rem 0; text-align: center; color: white; }
+        .sb-league { font-size: 0.7rem; color: #10b981; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+        .sb-status { font-size: 0.65rem; color: #9ca3af; margin-bottom: 1rem; }
+        .sb-teams { display: flex; align-items: center; justify-content: center; gap: 1.5rem; }
+        .sb-team { text-align: center; flex: 1; }
+        .sb-team-logo { width: 56px; height: 56px; border-radius: 50%; object-fit: contain; background: rgba(255,255,255,0.1); margin: 0 auto 0.4rem; }
+        .sb-team-name { font-weight: 700; font-size: 0.85rem; }
+        .sb-score-box { display: flex; align-items: center; gap: 0.5rem; }
+        .sb-score { font-size: 2.5rem; font-weight: 900; }
+        .sb-dash { font-size: 1.5rem; color: #6b7280; }
+        .sb-date { font-size: 0.75rem; color: #9ca3af; margin-top: 0.75rem; }
+
+        .section { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+        .section-title { font-size: 0.85rem; font-weight: 800; margin-bottom: 0.6rem; padding-bottom: 0.3rem; border-bottom: 2px solid #10b981; }
+        .summary-text { font-size: 0.85rem; color: #374151; line-height: 1.7; }
+
+        .key-events { list-style: none; }
+        .key-events li { padding: 0.4rem 0; border-bottom: 1px solid #f3f4f6; font-size: 0.82rem; display: flex; gap: 0.5rem; align-items: center; }
+        .key-events li:last-child { border-bottom: none; }
+        .event-minute { font-weight: 800; color: #10b981; min-width: 35px; }
+        .event-icon { font-size: 0.9rem; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.3rem 0.5rem; font-size: 0.8rem; }
+        .stat-home { text-align: right; font-weight: 700; }
+        .stat-label { text-align: center; color: #6b7280; font-size: 0.7rem; }
+        .stat-away { text-align: left; font-weight: 700; }
+        .stat-bar { grid-column: 1 / -1; height: 4px; background: #f3f4f6; border-radius: 2px; margin: 0.1rem 0 0.4rem; overflow: hidden; display: flex; }
+        .stat-bar-home { background: #10b981; }
+        .stat-bar-away { background: #3b82f6; }
+
+        .cta-row { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+        .cta-link { padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.8rem; transition: opacity 0.15s; }
+        .cta-link:hover { opacity: 0.85; }
+        .cta-primary { background: #10b981; color: white; }
+        .cta-secondary { background: #f3f4f6; color: #374151; }
+
+        .footer { background: #1a1a2e; color: #9ca3af; text-align: center; padding: 1.5rem 1rem; font-size: 0.75rem; margin-top: 2rem; }
+        .footer a { color: #10b981; text-decoration: none; }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+        <a href="{{ game|game_url }}" class="back">&larr; Detalles del partido</a>
+        <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.25rem 0.4rem;border-radius:8px;color:#94a3b8;">&#127769;</button>
+    </div>
+</header>
+
+<nav class="breadcrumb">
+    <a href="/">Inicio</a> &rsaquo; <a href="{{ game|game_url }}">{{ first_team }} vs {{ second_team }}</a> &rsaquo; Resultado
+</nav>
+
+<main class="main">
+    <!-- Scoreboard -->
+    <div class="scoreboard">
+        <div class="sb-league">{{ game.league_name }}</div>
+        <div class="sb-status">FINAL</div>
+        <div class="sb-teams">
+            <div class="sb-team">
+                {% if game.home.logo %}<img src="{{ game.home.logo }}" alt="{{ game.home.name }}" class="sb-team-logo">{% endif %}
+                <div class="sb-team-name">{{ game.home.name }}</div>
+            </div>
+            <div class="sb-score-box">
+                <span class="sb-score">{{ game.home.score }}</span>
+                <span class="sb-dash">-</span>
+                <span class="sb-score">{{ game.away.score }}</span>
+            </div>
+            <div class="sb-team">
+                {% if game.away.logo %}<img src="{{ game.away.logo }}" alt="{{ game.away.name }}" class="sb-team-logo">{% endif %}
+                <div class="sb-team-name">{{ game.away.name }}</div>
+            </div>
+        </div>
+        <div class="sb-date">{{ date_display }}</div>
+    </div>
+
+    <!-- Summary -->
+    {% if summary.headline or summary.recap %}
+    <div class="section">
+        <h2 class="section-title">Resumen</h2>
+        {% if summary.headline %}<p style="font-weight:700;font-size:0.9rem;margin-bottom:0.5rem;">{{ summary.headline }}</p>{% endif %}
+        {% if summary.recap %}<p class="summary-text">{{ summary.recap }}</p>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Key events (goals, cards, etc.) -->
+    {% if summary.key_events %}
+    <div class="section">
+        <h2 class="section-title">Jugadas clave</h2>
+        <ul class="key-events">
+            {% for ev in summary.key_events %}
+            <li>
+                <span class="event-minute">{{ ev.clock }}</span>
+                <span class="event-icon">{{ ev.icon }}</span>
+                <span>{{ ev.text }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Team stats comparison -->
+    {% if summary.stats %}
+    <div class="section">
+        <h2 class="section-title">Estadísticas</h2>
+        <div class="stats-grid">
+            {% for stat in summary.stats %}
+            <span class="stat-home">{{ stat.home }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+            <span class="stat-away">{{ stat.away }}</span>
+            {% set h_val = stat.home | replace('%', '') | float %}
+            {% set a_val = stat.away | replace('%', '') | float %}
+            {% set total = h_val + a_val if (h_val + a_val) > 0 else 1 %}
+            <div class="stat-bar">
+                <div class="stat-bar-home" style="width:{{ (h_val / total * 100) | round }}%"></div>
+                <div class="stat-bar-away" style="width:{{ (a_val / total * 100) | round }}%"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- CTAs -->
+    <div class="cta-row">
+        <a href="{{ game|game_url }}" class="cta-link cta-primary">Ver detalles del partido</a>
+        {% if home_slug %}<a href="/equipo/{{ home_slug }}" class="cta-link cta-secondary">{{ game.home.name }}</a>{% endif %}
+        {% if away_slug %}<a href="/equipo/{{ away_slug }}" class="cta-link cta-secondary">{{ game.away.name }}</a>{% endif %}
+    </div>
+</main>
+
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>
+</footer>
+<script src="/static/dark-mode.js" defer></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
+</body>
+</html>
