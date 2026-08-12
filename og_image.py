@@ -50,7 +50,8 @@ async def _download_logo(url: str, size: int = 120) -> Optional[Image.Image]:
     if not url:
         return None
     try:
-        async with httpx.AsyncClient(timeout=5) as client:
+        headers = {"User-Agent": "Mozilla/5.0 (compatible; DondeVerBot/1.0)"}
+        async with httpx.AsyncClient(timeout=5, headers=headers) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             logo = Image.open(io.BytesIO(resp.content)).convert("RGBA")
