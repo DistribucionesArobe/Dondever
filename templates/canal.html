@@ -168,7 +168,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="game-card {% if state == 'in' %}live{% endif %}">
+        <a href="{{ game|game_url }}" class="game-card {% if state == 'in' %}live{% endif %}">
             <div class="gc-top">
                 {% if state == 'in' %}
                 <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>

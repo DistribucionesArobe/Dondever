@@ -168,7 +168,7 @@
     <div class="games-today">
         <h2>&#127936; Partidos de hoy relevantes en {{ country.name }} ({{ today_display }})</h2>
         {% for game in games[:15] %}
-        <a href="/juego/{{ game.id }}" class="game-link">
+        <a href="{{ game|game_url }}" class="game-link">
             <span class="game-emoji">{{ game.emoji }}</span>
             <div class="game-info">
                 <div class="game-teams">{{ game.home.name }} vs {{ game.away.name }}</div>

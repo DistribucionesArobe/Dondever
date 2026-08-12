@@ -1500,7 +1500,7 @@
                     <div class="bet-cta-col">
                         <a href="/go/bet?s=live-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">&#128176; Apostar</a>
                         {% if game.odds.total_bookmakers %}
-                        <a href="/juego/{{ game.id }}" class="bet-cta-secondary">{{ game.odds.total_bookmakers }} casas &rarr;</a>
+                        <a href="{{ game|game_url }}" class="bet-cta-secondary">{{ game.odds.total_bookmakers }} casas &rarr;</a>
                         {% endif %}
                     </div>
                 </div>
@@ -1537,7 +1537,7 @@
                     {% endif %}
                 </div>
                 <div class="gc-actions">
-                    <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="gc-act-detail" onclick="event.stopPropagation();">D&oacute;nde ver &rarr;</a>
+                    <a href="{{ game|game_url }}" class="gc-act-detail" onclick="event.stopPropagation();">D&oacute;nde ver &rarr;</a>
                 </div>
             </div>
         </div>
@@ -1602,7 +1602,7 @@
                     <div class="bet-cta-col">
                         <a href="/go/bet?s=feat-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">&#128176; Apostar</a>
                         {% if game.odds.total_bookmakers %}
-                        <a href="/juego/{{ game.id }}" class="bet-cta-secondary">{{ game.odds.total_bookmakers }} casas &rarr;</a>
+                        <a href="{{ game|game_url }}" class="bet-cta-secondary">{{ game.odds.total_bookmakers }} casas &rarr;</a>
                         {% endif %}
                     </div>
                 </div>
@@ -1655,7 +1655,7 @@
                 </div>
                 {% endif %}
                 <div class="gc-actions">
-                    <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="gc-act-detail" onclick="event.stopPropagation();">D&oacute;nde ver &rarr;</a>
+                    <a href="{{ game|game_url }}" class="gc-act-detail" onclick="event.stopPropagation();">D&oacute;nde ver &rarr;</a>
                 </div>
             </div>
         </div>
@@ -1774,7 +1774,7 @@
                     <div class="bet-cta-col">
                         <a href="/go/bet?s=card-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">&#128176; Apostar</a>
                         {% if game.odds.total_bookmakers %}
-                        <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="bet-cta-secondary">{{ game.odds.total_bookmakers }} casas &rarr;</a>
+                        <a href="{{ game|game_url }}" class="bet-cta-secondary">{{ game.odds.total_bookmakers }} casas &rarr;</a>
                         {% endif %}
                     </div>
                 </div>
@@ -1900,10 +1900,10 @@
                 {# ── 4. Actions: calendar + share + detail link ── #}
                 <div class="gc-actions" onclick="event.stopPropagation();">
                     {% if state == 'pre' %}
-                    <button class="gc-act" onclick="dvCal(this)" data-t="{{ top_team.name }} vs {{ bottom_team.name }}" data-d="{{ game.date }}" data-l="{{ game.league_name }}" data-ch="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}" data-u="{{ app_url }}/juego/{{ game.id }}">&#128197; Calendario</button>
+                    <button class="gc-act" onclick="dvCal(this)" data-t="{{ top_team.name }} vs {{ bottom_team.name }}" data-d="{{ game.date }}" data-l="{{ game.league_name }}" data-ch="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}" data-u="{{ app_url }}{{ game|game_url }}">&#128197; Calendario</button>
                     {% endif %}
-                    <button class="gc-act" onclick="dvShare(this,'{{ app_url }}/juego/{{ game.id }}','{{ top_team.name }} vs {{ bottom_team.name }} - {{ game.league_name }}')">&#8599; Compartir</button>
-                    <a href="/juego/{{ game.id }}{% if current_date %}?date={{ current_date }}{% endif %}" class="gc-act-detail">Dónde ver &rarr;</a>
+                    <button class="gc-act" onclick="dvShare(this,'{{ app_url }}{{ game|game_url }}','{{ top_team.name }} vs {{ bottom_team.name }} - {{ game.league_name }}')">&#8599; Compartir</button>
+                    <a href="{{ game|game_url }}" class="gc-act-detail">Dónde ver &rarr;</a>
                 </div>
             </div>
         </div>

@@ -12,7 +12,7 @@
     <meta property="og:title" content="Donde ver {{ first_team }} vs {{ second_team }} hoy">
     <meta property="og:description" content="{{ game.league_name }} en vivo. Canales de TV y streaming en Mexico, USA y Latinoamerica.">
     <meta property="og:type" content="article">
-    <meta property="og:url" content="{{ app_url }}/juego/{{ game.id }}">
+    <meta property="og:url" content="{{ app_url }}{{ game|game_url }}">
     <meta property="og:site_name" content="DondeVer.app">
     <meta property="og:locale" content="es_MX">
     <meta property="og:image" content="{{ app_url }}/static/og-image.png">
@@ -24,7 +24,7 @@
     <meta name="twitter:site" content="@dondeverapp">
     <meta name="twitter:title" content="Donde ver {{ game.away.name }} vs {{ game.home.name }}">
     <meta name="twitter:description" content="{{ game.league_name }} - Canales de TV y streaming en Mexico, USA y Latinoamerica">
-    <link rel="canonical" href="{{ app_url }}/juego/{{ game.id }}">
+    <link rel="canonical" href="{{ app_url }}{{ game|game_url }}">
     <!-- JSON-LD Structured Data: SportsEvent -->
     <script type="application/ld+json">
     {
@@ -35,7 +35,7 @@
       "startDate": "{{ game.date }}",
       "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.display == 'Postponed' %}EventPostponed{% elif game.status.display == 'Cancelled' %}EventCancelled{% else %}EventScheduled{% endif %}",
       "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
-      "url": "{{ app_url }}/juego/{{ game.id }}",
+      "url": "{{ app_url }}{{ game|game_url }}",
       "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport == 'football' %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% elif game.sport == 'mma' %}Mixed Martial Arts{% else %}{{ game.sport }}{% endif %}",
       {% if game.venue %}"location": {
         "@type": "Place",
@@ -1236,7 +1236,7 @@ var _gTitle = '{{ first_team }} vs {{ second_team }}';
 var _gDate = '{{ game.date }}';
 var _gLeague = '{{ game.league_name }}';
 var _gChannel = '{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}';
-var _gUrl = '{{ app_url }}/juego/{{ game.id }}';
+var _gUrl = '{{ app_url }}{{ game|game_url }}';
 
 function dvCal() {
     var s = new Date(_gDate);

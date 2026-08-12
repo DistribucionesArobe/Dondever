@@ -297,7 +297,7 @@
             {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
             {% set left_team = game.home if home_left else game.away %}
             {% set right_team = game.away if home_left else game.home %}
-            <a href="/juego/{{ game.id }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
+            <a href="{{ game|game_url }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
                 <div class="team away">
                     <div>
                         <div class="team-name">{{ left_team.name }}</div>

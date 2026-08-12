@@ -6,6 +6,8 @@ Where to watch sports in Mexico & USA
 import asyncio
 import logging
 import os
+import re
+import unicodedata
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -46,6 +48,39 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+# ── Semantic game slugs ─────────────────────────────────
+def _slugify(text: str) -> str:
+    """Unicode-safe slugify: 'Club América' → 'club-america'."""
+    text = unicodedata.normalize("NFKD", text)
+    text = text.encode("ascii", "ignore").decode("ascii").lower()
+    text = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+    return re.sub(r"-{2,}", "-", text)
+
+
+def _make_game_slug(game: dict) -> str:
+    """Build a semantic slug: 'america-vs-cruz-azul-2026-08-11'."""
+    home = _slugify(game.get("home", {}).get("name", "home"))
+    away = _slugify(game.get("away", {}).get("name", "away"))
+    # Parse date from ISO string (e.g. '2026-08-11T22:00Z')
+    raw_date = game.get("date", "")
+    try:
+        dt = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+        date_str = dt.astimezone(TZ_MX).strftime("%Y-%m-%d")
+    except Exception:
+        date_str = datetime.now(TZ_MX).strftime("%Y-%m-%d")
+    return f"{home}-vs-{away}-{date_str}"
+
+
+def _game_url(game: dict) -> str:
+    """Full path for a game: /partido/america-vs-cruz-azul-2026-08-11."""
+    return f"/partido/{_make_game_slug(game)}"
+
+
+# Register Jinja2 filters
+templates.env.filters["game_url"] = _game_url
+templates.env.globals["game_url"] = _game_url
 
 
 # ── Google Analytics middleware ──────────────────────────
@@ -589,9 +624,127 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
     )
 
 
+@app.get("/partido/{slug}", response_class=HTMLResponse)
+async def game_semantic(request: Request, slug: str):
+    """Semantic game URL: /partido/america-vs-cruz-azul-2026-08-11."""
+    # Parse slug: everything before last 10 chars is teams, last 10 is date
+    match = re.match(r"^(.+)-vs-(.+)-(\d{4}-\d{2}-\d{2})$", slug)
+    if not match:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404,
+            context={"message": "URL de partido no válida."}
+        )
+
+    home_slug_part = match.group(1)
+    away_slug_part = match.group(2)
+    date_str = match.group(3).replace("-", "")  # YYYYMMDD for API
+
+    # Search across the target date and adjacent days
+    game = None
+    for delta in [0, 1, -1]:
+        try:
+            dt = datetime.strptime(date_str, "%Y%m%d") + timedelta(days=delta)
+            try_date = dt.strftime("%Y%m%d")
+        except ValueError:
+            continue
+        all_games = await get_todays_games(date_str=try_date)
+        for g in all_games:
+            g_slug = _make_game_slug(g)
+            if g_slug == slug:
+                game = g
+                break
+            # Fallback: match just team slugs (handles timezone edge cases)
+            g_home = _slugify(g.get("home", {}).get("name", ""))
+            g_away = _slugify(g.get("away", {}).get("name", ""))
+            if g_home == home_slug_part and g_away == away_slug_part:
+                game = g
+                break
+        if game:
+            break
+
+    # Try DB as last resort
+    if not game:
+        try:
+            from db import get_team_history, get_team_upcoming
+            from sqlalchemy import text as sa_text
+            from db import async_session
+            async with async_session() as session:
+                result = await session.execute(
+                    sa_text("""
+                        SELECT id FROM games
+                        WHERE game_date = :gd
+                        ORDER BY date_utc DESC LIMIT 20
+                    """),
+                    {"gd": date_str}
+                )
+                for row in result.mappings().all():
+                    # We found a game_id, redirect to /juego/ which can handle it
+                    return RedirectResponse(url=f"/juego/{row['id']}", status_code=302)
+        except Exception:
+            pass
+
+    if not game:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=410,
+            context={"message": "Este partido ya terminó. Ve los juegos de hoy en la home."}
+        )
+
+    # Canonical: ensure the URL matches the expected slug
+    expected_slug = _make_game_slug(game)
+    if slug != expected_slug:
+        return RedirectResponse(url=f"/partido/{expected_slug}", status_code=301)
+
+    # ── Reuse game_detail logic ──
+    event_id = game["id"]
+
+    # Fetch odds
+    odds = None
+    if game["status"]["state"] in ("pre", "in"):
+        try:
+            league_slug = game.get("league_slug", "")
+            odds_list = await fetch_odds(league_slug)
+            odds = match_full_odds_to_game(game, odds_list)
+        except Exception as e:
+            logger.warning(f"Odds fetch failed for game {event_id}: {e}")
+
+    home_slug = _team_name_to_slug(game["home"]["name"])
+    away_slug = _team_name_to_slug(game["away"]["name"])
+
+    home_stats = {}
+    away_stats = {}
+    try:
+        if home_slug:
+            home_stats = await get_team_stats(home_slug)
+        if away_slug:
+            away_stats = await get_team_stats(away_slug)
+    except Exception as e:
+        logger.warning(f"Stats fetch failed for game {event_id}: {e}")
+
+    summary = {}
+    try:
+        sport = game.get("sport", "")
+        league_slug = game.get("league_slug", "")
+        from config import ALL_LEAGUES
+        league_info = ALL_LEAGUES.get(league_slug)
+        espn_league = league_info[1] if isinstance(league_info, tuple) else league_slug
+        if sport and espn_league:
+            summary = await fetch_espn_event_summary(sport, espn_league, event_id)
+    except Exception as e:
+        logger.warning(f"Summary fetch failed for game {event_id}: {e}")
+
+    return templates.TemplateResponse(
+        request, "game.html", context={
+            "game": game, "odds": odds,
+            "home_slug": home_slug, "away_slug": away_slug,
+            "home_stats": home_stats, "away_stats": away_stats,
+            "summary": summary,
+        }
+    )
+
+
 @app.get("/juego/{event_id}", response_class=HTMLResponse)
 async def game_detail(request: Request, event_id: str, date: Optional[str] = Query(None)):
-    """Individual game page — good for SEO."""
+    """Redirect to semantic URL or show game if slug can't be built."""
     # Try the requested date first, then today, then nearby dates
     all_games = await get_todays_games(date_str=date)
     game = next((g for g in all_games if g["id"] == event_id), None)
@@ -619,53 +772,8 @@ async def game_detail(request: Request, event_id: str, date: Optional[str] = Que
             context={"message": "Este juego ya termino. Ve los juegos de hoy en la home."}
         )
 
-    # Fetch odds (show for pre-game and in-progress)
-    odds = None
-    if game["status"]["state"] in ("pre", "in"):
-        try:
-            league_slug = game.get("league_slug", "")
-            odds_list = await fetch_odds(league_slug)
-            odds = match_full_odds_to_game(game, odds_list)
-        except Exception as e:
-            logger.warning(f"Odds fetch failed for game {event_id}: {e}")
-
-    # Find team slugs for clickable logos
-    home_slug = _team_name_to_slug(game["home"]["name"])
-    away_slug = _team_name_to_slug(game["away"]["name"])
-
-    # Fetch stats for both teams (standings, record, etc.)
-    home_stats = {}
-    away_stats = {}
-    try:
-        if home_slug:
-            home_stats = await get_team_stats(home_slug)
-        if away_slug:
-            away_stats = await get_team_stats(away_slug)
-    except Exception as e:
-        logger.warning(f"Stats fetch failed for game {event_id}: {e}")
-
-    # Fetch ESPN event summary (lineups, H2H, standings, boxscore)
-    summary = {}
-    try:
-        sport = game.get("sport", "")
-        league_slug = game.get("league_slug", "")
-        # Resolve ESPN league code from slug (e.g. "liga-mx" → "mex.1")
-        from config import ALL_LEAGUES
-        league_info = ALL_LEAGUES.get(league_slug)
-        espn_league = league_info[1] if isinstance(league_info, tuple) else league_slug
-        if sport and espn_league:
-            summary = await fetch_espn_event_summary(sport, espn_league, event_id)
-    except Exception as e:
-        logger.warning(f"Summary fetch failed for game {event_id}: {e}")
-
-    return templates.TemplateResponse(
-        request, "game.html", context={
-            "game": game, "odds": odds,
-            "home_slug": home_slug, "away_slug": away_slug,
-            "home_stats": home_stats, "away_stats": away_stats,
-            "summary": summary,
-        }
-    )
+    # 301 redirect to the semantic URL
+    return RedirectResponse(url=f"/partido/{_make_game_slug(game)}", status_code=301)
 
 
 # ── Affiliate click tracking ──────────────────────────────
@@ -2043,7 +2151,7 @@ async def robots_txt():
     return (
         "User-agent: *\n"
         "Allow: /\n"
-        "Allow: /juego/\n"
+        "Allow: /partido/\n"
         "Allow: /liga/\n"
         "Disallow: /api/\n"
         "Disallow: /webhook/\n"
@@ -2232,7 +2340,7 @@ async def sitemap_xml():
 
     for game in games:
         urls.append(
-            f'  <url>\n    <loc>{APP_URL}/juego/{game["id"]}</loc>\n'
+            f'  <url>\n    <loc>{APP_URL}{_game_url(game)}</loc>\n'
             f'    <lastmod>{today_str}</lastmod>\n'
             f'    <changefreq>hourly</changefreq>\n'
             f'    <priority>0.8</priority>\n  </url>'
