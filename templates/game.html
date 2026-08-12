@@ -6,7 +6,7 @@
     {% set home_left_meta = game.sport in ('soccer', 'boxing', 'mma') %}
     {% set first_team = game.home.name if home_left_meta else game.away.name %}
     {% set second_team = game.away.name if home_left_meta else game.home.name %}
-    <title>Donde ver {{ first_team }} vs {{ second_team }} hoy en vivo - {{ game.league_name }} | DondeVer</title>
+    <title>{{ first_team }} vs {{ second_team }}: d&oacute;nde ver hoy, horario, canal{% if odds %} y cuotas{% endif %} — {{ game.league_name }} | DondeVer</title>
     <meta name="description" content="Donde ver {{ first_team }} vs {{ second_team }} en vivo. {{ game.league_name }}. Hora, canales de TV y streaming para Mexico, USA y Latinoamerica. {% if game.broadcasts %}Transmite: {{ game.broadcasts[0].channel }}{% endif %}">
     <!-- Open Graph -->
     <meta property="og:title" content="Donde ver {{ first_team }} vs {{ second_team }} hoy">
@@ -339,7 +339,7 @@
         <a href="/liga/{{ game.league_slug }}">{{ game.league_name }}</a> &rsaquo;
         <span>{{ first_team }} vs {{ second_team }}</span>
     </nav>
-    <h1 class="game-h1">D&oacute;nde ver {{ first_team }} vs {{ second_team }} en vivo &mdash; {{ game.league_name }}</h1>
+    <h1 class="game-h1">{{ first_team }} vs {{ second_team }}: d&oacute;nde ver hoy, horario, canal{% if odds %} y cuotas{% endif %} &mdash; {{ game.league_name }}</h1>
 
     <div class="game-hero">
         <div class="league-badge">{{ game.emoji }} {{ game.league_name }}</div>
@@ -478,6 +478,112 @@
         </div>
         {% endif %}
     </div>
+
+    {# ── Horarios por país ── #}
+    {% if game.status.state == 'pre' %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#f59e0b;font-weight:600;">Horario por pa&iacute;s</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                <div style="background:#fefce8;border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+                    <div style="font-size:0.65rem;color:#92400e;font-weight:600;">&#127474;&#127485; M&eacute;xico</div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#1a1a2e;" data-utc="{{ game.date }}" data-tz="America/Mexico_City" data-fmt="time">{{ format_mx_time(game.date) }}</div>
+                    <div style="font-size:0.55rem;color:#92400e;">Hora centro</div>
+                </div>
+                <div style="background:#f0fdf4;border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+                    <div style="font-size:0.65rem;color:#166534;font-weight:600;">&#127482;&#127480; USA (ET)</div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#1a1a2e;" data-utc="{{ game.date }}" data-tz="America/New_York" data-fmt="time">{{ format_us_time(game.date) }}</div>
+                    <div style="font-size:0.55rem;color:#166534;">Eastern</div>
+                </div>
+                <div style="background:#eff6ff;border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+                    <div style="font-size:0.65rem;color:#1e40af;font-weight:600;">&#127462;&#127479; Argentina</div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#1a1a2e;" data-utc="{{ game.date }}" data-tz="America/Argentina/Buenos_Aires" data-fmt="time" id="tz-ar">—</div>
+                    <div style="font-size:0.55rem;color:#1e40af;">Buenos Aires</div>
+                </div>
+                <div style="background:#fdf2f8;border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+                    <div style="font-size:0.65rem;color:#9d174d;font-weight:600;">&#127464;&#127476; Colombia</div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#1a1a2e;" data-utc="{{ game.date }}" data-tz="America/Bogota" data-fmt="time" id="tz-co">—</div>
+                    <div style="font-size:0.55rem;color:#9d174d;">Bogot&aacute;</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Forma reciente de ambos equipos ── #}
+    {% if home_form or away_form %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#8b5cf6;font-weight:600;">Forma reciente &mdash; &uacute;ltimos 5</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                {# Home team form #}
+                <div style="text-align:center;">
+                    {% if left_team.logo %}<img src="{{ left_team.logo }}" alt="" style="width:28px;height:28px;border-radius:50%;margin-bottom:0.3rem;">{% endif %}
+                    <div style="font-size:0.75rem;font-weight:700;color:#1a1a2e;margin-bottom:0.4rem;">{{ left_team.name }}</div>
+                    {% set lf = home_form if home_left else away_form %}
+                    <div style="display:flex;gap:0.25rem;justify-content:center;">
+                        {% for r in lf %}
+                        <span style="width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:white;background:{% if r == 'W' %}#059669{% elif r == 'L' %}#ef4444{% else %}#f59e0b{% endif %};">{{ r }}</span>
+                        {% endfor %}
+                    </div>
+                    {% set lf_wins = lf|select('equalto', 'W')|list|length %}
+                    {% set lf_losses = lf|select('equalto', 'L')|list|length %}
+                    {% set lf_draws = lf|select('equalto', 'D')|list|length %}
+                    <div style="font-size:0.65rem;color:#6b7280;margin-top:0.3rem;">{{ lf_wins }}G {{ lf_draws }}E {{ lf_losses }}P</div>
+                </div>
+                {# Away team form #}
+                <div style="text-align:center;">
+                    {% if right_team.logo %}<img src="{{ right_team.logo }}" alt="" style="width:28px;height:28px;border-radius:50%;margin-bottom:0.3rem;">{% endif %}
+                    <div style="font-size:0.75rem;font-weight:700;color:#1a1a2e;margin-bottom:0.4rem;">{{ right_team.name }}</div>
+                    {% set rf = away_form if home_left else home_form %}
+                    <div style="display:flex;gap:0.25rem;justify-content:center;">
+                        {% for r in rf %}
+                        <span style="width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:white;background:{% if r == 'W' %}#059669{% elif r == 'L' %}#ef4444{% else %}#f59e0b{% endif %};">{{ r }}</span>
+                        {% endfor %}
+                    </div>
+                    {% set rf_wins = rf|select('equalto', 'W')|list|length %}
+                    {% set rf_losses = rf|select('equalto', 'L')|list|length %}
+                    {% set rf_draws = rf|select('equalto', 'D')|list|length %}
+                    <div style="font-size:0.65rem;color:#6b7280;margin-top:0.3rem;">{{ rf_wins }}G {{ rf_draws }}E {{ rf_losses }}P</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Probabilidad impl&iacute;cita (de momios) ── #}
+    {% if implied_probs and game.status.state == 'pre' %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#ec4899;font-weight:600;">Probabilidad seg&uacute;n cuotas</div>
+            </div>
+            {% set hp = implied_probs.home if home_left else implied_probs.away %}
+            {% set ap = implied_probs.away if home_left else implied_probs.home %}
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+                <div style="font-size:0.7rem;font-weight:600;color:#374151;min-width:70px;text-align:right;">{{ left_team.name.split(' ')[-1] }}</div>
+                <div style="flex:1;height:24px;background:#f3f4f6;border-radius:12px;overflow:hidden;display:flex;">
+                    {% if hp %}<div style="width:{{ hp }}%;background:linear-gradient(90deg,#10b981,#059669);border-radius:12px 0 0 12px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:white;">{{ hp }}%</div>{% endif %}
+                    {% if implied_probs.draw %}<div style="width:{{ implied_probs.draw }}%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:white;">{{ implied_probs.draw }}%</div>{% endif %}
+                    {% if ap %}<div style="width:{{ ap }}%;background:linear-gradient(90deg,#3b82f6,#2563eb);border-radius:0 12px 12px 0;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:white;">{{ ap }}%</div>{% endif %}
+                </div>
+                <div style="font-size:0.7rem;font-weight:600;color:#374151;min-width:70px;">{{ right_team.name.split(' ')[-1] }}</div>
+            </div>
+            {% if implied_probs.draw %}
+            <div style="text-align:center;font-size:0.6rem;color:#6b7280;">
+                <span style="color:#10b981;font-weight:700;">&#9632;</span> {{ left_team.name.split(' ')[-1] }}
+                <span style="color:#f59e0b;font-weight:700;margin-left:0.5rem;">&#9632;</span> Empate
+                <span style="color:#3b82f6;font-weight:700;margin-left:0.5rem;">&#9632;</span> {{ right_team.name.split(' ')[-1] }}
+            </div>
+            {% endif %}
+            <div style="text-align:center;font-size:0.55rem;color:#9ca3af;margin-top:0.4rem;">Probabilidad impl&iacute;cita calculada de los momios. Solo referencia.</div>
+        </div>
+    </div>
+    {% endif %}
 
     {# ── Stats Comparison ── #}
     {% if left_stats and right_stats and left_stats.record and right_stats.record %}
@@ -843,7 +949,7 @@
     </div>
 
     {% if odds %}
-    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+    <div id="momios" style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
         <div style="background:linear-gradient(135deg,#1a1a2e,#2d2b55);border-radius:14px;padding:1.25rem;color:white;">
             <div style="text-align:center;margin-bottom:1rem;">
                 <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#10b981;font-weight:600;">Momios / Odds</div>
@@ -1116,13 +1222,60 @@
         </div>
     </div>
 
-    {# ── Internal links (SEO) ── #}
+    {# ── Próximos partidos de ambos equipos ── #}
+    {% set lu = home_upcoming if home_left else away_upcoming %}
+    {% set ru = away_upcoming if home_left else home_upcoming %}
+    {% if lu or ru %}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
+        <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#0ea5e9;font-weight:600;">Pr&oacute;ximos partidos</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div>
+                    <div style="font-size:0.7rem;font-weight:700;color:#1a1a2e;margin-bottom:0.4rem;text-align:center;">{{ left_team.name.split(' ')[-1] }}</div>
+                    {% for u in lu %}
+                    <div style="padding:0.35rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;">
+                        <div style="color:#9ca3af;font-size:0.6rem;">{{ u.date[:10] if u.date else '' }}</div>
+                        <div style="color:#374151;font-weight:600;">{{ u.home }} vs {{ u.away }}</div>
+                    </div>
+                    {% endfor %}
+                    {% if not lu %}<div style="font-size:0.7rem;color:#9ca3af;text-align:center;">Sin pr&oacute;ximos</div>{% endif %}
+                </div>
+                <div>
+                    <div style="font-size:0.7rem;font-weight:700;color:#1a1a2e;margin-bottom:0.4rem;text-align:center;">{{ right_team.name.split(' ')[-1] }}</div>
+                    {% for u in ru %}
+                    <div style="padding:0.35rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;">
+                        <div style="color:#9ca3af;font-size:0.6rem;">{{ u.date[:10] if u.date else '' }}</div>
+                        <div style="color:#374151;font-weight:600;">{{ u.home }} vs {{ u.away }}</div>
+                    </div>
+                    {% endfor %}
+                    {% if not ru %}<div style="font-size:0.7rem;color:#9ca3af;text-align:center;">Sin pr&oacute;ximos</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Internal links (SEO) — enriched cross-links ── #}
     <div style="max-width:650px;margin:0 auto 1rem;padding:0 1rem;">
         <div style="background:var(--bg-card,white);border:1px solid var(--border-main,#e5e7eb);border-radius:10px;padding:0.75rem 1rem;">
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted,#9ca3af);text-transform:uppercase;margin-bottom:0.4rem;">M&aacute;s de {{ game.league_name }}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem;">
+            {# Team links #}
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted,#9ca3af);text-transform:uppercase;margin-bottom:0.4rem;">Equipos</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.6rem;">
+                {% if left_slug %}
+                <a href="/equipo/{{ left_slug }}" style="font-size:0.72rem;font-weight:600;color:white;background:#10b981;padding:0.3rem 0.7rem;border-radius:6px;text-decoration:none;">{{ left_team.name }} &rarr;</a>
+                {% endif %}
+                {% if right_slug %}
+                <a href="/equipo/{{ right_slug }}" style="font-size:0.72rem;font-weight:600;color:white;background:#3b82f6;padding:0.3rem 0.7rem;border-radius:6px;text-decoration:none;">{{ right_team.name }} &rarr;</a>
+                {% endif %}
+            </div>
+            {# League link #}
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted,#9ca3af);text-transform:uppercase;margin-bottom:0.4rem;">Liga</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.6rem;">
                 <a href="/liga/{{ game.league_slug }}" style="font-size:0.72rem;font-weight:600;color:#10b981;text-decoration:none;">{{ game.emoji }} {{ game.league_name }} &rarr;</a>
             </div>
+            {# Channel links #}
             {% if game.broadcasts %}
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted,#9ca3af);text-transform:uppercase;margin-bottom:0.4rem;">Canales</div>
             <div style="display:flex;flex-wrap:wrap;gap:0.3rem;">
@@ -1209,6 +1362,22 @@ function emailSubscribe(e) {
   });
   return false;
 }
+</script>
+<script>
+/* ── Compute horarios por país client-side ── */
+(function(){
+  document.querySelectorAll('[data-tz][data-fmt="time"]').forEach(function(el){
+    var utc = el.getAttribute('data-utc');
+    var tz = el.getAttribute('data-tz');
+    if (!utc || !tz) return;
+    try {
+      var d = new Date(utc);
+      if (isNaN(d)) return;
+      var s = d.toLocaleTimeString('es-MX', {timeZone: tz, hour:'2-digit', minute:'2-digit', hour12: false});
+      el.textContent = s;
+    } catch(e){}
+  });
+})();
 </script>
 <script src="/static/timezone.js" defer></script>
 

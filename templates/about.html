@@ -18,6 +18,26 @@
     <meta name="twitter:image" content="{{ app_url }}/static/og-image.png">
     <link rel="canonical" href="{{ app_url }}/sobre-nosotros">
     {{ hreflang_tags(request.url) }}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "DondeVer.app",
+      "url": "https://dondever.app",
+      "logo": "https://dondever.app/static/logo-full.png",
+      "description": "Gu&iacute;a gratuita de horarios, canales y streaming para ver deportes en vivo en M&eacute;xico, USA y Latinoam&eacute;rica.",
+      "foundingDate": "2025",
+      "sameAs": [
+        "https://twitter.com/dondeverapp"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "email": "contacto@dondever.app",
+        "availableLanguage": "Spanish"
+      }
+    }
+    </script>
     <link rel="icon" type="image/png" href="/static/logo.png">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <link rel="manifest" href="/manifest.json">
@@ -58,22 +78,33 @@
     <div class="content">
         <h1>Sobre DondeVer.app</h1>
 
-        <p>DondeVer.app nacio de una necesidad simple: saber donde ver el partido de hoy sin tener que buscar en 10 paginas diferentes. Si vives en Mexico o eres mexicano en Estados Unidos, sabes lo frustrante que es perderse un juego porque no sabias en que canal lo pasaban.</p>
+        <p>DondeVer.app naci&oacute; de una necesidad simple: saber d&oacute;nde ver el partido de hoy sin tener que buscar en 10 p&aacute;ginas diferentes. Si vives en M&eacute;xico, Estados Unidos o Latinoam&eacute;rica, sabes lo frustrante que es perderse un juego porque no sab&iacute;as en qu&eacute; canal lo pasaban.</p>
 
-        <h2>Que hacemos</h2>
-        <p>DondeVer.app es una guia gratuita y actualizada que te dice exactamente donde ver cada juego deportivo del dia. Cubrimos Liga MX, NFL, NBA, MLB, NHL, Premier League, La Liga, Champions League, Serie A, Bundesliga, MLS y mas. Para cada partido te mostramos los canales de TV abierta, cable y plataformas de streaming disponibles tanto en Mexico como en Estados Unidos.</p>
+        <h2>Qu&eacute; hacemos</h2>
+        <p>DondeVer.app es una gu&iacute;a gratuita y actualizada que te dice exactamente d&oacute;nde ver cada juego deportivo del d&iacute;a. Cubrimos Liga MX, NFL, NBA, MLB, NHL, Premier League, La Liga, Champions League, Serie A, Bundesliga, MLS y m&aacute;s. Para cada partido te mostramos los canales de TV abierta, cable y plataformas de streaming disponibles en M&eacute;xico, Estados Unidos, Argentina, Colombia, Chile, Per&uacute; y Ecuador.</p>
 
-        <h2>Como funciona</h2>
-        <p>Nuestro sistema recopila informacion de horarios y transmisiones de multiples fuentes deportivas y la presenta de forma clara y rapida. Actualizamos los datos cada pocos minutos para que siempre tengas la informacion mas reciente, incluyendo marcadores en vivo.</p>
+        <h2>C&oacute;mo obtenemos horarios y canales</h2>
+        <p>Nuestro sistema consulta autom&aacute;ticamente las APIs oficiales de ESPN y TheSportsDB para obtener horarios, resultados y canales de transmisi&oacute;n. Los datos se actualizan cada 5 minutos para partidos pr&oacute;ximos y cada 30 segundos para juegos en vivo. Los horarios se muestran en hora centro de M&eacute;xico (CT) por defecto y se convierten autom&aacute;ticamente a la zona horaria del usuario.</p>
 
-        <h2>WhatsApp</h2>
-        <p>Tambien puedes consultar juegos y recibir picks diarios gratis por WhatsApp. Solo mandanos un mensaje y te decimos que juegos hay hoy y donde verlos. Es como tener un amigo que siempre sabe en que canal pasan el partido.</p>
+        <h2>C&oacute;mo verificamos las transmisiones</h2>
+        <p>Los canales que mostramos provienen directamente de los datos oficiales de transmisi&oacute;n de cada liga. Cruzamos la informaci&oacute;n de ESPN con TheSportsDB para mayor precisi&oacute;n. Diferenciamos entre canales de M&eacute;xico, Estados Unidos y regi&oacute;n, y etiquetamos claramente cu&aacute;les son TV abierta (gratuita), cable o streaming de paga. Si un canal a&uacute;n no est&aacute; confirmado, lo indicamos como &ldquo;Por confirmar&rdquo; en lugar de inventar datos.</p>
 
-        <h2>Nuestro compromiso</h2>
-        <p>DondeVer.app es y siempre sera gratuito para los usuarios. Nos mantenemos a traves de enlaces de afiliados a casas de apuestas y servicios de streaming. Siempre marcamos claramente lo que es publicidad. Fomentamos el juego responsable y nuestro servicio es solo para mayores de 18 anos.</p>
+        <h2>C&oacute;mo funcionan las cuotas y momios</h2>
+        <p>Las cuotas (momios/odds) que mostramos provienen de The Odds API, que agrega datos en tiempo real de m&uacute;ltiples casas de apuestas con licencia. Mostramos la mejor cuota disponible para cada resultado y un comparador con varias casas de apuestas para que el usuario pueda elegir. Las probabilidades impl&iacute;citas se calculan matem&aacute;ticamente a partir de los momios americanos &mdash; no son predicciones editoriales. DondeVer no es una casa de apuestas ni ofrece asesor&iacute;a financiera. Las cuotas son s&oacute;lo informativas.</p>
+
+        <h2>Pol&iacute;tica de correcciones</h2>
+        <p>Si un canal, horario o dato es incorrecto, queremos saberlo de inmediato. Cualquier usuario puede reportar un error a trav&eacute;s de nuestras redes sociales y corregimos la informaci&oacute;n lo antes posible. Nuestro sistema tambi&eacute;n detecta autom&aacute;ticamente cambios de horario y cancelaciones de partidos, actualiz&aacute;ndolos en minutos.</p>
+
+        <h2>Transparencia y monetizaci&oacute;n</h2>
+        <p>DondeVer.app es y siempre ser&aacute; gratuito para los usuarios. Nos mantenemos a trav&eacute;s de enlaces de afiliados a casas de apuestas con licencia y servicios de streaming. Todos los enlaces de afiliados est&aacute;n claramente marcados con &ldquo;Publicidad&rdquo; o &ldquo;Link de afiliado&rdquo;. Los momios y recomendaciones no est&aacute;n influenciados por acuerdos comerciales &mdash; siempre mostramos la mejor cuota disponible independientemente del proveedor. Fomentamos el juego responsable y nuestro servicio es s&oacute;lo para mayores de 18 a&ntilde;os.</p>
+
+        <h2>Datos t&eacute;cnicos</h2>
+        <p>DondeVer procesa datos de m&aacute;s de 15 ligas deportivas y cubre m&aacute;s de 2,500 p&aacute;ginas indexables incluyendo partidos, equipos, canales, resultados, calendarios y gu&iacute;as por pa&iacute;s. La plataforma est&aacute; construida con FastAPI (Python), usa PostgreSQL para persistencia hist&oacute;rica y se despliega en Render con actualizaci&oacute;n continua.</p>
 
         <h2>Contacto</h2>
-        <p>Tienes una sugerencia o encontraste un error? Escribenos por WhatsApp o en Twitter <a href="https://twitter.com/dondeverapp" style="color:#059669;">@dondeverapp</a>. Nos encanta escuchar a nuestra comunidad.</p>
+        <p>&iquest;Tienes una sugerencia o encontraste un error? Escr&iacute;benos en Twitter <a href="https://twitter.com/dondeverapp" style="color:#059669;">@dondeverapp</a> o por email a <a href="mailto:contacto@dondever.app" style="color:#059669;">contacto@dondever.app</a>. Nos encanta escuchar a nuestra comunidad.</p>
+
+        <p style="font-size:0.75rem;color:#9ca3af;margin-top:1.5rem;padding-top:1rem;border-top:1px solid #e5e7eb;">&Uacute;ltima actualizaci&oacute;n de esta p&aacute;gina: agosto 2026. Los datos de partidos y canales se actualizan autom&aacute;ticamente cada 5 minutos.</p>
     </div>
 
     <footer class="footer">

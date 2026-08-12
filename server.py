@@ -491,7 +491,7 @@ async def home(
     # Is this a non-today date page? (noindex for historical pages)
     is_historical = bool(date) and date != today.strftime("%Y%m%d")
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request,
         "index.html",
         context={
@@ -514,6 +514,10 @@ async def home(
             "is_historical": is_historical,
         },
     )
+    # Short cache to prevent stale dates — 90s browser, 90s CDN
+    response.headers["Cache-Control"] = "public, max-age=90, s-maxage=90"
+    response.headers["Vary"] = "Accept-Encoding"
+    return response
 
 
 @app.get("/canales-tv", response_class=HTMLResponse)
@@ -750,9 +754,10 @@ async def game_semantic(request: Request, slug: str):
         logger.warning(f"Stats fetch failed for game {event_id}: {e}")
 
     summary = {}
+    sport = game.get("sport", "")
+    league_slug = game.get("league_slug", "")
+    espn_league = ""
     try:
-        sport = game.get("sport", "")
-        league_slug = game.get("league_slug", "")
         from config import ALL_LEAGUES
         league_info = ALL_LEAGUES.get(league_slug)
         espn_league = league_info[1] if isinstance(league_info, tuple) else league_slug
@@ -761,12 +766,89 @@ async def game_semantic(request: Request, slug: str):
     except Exception as e:
         logger.warning(f"Summary fetch failed for game {event_id}: {e}")
 
+    # ── Forma reciente + próximos partidos de ambos equipos ──
+    home_recent = []
+    away_recent = []
+    home_upcoming = []
+    away_upcoming = []
+    home_form = []
+    away_form = []
+
+    if sport and espn_league:
+        try:
+            all_recent = await get_recent_league_results(sport, espn_league, days=10, limit=40)
+            all_upcoming_games = await get_upcoming_league_games(sport, espn_league, days=10, limit=40)
+
+            home_name_lower = game["home"]["name"].lower()
+            away_name_lower = game["away"]["name"].lower()
+
+            for r in all_recent:
+                if len(home_recent) < 5 and (home_name_lower in r["home"].lower() or home_name_lower in r["away"].lower()):
+                    home_recent.append(r)
+                if len(away_recent) < 5 and (away_name_lower in r["home"].lower() or away_name_lower in r["away"].lower()):
+                    away_recent.append(r)
+
+            for u in all_upcoming_games:
+                if len(home_upcoming) < 3 and (home_name_lower in u["home"].lower() or home_name_lower in u["away"].lower()):
+                    home_upcoming.append(u)
+                if len(away_upcoming) < 3 and (away_name_lower in u["home"].lower() or away_name_lower in u["away"].lower()):
+                    away_upcoming.append(u)
+
+            # Build form guide (W/D/L) for each team
+            for r in home_recent[:5]:
+                h_s = int(r.get("home_score", 0) or 0)
+                a_s = int(r.get("away_score", 0) or 0)
+                is_home = home_name_lower in r.get("home", "").lower()
+                ts, os_ = (h_s, a_s) if is_home else (a_s, h_s)
+                home_form.append("W" if ts > os_ else ("L" if ts < os_ else "D"))
+
+            for r in away_recent[:5]:
+                h_s = int(r.get("home_score", 0) or 0)
+                a_s = int(r.get("away_score", 0) or 0)
+                is_home = away_name_lower in r.get("home", "").lower()
+                ts, os_ = (h_s, a_s) if is_home else (a_s, h_s)
+                away_form.append("W" if ts > os_ else ("L" if ts < os_ else "D"))
+        except Exception as e:
+            logger.warning(f"Form/upcoming fetch failed for game {event_id}: {e}")
+
+    # ── Implied probability from odds ──
+    implied_probs = {}
+    if odds:
+        try:
+            def _american_to_prob(odds_val):
+                if odds_val is None:
+                    return None
+                o = float(str(odds_val).replace("+", ""))
+                if o > 0:
+                    return 100 / (o + 100) * 100
+                elif o < 0:
+                    return abs(o) / (abs(o) + 100) * 100
+                return None
+
+            hp = _american_to_prob(odds.get("home_odds"))
+            ap = _american_to_prob(odds.get("away_odds"))
+            dp = _american_to_prob(odds.get("draw_odds"))
+            # Normalize to 100%
+            total = (hp or 0) + (ap or 0) + (dp or 0)
+            if total > 0:
+                implied_probs = {
+                    "home": round(hp / total * 100, 1) if hp else None,
+                    "away": round(ap / total * 100, 1) if ap else None,
+                    "draw": round(dp / total * 100, 1) if dp else None,
+                }
+        except Exception:
+            pass
+
     return templates.TemplateResponse(
         request, "game.html", context={
             "game": game, "odds": odds,
             "home_slug": home_slug, "away_slug": away_slug,
             "home_stats": home_stats, "away_stats": away_stats,
             "summary": summary,
+            "home_recent": home_recent, "away_recent": away_recent,
+            "home_upcoming": home_upcoming, "away_upcoming": away_upcoming,
+            "home_form": home_form, "away_form": away_form,
+            "implied_probs": implied_probs,
         }
     )
 

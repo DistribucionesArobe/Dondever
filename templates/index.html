@@ -1785,69 +1785,19 @@
 
             {# ── Accordion (hidden by default) ── #}
             <div class="gc-accordion">
-                {# ── 1. APUESTAS — bookmaker comparison table ── #}
+                {# ── 1. APUESTAS — collapsed: best odds + link to /partido/ ── #}
                 {% if state != 'post' and game.odds %}
-                <div class="gc-bet-full" onclick="event.stopPropagation();">
-                    <div class="gc-bet-full-header">&#128200; Comparar cuotas</div>
-
-                    {# Best odds big chips #}
-                    <div class="gc-bet-full-odds">
-                        <a href="/go/bet?s=acc-odds-home&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-full-chip">
-                            <span class="bfc-team">{{ top_team.name }}</span>
-                            <span class="bfc-odds">{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</span>
-                        </a>
-                        {% if game.odds.draw_odds %}
-                        <a href="/go/bet?s=acc-odds-draw&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-full-chip draw">
-                            <span class="bfc-team">Empate</span>
-                            <span class="bfc-odds">{{ game.odds.draw_odds }}</span>
-                        </a>
-                        {% endif %}
-                        <a href="/go/bet?s=acc-odds-away&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-full-chip">
-                            <span class="bfc-team">{{ bottom_team.name }}</span>
-                            <span class="bfc-odds">{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</span>
-                        </a>
+                <div class="gc-bet-full" onclick="event.stopPropagation();" style="padding:0.6rem 0.75rem;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
+                        <div style="display:flex;gap:0.3rem;align-items:center;">
+                            <span style="font-size:0.65rem;font-weight:700;color:#f59e0b;">&#128293; Mejor cuota:</span>
+                            <span style="font-size:0.75rem;font-weight:800;color:#10b981;">{{ top_team.name[:3]|upper }} {{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</span>
+                            {% if game.odds.draw_odds %}<span style="font-size:0.7rem;color:#6b7280;">| Emp {{ game.odds.draw_odds }}</span>{% endif %}
+                            <span style="font-size:0.75rem;font-weight:800;color:#10b981;">{{ bottom_team.name[:3]|upper }} {{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</span>
+                        </div>
+                        <a href="{{ game|game_url }}#momios" style="font-size:0.7rem;font-weight:700;color:#10b981;text-decoration:none;white-space:nowrap;">Comparar {% if game.odds.total_bookmakers %}{{ game.odds.total_bookmakers }}{% endif %} casas &rarr;</a>
                     </div>
-
-                    {# Bookmaker comparison table #}
-                    {% if game.odds.bookmakers %}
-                    <table class="bet-compare-table">
-                        <thead>
-                            <tr>
-                                <th>Casa</th>
-                                <th>{{ top_team.name[:10] }}</th>
-                                {% if game.odds.draw_odds %}<th>Empate</th>{% endif %}
-                                <th>{{ bottom_team.name[:10] }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for bk in game.odds.bookmakers %}
-                            <tr>
-                                <td>{{ bk.bookmaker }}</td>
-                                <td{% if bk.home_odds == game.odds.home_odds %} class="bet-compare-best"{% endif %}>
-                                    {{ bk.home_odds if home_left else bk.away_odds or '—' }}
-                                </td>
-                                {% if game.odds.draw_odds %}
-                                <td{% if bk.draw_odds == game.odds.draw_odds %} class="bet-compare-best"{% endif %}>
-                                    {{ bk.draw_odds or '—' }}
-                                </td>
-                                {% endif %}
-                                <td{% if bk.away_odds == game.odds.away_odds %} class="bet-compare-best"{% endif %}>
-                                    {{ bk.away_odds if home_left else bk.home_odds or '—' }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% endif %}
-
-                    <a href="/go/bet?s=acc-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-full-cta">&#128176; Apostar con la mejor cuota</a>
-
-                    <div class="gc-bet-full-casinos">
-                        <a href="/go/betsson?s=acc-casino&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" class="bet-pill bp-betsson" style="display:none;">Betsson</a>
-                        <a href="/go/jubilee?s=acc-casino&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-pill bp-jubilee">Jubilee</a>
-                        <a href="/go/1xbet?s=acc-casino&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" data-geo="latam" class="bet-pill bp-1xbet" style="display:none;">1xBet</a>
-                    </div>
-                    <div style="font-size:0.5rem;color:#9ca3af;text-align:center;margin-top:0.35rem;">+18 · Publicidad · Juega responsablemente</div>
+                    <div style="font-size:0.5rem;color:#9ca3af;text-align:center;margin-top:0.25rem;">+18 · Publicidad · Juega responsablemente</div>
                 </div>
                 {% endif %}
 
