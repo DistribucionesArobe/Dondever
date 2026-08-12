@@ -18,6 +18,7 @@
     <meta name="twitter:description" content="Canales, horarios y streaming de {{ team_league }} en México, USA y Latinoamérica.">
     <meta name="twitter:image" content="{{ team_logo or 'https://dondever.app/static/og-image.png' }}">
     <link rel="canonical" href="https://dondever.app/equipo/{{ team_slug }}">
+    {{ hreflang_tags(request.url) }}
     <!-- JSON-LD: SportsTeam -->
     <script type="application/ld+json">
     {

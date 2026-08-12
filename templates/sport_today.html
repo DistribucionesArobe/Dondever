@@ -18,6 +18,7 @@
     <meta name="twitter:title" content="{{ page_title }}">
     <meta name="twitter:description" content="{{ meta_description }}">
     <link rel="canonical" href="{{ app_url }}/{{ page_slug }}">
+    {{ hreflang_tags(request.url) }}
     <!-- JSON-LD: BreadcrumbList -->
     <script type="application/ld+json">
     {

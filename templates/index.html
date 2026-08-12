@@ -23,6 +23,7 @@
     <meta name="twitter:title" content="DondeVer.app - Donde ver el partido hoy">
     <meta name="twitter:description" content="Encuentra donde ver {{ total_games }} juegos de hoy en Mexico, USA y Latinoamerica. Liga MX, NFL, NBA, MLB y mas.">
     <link rel="canonical" href="{{ app_url }}/">
+    {{ hreflang_tags(request.url) }}
     <!-- JSON-LD: WebSite + Organization -->
     <script type="application/ld+json">
     {

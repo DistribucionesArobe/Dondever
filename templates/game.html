@@ -25,6 +25,7 @@
     <meta name="twitter:title" content="Donde ver {{ game.away.name }} vs {{ game.home.name }}">
     <meta name="twitter:description" content="{{ game.league_name }} - Canales de TV y streaming en Mexico, USA y Latinoamerica">
     <link rel="canonical" href="{{ app_url }}{{ game|game_url }}">
+    {{ hreflang_tags(request.url) }}
     <!-- JSON-LD Structured Data: SportsEvent -->
     <script type="application/ld+json">
     {

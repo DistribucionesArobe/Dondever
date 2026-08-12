@@ -82,6 +82,35 @@ def _game_url(game: dict) -> str:
 templates.env.filters["game_url"] = _game_url
 templates.env.globals["game_url"] = _game_url
 
+# ── hreflang tags for LATAM geo-targeting ──────────────
+HREFLANG_LOCALES = ["es-MX", "es-US", "es-AR", "es-CO", "es-CL", "es-PE", "es-EC"]
+
+
+def _hreflang_tags(request_url: str) -> str:
+    """Generate hreflang link tags for all LATAM target countries.
+
+    All tags point to the same URL because DondeVer is a single-language
+    site that covers channels for MX, USA, and all of LATAM.  This tells
+    Google the page is relevant in every listed market.
+    """
+    from markupsafe import Markup
+    # Build canonical URL (strip query params, force https)
+    from urllib.parse import urlparse
+    parsed = urlparse(str(request_url))
+    canonical = f"{APP_URL}{parsed.path}"
+    if canonical.endswith("/") and canonical != f"{APP_URL}/":
+        canonical = canonical.rstrip("/")
+
+    tags = []
+    for locale in HREFLANG_LOCALES:
+        tags.append(f'<link rel="alternate" hreflang="{locale}" href="{canonical}">')
+    tags.append(f'<link rel="alternate" hreflang="es" href="{canonical}">')
+    tags.append(f'<link rel="alternate" hreflang="x-default" href="{canonical}">')
+    return Markup("\n    ".join(tags))
+
+
+templates.env.globals["hreflang_tags"] = _hreflang_tags
+
 
 # ── Google Analytics middleware ──────────────────────────
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -2323,6 +2352,16 @@ async def tiktok_generate_now(images: bool = False):
         )
 
 
+def _sitemap_hreflang(loc: str) -> str:
+    """Generate xhtml:link hreflang entries for a sitemap <url>."""
+    lines = []
+    for locale in HREFLANG_LOCALES:
+        lines.append(f'    <xhtml:link rel="alternate" hreflang="{locale}" href="{loc}"/>')
+    lines.append(f'    <xhtml:link rel="alternate" hreflang="es" href="{loc}"/>')
+    lines.append(f'    <xhtml:link rel="alternate" hreflang="x-default" href="{loc}"/>')
+    return "\n".join(lines)
+
+
 @app.get("/sitemap.xml")
 async def sitemap_xml():
     """Dynamic sitemap with today's game pages for Google indexing."""
@@ -2331,16 +2370,20 @@ async def sitemap_xml():
 
     games = await get_todays_games()
 
+    home_loc = APP_URL
     urls = [
-        f'  <url>\n    <loc>{APP_URL}</loc>\n'
+        f'  <url>\n    <loc>{home_loc}</loc>\n'
+        f'{_sitemap_hreflang(home_loc)}\n'
         f'    <lastmod>{today_str}</lastmod>\n'
         f'    <changefreq>hourly</changefreq>\n'
         f'    <priority>1.0</priority>\n  </url>'
     ]
 
     for game in games:
+        game_loc = f'{APP_URL}{_game_url(game)}'
         urls.append(
-            f'  <url>\n    <loc>{APP_URL}{_game_url(game)}</loc>\n'
+            f'  <url>\n    <loc>{game_loc}</loc>\n'
+            f'{_sitemap_hreflang(game_loc)}\n'
             f'    <lastmod>{today_str}</lastmod>\n'
             f'    <changefreq>hourly</changefreq>\n'
             f'    <priority>0.8</priority>\n  </url>'
@@ -2383,8 +2426,10 @@ async def sitemap_xml():
         ("guia/guia-canales-deportivos-mexico", "weekly", "0.8"),
     ]
     for page, freq, priority in static_pages:
+        pg_loc = f'{APP_URL}/{page}'
         urls.append(
-            f'  <url>\n    <loc>{APP_URL}/{page}</loc>\n'
+            f'  <url>\n    <loc>{pg_loc}</loc>\n'
+            f'{_sitemap_hreflang(pg_loc)}\n'
             f'    <lastmod>{today_str}</lastmod>\n'
             f'    <changefreq>{freq}</changefreq>\n'
             f'    <priority>{priority}</priority>\n  </url>'
@@ -2392,8 +2437,10 @@ async def sitemap_xml():
 
     # Permanent league landing pages (high priority — always have content)
     for slug in LEAGUES:
+        lg_loc = f'{APP_URL}/liga/{slug}'
         urls.append(
-            f'  <url>\n    <loc>{APP_URL}/liga/{slug}</loc>\n'
+            f'  <url>\n    <loc>{lg_loc}</loc>\n'
+            f'{_sitemap_hreflang(lg_loc)}\n'
             f'    <lastmod>{today_str}</lastmod>\n'
             f'    <changefreq>daily</changefreq>\n'
             f'    <priority>0.9</priority>\n  </url>'
@@ -2477,7 +2524,8 @@ async def sitemap_xml():
 
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+        ' xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
         + "\n".join(urls) +
         '\n</urlset>'
     )

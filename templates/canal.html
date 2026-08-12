@@ -16,6 +16,7 @@
     <meta name="twitter:title" content="Donde ver {{ channel_name }} hoy">
     <meta name="twitter:description" content="{{ total_games }} juegos en {{ channel_name }} hoy. Horarios y programación en Mexico, USA y Latinoamerica.">
     <link rel="canonical" href="{{ app_url }}/canal/{{ channel_slug }}">
+    {{ hreflang_tags(request.url) }}
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",

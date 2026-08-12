@@ -18,6 +18,7 @@
     <meta name="twitter:title" content="Donde ver {{ league_name }} hoy">
     <meta name="twitter:description" content="{{ total_games }} juegos de {{ league_name }} hoy. Horarios y canales en Mexico, USA y Latinoamerica.">
     <link rel="canonical" href="{{ app_url }}/liga/{{ league_slug }}">
+    {{ hreflang_tags(request.url) }}
     <!-- JSON-LD: BreadcrumbList -->
     <script type="application/ld+json">
     {
