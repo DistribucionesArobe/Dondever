@@ -466,6 +466,30 @@
     </div>
     {% endif %}
 
+    {# ══ GUÍA DE FORMA (últimos 5 resultados) ══ #}
+    {% if form_guide %}
+    <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:0.9rem 1rem;margin-bottom:1rem;">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;font-weight:700;margin-bottom:0.5rem;">Forma reciente</div>
+        <div style="display:flex;align-items:center;gap:0.4rem;">
+            {% for result in form_guide %}
+            {% if result == 'W' %}
+            <div style="width:30px;height:30px;border-radius:50%;background:#059669;color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.7rem;" title="Victoria">V</div>
+            {% elif result == 'D' %}
+            <div style="width:30px;height:30px;border-radius:50%;background:#f59e0b;color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.7rem;" title="Empate">E</div>
+            {% else %}
+            <div style="width:30px;height:30px;border-radius:50%;background:#ef4444;color:white;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.7rem;" title="Derrota">D</div>
+            {% endif %}
+            {% endfor %}
+            <span style="margin-left:0.5rem;font-size:0.75rem;color:#6b7280;">
+                {% set wins = form_guide|select('equalto', 'W')|list|length %}
+                {% set draws = form_guide|select('equalto', 'D')|list|length %}
+                {% set losses = form_guide|select('equalto', 'L')|list|length %}
+                {{ wins }}V {{ draws }}E {{ losses }}D
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
     {# ══ PARTIDOS DE HOY (lo mas importante arriba) ══ #}
     {% if games %}
     <h2>Partidos de hoy <span class="game-count">({{ games|length }})</span></h2>
@@ -729,6 +753,52 @@
             <div style="padding:0 0.8rem 0.5rem;font-size:0.68rem;color:#9ca3af;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">&#128250; {{ u.channels|join(', ') }}</div>
             {% endif %}
             {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ══ TABLA DE POSICIONES ══ #}
+    {% if league_standings %}
+    <div style="margin-top:1.25rem;">
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Tabla de posiciones — {{ team_league }}</h2>
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.75rem;">
+                    <thead>
+                        <tr style="background:#f8fafc;border-bottom:2px solid #e5e7eb;">
+                            <th style="padding:0.5rem 0.4rem;text-align:center;color:#6b7280;font-weight:700;width:30px;">#</th>
+                            <th style="padding:0.5rem 0.4rem;text-align:left;color:#6b7280;font-weight:700;">Equipo</th>
+                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">JJ</th>
+                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">G</th>
+                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">E</th>
+                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">P</th>
+                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">DIF</th>
+                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;background:#f0fdf4;">PTS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in league_standings %}
+                        {% set is_this_team = (team_name|lower in row.team_name|lower) or (row.team_name|lower in team_name|lower) %}
+                        <tr style="border-bottom:1px solid #f3f4f6;{% if is_this_team %}background:#ecfdf5;font-weight:700;{% endif %}">
+                            <td style="padding:0.45rem 0.4rem;text-align:center;color:#6b7280;font-size:0.7rem;">{{ row.rank or loop.index }}</td>
+                            <td style="padding:0.45rem 0.4rem;text-align:left;white-space:nowrap;">
+                                <div style="display:flex;align-items:center;gap:0.35rem;">
+                                    {% if row.team_logo %}<img src="{{ row.team_logo }}" alt="" style="width:18px;height:18px;border-radius:50%;object-fit:contain;" loading="lazy">{% endif %}
+                                    <span style="font-size:0.75rem;{% if is_this_team %}color:#059669;{% endif %}">{{ row.team_short if row.team_short|length <= 5 else row.team_name }}</span>
+                                </div>
+                            </td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.games_played or '-' }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.wins or '-' }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.ties or '-' }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.losses or '-' }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.goal_diff or '-' }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;font-weight:800;background:{% if is_this_team %}#d1fae5{% else %}#f0fdf4{% endif %};">{{ row.points or row.win_pct or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div style="font-size:0.6rem;color:#9ca3af;padding:0.4rem 0.8rem;text-align:right;">Fuente: ESPN · Actualizado cada hora</div>
         </div>
     </div>
     {% endif %}

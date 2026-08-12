@@ -3439,18 +3439,26 @@ async def team_page(request: Request, team_slug: str):
     # Fetch recent results and upcoming games for the team's league
     recent_results = []
     upcoming_games = []
+    league_standings = []
     from sports_api import TEAM_LEAGUE_MAP
     league_info_map = TEAM_LEAGUE_MAP.get(team_slug)
     if league_info_map:
         t_sport, t_league = league_info_map
+        # Fetch full league standings for the table
         try:
-            all_recent = await get_recent_league_results(t_sport, t_league, days=7, limit=20)
+            league_standings = await get_league_standings(t_sport, t_league, limit=50)
+        except Exception:
+            pass
+        # More days when no games today → richer page
+        result_days = 7 if games else 14
+        try:
+            all_recent = await get_recent_league_results(t_sport, t_league, days=result_days, limit=30)
             # Filter for this team
             for r in all_recent:
                 if (search_term.lower() in r["home"].lower() or
                     search_term.lower() in r["away"].lower()):
                     recent_results.append(r)
-                if len(recent_results) >= 5:
+                if len(recent_results) >= (5 if games else 10):
                     break
         except Exception:
             pass
@@ -3518,6 +3526,21 @@ async def team_page(request: Request, team_slug: str):
     except Exception:
         pass
 
+    # Build form guide from recent results (W/D/L last 5)
+    form_guide = []
+    for r in recent_results[:5]:
+        h_score = int(r.get("home_score", 0) or 0)
+        a_score = int(r.get("away_score", 0) or 0)
+        is_home = search_term.lower() in r.get("home", "").lower()
+        team_score = h_score if is_home else a_score
+        opp_score = a_score if is_home else h_score
+        if team_score > opp_score:
+            form_guide.append("W")
+        elif team_score < opp_score:
+            form_guide.append("L")
+        else:
+            form_guide.append("D")
+
     # Build dynamic FAQ based on real data (not boilerplate)
     faq_items = _build_team_faq(
         team_name=team_name,
@@ -3549,6 +3572,8 @@ async def team_page(request: Request, team_slug: str):
         "meli_jersey": meli_jersey,
         "meli_gorra": meli_gorra,
         "meli_acc": meli_acc,
+        "league_standings": league_standings,
+        "form_guide": form_guide,
         "faq_items": faq_items,
         "top_channels": top_channels,
     })
