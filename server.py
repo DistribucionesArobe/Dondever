@@ -3884,120 +3884,213 @@ TEAM_COUNTRY_SEO = {
 }
 
 # Channels available per country for each league
+# Updated Aug 2026 — sources: RÉCORD, Infobae, Mediotiempo
 LEAGUE_CHANNELS_BY_COUNTRY = {
     "Liga MX": {
         "mexico": [
-            {"name": "TUDN", "type": "Cable", "sports": "Liga MX, Champions, Selección"},
-            {"name": "Canal 5 / Las Estrellas", "type": "TV Abierta", "sports": "Liga MX selectos"},
-            {"name": "Azteca 7", "type": "TV Abierta", "sports": "Liga MX, Selección Mexicana"},
-            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa, MLS"},
-            {"name": "Fox Sports MX", "type": "Cable", "sports": "Liga MX selectos"},
-            {"name": "Caliente TV", "type": "Streaming", "sports": "Liga MX selectos"},
+            {"name": "TUDN", "type": "Cable", "sports": "Liga MX en vivo"},
+            {"name": "Canal 5", "type": "TV Abierta", "sports": "América, Pumas, Monterrey selectos"},
+            {"name": "Azteca 7", "type": "TV Abierta", "sports": "Tigres, Puebla, Necaxa selectos"},
+            {"name": "Fox Sports MX", "type": "Cable", "sports": "León, Pachuca, Tijuana, Querétaro"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+            {"name": "Amazon Prime", "type": "Streaming", "sports": "Chivas (exclusivo)"},
+            {"name": "ESPN MX / Disney+", "type": "Cable/Streaming", "sports": "Atlético de San Luis"},
         ],
         "estados-unidos": [
-            {"name": "Univision / UniMás", "type": "TV Abierta", "sports": "Liga MX en español"},
-            {"name": "TUDN", "type": "Cable", "sports": "Liga MX, Selección"},
+            {"name": "TUDN / Univision", "type": "Cable/TV", "sports": "Liga MX en español"},
             {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
             {"name": "FOX Deportes", "type": "Cable", "sports": "Liga MX selectos"},
         ],
         "argentina": [
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
-            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
-            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
         ],
         "colombia": [
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
-            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
-            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
         ],
         "chile": [
             {"name": "ESPN Chile", "type": "Cable", "sports": "Liga MX selectos"},
-            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
-            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
         ],
         "peru": [
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
-            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
-            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
         ],
         "ecuador": [
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
-            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
-            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
         ],
     },
     "Premier League": {
         "mexico": [
-            {"name": "ESPN MX", "type": "Cable", "sports": "Premier League en vivo"},
-            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "Premier League completa"},
+            {"name": "Fox Sports MX", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Max", "type": "Streaming", "sports": "Premier League completa"},
+            {"name": "TNT Sports", "type": "Cable", "sports": "Premier League selectos"},
         ],
         "estados-unidos": [
             {"name": "NBC / USA Network", "type": "Cable/TV", "sports": "Premier League selectos"},
             {"name": "Peacock", "type": "Streaming", "sports": "Premier League completa"},
             {"name": "Telemundo", "type": "TV Abierta", "sports": "Premier League en español"},
         ],
-        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
-        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
-        "chile": [{"name": "ESPN Chile / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
-        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
-        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "Premier League"}],
+        "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
+        ],
+        "colombia": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
+        ],
+        "chile": [
+            {"name": "ESPN Chile", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
+        ],
+        "peru": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
+        ],
+        "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
+        ],
     },
     "La Liga": {
         "mexico": [
-            {"name": "SKY Sports", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "SKY", "type": "Cable", "sports": "La Liga en vivo"},
             {"name": "Blue To Go", "type": "Streaming", "sports": "La Liga completa"},
         ],
         "estados-unidos": [
             {"name": "ESPN+", "type": "Streaming", "sports": "La Liga completa"},
             {"name": "ESPN Deportes", "type": "Cable", "sports": "La Liga en español"},
         ],
-        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
-        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
-        "chile": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
-        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
-        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "La Liga"}],
+        "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
+        ],
+        "colombia": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
+        ],
+        "chile": [
+            {"name": "ESPN Chile", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
+        ],
+        "peru": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
+        ],
+        "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
+        ],
+    },
+    "Champions League": {
+        "mexico": [
+            {"name": "Fox Sports MX", "type": "Cable", "sports": "Champions League en vivo"},
+            {"name": "Max", "type": "Streaming", "sports": "Champions League completa"},
+            {"name": "TNT Sports", "type": "Cable", "sports": "Champions League selectos"},
+        ],
+        "estados-unidos": [
+            {"name": "CBS / CBSSN", "type": "Cable/TV", "sports": "Champions League selectos"},
+            {"name": "Paramount+", "type": "Streaming", "sports": "Champions League completa"},
+            {"name": "TUDN / Univision", "type": "Cable/TV", "sports": "Champions en español"},
+        ],
+        "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Champions League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
+        ],
+        "colombia": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Champions League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
+        ],
+        "chile": [
+            {"name": "ESPN Chile", "type": "Cable", "sports": "Champions League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
+        ],
+        "peru": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Champions League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
+        ],
+        "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Champions League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
+        ],
     },
     "NFL": {
         "mexico": [
-            {"name": "ESPN MX", "type": "Cable", "sports": "Monday Night Football, partidos selectos"},
-            {"name": "Fox Sports MX", "type": "Cable", "sports": "Juegos selectos NFL"},
-            {"name": "TUDN", "type": "Cable", "sports": "Juegos en español"},
-            {"name": "NFL Game Pass", "type": "Streaming", "sports": "Todos los juegos NFL"},
+            {"name": "ESPN MX / Disney+", "type": "Cable/Streaming", "sports": "MNF, SNF, Playoffs AFC"},
+            {"name": "Fox Sports MX", "type": "Cable", "sports": "TNF, domingos, Playoffs NFC"},
+            {"name": "TUDN / ViX", "type": "Cable/Streaming", "sports": "Juegos en español"},
+            {"name": "Netflix", "type": "Streaming", "sports": "Navidad, Thanksgiving selectos"},
+            {"name": "Canal 5", "type": "TV Abierta", "sports": "Juegos selectos"},
         ],
         "estados-unidos": [
             {"name": "FOX / CBS / NBC / ABC", "type": "TV Abierta", "sports": "Juegos del domingo y especiales"},
             {"name": "ESPN / ESPN2", "type": "Cable", "sports": "Monday Night Football"},
             {"name": "Amazon Prime", "type": "Streaming", "sports": "Thursday Night Football"},
+            {"name": "Netflix", "type": "Streaming", "sports": "Navidad, Thanksgiving selectos"},
             {"name": "NFL+", "type": "Streaming", "sports": "Juegos locales y out-of-market"},
             {"name": "Peacock", "type": "Streaming", "sports": "Sunday Night Football, exclusivos"},
         ],
-        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
-        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
-        "chile": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
-        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
-        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NFL selectos"}],
+        "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NFL en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NFL completa"},
+        ],
+        "colombia": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NFL en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NFL completa"},
+        ],
+        "chile": [
+            {"name": "ESPN Chile", "type": "Cable", "sports": "NFL en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NFL completa"},
+        ],
+        "peru": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NFL en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NFL completa"},
+        ],
+        "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NFL en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NFL completa"},
+        ],
     },
     "NBA": {
         "mexico": [
-            {"name": "ESPN MX", "type": "Cable", "sports": "NBA en vivo"},
-            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "NBA selectos"},
+            {"name": "ESPN MX / Disney+", "type": "Cable/Streaming", "sports": "NBA en vivo"},
+            {"name": "Amazon Prime", "type": "Streaming", "sports": "NBA selectos"},
             {"name": "NBA League Pass", "type": "Streaming", "sports": "Todos los juegos NBA"},
         ],
         "estados-unidos": [
             {"name": "ESPN / TNT / ABC", "type": "Cable/TV", "sports": "NBA en vivo"},
             {"name": "NBA League Pass", "type": "Streaming", "sports": "Todos los juegos fuera de mercado"},
             {"name": "Max", "type": "Streaming", "sports": "NBA en TNT/TBS"},
+            {"name": "Amazon Prime", "type": "Streaming", "sports": "NBA selectos"},
         ],
-        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
-        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
-        "chile": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
-        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
-        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "NBA selectos"}],
+        "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NBA en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
+        ],
+        "colombia": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NBA en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
+        ],
+        "chile": [
+            {"name": "ESPN Chile", "type": "Cable", "sports": "NBA en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
+        ],
+        "peru": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NBA en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
+        ],
+        "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NBA en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
+        ],
     },
     "MLB": {
         "mexico": [
-            {"name": "ESPN MX", "type": "Cable", "sports": "MLB en vivo"},
+            {"name": "ESPN MX / Disney+", "type": "Cable/Streaming", "sports": "MLB en vivo"},
             {"name": "Fox Sports MX", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "Canal 9 / ViX", "type": "TV Abierta/Streaming", "sports": "Juegos con mexicanos"},
             {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos MLB"},
         ],
         "estados-unidos": [
@@ -4006,11 +4099,26 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "Apple TV+", "type": "Streaming", "sports": "Friday Night Baseball"},
             {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos fuera de mercado"},
         ],
-        "argentina": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
-        "colombia": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
-        "chile": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
-        "peru": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
-        "ecuador": [{"name": "ESPN / Disney+", "type": "Cable/Streaming", "sports": "MLB selectos"}],
+        "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "MLB en vivo"},
+        ],
+        "colombia": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "MLB en vivo"},
+        ],
+        "chile": [
+            {"name": "ESPN Chile", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "MLB en vivo"},
+        ],
+        "peru": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "MLB en vivo"},
+        ],
+        "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "MLB en vivo"},
+        ],
     },
     "MLS": {
         "mexico": [
