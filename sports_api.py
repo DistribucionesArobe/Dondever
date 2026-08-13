@@ -103,63 +103,66 @@ ODDS_PRIORITY_LEAGUES = [
 
 
 # ── Default TV channels per league (fallback when ESPN has no broadcast info) ──
+# Default TV channels per league (fallback when ESPN has no broadcast info)
+# Updated Aug 2026 — sources: RÉCORD, Infobae, Mediotiempo
 DEFAULT_LEAGUE_CHANNELS = {
-    # Futbol
+    # ── Futbol México ──
     "liga-mx-femenil": ["TUDN", "ViX"],
     "liga-expansion": ["ESPN MX", "ViX"],
     "mls": ["Apple TV+", "ViX"],
-    "premier-league": ["ESPN MX", "Paramount+"],
-    "la-liga": ["ESPN MX"],
-    "serie-a": ["ESPN MX", "Paramount+"],
-    "bundesliga": ["ESPN MX"],
-    "ligue-1": ["ESPN MX"],
-    "champions": ["TUDN", "Canal 5", "ViX", "Paramount+"],
-    "europa-league": ["ESPN MX", "ViX"],
+    # ── Futbol Europa (2026-27 season) ──
+    "premier-league": ["Fox Sports MX", "Max", "TNT Sports"],
+    "la-liga": ["SKY"],
+    "serie-a": ["ESPN MX", "Disney+"],
+    "bundesliga": ["Fox Sports MX"],
+    "ligue-1": ["Fox Sports MX"],
+    "champions": ["Fox Sports MX", "Max", "TNT Sports"],
+    "europa-league": ["Fox Sports MX", "Max"],
+    # ── Copas domésticas ──
+    "copa-del-rey": ["SKY"],
+    "fa-cup": ["Fox Sports MX", "ESPN MX"],
+    "carabao-cup": ["Fox Sports MX"],
+    "dfb-pokal": ["Fox Sports MX"],
+    "coppa-italia": ["ESPN MX", "Disney+"],
+    "coupe-de-france": ["Fox Sports MX"],
+    "us-open-cup": ["ESPN+", "Apple TV+"],
+    "copa-argentina": ["ESPN", "TNT Sports"],
+    # ── Copas internacionales ──
     "concacaf-cl": ["TUDN", "ViX", "Canal 5"],
     "copa-america": ["TUDN", "Canal 5", "ViX"],
     "world-cup": ["TUDN", "Canal 5", "Azteca 7", "ViX"],
     "club-friendly": ["TUDN", "ViX"],
-    # Copas domésticas
-    "copa-del-rey": ["ESPN MX"],
-    "fa-cup": ["ESPN MX"],
-    "carabao-cup": ["ESPN MX"],
-    "dfb-pokal": ["ESPN MX"],
-    "coppa-italia": ["ESPN MX", "Paramount+"],
-    "coupe-de-france": ["ESPN MX"],
-    "us-open-cup": ["ESPN+", "Apple TV+"],
-    "copa-argentina": ["ESPN", "TNT Sports"],
-    # Copas internacionales
     "leagues-cup": ["Apple TV+", "MLS Season Pass"],
     "club-world-cup": ["TUDN", "ViX", "Fox Sports MX"],
-    # Selecciones
-    "euro": ["ESPN MX", "SKY", "ViX"],
+    # ── Selecciones ──
+    "euro": ["Fox Sports MX", "Max"],
     "gold-cup": ["TUDN", "Canal 5", "ViX"],
-    "wcq-conmebol": ["ESPN MX", "TUDN", "ViX"],
+    "wcq-conmebol": ["ESPN MX", "Disney+"],
     "wcq-concacaf": ["TUDN", "Canal 5", "ViX"],
-    "nations-league": ["ESPN MX"],
-    "concacaf-nations": ["TUDN", "ViX", "Paramount+"],
-    # Futbol LATAM
+    "nations-league": ["Fox Sports MX"],
+    "concacaf-nations": ["TUDN", "ViX"],
+    # ── Futbol LATAM ──
     "liga-colombia": ["Win Sports+", "ESPN"],
     "liga-argentina": ["ESPN", "TNT Sports", "Disney+"],
     "liga-ecuador": ["GOLTV", "ESPN"],
     "liga-panama": ["TVMax", "RPC"],
     "liga-chile": ["TNT Sports", "ESPN"],
     "liga-peru": ["GOLPERU", "Liga1 Max"],
-    "libertadores": ["ESPN", "Paramount+", "Fox Sports MX"],
-    "sudamericana": ["ESPN", "Paramount+"],
+    "libertadores": ["ESPN", "Disney+", "Fox Sports MX"],
+    "sudamericana": ["ESPN", "Disney+"],
     "liga-portugal": ["ESPN MX"],
     "eredivisie": ["ESPN MX"],
-    # Futbol americano
-    "nfl": ["ESPN MX", "Fox Sports MX", "TUDN", "Canal 5"],
+    # ── NFL 2026 ──
+    "nfl": ["ESPN MX", "Fox Sports MX", "TUDN"],
     "college-football": ["ESPN MX"],
-    # Basquetbol
-    "nba": ["ESPN MX"],
-    "wnba": ["ESPN MX"],
-    # Beisbol
-    "mlb": ["ESPN MX"],
-    # Hockey
-    "nhl": ["ESPN MX"],
-    # Combate
+    # ── NBA 2025-26 ──
+    "nba": ["ESPN MX", "Disney+"],
+    "wnba": ["ESPN MX", "Disney+"],
+    # ── MLB 2026 ──
+    "mlb": ["ESPN MX", "Disney+", "Fox Sports MX"],
+    # ── NHL 2025-26 ──
+    "nhl": ["ESPN MX", "Disney+", "SKY"],
+    # ── Combate ──
     "ufc": ["Fox Sports MX", "ESPN MX"],
 }
 
@@ -791,11 +794,19 @@ async def parse_espn_events_enriched(
                 _US_TO_MX = {
                     "ESPN": "ESPN MX", "ESPN2": "ESPN MX", "ESPNU": "ESPN MX",
                     "ESPNews": "ESPN MX", "ABC": "ESPN MX",
+                    "ESPN+": "Disney+",
                     "FOX": "Fox Sports MX", "FS1": "Fox Sports MX",
                     "FS2": "Fox Sports MX",
+                    "NBC": "ESPN MX", "NBCSN": "ESPN MX",
+                    "CBS": "Fox Sports MX", "CBSSN": "Fox Sports MX",
                     "Univision": "TUDN", "UniMas": "TUDN",
                     "Telemundo": "Telemundo",
-                    "NBC": "ESPN MX",
+                    "TNT": "TNT Sports", "TBS": "TNT Sports",
+                    "Max": "Max", "HBO Max": "Max",
+                    "Peacock": "Disney+",
+                    "Amazon Prime": "Amazon Prime",
+                    "Prime Video": "Amazon Prime",
+                    "Netflix": "Netflix",
                 }
                 mapped = set()
                 for b in espn_broadcasts:
