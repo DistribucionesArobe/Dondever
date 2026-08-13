@@ -643,6 +643,16 @@ async def parse_espn_events_enriched(
     league_info = ALL_LEAGUES.get(league_slug, {})
     events = []
 
+    # Pre-fetch TheSportsDB schedule ONCE per league (cached 4h)
+    sportsdb_events = []
+    sportsdb_league = SPORTSDB_LEAGUE_MAP.get(league_slug)
+    if sportsdb_league:
+        formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+        try:
+            sportsdb_events = await fetch_sportsdb_schedule(sportsdb_league, formatted_date)
+        except Exception:
+            pass
+
     for ev in raw.get("events", []):
         competitions = ev.get("competitions", [{}])
         comp = competitions[0] if competitions else {}
@@ -709,19 +719,26 @@ async def parse_espn_events_enriched(
                 "is_us_regional": is_us_regional,
             })
 
-        # 2) Always merge MX channels from our manual mapping
-        # ESPN is US-centric and rarely includes Mexican channels.
-        # Our LIGA_MX_TEAM_CHANNELS and DEFAULT_LEAGUE_CHANNELS have
-        # the actual MX broadcast data, so we always add them.
+        # 2) Smart MX channel merging — per-game, not per-league
+        # Priority: TheSportsDB per-game data > US→MX mapping > league defaults
         broadcasts = list(espn_broadcasts)
+
+        # Check if ESPN already included any MX/Spanish channel
+        has_mx_channel = any(
+            CHANNEL_ALIASES.get(b["channel"], {}).get("country") == "MX"
+            or CHANNEL_ALIASES.get(
+                _normalize_channel(b["channel"]), {}
+            ).get("country") == "MX"
+            for b in espn_broadcasts
+        )
 
         # Determine MX channels to add
         mx_defaults = []
         if league_slug == "liga-mx":
+            # Liga MX: always add team-specific channels (ESPN rarely has MX data)
             home_lower = home["name"].lower()
             away_lower = away["name"].lower()
             team_channels = None
-            # Check home team first (home team usually determines broadcast)
             for team_key, channels in LIGA_MX_TEAM_CHANNELS.items():
                 if team_key in home_lower or home_lower in team_key:
                     team_channels = channels
@@ -732,8 +749,62 @@ async def parse_espn_events_enriched(
                         team_channels = channels
                         break
             mx_defaults = team_channels or ["TUDN", "ViX"]
-        else:
-            mx_defaults = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
+        elif not has_mx_channel:
+            # Try TheSportsDB first — match this game in pre-fetched schedule
+            for sdb_ev in sportsdb_events:
+                db_home = (sdb_ev.get("strHomeTeam") or "")
+                db_away = (sdb_ev.get("strAwayTeam") or "")
+                if _team_matches(home["name"], db_home) and _team_matches(away["name"], db_away):
+                    # Found! Get TV station from schedule data
+                    tv_station = sdb_ev.get("strTVStation", "")
+                    if tv_station:
+                        for ch in tv_station.split(","):
+                            ch = ch.strip()
+                            if ch:
+                                normalized = _normalize_channel(ch)
+                                alias = CHANNEL_ALIASES.get(normalized, CHANNEL_ALIASES.get(ch))
+                                final_name = alias.get("name", ch) if alias else ch
+                                if final_name not in mx_defaults:
+                                    mx_defaults.append(final_name)
+                    # Also try detailed TV lookup if schedule had no TV data
+                    if not mx_defaults:
+                        sdb_event_id = sdb_ev.get("idEvent", "")
+                        if sdb_event_id:
+                            try:
+                                tv_channels = await fetch_sportsdb_tv_by_event(sdb_event_id)
+                                for tv in tv_channels:
+                                    ch_name = tv.get("channel", "")
+                                    ch_country = tv.get("country", "")
+                                    if ch_name and "Mexico" in ch_country:
+                                        normalized = _normalize_channel(ch_name)
+                                        alias = CHANNEL_ALIASES.get(normalized, CHANNEL_ALIASES.get(ch_name))
+                                        final_name = alias.get("name", ch_name) if alias else ch_name
+                                        if final_name not in mx_defaults:
+                                            mx_defaults.append(final_name)
+                            except Exception:
+                                pass
+                    break
+
+            if not mx_defaults and espn_broadcasts:
+                # TheSportsDB had nothing — map US channel → MX equivalent
+                _US_TO_MX = {
+                    "ESPN": "ESPN MX", "ESPN2": "ESPN MX", "ESPNU": "ESPN MX",
+                    "ESPNews": "ESPN MX", "ABC": "ESPN MX",
+                    "FOX": "Fox Sports MX", "FS1": "Fox Sports MX",
+                    "FS2": "Fox Sports MX",
+                    "Univision": "TUDN", "UniMas": "TUDN",
+                    "Telemundo": "Telemundo",
+                    "NBC": "ESPN MX",
+                }
+                mapped = set()
+                for b in espn_broadcasts:
+                    mx_ch = _US_TO_MX.get(b["channel"])
+                    if mx_ch and mx_ch not in mapped:
+                        mapped.add(mx_ch)
+                        mx_defaults.append(mx_ch)
+            elif not mx_defaults and not espn_broadcasts:
+                # Nothing from ESPN or TheSportsDB — league defaults as last resort
+                mx_defaults = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
 
         # Add MX channels that aren't already in ESPN data
         for ch in mx_defaults:

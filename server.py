@@ -1109,12 +1109,19 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "", request:
 
 
 # Legacy URLs que Google sigue rastreando de versiones viejas del sitio
-# Redirect 301 permanente a la home para recuperar SEO
 @app.get("/game/{old_id}")
-async def legacy_game_redirect(old_id: str):
-    """301 incondicional: /game/* → /juego/*. La ruta /juego/ devuelve 410 si ya no existe."""
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url=f"/juego/{old_id}", status_code=301)
+async def legacy_game_redirect(request: Request, old_id: str):
+    """Handle old /game/ URLs. ESPN numeric IDs → 301 to /juego/.
+    Non-ESPN IDs (e.g. la_liga_apifb_*) → 410 Gone directly."""
+    # ESPN IDs are purely numeric (e.g. "401654321")
+    if old_id.isdigit():
+        return RedirectResponse(url=f"/juego/{old_id}", status_code=301)
+    # Non-numeric IDs are from old third-party APIs — they'll never resolve.
+    # Return 410 Gone directly to speed up deindexing (skip the redirect chain).
+    return templates.TemplateResponse(
+        request, "404.html", status_code=410,
+        context={"message": "Este juego ya no existe. Ve los juegos de hoy en la home."}
+    )
 
 
 @app.get("/liga/{league_slug}", response_class=HTMLResponse)

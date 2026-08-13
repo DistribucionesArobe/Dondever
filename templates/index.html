@@ -4,11 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="-6JcmjpKcn306QaeaKG9f58SoBw6hq6_QBGUCjLxFVw" />
+    {% if is_historical %}
+    <title>Deportes del {{ today_display }} — Resultados y horarios | DondeVer</title>
+    <meta name="description" content="{{ total_games }} partidos del {{ today_display }}. Resultados de Liga MX, NFL, NBA, MLB, Champions en M&eacute;xico, USA y Latinoam&eacute;rica.">
+    <meta name="robots" content="noindex, follow">
+    <meta property="og:title" content="Deportes del {{ today_display }} | DondeVer">
+    <meta property="og:description" content="Resultados y horarios del {{ today_display }}. Liga MX, NFL, NBA, MLB, Champions League y m&aacute;s.">
+    {% else %}
     <title>D&oacute;nde ver deportes hoy en vivo: TV, horarios y streaming | DondeVer</title>
     <meta name="description" content="Hoy {{ total_games }} partidos en vivo. D&oacute;nde ver Liga MX, NFL, NBA, MLB, Champions en M&eacute;xico, USA y Latinoam&eacute;rica. Horarios, canales de TV y streaming.">
-    {% if is_historical %}<meta name="robots" content="noindex, follow">{% endif %}
     <meta property="og:title" content="D&oacute;nde ver deportes hoy en vivo | DondeVer">
     <meta property="og:description" content="Gu&iacute;a completa de d&oacute;nde ver deportes en vivo. Liga MX, NFL, NBA, MLB, Champions League y m&aacute;s.">
+    {% endif %}
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ app_url }}/">
     <meta property="og:site_name" content="DondeVer.app">
@@ -20,8 +27,13 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="{{ app_url }}/static/og-image.png">
     <meta name="twitter:site" content="@dondeverapp">
+    {% if is_historical %}
+    <meta name="twitter:title" content="Deportes {{ today_display }} | DondeVer">
+    <meta name="twitter:description" content="{{ total_games }} partidos del {{ today_display }}. Resultados y horarios.">
+    {% else %}
     <meta name="twitter:title" content="DondeVer.app - Donde ver el partido hoy">
     <meta name="twitter:description" content="Encuentra donde ver {{ total_games }} juegos de hoy en Mexico, USA y Latinoamerica. Liga MX, NFL, NBA, MLB y mas.">
+    {% endif %}
     <link rel="canonical" href="{{ app_url }}/">
     {{ hreflang_tags(request.url) }}
     <!-- JSON-LD: WebSite + Organization -->
@@ -1286,7 +1298,11 @@
 {% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
 <div class="hero">
     <div class="hero-inner">
+        {% if is_historical %}
+        <h1>Deportes del <span class="accent">{{ today_display }}</span></h1>
+        {% else %}
         <h1>D&oacute;nde ver <span class="accent">deportes en vivo</span> hoy</h1>
+        {% endif %}
         <div class="hero-sub" id="country-toggle">
             Nos ves desde: <span id="current-country" style="cursor:pointer;">&#127474;&#127485; M&eacute;xico &#9662;</span>
         </div>
