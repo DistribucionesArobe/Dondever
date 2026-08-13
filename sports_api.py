@@ -163,38 +163,39 @@ DEFAULT_LEAGUE_CHANNELS = {
     "ufc": ["Fox Sports MX", "ESPN MX"],
 }
 
-# Liga MX Clausura 2026: broadcast rights per team (home matches)
-# Source: informador.mx Jan 2026
+# Liga MX Apertura 2026: broadcast rights per team (home matches)
+# Source: infobae.com Jul 17, 2026
 LIGA_MX_TEAM_CHANNELS = {
-    # TUDN + ViX Premium
-    "america": ["TUDN", "ViX"],
+    # TelevisaUnivision: Canal 5 + TUDN + ViX Premium
+    "america": ["Canal 5", "TUDN", "ViX"],
+    "pumas": ["Canal 5", "TUDN", "ViX"],
+    "unam": ["Canal 5", "TUDN", "ViX"],
+    "monterrey": ["Canal 5", "TUDN", "ViX"],
+    "rayados": ["Canal 5", "TUDN", "ViX"],
+    # TelevisaUnivision: TUDN + ViX Premium
     "atlas": ["TUDN", "ViX"],
     "cruz azul": ["TUDN", "ViX"],
     "santos laguna": ["TUDN", "ViX"],
     "santos": ["TUDN", "ViX"],
-    "monterrey": ["TUDN", "ViX"],
-    "rayados": ["TUDN", "ViX"],
-    "pumas": ["TUDN", "ViX"],
-    "unam": ["TUDN", "ViX"],
-    # TV Azteca + FOX One
-    "juarez": ["Azteca 7", "Fox Sports MX"],
-    "puebla": ["Azteca 7", "Fox Sports MX"],
-    "mazatlan": ["Azteca 7", "Fox Sports MX"],
-    "tigres uanl": ["Azteca 7", "Fox Sports MX"],
-    "tigres": ["Azteca 7", "Fox Sports MX"],
-    # FOX One exclusivo
+    # FOX One / FOX Sports exclusivo
     "leon": ["Fox Sports MX"],
     "pachuca": ["Fox Sports MX"],
     "queretaro": ["Fox Sports MX"],
     "tijuana": ["Fox Sports MX"],
     "xolos": ["Fox Sports MX"],
-    # Necaxa: TV Azteca + ViX + Claro Sports
-    "necaxa": ["Azteca 7", "ViX", "Claro Sports"],
+    # FOX One + TV Azteca (compartido)
+    "necaxa": ["Fox Sports MX", "Azteca 7"],
+    # TV Azteca + FOX One
+    "tigres uanl": ["Azteca 7", "Fox Sports MX"],
+    "tigres": ["Azteca 7", "Fox Sports MX"],
+    "puebla": ["Azteca 7", "Fox Sports MX"],
+    "atlante": ["Azteca 7", "Fox Sports MX"],
+    "juarez": ["Azteca 7", "Fox Sports MX"],
+    # Toluca: alterna entre TUDN, TV Azteca y FOX One
+    "toluca": ["TUDN", "Azteca 7", "Fox Sports MX"],
     # ESPN + Disney+
     "atletico san luis": ["ESPN MX", "Disney+"],
     "san luis": ["ESPN MX", "Disney+"],
-    # Toluca: TUDN + FOX + Azteca
-    "toluca": ["TUDN", "Fox Sports MX", "Azteca 7"],
     # Amazon Prime Video exclusivo
     "guadalajara": ["Amazon Prime"],
     "chivas": ["Amazon Prime"],
