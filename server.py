@@ -4135,6 +4135,111 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         "peru": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
         "ecuador": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
     },
+    # ── Ligas domésticas LATAM ──
+    "Liga Argentina": {
+        "argentina": [
+            {"name": "TNT Sports", "type": "Cable", "sports": "Liga Profesional en vivo"},
+            {"name": "ESPN Argentina", "type": "Cable", "sports": "Liga Profesional selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga Profesional completa"},
+            {"name": "AFA Play", "type": "Streaming", "sports": "Todos los partidos (oficial AFA)"},
+        ],
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "Liga Argentina selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga Argentina completa"},
+        ],
+        "colombia": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga Argentina selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga Argentina completa"},
+        ],
+        "chile": [
+            {"name": "ESPN Chile", "type": "Cable", "sports": "Liga Argentina selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga Argentina completa"},
+        ],
+        "peru": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga Argentina selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga Argentina completa"},
+        ],
+        "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga Argentina selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga Argentina completa"},
+        ],
+    },
+    "Liga BetPlay": {
+        "colombia": [
+            {"name": "Win Sports+", "type": "Cable/Streaming", "sports": "Liga BetPlay completa"},
+            {"name": "RCN", "type": "TV Abierta", "sports": "Partidos selectos"},
+        ],
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "Liga BetPlay selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga BetPlay selectos"},
+        ],
+        "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga BetPlay selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga BetPlay selectos"},
+        ],
+    },
+    "Primera Chile": {
+        "chile": [
+            {"name": "TNT Sports", "type": "Cable", "sports": "Primera División completa"},
+            {"name": "Estadio TNT", "type": "Streaming", "sports": "Primera División completa"},
+        ],
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "Primera Chile selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Primera Chile selectos"},
+        ],
+        "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Primera Chile selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Primera Chile selectos"},
+        ],
+    },
+    "Liga 1 Perú": {
+        "peru": [
+            {"name": "GOLPERU", "type": "Cable", "sports": "Liga 1 en vivo (Movistar)"},
+            {"name": "Liga1 Max", "type": "Streaming", "sports": "Liga 1 completa"},
+        ],
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "Liga 1 Perú selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga 1 Perú selectos"},
+        ],
+    },
+    "LigaPro Ecuador": {
+        "ecuador": [
+            {"name": "GOLTV Ecuador", "type": "Cable", "sports": "LigaPro completa"},
+            {"name": "ESPN Ecuador", "type": "Cable", "sports": "LigaPro selectos"},
+            {"name": "Star+", "type": "Streaming", "sports": "LigaPro selectos"},
+        ],
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "LigaPro selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "LigaPro selectos"},
+        ],
+    },
+    "Copa Libertadores": {
+        "mexico": [
+            {"name": "ESPN MX", "type": "Cable", "sports": "Libertadores en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
+            {"name": "Fox Sports MX", "type": "Cable", "sports": "Libertadores selectos"},
+        ],
+        "argentina": [
+            {"name": "ESPN Argentina", "type": "Cable", "sports": "Libertadores en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
+        ],
+        "colombia": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Libertadores en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
+        ],
+        "chile": [
+            {"name": "ESPN Chile", "type": "Cable", "sports": "Libertadores en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
+        ],
+        "peru": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Libertadores en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
+        ],
+        "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Libertadores en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
+        ],
+    },
 }
 
 # Default for leagues not mapped above
