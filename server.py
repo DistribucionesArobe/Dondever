@@ -83,7 +83,7 @@ templates.env.filters["game_url"] = _game_url
 templates.env.globals["game_url"] = _game_url
 
 # ── hreflang tags for LATAM geo-targeting ──────────────
-HREFLANG_LOCALES = ["es-MX", "es-US", "es-AR", "es-CO", "es-CL", "es-PE", "es-EC"]
+HREFLANG_LOCALES = ["es-MX", "es-US", "es-AR", "es-CO", "es-CL", "es-PE", "es-EC", "es-VE", "es-PA", "es-DO"]
 
 
 def _hreflang_tags(request_url: str) -> str:
@@ -3876,6 +3876,9 @@ async def team_page(request: Request, team_slug: str):
 TEAM_COUNTRY_SEO = {
     "mexico": {"name": "México", "flag": "🇲🇽", "code": "MX"},
     "estados-unidos": {"name": "Estados Unidos", "flag": "🇺🇸", "code": "US"},
+    "venezuela": {"name": "Venezuela", "flag": "🇻🇪", "code": "VE"},
+    "panama": {"name": "Panamá", "flag": "🇵🇦", "code": "PA"},
+    "republica-dominicana": {"name": "República Dominicana", "flag": "🇩🇴", "code": "DO"},
     "argentina": {"name": "Argentina", "flag": "🇦🇷", "code": "AR"},
     "colombia": {"name": "Colombia", "flag": "🇨🇴", "code": "CO"},
     "chile": {"name": "Chile", "flag": "🇨🇱", "code": "CL"},
@@ -3921,6 +3924,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
             {"name": "Disney+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
         ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
+        ],
+        "republica-dominicana": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga MX selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga MX vía ESPN"},
+        ],
     },
     "Premier League": {
         "mexico": [
@@ -3950,6 +3965,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
         ],
         "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
+        ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Premier League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
+        ],
+        "republica-dominicana": [
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Premier League en vivo"},
             {"name": "Disney+", "type": "Streaming", "sports": "Premier League completa"},
         ],
@@ -3983,6 +4010,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "La Liga en vivo"},
             {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
         ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
+        ],
+        "republica-dominicana": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "La Liga en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
+        ],
     },
     "Champions League": {
         "mexico": [
@@ -4012,6 +4051,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
         ],
         "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Champions League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
+        ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Champions League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Champions League en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
+        ],
+        "republica-dominicana": [
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Champions League en vivo"},
             {"name": "Disney+", "type": "Streaming", "sports": "Champions League completa"},
         ],
@@ -4052,6 +4103,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NFL en vivo"},
             {"name": "Disney+", "type": "Streaming", "sports": "NFL completa"},
         ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NFL en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NFL completa"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NFL en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NFL completa"},
+        ],
+        "republica-dominicana": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NFL en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NFL completa"},
+        ],
     },
     "NBA": {
         "mexico": [
@@ -4082,6 +4145,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
         ],
         "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NBA en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
+        ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NBA en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NBA en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
+        ],
+        "republica-dominicana": [
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "NBA en vivo"},
             {"name": "Disney+", "type": "Streaming", "sports": "NBA completa"},
         ],
@@ -4119,6 +4194,24 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "MLB selectos"},
             {"name": "Disney+", "type": "Streaming", "sports": "MLB en vivo"},
         ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "MLB en vivo"},
+            {"name": "IVC / Meridiano TV", "type": "Cable", "sports": "Cobertura de peloteros venezolanos"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos MLB"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "MLB en vivo"},
+            {"name": "TVMax", "type": "Cable", "sports": "Cobertura local de béisbol"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos MLB"},
+        ],
+        "republica-dominicana": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "MLB selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "MLB en vivo"},
+            {"name": "CDN Deportes", "type": "Cable", "sports": "Cobertura local de béisbol"},
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos MLB"},
+        ],
     },
     "MLS": {
         "mexico": [
@@ -4134,6 +4227,9 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         "chile": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
         "peru": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
         "ecuador": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
+        "venezuela": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
+        "panama": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
+        "republica-dominicana": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
     },
     # ── Ligas domésticas LATAM ──
     "Liga Argentina": {
@@ -4163,6 +4259,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga Argentina selectos"},
             {"name": "Disney+", "type": "Streaming", "sports": "Liga Argentina completa"},
         ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga Argentina selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga Argentina completa"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga Argentina selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga Argentina completa"},
+        ],
+        "republica-dominicana": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga Argentina selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga Argentina completa"},
+        ],
     },
     "Liga BetPlay": {
         "colombia": [
@@ -4174,6 +4282,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "Disney+", "type": "Streaming", "sports": "Liga BetPlay selectos"},
         ],
         "argentina": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga BetPlay selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga BetPlay selectos"},
+        ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga BetPlay selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga BetPlay selectos"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga BetPlay selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga BetPlay selectos"},
+        ],
+        "republica-dominicana": [
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga BetPlay selectos"},
             {"name": "Disney+", "type": "Streaming", "sports": "Liga BetPlay selectos"},
         ],
@@ -4191,6 +4311,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Primera Chile selectos"},
             {"name": "Disney+", "type": "Streaming", "sports": "Primera Chile selectos"},
         ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Primera Chile selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Primera Chile selectos"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Primera Chile selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Primera Chile selectos"},
+        ],
+        "republica-dominicana": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Primera Chile selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Primera Chile selectos"},
+        ],
     },
     "Liga 1 Perú": {
         "peru": [
@@ -4199,6 +4331,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
         "mexico": [
             {"name": "ESPN MX", "type": "Cable", "sports": "Liga 1 Perú selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga 1 Perú selectos"},
+        ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga 1 Perú selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga 1 Perú selectos"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga 1 Perú selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Liga 1 Perú selectos"},
+        ],
+        "republica-dominicana": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Liga 1 Perú selectos"},
             {"name": "Disney+", "type": "Streaming", "sports": "Liga 1 Perú selectos"},
         ],
     },
@@ -4210,6 +4354,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
         "mexico": [
             {"name": "ESPN MX", "type": "Cable", "sports": "LigaPro selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "LigaPro selectos"},
+        ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "LigaPro selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "LigaPro selectos"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "LigaPro selectos"},
+            {"name": "Disney+", "type": "Streaming", "sports": "LigaPro selectos"},
+        ],
+        "republica-dominicana": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "LigaPro selectos"},
             {"name": "Disney+", "type": "Streaming", "sports": "LigaPro selectos"},
         ],
     },
@@ -4236,6 +4392,18 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
         ],
         "ecuador": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Libertadores en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
+        ],
+        "venezuela": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Libertadores en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
+        ],
+        "panama": [
+            {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Libertadores en vivo"},
+            {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
+        ],
+        "republica-dominicana": [
             {"name": "ESPN Latinoamérica", "type": "Cable", "sports": "Libertadores en vivo"},
             {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
         ],
