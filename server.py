@@ -2118,6 +2118,42 @@ async def whatsapp_broadcast_now(token: str = ""):
         return {"ok": False, "error": str(e), "type": type(e).__name__}
 
 
+@app.get("/whatsapp/test-send")
+async def whatsapp_test_send(token: str = "", to: str = ""):
+    """Enviar UN mensaje de prueba a un número específico y devolver la respuesta completa de Meta."""
+    admin_token = os.getenv("ADMIN_TOKEN", "")
+    if not admin_token or token != admin_token:
+        return {"ok": False, "error": "token invalido"}
+    if not to:
+        return {"ok": False, "error": "Falta parametro 'to' con numero (ej: 528118001161)"}
+    try:
+        from meta_whatsapp import send_template, send_text, _normalize_to
+        normalized = _normalize_to(to)
+
+        # Try picks_diarios template
+        result = send_template(
+            to,
+            template_name="dondever_picks_diarios",
+            language="en",
+            components=[{
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": "⚾ Test mensaje de prueba. Responde VER. https://dondever.app/"},
+                ],
+            }],
+        )
+        return {
+            "ok": True,
+            "original_number": to,
+            "normalized": normalized,
+            "template": "dondever_picks_diarios",
+            "result": result,
+        }
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+
+
 @app.api_route("/whatsapp/broadcast-preview", methods=["GET"])
 async def whatsapp_broadcast_preview():
     """Preview del mensaje diario sin enviarlo."""
