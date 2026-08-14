@@ -576,7 +576,7 @@ async def send_daily_broadcast(test_number: str | None = None):
     """
     Send daily WhatsApp broadcast via Meta Cloud API.
     Strategy: template first (works outside 24h window), freeform as last resort.
-    Templates: dondever_daily_v2 (4 params, UTILITY, es_MX) → freeform.
+    Templates: dondever_picks_diarios (1 param, UTILITY, en) → dondever_daily_v2 (4 params, MARKETING, es_MX) → freeform.
     WABA: Distribuciones Arobe (ID: 1224835083125902).
     """
     if not is_configured():
@@ -591,9 +591,20 @@ async def send_daily_broadcast(test_number: str | None = None):
         logger.info("No games today — skipping broadcast")
         return {"sent": 0, "failed": 0, "skipped": "no_games"}
 
-    # Build template components for dondever_daily_v2 (4 params, UTILITY, es_MX)
+    # Build template components
+    # Primary: dondever_picks_diarios (1 param, UTILITY, en) — reliable 88% delivery
+    # Secondary: dondever_daily_v2 (4 params, MARKETING, es_MX) — nicer format but may not deliver
+    v1_components = None
     v2_components = None
     if template_vars:
+        v1_components = [
+            {
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": template_vars["var1"]},
+                ],
+            }
+        ]
         v2_components = [
             {
                 "type": "body",
@@ -656,11 +667,27 @@ async def send_daily_broadcast(test_number: str | None = None):
     errors = []
 
     for phone in recipients:
-        # Strategy: v2 Utility template (4 params, es_MX),
-        # then freeform (24h window only).
+        # Strategy: picks_diarios (Utility, 1 param, reliable delivery)
+        # → daily_v2 (Marketing, 4 params, better format but may not deliver)
+        # → freeform (24h window only, last resort).
         sent_ok = False
 
-        # Primary: Utility template (4 params — date, pick, games, CTA)
+        # Primary: dondever_picks_diarios (Utility, 1 param, en) — 88% delivery
+        if not sent_ok and v1_components:
+            result = send_template(
+                phone,
+                template_name="dondever_picks_diarios",
+                language="en",
+                components=v1_components,
+            )
+            if result["ok"]:
+                sent += 1
+                sent_ok = True
+                logger.info(f"Sent v1 (picks_diarios) to {phone} — msg_id: {result['id']}")
+            else:
+                logger.info(f"v1 template failed for {phone}: {result.get('error')}, trying v2")
+
+        # Secondary: dondever_daily_v2 (Marketing, 4 params, es_MX)
         if not sent_ok and v2_components:
             result = send_template(
                 phone,
@@ -671,7 +698,7 @@ async def send_daily_broadcast(test_number: str | None = None):
             if result["ok"]:
                 sent += 1
                 sent_ok = True
-                logger.info(f"Sent v2 template to {phone} — msg_id: {result['id']}")
+                logger.info(f"Sent v2 (daily_v2) to {phone} — msg_id: {result['id']}")
             else:
                 logger.info(f"v2 template failed for {phone}: {result.get('error')}, trying freeform")
 
