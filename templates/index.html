@@ -62,6 +62,47 @@
       "sameAs": ["https://twitter.com/dondeverapp"]
     }
     </script>
+    {# ── JSON-LD: ItemList of today's SportsEvents (for AI assistants & rich results) ── #}
+    {% if not is_historical %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "Partidos de hoy en vivo",
+      "description": "{{ total_games }} partidos programados para hoy. Horarios, canales y streaming en México, USA y Latinoamérica.",
+      "numberOfItems": {{ total_games }},
+      "itemListElement": [
+        {% set counter = namespace(n=0) %}
+        {% for league_name, league_data in sports_grouped.items() %}
+          {% for game in league_data.games %}
+            {% set counter.n = counter.n + 1 %}
+            {% if counter.n <= 30 %}
+            {% if counter.n > 1 %},{% endif %}
+            {
+              "@type": "ListItem",
+              "position": {{ counter.n }},
+              "item": {
+                "@type": "SportsEvent",
+                "name": "{{ game.away.name }} vs {{ game.home.name }}",
+                "startDate": "{{ game.date }}",
+                "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.state == 'in' %}EventScheduled{% else %}EventScheduled{% endif %}",
+                "url": "{{ app_url }}{{ game|game_url }}",
+                "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport == 'football' %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% else %}{{ game.sport }}{% endif %}",
+                "homeTeam": {"@type": "SportsTeam", "name": "{{ game.home.name }}"},
+                "awayTeam": {"@type": "SportsTeam", "name": "{{ game.away.name }}"},
+                "organizer": {"@type": "SportsOrganization", "name": "{{ game.league_name }}"}
+                {% if game.broadcasts %},
+                "broadcast": [{% for bc in game.broadcasts[:3] %}{% if not loop.first %},{% endif %}{"@type": "BroadcastEvent", "isLiveBroadcast": true, "publishedOn": {"@type": "BroadcastService", "name": "{{ bc.channel }}"}}{% endfor %}]
+                {% endif %}
+              }
+            }
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      ]
+    }
+    </script>
+    {% endif %}
     <link rel="icon" type="image/png" href="/static/logo.png">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <link rel="manifest" href="/manifest.json">

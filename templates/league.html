@@ -40,7 +40,7 @@
       ]
     }
     </script>
-    <!-- JSON-LD -->
+    <!-- JSON-LD: CollectionPage + SportsOrganization -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -54,6 +54,40 @@
       }
     }
     </script>
+    {# ── JSON-LD: SportsEvent list for this league (AI assistants) ── #}
+    {% if games %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "{{ league_name }} — partidos de hoy",
+      "numberOfItems": {{ games|length }},
+      "itemListElement": [
+        {% for game in games %}
+        {% if loop.index <= 20 %}
+        {% if not loop.first %},{% endif %}
+        {
+          "@type": "ListItem",
+          "position": {{ loop.index }},
+          "item": {
+            "@type": "SportsEvent",
+            "name": "{{ game.away.name }} vs {{ game.home.name }}",
+            "startDate": "{{ game.date }}",
+            "url": "{{ app_url }}{{ game|game_url }}",
+            "homeTeam": {"@type": "SportsTeam", "name": "{{ game.home.name }}"},
+            "awayTeam": {"@type": "SportsTeam", "name": "{{ game.away.name }}"},
+            "organizer": {"@type": "SportsOrganization", "name": "{{ league_name }}"}
+            {% if game.broadcasts %},
+            "broadcast": [{% for bc in game.broadcasts[:3] %}{% if not loop.first %},{% endif %}{"@type": "BroadcastEvent", "isLiveBroadcast": true, "publishedOn": {"@type": "BroadcastService", "name": "{{ bc.channel }}"}}{% endfor %}]
+            {% endif %}
+          }
+        }
+        {% endif %}
+        {% endfor %}
+      ]
+    }
+    </script>
+    {% endif %}
     <link rel="icon" type="image/png" href="/static/logo.png">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <link rel="manifest" href="/manifest.json">

@@ -36,6 +36,7 @@
       "startDate": "{{ game.date }}",
       "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.display == 'Postponed' %}EventPostponed{% elif game.status.display == 'Cancelled' %}EventCancelled{% else %}EventScheduled{% endif %}",
       "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
+      "image": "{{ app_url }}/og/partido/{{ game|game_url|replace('/partido/', '') }}.png",
       "url": "{{ app_url }}{{ game|game_url }}",
       "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport == 'football' %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% elif game.sport == 'mma' %}Mixed Martial Arts{% else %}{{ game.sport }}{% endif %}",
       {% if game.venue %}"location": {
