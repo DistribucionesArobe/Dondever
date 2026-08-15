@@ -808,15 +808,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.2rem;
+            gap: 0.25rem;
             background: linear-gradient(135deg, #ea580c, #dc2626);
             color: white !important;
-            font-size: 0.68rem;
+            font-size: 0.78rem;
             font-weight: 800;
-            padding: 0.4rem 0.5rem;
+            padding: 0.55rem 0.7rem;
             border-radius: 8px;
             text-decoration: none !important;
             white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(234,88,12,0.25);
+            animation: pulse-cta 2s ease-in-out infinite;
             transition: all 0.15s;
             flex: 1;
             text-align: center;
@@ -844,6 +846,126 @@
             font-size: 0.45rem;
             color: #d1d5db;
             margin-top: 0.15rem;
+        }
+        @keyframes pulse-cta {
+            0%, 100% { box-shadow: 0 2px 8px rgba(234,88,12,0.25); }
+            50% { box-shadow: 0 2px 16px rgba(234,88,12,0.45); }
+        }
+
+        /* ── Sticky Betting Bar (mobile) ── */
+        .sticky-bet-bar {
+            display: block;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 9990;
+            background: linear-gradient(135deg, #7c2d12, #991b1b);
+            padding: 0.6rem 1rem;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.35);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        .sticky-bet-bar.visible { transform: translateY(0); }
+        .sticky-bet-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 600px;
+            margin: 0 auto;
+            gap: 0.75rem;
+        }
+        .sticky-bet-text {
+            color: #fed7aa;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+        .sticky-bet-text strong { color: white; }
+        .sticky-bet-cta {
+            background: linear-gradient(135deg, #f59e0b, #ea580c);
+            color: white;
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 0.55rem 1.2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(245,158,11,0.35);
+            transition: transform 0.15s;
+        }
+        .sticky-bet-cta:hover { transform: scale(1.03); }
+        .sticky-bet-close {
+            background: none;
+            border: none;
+            color: #fed7aa;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            opacity: 0.6;
+        }
+        .sticky-bet-close:hover { opacity: 1; }
+        .sticky-bet-fine {
+            text-align: center;
+            font-size: 0.4rem;
+            color: #fecaca;
+            opacity: 0.5;
+            margin-top: 0.2rem;
+        }
+        @media (min-width: 768px) { .sticky-bet-bar { display: none !important; } }
+
+        /* ── Interstitial Promo Card ── */
+        .promo-interstitial {
+            max-width: 600px;
+            margin: 1rem auto;
+            background: linear-gradient(135deg, #1c1917, #292524);
+            border: 1px solid #ea580c;
+            border-radius: 14px;
+            padding: 1.25rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .promo-interstitial::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 40%, rgba(234,88,12,0.08), transparent 60%);
+        }
+        .promo-inter-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 0.3rem;
+            position: relative;
+        }
+        .promo-inter-sub {
+            font-size: 0.72rem;
+            color: #a8a29e;
+            margin-bottom: 0.75rem;
+            position: relative;
+        }
+        .promo-inter-cta {
+            display: inline-block;
+            background: linear-gradient(135deg, #ea580c, #dc2626);
+            color: white;
+            font-size: 0.82rem;
+            font-weight: 800;
+            padding: 0.65rem 1.5rem;
+            border-radius: 10px;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(234,88,12,0.3);
+            transition: transform 0.15s, box-shadow 0.15s;
+            position: relative;
+        }
+        .promo-inter-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(234,88,12,0.4); }
+        .promo-inter-fine {
+            font-size: 0.5rem;
+            color: #78716c;
+            margin-top: 0.5rem;
+            position: relative;
         }
 
         /* ── Betting Full (inside accordion — bookmaker comparison) ── */
@@ -1920,17 +2042,25 @@
 
     {% set _ = league_idx.__setitem__(0, league_idx[0] + 1) %}
 
-    {# Partido Destacado removed — replaced by DESTACADOS section above #}
+    {# ── Interstitial promo: after 2nd league section ── #}
+    {% if league_idx[0] == 2 and not is_historical %}
+    <div class="promo-interstitial">
+        <div class="promo-inter-title">&#128176; Compara momios y apuesta con ventaja</div>
+        <div class="promo-inter-sub">Revisa las cuotas de cada partido y encuentra el mejor valor en casas autorizadas en M&eacute;xico</div>
+        <a href="/casinos" data-affiliate="bet" class="promo-inter-cta">Ver mejores casas &#8599;</a>
+        <div class="promo-inter-fine">+18 | Publicidad | Juega responsablemente</div>
+    </div>
+    {% endif %}
 
-    <!-- Subtle ad slot: after the 3rd league section -->
-    {% if league_idx[0] == 3 %}
+    {# ── Affiliate banner: after 4th league section ── #}
+    {% if league_idx[0] == 4 and not is_historical %}
     {% for key, aff in affiliates.items() %}
     {% if loop.first %}
-    <div class="ad-slot">
-        <a href="/go/{{ key }}?s=web" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ key }}" class="ad-slot-link">
-            <span class="ad-slot-title">{{ aff.name }} &middot; {{ aff.bonus }}</span>
-            <span class="ad-slot-tag">Publicidad</span>
-        </a>
+    <div class="promo-interstitial" style="border-color:#f59e0b;">
+        <div class="promo-inter-title">&#127942; {{ aff.name }} &mdash; {{ aff.bonus }}</div>
+        <div class="promo-inter-sub">Casa de apuestas autorizada. Bono de bienvenida disponible para nuevos usuarios.</div>
+        <a href="/go/{{ key }}?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ key }}" class="promo-inter-cta" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Registrarme &#8599;</a>
+        <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
     {% endif %}
     {% endfor %}
@@ -2182,6 +2312,21 @@
     </p>
     <p style="margin-top:0.3rem">Los enlaces de apuestas son publicidad. Apuesta responsablemente. Solo mayores de 18.</p>
 </footer>
+
+<!-- Sticky Mobile Betting Bar -->
+{% if not is_historical %}
+<div class="sticky-bet-bar" id="stickyBetBar">
+    <div style="display:flex;align-items:center;gap:0.6rem;justify-content:space-between;">
+        <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:0.78rem;">&#9917; Compara momios</div>
+            <div style="font-size:0.65rem;color:#9ca3af;margin-top:1px;">Mejores cuotas en casas autorizadas MX</div>
+        </div>
+        <a href="/casinos" data-affiliate="bet" style="background:linear-gradient(135deg,#10b981,#059669);color:white;padding:0.5rem 1rem;border-radius:8px;font-weight:700;font-size:0.78rem;text-decoration:none;white-space:nowrap;animation:pulse-cta 2s infinite;">Apostar &rsaquo;</a>
+        <button onclick="document.getElementById('stickyBetBar').style.display='none';sessionStorage.setItem('bet-bar-closed','1')" style="background:none;border:none;color:#6b7280;font-size:1.1rem;cursor:pointer;padding:0 0.2rem;">&times;</button>
+    </div>
+    <div style="font-size:0.55rem;color:#6b7280;text-align:center;margin-top:0.3rem;">+18 | Publicidad | Juega responsablemente</div>
+</div>
+{% endif %}
 
 <!-- PWA Install Banner -->
 <div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:1rem 1.25rem;box-shadow:0 -4px 20px rgba(0,0,0,0.3);border-radius:16px 16px 0 0;font-family:'Inter',-apple-system,sans-serif;">
@@ -3182,6 +3327,19 @@ function emailSubscribe(e) {
     banner.style.display='none';
     localStorage.setItem('pwa-dismissed',Date.now());
   });
+})();
+
+// Sticky bet bar: show after scrolling 600px, hide if user closed it
+(function(){
+  var bar=document.getElementById('stickyBetBar');
+  if(!bar) return;
+  if(sessionStorage.getItem('bet-bar-closed')==='1'){bar.style.display='none';return;}
+  var shown=false;
+  window.addEventListener('scroll',function(){
+    if(sessionStorage.getItem('bet-bar-closed')==='1') return;
+    if(window.scrollY>600 && !shown){bar.classList.add('visible');shown=true;}
+    else if(window.scrollY<=600 && shown){bar.classList.remove('visible');shown=false;}
+  },{passive:true});
 })();
 </script>
 </body>
