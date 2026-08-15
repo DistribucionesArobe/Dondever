@@ -2092,24 +2092,42 @@ async def whatsapp_debug():
     }
 
 
-# Store last broadcast result for diagnostics
-_last_broadcast = {"ran_at": None, "result": None, "error": None}
+# Store last broadcast result for diagnostics + deduplication
+_last_broadcast = {"ran_at": None, "result": None, "error": None, "date": None}
+
+
+def _broadcast_already_ran_today() -> bool:
+    """Check if broadcast already ran today (MX time) to prevent duplicates."""
+    today = datetime.now(TZ_MX).strftime("%Y-%m-%d")
+    return _last_broadcast.get("date") == today and _last_broadcast.get("result") is not None
 
 
 @app.api_route("/whatsapp/broadcast-now", methods=["GET", "POST"])
-async def whatsapp_broadcast_now(token: str = ""):
+async def whatsapp_broadcast_now(token: str = "", force: str = ""):
     """Disparar el broadcast diario ahora mismo a todos los suscriptores.
     Acepta GET y POST para compatibilidad con cron externos (cron-job.org, etc.).
-    Usa Meta Cloud API (send_whatsapp_daily.py)."""
+    Usa Meta Cloud API (send_whatsapp_daily.py).
+    Añade &force=1 para ignorar la deduplicación diaria."""
     admin_token = os.getenv("ADMIN_TOKEN", "")
     if not admin_token or token != admin_token:
         return {"ok": False, "error": "token invalido"}
+    # Deduplication: skip if already ran today (unless force=1)
+    if _broadcast_already_ran_today() and force != "1":
+        return {
+            "ok": True,
+            "skipped": True,
+            "reason": f"Broadcast already ran today at {_last_broadcast['ran_at']}",
+            "result": _last_broadcast["result"],
+        }
     try:
         from send_whatsapp_daily import send_daily_broadcast
         result = await send_daily_broadcast()
-        _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
+        now = datetime.now(TZ_MX)
+        _last_broadcast["ran_at"] = now.isoformat()
+        _last_broadcast["date"] = now.strftime("%Y-%m-%d")
         _last_broadcast["result"] = result
         _last_broadcast["error"] = None
+        _last_broadcast["source"] = "endpoint"
         return {"ok": True, "result": result}
     except Exception as e:
         _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
@@ -2264,10 +2282,16 @@ try:
     from apscheduler.triggers.interval import IntervalTrigger
 
     async def _tracked_broadcast():
-        """Wrapper that logs broadcast results — now uses Meta Cloud API."""
+        """Wrapper that logs broadcast results — now uses Meta Cloud API.
+        Includes deduplication: skips if broadcast already ran today."""
+        if _broadcast_already_ran_today():
+            logger.info("Scheduled broadcast SKIPPED — already ran today")
+            return
         try:
             result = await _meta_broadcast()
-            _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
+            now = datetime.now(TZ_MX)
+            _last_broadcast["ran_at"] = now.isoformat()
+            _last_broadcast["date"] = now.strftime("%Y-%m-%d")
             _last_broadcast["result"] = result
             _last_broadcast["error"] = None
             _last_broadcast["source"] = "scheduler"
