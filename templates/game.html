@@ -246,6 +246,9 @@
     [data-theme="dark"] .vs { color: var(--text-muted) !important; }
     [data-theme="dark"] .time-block .tz { color: var(--text-secondary) !important; }
     [data-theme="dark"] .channels-section h3 { color: #6ee7b7 !important; }
+    [data-theme="dark"] .preview-editorial { background: linear-gradient(135deg, #064e3b, #065f46) !important; border-left-color: #34d399 !important; }
+    [data-theme="dark"] .preview-editorial h3 { color: #6ee7b7 !important; }
+    [data-theme="dark"] .preview-editorial p { color: #d1d5db !important; }
     [data-theme="dark"] .channel-pill.cable { background: var(--tag-cable-bg) !important; color: var(--tag-cable-color) !important; }
     [data-theme="dark"] .channel-pill.streaming { background: var(--tag-stream-bg) !important; color: var(--tag-stream-color) !important; }
     [data-theme="dark"] .channel-pill.broadcast { background: var(--tag-broadcast-bg) !important; color: var(--tag-broadcast-color) !important; }
@@ -379,6 +382,13 @@
                 <div class="tz" id="tz-label">Hora centro de Mexico | {{ format_us_time(game.date) }}</div>
             {% endif %}
         </div>
+        {% if match_preview %}
+        <div class="preview-editorial" style="margin:1.25rem 0;padding:1rem 1.25rem;background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-left:3px solid #10b981;border-radius:8px;">
+            <h3 style="font-size:0.82rem;font-weight:800;color:#065f46;margin:0 0 0.4rem 0;text-transform:uppercase;letter-spacing:0.03em;">&#128220; Previa del Partido</h3>
+            <p style="font-size:0.78rem;color:#374151;line-height:1.6;margin:0;">{{ match_preview.full }}</p>
+        </div>
+        {% endif %}
+
         <div class="channels-section">
             <h3>DONDE VERLO</h3>
             {% if game.broadcasts %}

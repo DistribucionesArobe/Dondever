@@ -852,6 +852,23 @@
             50% { box-shadow: 0 2px 16px rgba(234,88,12,0.45); }
         }
 
+        /* ── Match Preview Snippet ── */
+        .gc-preview-snippet {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.68rem;
+            color: #6b7280;
+            border-top: 1px solid #f3f4f6;
+            line-height: 1.4;
+        }
+        .gc-preview-icon {
+            font-size: 0.6rem;
+            margin-right: 0.15rem;
+        }
+        .dark-mode .gc-preview-snippet {
+            color: #9ca3af;
+            border-top-color: #374151;
+        }
+
         /* ── Sticky Betting Bar (mobile) ── */
         .sticky-bet-bar {
             display: block;
@@ -1687,6 +1704,11 @@
                 <div class="bet-responsible">18+ | Juega responsablemente</div>
             </div>
             {% endif %}
+            {% if game.preview and state != 'post' %}
+            <div class="gc-preview-snippet">
+                <span class="gc-preview-icon">&#128220;</span> {{ game.preview.snippet }}
+            </div>
+            {% endif %}
             {# ── Accordion ── #}
             <div class="gc-accordion">
                 <div class="gc-channels">
@@ -1787,6 +1809,11 @@
                     </div>
                 </div>
                 <div class="bet-responsible">18+ | Juega responsablemente</div>
+            </div>
+            {% endif %}
+            {% if game.preview and state != 'post' %}
+            <div class="gc-preview-snippet">
+                <span class="gc-preview-icon">&#128220;</span> {{ game.preview.snippet }}
             </div>
             {% endif %}
             {# ── Accordion ── #}
@@ -1959,6 +1986,11 @@
                     </div>
                 </div>
                 <div class="bet-responsible">18+ | Juega responsablemente</div>
+            </div>
+            {% endif %}
+            {% if game.preview and state != 'post' %}
+            <div class="gc-preview-snippet">
+                <span class="gc-preview-icon">&#128220;</span> {{ game.preview.snippet }}
             </div>
             {% endif %}
 

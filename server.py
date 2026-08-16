@@ -404,6 +404,7 @@ async def home(
         else:
             g["odds"] = None
         g["prediction"] = _quick_prediction_from_odds(g) if g.get("odds") else None
+        g["preview"] = generate_match_preview(g)
 
     # ── Live games section ──────────────────────────────
     live_games = [g for g in games if g["status"]["state"] == "in"]
@@ -839,6 +840,25 @@ async def game_semantic(request: Request, slug: str):
         except Exception:
             pass
 
+    # ── Generate editorial preview ──
+    game["prediction"] = _quick_prediction_from_odds(game) if odds else None
+    game["odds"] = odds
+    match_preview = generate_match_preview(game)
+
+    # Build richer preview using form data if available
+    if match_preview and (home_form or away_form):
+        extra = []
+        if home_form:
+            hw = home_form.count("W")
+            hl = home_form.count("L")
+            extra.append(f"{game['home']['name']} llega con {hw}G-{len(home_form)-hw-hl}E-{hl}P en sus últimos {len(home_form)} partidos")
+        if away_form:
+            aw = away_form.count("W")
+            al_ = away_form.count("L")
+            extra.append(f"{game['away']['name']} tiene marca de {aw}G-{len(away_form)-aw-al_}E-{al_}P")
+        if extra:
+            match_preview["full"] = match_preview["full"] + " " + ". ".join(extra) + "."
+
     return templates.TemplateResponse(
         request, "game.html", context={
             "game": game, "odds": odds,
@@ -849,6 +869,7 @@ async def game_semantic(request: Request, slug: str):
             "home_upcoming": home_upcoming, "away_upcoming": away_upcoming,
             "home_form": home_form, "away_form": away_form,
             "implied_probs": implied_probs,
+            "match_preview": match_preview,
         }
     )
 
@@ -3406,6 +3427,108 @@ def _quick_prediction_from_odds(game: dict) -> dict | None:
         "underdog": underdog,
         "dog_odds": dog_odds,
         "value": value,
+    }
+
+
+def generate_match_preview(game: dict) -> dict | None:
+    """
+    Generate an editorial-style match preview from available data (odds, prediction).
+    No extra API calls — uses only what's already attached to the game dict.
+    Returns {"snippet": "...", "full": "...", "tone": "neutral|exciting|rivalry"}
+    """
+    home = game["home"]["name"]
+    away = game["away"]["name"]
+    league = game.get("league_name", "")
+    prediction = game.get("prediction")
+    odds = game.get("odds")
+    sport = game.get("sport", "soccer")
+    broadcasts = game.get("broadcasts", [])
+
+    if not odds and not prediction:
+        return None
+
+    snippet_parts = []
+    full_parts = []
+    tone = "neutral"
+
+    # Determine favorite and underdog
+    fav = prediction["pick"] if prediction else None
+    prob = prediction["prob"] if prediction else None
+    underdog = prediction["underdog"] if prediction else None
+    value = prediction.get("value") if prediction else None
+
+    # ── Snippet (1 line for homepage) ──
+    if fav and prob:
+        if prob >= 70:
+            snippet_parts.append(f"{fav} es amplio favorito ({prob}%)")
+            tone = "neutral"
+        elif prob >= 55:
+            snippet_parts.append(f"{fav} parte como favorito ({prob}%)")
+            tone = "neutral"
+        else:
+            snippet_parts.append(f"Partido parejo entre {home} y {away}")
+            tone = "exciting"
+
+        if value:
+            snippet_parts.append(f"{value['team']} puede dar la sorpresa ({value['odds']})")
+            tone = "exciting"
+    else:
+        snippet_parts.append(f"{home} recibe a {away}" if sport == "soccer"
+                             else f"{home} vs {away}")
+
+    snippet = ". ".join(snippet_parts) + "."
+
+    # ── Full preview (for /partido/ page) ──
+    # Opening line
+    sport_verb = {
+        "soccer": "se enfrentan",
+        "baseball": "chocan en el diamante",
+        "basketball": "se miden en la duela",
+        "football": "se enfrentan en el emparrillado",
+        "hockey": "chocan en el hielo",
+    }.get(sport, "se enfrentan")
+
+    full_parts.append(
+        f"{home} y {away} {sport_verb} en jornada de {league}."
+    )
+
+    # Odds analysis paragraph
+    if fav and prob:
+        if prob >= 70:
+            full_parts.append(
+                f"Las casas de apuestas dan como claro favorito a {fav} con un "
+                f"{prob}% de probabilidad implícita."
+            )
+        elif prob >= 55:
+            full_parts.append(
+                f"Según las cuotas, {fav} parte con ligera ventaja ({prob}% de "
+                f"probabilidad implícita), aunque {underdog} tiene opciones reales."
+            )
+        else:
+            full_parts.append(
+                f"Las cuotas reflejan un encuentro muy parejo — {fav} tiene apenas "
+                f"un {prob}% de probabilidad implícita. Cualquiera puede ganar."
+            )
+
+    # Value bet angle
+    if value:
+        full_parts.append(
+            f"Apuesta de valor: {value['team']} paga {value['odds']} — una cuota "
+            f"atractiva si crees en la sorpresa."
+        )
+
+    # Channel info
+    if broadcasts:
+        ch_names = [b.get("channel", "") for b in broadcasts[:3] if b.get("channel")]
+        if ch_names:
+            full_parts.append(
+                f"El partido se transmite por {', '.join(ch_names)}."
+            )
+
+    return {
+        "snippet": snippet,
+        "full": " ".join(full_parts),
+        "tone": tone,
     }
 
 
