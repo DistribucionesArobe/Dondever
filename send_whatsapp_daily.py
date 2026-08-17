@@ -634,19 +634,23 @@ async def send_daily_broadcast(test_number: str | None = None):
         logger.info("No subscribers")
         return {"sent": 0, "failed": 0}
 
-    # Deduplicate recipients by normalized phone number
+    # Deduplicate recipients and filter invalid phone numbers
     from meta_whatsapp import _normalize_to
     seen = set()
     unique_recipients = []
     for phone in recipients:
         norm = _normalize_to(phone)
+        # Skip invalid numbers (too short, empty, just "+")
+        if not norm or len(norm) < 8:
+            logger.warning(f"Skipping invalid phone: '{phone}' (normalized: '{norm}')")
+            continue
         if norm not in seen:
             seen.add(norm)
             unique_recipients.append(phone)
         else:
             logger.warning(f"Skipping duplicate phone: {phone} (normalized: {norm})")
     recipients = unique_recipients
-    logger.info(f"After dedup: {len(recipients)} unique recipients")
+    logger.info(f"After dedup+validation: {len(recipients)} valid recipients")
 
     sent = 0
     failed = 0

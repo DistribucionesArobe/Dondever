@@ -2124,11 +2124,14 @@ def _broadcast_already_ran_today() -> bool:
 
 
 @app.api_route("/whatsapp/broadcast-now", methods=["GET", "POST"])
-async def whatsapp_broadcast_now(token: str = "", force: str = ""):
+async def whatsapp_broadcast_now(
+    request: Request, token: str = "", force: str = "", sync: str = ""
+):
     """Disparar el broadcast diario ahora mismo a todos los suscriptores.
     Acepta GET y POST para compatibilidad con cron externos (cron-job.org, etc.).
     Usa Meta Cloud API (send_whatsapp_daily.py).
-    Añade &force=1 para ignorar la deduplicación diaria."""
+    Añade &force=1 para ignorar la deduplicación diaria.
+    Por defecto corre en background (no timeout). Añade &sync=1 para esperar."""
     admin_token = os.getenv("ADMIN_TOKEN", "")
     if not admin_token or token != admin_token:
         return {"ok": False, "error": "token invalido"}
@@ -2140,21 +2143,36 @@ async def whatsapp_broadcast_now(token: str = "", force: str = ""):
             "reason": f"Broadcast already ran today at {_last_broadcast['ran_at']}",
             "result": _last_broadcast["result"],
         }
-    try:
-        from send_whatsapp_daily import send_daily_broadcast
-        result = await send_daily_broadcast()
-        now = datetime.now(TZ_MX)
-        _last_broadcast["ran_at"] = now.isoformat()
-        _last_broadcast["date"] = now.strftime("%Y-%m-%d")
-        _last_broadcast["result"] = result
-        _last_broadcast["error"] = None
-        _last_broadcast["source"] = "endpoint"
-        return {"ok": True, "result": result}
-    except Exception as e:
-        _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
-        _last_broadcast["result"] = None
-        _last_broadcast["error"] = str(e)
-        return {"ok": False, "error": str(e), "type": type(e).__name__}
+
+    async def _run_broadcast():
+        try:
+            from send_whatsapp_daily import send_daily_broadcast
+            result = await send_daily_broadcast()
+            now = datetime.now(TZ_MX)
+            _last_broadcast["ran_at"] = now.isoformat()
+            _last_broadcast["date"] = now.strftime("%Y-%m-%d")
+            _last_broadcast["result"] = result
+            _last_broadcast["error"] = None
+            _last_broadcast["source"] = "endpoint"
+            logger.info(f"Broadcast endpoint completed: {result}")
+        except Exception as e:
+            _last_broadcast["ran_at"] = datetime.now(TZ_MX).isoformat()
+            _last_broadcast["result"] = None
+            _last_broadcast["error"] = str(e)
+            logger.error(f"Broadcast endpoint FAILED: {e}")
+
+    if sync == "1":
+        # Synchronous — wait for result (may timeout on slow hosts)
+        await _run_broadcast()
+        return {"ok": True, "result": _last_broadcast["result"], "error": _last_broadcast["error"]}
+    else:
+        # Fire-and-forget — respond immediately, run in background
+        asyncio.create_task(_run_broadcast())
+        return {
+            "ok": True,
+            "queued": True,
+            "message": "Broadcast started in background. Check /whatsapp/broadcast-status for results.",
+        }
 
 
 @app.get("/whatsapp/test-send")
