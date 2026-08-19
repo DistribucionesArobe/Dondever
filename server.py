@@ -5068,7 +5068,23 @@ async def push_summary_now(token: str = ""):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "dondever.app", "version": "1.0.0"}
+    import resource
+    mem_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024  # KB → MB on Linux
+    # On macOS ru_maxrss is in bytes, on Linux in KB
+    import sys
+    if sys.platform == "darwin":
+        mem_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
+    from sports_api import _cache, _tv_cache, _odds_cache, _summary_cache, _standings_cache, _meli_cache
+    from og_image import _og_cache
+    return {
+        "status": "ok",
+        "memory_mb": round(mem_mb, 1),
+        "caches": {
+            "espn": len(_cache), "tv": len(_tv_cache), "odds": len(_odds_cache),
+            "summary": len(_summary_cache), "standings": len(_standings_cache),
+            "meli": len(_meli_cache), "og_images": len(_og_cache),
+        },
+    }
 
 
 # ── Run ──────────────────────────────────────────────────
