@@ -2181,8 +2181,11 @@ async def whatsapp_broadcast_now(
 
 
 @app.get("/whatsapp/test-send")
-async def whatsapp_test_send(token: str = "", to: str = ""):
-    """Enviar UN mensaje de prueba a un número específico y devolver la respuesta completa de Meta."""
+async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "template"):
+    """Enviar UN mensaje de prueba a un número específico.
+    mode=template (default): usa template dondever_picks_diarios
+    mode=freeform: usa mensaje de texto libre (solo funciona en ventana 24h)
+    mode=both: prueba ambos y reporta cuál funcionó"""
     admin_token = os.getenv("ADMIN_TOKEN", "")
     if not admin_token or token != admin_token:
         return {"ok": False, "error": "token invalido"}
@@ -2191,25 +2194,33 @@ async def whatsapp_test_send(token: str = "", to: str = ""):
     try:
         from meta_whatsapp import send_template, send_text, _normalize_to
         normalized = _normalize_to(to)
+        results = {}
 
-        # Try picks_diarios template
-        result = send_template(
-            to,
-            template_name="dondever_picks_diarios",
-            language="en",
-            components=[{
-                "type": "body",
-                "parameters": [
-                    {"type": "text", "text": "⚾ Test mensaje de prueba. Responde VER. https://dondever.app/"},
-                ],
-            }],
-        )
+        if mode in ("template", "both"):
+            results["template"] = send_template(
+                to,
+                template_name="dondever_picks_diarios",
+                language="en",
+                components=[{
+                    "type": "body",
+                    "parameters": [
+                        {"type": "text", "text": "⚾ Test mensaje de prueba. Responde VER. https://dondever.app/"},
+                    ],
+                }],
+            )
+
+        if mode in ("freeform", "both"):
+            results["freeform"] = send_text(
+                to,
+                "🏆 *Test DondeVer* — Este es un mensaje de prueba.\n\n📱 dondever.app",
+            )
+
         return {
             "ok": True,
             "original_number": to,
             "normalized": normalized,
-            "template": "dondever_picks_diarios",
-            "result": result,
+            "mode": mode,
+            "results": results,
         }
     except Exception as e:
         import traceback
