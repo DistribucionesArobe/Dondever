@@ -2115,6 +2115,8 @@ async def whatsapp_debug():
 
 # Store last broadcast result for diagnostics + deduplication
 _last_broadcast = {"ran_at": None, "result": None, "error": None, "date": None}
+# Keep strong reference to background tasks so GC doesn't collect them mid-execution
+_background_tasks: set = set()
 
 
 def _broadcast_already_ran_today() -> bool:
@@ -2167,7 +2169,10 @@ async def whatsapp_broadcast_now(
         return {"ok": True, "result": _last_broadcast["result"], "error": _last_broadcast["error"]}
     else:
         # Fire-and-forget — respond immediately, run in background
-        asyncio.create_task(_run_broadcast())
+        # Keep strong reference so GC doesn't collect the task mid-execution
+        task = asyncio.create_task(_run_broadcast())
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
         return {
             "ok": True,
             "queued": True,
