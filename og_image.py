@@ -15,7 +15,7 @@ from cachetools import TTLCache
 logger = logging.getLogger("og_image")
 
 # Cache generated images for 2 hours (key = full URL path)
-_og_cache: TTLCache = TTLCache(maxsize=20, ttl=1800)  # 20 images, 30min — PNGs are ~100KB each
+_og_cache: TTLCache = TTLCache(maxsize=8, ttl=900)  # 8 images, 15min — PNGs are ~100KB each
 
 # Brand colors
 BG_COLOR = (26, 26, 46)       # #1a1a2e

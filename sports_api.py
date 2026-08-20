@@ -34,13 +34,13 @@ def _normalize_channel(raw: str) -> str:
 
 
 # Cache: 5 min TTL — reduced from 500 to 80 to fit in 512MB Render free tier
-_cache = TTLCache(maxsize=80, ttl=300)
+_cache = TTLCache(maxsize=25, ttl=300)  # ~15 active leagues, 25 gives headroom
 # TV cache: 4 hour TTL — reduced from 1000 to 100
-_tv_cache = TTLCache(maxsize=100, ttl=14400)
+_tv_cache = TTLCache(maxsize=30, ttl=14400)  # 30 events max
 # Track when TheSportsDB is rate-limiting us to avoid flooding with 429s
 _sportsdb_blocked_until = 0  # timestamp when we can retry
 # Odds cache: 6h TTL — reduced from 200 to 50
-_odds_cache = TTLCache(maxsize=50, ttl=21600)  # 6 hours
+_odds_cache = TTLCache(maxsize=20, ttl=21600)  # 6 hours
 _odds_request_count = 0  # track requests this process lifetime
 _ODDS_MONTHLY_BUDGET = 6000  # ~6,666 effective requests with 3-market calls
 
@@ -231,7 +231,7 @@ async def fetch_espn_scoreboard(
 
 # ── ESPN Event Summary (lineups, H2H, standings, leaders) ──
 
-_summary_cache = TTLCache(maxsize=30, ttl=300)  # 5 min, reduced from 200
+_summary_cache = TTLCache(maxsize=10, ttl=300)  # 5 min
 
 async def fetch_espn_event_summary(
     sport: str, league: str, event_id: str
@@ -1190,7 +1190,7 @@ TEAM_LEAGUE_MAP = {
 }
 
 # Standings cache: 1 hour TTL
-_standings_cache = TTLCache(maxsize=50, ttl=3600)
+_standings_cache = TTLCache(maxsize=15, ttl=3600)  # ~15 leagues
 
 
 async def fetch_standings(sport: str, league: str) -> list[dict]:
@@ -1761,7 +1761,7 @@ def _format_american_odds(price: int) -> str:
 
 # ── MercadoLibre Product Images (free public API) ──────────
 
-_meli_cache = TTLCache(maxsize=50, ttl=86400)  # 24h, reduced from 500
+_meli_cache = TTLCache(maxsize=15, ttl=14400)  # 4h, reduced from 24h/50
 
 
 async def fetch_meli_product_image(query: str) -> dict | None:
