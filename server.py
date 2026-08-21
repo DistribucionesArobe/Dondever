@@ -733,11 +733,16 @@ async def game_semantic(request: Request, slug: str):
 
     # Fetch odds
     odds = None
+    odds_comparison = None  # multi-bookmaker comparison data
     if game["status"]["state"] in ("pre", "in"):
         try:
             league_slug = game.get("league_slug", "")
             odds_list = await fetch_odds(league_slug)
             odds = match_full_odds_to_game(game, odds_list)
+            # Also get multi-bookmaker comparison from match_odds_to_game
+            multi = match_odds_to_game(game, odds_list)
+            if multi and multi.get("bookmakers"):
+                odds_comparison = multi["bookmakers"]  # list of up to 5 bookmakers
         except Exception as e:
             logger.warning(f"Odds fetch failed for game {event_id}: {e}")
 
@@ -870,6 +875,7 @@ async def game_semantic(request: Request, slug: str):
             "home_form": home_form, "away_form": away_form,
             "implied_probs": implied_probs,
             "match_preview": match_preview,
+            "odds_comparison": odds_comparison,
         }
     )
 
