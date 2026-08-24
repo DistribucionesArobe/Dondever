@@ -1331,6 +1331,50 @@ async def hockey_hoy(request: Request):
     return await _render_sport_today(request, "hockey-hoy")
 
 
+# ── Pronósticos / Apuestas Landing ────────────────────────
+
+@app.get("/pronosticos-hoy", response_class=HTMLResponse)
+async def pronosticos_hoy(request: Request):
+    """SEO landing page for betting queries: pronósticos, momios, picks del día."""
+    today = datetime.now(TZ_MX)
+    today_str = today.strftime("%Y%m%d")
+    all_games = await get_todays_games()
+
+    games_with_odds = []
+    for game in all_games:
+        if game["status"]["state"] not in ("pre", "in"):
+            continue
+        try:
+            league_slug = game.get("league_slug", "")
+            odds_list = await fetch_odds(league_slug)
+            odds = match_odds_to_game(game, odds_list)
+            if odds:
+                game["prediction"] = _quick_prediction_from_odds(game)
+                game["odds"] = odds
+                game["preview"] = generate_match_preview(game)
+                games_with_odds.append(game)
+        except Exception:
+            pass
+
+    return templates.TemplateResponse(request, "pronosticos.html", context={
+        "games": games_with_odds,
+        "today": today,
+        "total_games": len(all_games),
+    })
+
+
+@app.get("/momios-hoy", response_class=HTMLResponse)
+async def momios_hoy_redirect(request: Request):
+    """Redirect /momios-hoy → /pronosticos-hoy for SEO consolidation."""
+    return RedirectResponse(url="/pronosticos-hoy", status_code=301)
+
+
+@app.get("/apuestas-deportivas-hoy", response_class=HTMLResponse)
+async def apuestas_hoy_redirect(request: Request):
+    """Redirect /apuestas-deportivas-hoy → /pronosticos-hoy."""
+    return RedirectResponse(url="/pronosticos-hoy", status_code=301)
+
+
 # ── API Routes ───────────────────────────────────────────
 
 @app.get("/api/games")
@@ -2508,6 +2552,7 @@ async def robots_txt():
         "User-agent: *\n"
         "Allow: /\n"
         "Allow: /partido/\n"
+        "Allow: /pronosticos-hoy\n"
         "Allow: /liga/\n"
         "Disallow: /api/\n"
         "Disallow: /webhook/\n"
@@ -2727,6 +2772,7 @@ async def sitemap_xml():
         ("guia/mejores-streaming-deportes-mexico", "weekly", "0.8"),
         # donde-ver-champions-league redirects 301 → donde-ver-champions-en-mexico
         ("guia/como-ver-tudn-en-usa", "weekly", "0.8"),
+        ("pronosticos-hoy", "daily", "0.9"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
         # New "Como ver" guides

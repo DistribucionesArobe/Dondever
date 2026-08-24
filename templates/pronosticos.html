@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pron&oacute;sticos Deportivos Hoy: Momios, Picks y Apuestas — {{ today.strftime('%d/%m/%Y') }} | DondeVer</title>
+    <meta name="description" content="Pronósticos deportivos de hoy {{ today.strftime('%d de %B %Y') }}. Momios actualizados, picks del día y cuotas de {{ games|length }} partidos. Apuestas en Liga MX, MLB, NBA, NFL y más.">
+    <meta property="og:title" content="Pronósticos y Momios de Hoy — {{ today.strftime('%d/%m/%Y') }}">
+    <meta property="og:description" content="Momios, picks y pronósticos de {{ games|length }} partidos de hoy. Cuotas actualizadas para apostar.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://dondever.app/pronosticos-hoy">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta property="og:locale" content="es_MX">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pronósticos y Momios Hoy | DondeVer">
+    <meta name="twitter:description" content="Momios actualizados y picks del día. {{ games|length }} partidos con cuotas.">
+    <link rel="canonical" href="https://dondever.app/pronosticos-hoy">
+    {{ hreflang_tags(request.url) }}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Pronósticos Deportivos Hoy — Momios y Picks",
+      "description": "Pronósticos deportivos del día con momios actualizados, picks y cuotas de apuestas.",
+      "url": "https://dondever.app/pronosticos-hoy",
+      "publisher": {
+        "@type": "Organization",
+        "name": "DondeVer.app",
+        "url": "https://dondever.app"
+      }
+    }
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .container { max-width: 700px; margin: 0 auto; padding: 1rem; }
+        .header { text-align: center; padding: 1.5rem 0 1rem; }
+        .header h1 { font-size: 1.4rem; color: white; line-height: 1.3; }
+        .header .subtitle { font-size: 0.8rem; color: #9ca3af; margin-top: 0.4rem; }
+        .badge { display: inline-block; background: #059669; color: white; font-size: 0.65rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+        .intro { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; margin-bottom: 1.5rem; text-align: center; }
+        .pick-card { background: #111827; border: 1px solid #1e293b; border-radius: 12px; margin-bottom: 1rem; overflow: hidden; }
+        .pick-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem 0.5rem; }
+        .pick-league { font-size: 0.6rem; color: #6ee7b7; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+        .pick-time { font-size: 0.6rem; color: #9ca3af; margin-left: auto; }
+        .pick-teams { padding: 0 1rem; }
+        .pick-teams a { text-decoration: none; color: white; }
+        .pick-matchup { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; }
+        .pick-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: contain; }
+        .pick-team-name { font-size: 0.9rem; font-weight: 700; color: white; }
+        .pick-vs { font-size: 0.7rem; color: #6b7280; font-weight: 600; padding: 0.15rem 0; }
+        .pick-odds { display: flex; gap: 0.5rem; padding: 0.75rem 1rem; }
+        .odds-chip { flex: 1; background: #0f172a; border: 1px solid #374151; border-radius: 8px; padding: 0.5rem; text-align: center; text-decoration: none; transition: border-color 0.15s; }
+        .odds-chip:hover { border-color: #10b981; }
+        .odds-label { font-size: 0.55rem; color: #9ca3af; text-transform: uppercase; }
+        .odds-value { font-size: 1.1rem; font-weight: 800; color: #10b981; margin: 0.15rem 0; }
+        .odds-draw .odds-value { color: #f97316; }
+        .pick-analysis { padding: 0.5rem 1rem 0.75rem; border-top: 1px solid #1e293b; }
+        .pick-analysis-title { font-size: 0.65rem; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.3rem; }
+        .pick-analysis-text { font-size: 0.75rem; color: #94a3b8; line-height: 1.5; }
+        .pick-cta { display: flex; gap: 0.5rem; padding: 0 1rem 0.75rem; }
+        .btn-ver { flex: 1; display: block; text-align: center; padding: 0.5rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; text-decoration: none; }
+        .btn-partido { background: #1e293b; color: #38bdf8; }
+        .btn-apostar { background: #059669; color: white; }
+        .seo-block { margin: 2rem 0; padding: 1.5rem; background: #111827; border-radius: 12px; border: 1px solid #1e293b; }
+        .seo-block h2 { font-size: 1rem; color: white; margin-bottom: 0.75rem; }
+        .seo-block p { font-size: 0.8rem; color: #94a3b8; line-height: 1.7; margin-bottom: 0.75rem; }
+        .seo-block ul { list-style: none; padding: 0; }
+        .seo-block li { font-size: 0.8rem; color: #94a3b8; padding: 0.3rem 0; }
+        .seo-block li::before { content: "✓ "; color: #10b981; }
+        .nav-links { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin: 1.5rem 0; }
+        .nav-links a { font-size: 0.7rem; color: #38bdf8; background: #1e293b; padding: 0.35rem 0.75rem; border-radius: 6px; text-decoration: none; }
+        .footer { text-align: center; padding: 2rem 1rem; font-size: 0.65rem; color: #6b7280; }
+        .footer a { color: #059669; text-decoration: none; }
+        .empty-state { text-align: center; padding: 3rem 1rem; color: #6b7280; }
+        .empty-state h2 { font-size: 1rem; color: #9ca3af; margin-bottom: 0.5rem; }
+        .breadcrumb { font-size: 0.7rem; color: #6b7280; text-align: center; margin-bottom: 0.5rem; }
+        .breadcrumb a { color: #059669; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="breadcrumb">
+        <a href="/">Inicio</a> &rsaquo; Pronósticos de hoy
+    </div>
+    <div class="header">
+        <div class="badge">Actualizado hoy</div>
+        <h1>Pron&oacute;sticos Deportivos Hoy: Momios y Picks del D&iacute;a</h1>
+        <div class="subtitle">{{ today.strftime('%A %d de %B, %Y') }} &mdash; {{ games|length }} partidos con cuotas</div>
+    </div>
+
+    <p class="intro">
+        Momios actualizados y pron&oacute;sticos para los {{ games|length }} partidos de hoy.
+        Cuotas de las mejores casas de apuestas para que tomes la mejor decisi&oacute;n.
+    </p>
+
+    {% if games %}
+    {% for game in games %}
+    {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+    {% set left_team = game.home if home_left else game.away %}
+    {% set right_team = game.away if home_left else game.home %}
+    {% set odds = game.odds %}
+    {% set left_odds = odds.home_odds if home_left else odds.away_odds %}
+    {% set right_odds = odds.away_odds if home_left else odds.home_odds %}
+    <div class="pick-card">
+        <div class="pick-header">
+            <span class="pick-league">{{ game.league_name }}</span>
+            <span class="pick-time">{{ game.status.display }}</span>
+        </div>
+        <div class="pick-teams">
+            <a href="{{ game|game_url }}">
+                <div class="pick-matchup">
+                    {% if left_team.logo %}<img src="{{ left_team.logo }}" alt="{{ left_team.name }}" class="pick-logo" loading="lazy">{% endif %}
+                    <span class="pick-team-name">{{ left_team.name }}</span>
+                </div>
+                <div class="pick-vs">vs</div>
+                <div class="pick-matchup">
+                    {% if right_team.logo %}<img src="{{ right_team.logo }}" alt="{{ right_team.name }}" class="pick-logo" loading="lazy">{% endif %}
+                    <span class="pick-team-name">{{ right_team.name }}</span>
+                </div>
+            </a>
+        </div>
+        <div class="pick-odds">
+            <a href="/go/betsson?s=pronosticos" target="_blank" rel="sponsored nofollow noopener" class="odds-chip">
+                <div class="odds-label">{{ left_team.name[:12] }}</div>
+                <div class="odds-value">{{ left_odds or '—' }}</div>
+            </a>
+            {% if odds.draw_odds %}
+            <a href="/go/betsson?s=pronosticos" target="_blank" rel="sponsored nofollow noopener" class="odds-chip odds-draw">
+                <div class="odds-label">Empate</div>
+                <div class="odds-value">{{ odds.draw_odds }}</div>
+            </a>
+            {% endif %}
+            <a href="/go/betsson?s=pronosticos" target="_blank" rel="sponsored nofollow noopener" class="odds-chip">
+                <div class="odds-label">{{ right_team.name[:12] }}</div>
+                <div class="odds-value">{{ right_odds or '—' }}</div>
+            </a>
+        </div>
+        {% if game.preview %}
+        <div class="pick-analysis">
+            <div class="pick-analysis-title">Pron&oacute;stico</div>
+            <div class="pick-analysis-text">{{ game.preview.snippet }}</div>
+        </div>
+        {% endif %}
+        <div class="pick-cta">
+            <a href="{{ game|game_url }}" class="btn-ver btn-partido">Ver Partido</a>
+            <a href="/go/betsson?s=pronosticos-cta" target="_blank" rel="sponsored nofollow noopener" class="btn-ver btn-apostar">Apostar</a>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <h2>No hay partidos con momios disponibles ahora</h2>
+        <p>Los pron&oacute;sticos se actualizan cuando hay partidos programados. Vuelve m&aacute;s tarde.</p>
+        <a href="/" class="btn-ver btn-partido" style="display:inline-block;margin-top:1rem;">Ver todos los partidos</a>
+    </div>
+    {% endif %}
+
+    <div class="nav-links">
+        <a href="/">Partidos de hoy</a>
+        <a href="/guia/mejores-casas-apuestas-liga-mx">Casas de apuestas</a>
+        <a href="/canales">Canales de TV</a>
+        <a href="/equipos">Equipos</a>
+    </div>
+
+    {# SEO content block — keyword-rich evergreen text #}
+    <div class="seo-block">
+        <h2>Pron&oacute;sticos y Momios Deportivos de Hoy en M&eacute;xico</h2>
+        <p>En DondeVer.app publicamos diariamente los <strong>pron&oacute;sticos deportivos</strong> y <strong>momios actualizados</strong> de los partidos m&aacute;s importantes. Nuestras cuotas provienen de las mejores casas de apuestas con licencia, incluyendo los momios de <strong>Liga MX</strong>, <strong>MLB</strong>, <strong>NBA</strong>, <strong>NFL</strong>, <strong>Champions League</strong> y m&aacute;s.</p>
+        <p>Cada pron&oacute;stico incluye un <strong>an&aacute;lisis</strong> basado en la probabilidad impl&iacute;cita de los momios, la forma reciente de los equipos y el contexto del partido. Nuestros picks del d&iacute;a te ayudan a identificar las mejores <strong>apuestas de valor</strong>.</p>
+        <h2>&iquest;C&oacute;mo leer los momios?</h2>
+        <p>Los momios americanos indican cu&aacute;nto puedes ganar. Un momio de <strong>-150</strong> significa que necesitas apostar $150 para ganar $100. Un momio de <strong>+200</strong> significa que con $100 ganas $200. Mientras m&aacute;s negativo el momio, m&aacute;s favorito es el equipo.</p>
+    </div>
+
+    <div class="seo-block">
+        <h2>&iquest;D&oacute;nde apostar en l&iacute;nea desde M&eacute;xico?</h2>
+        <p>Las <strong>mejores casas de apuestas</strong> disponibles en M&eacute;xico y Latinoam&eacute;rica incluyen opciones con licencia que ofrecen momios competitivos en todos los deportes. Consulta nuestra <a href="/guia/mejores-casas-apuestas-liga-mx" style="color:#10b981;">gu&iacute;a de casas de apuestas</a> para comparar opciones.</p>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2026 <a href="/">DondeVer.app</a> | Apuesta responsablemente. Solo mayores de 18.</p>
+        <p style="margin-top:0.3rem;"><a href="/sobre-nosotros">Sobre nosotros</a> &middot; <a href="/privacidad">Privacidad</a> &middot; <a href="/terminos">T&eacute;rminos</a></p>
+    </footer>
+</div>
+</body>
+</html>

@@ -6,11 +6,11 @@
     {% set home_left_meta = game.sport in ('soccer', 'boxing', 'mma') %}
     {% set first_team = game.home.name if home_left_meta else game.away.name %}
     {% set second_team = game.away.name if home_left_meta else game.home.name %}
-    <title>{{ first_team }} vs {{ second_team }}: d&oacute;nde ver hoy, horario, canal{% if odds %} y cuotas{% endif %} — {{ game.league_name }} | DondeVer</title>
-    <meta name="description" content="Donde ver {{ first_team }} vs {{ second_team }} en vivo. {{ game.league_name }}. Hora, canales de TV y streaming para Mexico, USA y Latinoamerica. {% if game.broadcasts %}Transmite: {{ game.broadcasts[0].channel }}{% endif %}">
+    <title>{{ first_team }} vs {{ second_team }}: {% if odds %}Momios, Pron&oacute;stico y {% endif %}D&oacute;nde Ver Hoy — {{ game.league_name }} | DondeVer</title>
+    <meta name="description" content="{% if odds %}Momios, pronóstico y apuestas de {{ first_team }} vs {{ second_team }}. Cuotas actualizadas y picks. {% endif %}Dónde ver en vivo: hora, canales de TV y streaming para México, USA y Latinoamérica.{% if game.broadcasts %} Transmite: {{ game.broadcasts[0].channel }}.{% endif %}">
     <!-- Open Graph -->
-    <meta property="og:title" content="Donde ver {{ first_team }} vs {{ second_team }} hoy">
-    <meta property="og:description" content="{{ game.league_name }} en vivo. Canales de TV y streaming en Mexico, USA y Latinoamerica.">
+    <meta property="og:title" content="{{ first_team }} vs {{ second_team }}: {% if odds %}Momios y Pronóstico{% else %}Dónde Ver Hoy{% endif %}">
+    <meta property="og:description" content="{% if odds %}Cuotas, pronóstico y picks. {% endif %}{{ game.league_name }} en vivo — canales de TV y streaming en México, USA y Latinoamérica.">
     <meta property="og:type" content="article">
     <meta property="og:url" content="{{ app_url }}{{ game|game_url }}">
     <meta property="og:site_name" content="DondeVer.app">
@@ -22,8 +22,8 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="{{ app_url }}/og/partido/{{ game|game_url|replace('/partido/', '') }}.png">
     <meta name="twitter:site" content="@dondeverapp">
-    <meta name="twitter:title" content="Donde ver {{ game.away.name }} vs {{ game.home.name }}">
-    <meta name="twitter:description" content="{{ game.league_name }} - Canales de TV y streaming en Mexico, USA y Latinoamerica">
+    <meta name="twitter:title" content="{{ first_team }} vs {{ second_team }}: {% if odds %}Momios y Pronóstico{% else %}Dónde Ver{% endif %}">
+    <meta name="twitter:description" content="{% if odds %}Cuotas actualizadas, pronóstico y picks. {% endif %}{{ game.league_name }} — canales y streaming en México y LATAM">
     <link rel="canonical" href="{{ app_url }}{{ game|game_url }}">
     {{ hreflang_tags(request.url) }}
     <!-- JSON-LD Structured Data: SportsEvent -->
@@ -32,7 +32,7 @@
       "@context": "https://schema.org",
       "@type": "SportsEvent",
       "name": "{{ game.away.name }} vs {{ game.home.name }}",
-      "description": "Donde ver {{ game.away.name }} vs {{ game.home.name }} de {{ game.league_name }} en vivo. Canales de TV y streaming para Mexico, USA y Latinoamerica.",
+      "description": "{% if odds %}Momios, pronóstico y {% endif %}dónde ver {{ game.away.name }} vs {{ game.home.name }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.",
       "startDate": "{{ game.date }}",
       "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.display == 'Postponed' %}EventPostponed{% elif game.status.display == 'Cancelled' %}EventCancelled{% else %}EventScheduled{% endif %}",
       "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
@@ -343,7 +343,7 @@
         <a href="/liga/{{ game.league_slug }}">{{ game.league_name }}</a> &rsaquo;
         <span>{{ first_team }} vs {{ second_team }}</span>
     </nav>
-    <h1 class="game-h1">{{ first_team }} vs {{ second_team }}: d&oacute;nde ver hoy, horario, canal{% if odds %} y cuotas{% endif %} &mdash; {{ game.league_name }}</h1>
+    <h1 class="game-h1">{{ first_team }} vs {{ second_team }}: {% if odds %}Momios, Pron&oacute;stico y {% endif %}D&oacute;nde Ver Hoy &mdash; {{ game.league_name }}</h1>
 
     <div class="game-hero">
         <div class="league-badge">{{ game.emoji }} {{ game.league_name }}</div>
@@ -387,7 +387,7 @@
             {# Header #}
             <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">
                 <div style="font-size:1.1rem;">📰</div>
-                <div style="font-size:0.8rem;font-weight:700;color:#38bdf8;text-transform:uppercase;letter-spacing:0.05em;">Análisis del Partido</div>
+                <h2 style="font-size:0.8rem;font-weight:700;color:#38bdf8;text-transform:uppercase;letter-spacing:0.05em;margin:0;">Pron&oacute;stico y An&aacute;lisis: {{ first_team }} vs {{ second_team }}</h2>
                 {% if match_preview.tone %}
                 <div style="margin-left:auto;display:flex;align-items:center;gap:0.35rem;">
                     {% if match_preview.tone == 'exciting' %}
@@ -1052,7 +1052,7 @@
     <div id="momios" style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
         <div style="background:linear-gradient(135deg,#1a1a2e,#2d2b55);border-radius:14px;padding:1.25rem;color:white;">
             <div style="text-align:center;margin-bottom:1rem;">
-                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#10b981;font-weight:600;">Momios / Odds</div>
+                <h2 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#10b981;font-weight:600;margin:0;">Momios {{ first_team }} vs {{ second_team }} &mdash; Cuotas de Apuestas</h2>
                 <div style="font-size:0.65rem;color:#9ca3af;margin-top:0.15rem;">via {{ odds.bookmaker }}</div>
             </div>
 
@@ -1352,6 +1352,22 @@
                     {% endfor %}
                     {% if not ru %}<div style="font-size:0.7rem;color:#9ca3af;text-align:center;">Sin pr&oacute;ximos</div>{% endif %}
                 </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── SEO betting content block ── #}
+    {% if odds %}
+    <div style="max-width:650px;margin:0 auto 1rem;padding:0 1rem;">
+        <div style="background:var(--bg-card,white);border:1px solid var(--border-main,#e5e7eb);border-radius:10px;padding:1rem;">
+            <h3 style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#6b7280);text-transform:uppercase;letter-spacing:0.04em;margin:0 0 0.5rem;">Apuestas {{ first_team }} vs {{ second_team }}</h3>
+            <p style="font-size:0.75rem;color:var(--text-secondary,#6b7280);line-height:1.6;margin:0 0 0.5rem;">
+                Los <strong>momios</strong> de {{ first_team }} vs {{ second_team }} de {{ game.league_name }} est&aacute;n disponibles en las principales casas de apuestas. Consulta las <strong>cuotas actualizadas</strong> y nuestro <strong>pron&oacute;stico</strong> arriba para tomar la mejor decisi&oacute;n antes del partido.
+            </p>
+            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+                <a href="/pronosticos-hoy" style="font-size:0.68rem;font-weight:600;color:white;background:#059669;padding:0.25rem 0.6rem;border-radius:5px;text-decoration:none;">Pron&oacute;sticos de hoy &rarr;</a>
+                <a href="/guia/mejores-casas-apuestas-liga-mx" style="font-size:0.68rem;font-weight:600;color:#10b981;background:var(--bg-muted,#f3f4f6);padding:0.25rem 0.6rem;border-radius:5px;text-decoration:none;">Casas de apuestas &rarr;</a>
             </div>
         </div>
     </div>
