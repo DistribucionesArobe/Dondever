@@ -1169,6 +1169,100 @@ LEAGUE_SEO_EXTRA = {
     },
 }
 
+# ── NFL team-specific SEO content for popular teams in Mexico ──
+NFL_TEAM_EXTRA = {
+    "cowboys": {
+        "division": "NFC Este",
+        "conference": "NFC",
+        "stadium": "AT&T Stadium, Arlington, TX",
+        "channels_mx": "Canal 5 (abierta), FOX Sports, ESPN (Disney+), DAZN (NFL Game Pass)",
+        "seo_h2": "Donde ver a los Dallas Cowboys en Mexico 2026",
+        "seo_p": "Los Dallas Cowboys son el equipo mas popular de la NFL en Mexico. Sus juegos se transmiten frecuentemente por Canal 5 en senal abierta, FOX Sports y ESPN. Dallas compite en la Division Este de la NFC y juega de local en el AT&T Stadium en Arlington, Texas. En DondeVer.app te mostramos el canal exacto para cada partido de los Cowboys con horario de Mexico.",
+        "fun_fact": "Los Cowboys son conocidos como 'America's Team' y tienen una de las aficiones mas grandes en Mexico, donde se les llama carinosamente 'Los Vaqueros'.",
+    },
+    "chiefs": {
+        "division": "AFC Oeste",
+        "conference": "AFC",
+        "stadium": "GEHA Field at Arrowhead Stadium, Kansas City, MO",
+        "channels_mx": "Canal 5 (abierta), FOX Sports, ESPN (Disney+), DAZN (NFL Game Pass)",
+        "seo_h2": "Donde ver a los Kansas City Chiefs en Mexico 2026",
+        "seo_p": "Los Kansas City Chiefs, liderados por Patrick Mahomes, son uno de los equipos mas seguidos en Mexico tras ganar multiples Super Bowls recientes. Sus partidos se transmiten por Canal 5, FOX Sports y ESPN. Kansas City juega en la Division Oeste de la AFC. En DondeVer.app encuentras el canal confirmado para cada juego de los Chiefs.",
+        "fun_fact": "Los Chiefs han jugado partidos de temporada regular en el Estadio Azteca de la Ciudad de Mexico como parte del programa NFL Mexico.",
+    },
+    "raiders": {
+        "division": "AFC Oeste",
+        "conference": "AFC",
+        "stadium": "Allegiant Stadium, Las Vegas, NV",
+        "channels_mx": "Canal 5 (abierta), FOX Sports, ESPN (Disney+), DAZN (NFL Game Pass)",
+        "seo_h2": "Donde ver a los Las Vegas Raiders en Mexico 2026",
+        "seo_p": "Los Las Vegas Raiders tienen una de las aficiones mas fieles en Mexico, herencia de sus anos como Oakland Raiders. Juegan en la Division Oeste de la AFC en el moderno Allegiant Stadium de Las Vegas. Sus partidos se transmiten por Canal 5, FOX y ESPN. DondeVer.app te dice en que canal pasan cada juego de los Raiders.",
+        "fun_fact": "Los Raiders fueron el primer equipo de la NFL en jugar un partido de temporada regular en Mexico (2005) y mantienen una enorme base de fans en el pais.",
+    },
+    "seahawks": {
+        "division": "NFC Oeste",
+        "conference": "NFC",
+        "stadium": "Lumen Field, Seattle, WA",
+        "channels_mx": "Canal 5 (abierta), FOX Sports, ESPN (Disney+), DAZN (NFL Game Pass)",
+        "seo_h2": "Donde ver a los Seattle Seahawks en Mexico 2026",
+        "seo_p": "Los Seattle Seahawks son muy populares en Mexico gracias a su estilo de juego agresivo. Juegan en la Division Oeste de la NFC en el Lumen Field de Seattle. Sus juegos se transmiten por FOX Sports, ESPN y ocasionalmente Canal 5. Consulta DondeVer.app para saber en que canal pasan cada partido de los Seahawks.",
+        "fun_fact": "El Lumen Field es famoso por el ruido de sus fans — los '12s' — que han provocado temblores registrados por sismografos cercanos.",
+    },
+    "dolphins": {
+        "division": "AFC Este",
+        "conference": "AFC",
+        "stadium": "Hard Rock Stadium, Miami Gardens, FL",
+        "channels_mx": "Canal 5 (abierta), FOX Sports, ESPN (Disney+), DAZN (NFL Game Pass)",
+        "seo_h2": "Donde ver a los Miami Dolphins en Mexico 2026",
+        "seo_p": "Los Miami Dolphins, conocidos como 'Los Delfines', cuentan con una gran aficion en Mexico. Juegan en la Division Este de la AFC en el Hard Rock Stadium de Miami. Sus partidos se transmiten por Canal 5, FOX, CBS y ESPN. En DondeVer.app te decimos donde ver cada juego de los Dolphins con horario de Mexico.",
+        "fun_fact": "Los Dolphins son el unico equipo en la historia de la NFL en completar una temporada perfecta (1972), incluyendo el Super Bowl.",
+    },
+    "patriots": {
+        "division": "AFC Este",
+        "conference": "AFC",
+        "stadium": "Gillette Stadium, Foxborough, MA",
+        "channels_mx": "Canal 5 (abierta), FOX Sports, ESPN (Disney+), DAZN (NFL Game Pass)",
+        "seo_h2": "Donde ver a los New England Patriots en Mexico 2026",
+        "seo_p": "Los New England Patriots, con su legado de 6 Super Bowls en la era Brady-Belichick, mantienen una fuerte presencia en Mexico. Juegan en la Division Este de la AFC en el Gillette Stadium. Sus partidos se ven por Canal 5, FOX y ESPN. DondeVer.app te muestra el canal de cada juego de los Patriots.",
+        "fun_fact": "Los Patriots ganaron 6 Super Bowls entre 2001 y 2018, convirtiendose en una de las dinastias mas grandes del deporte profesional.",
+    },
+    "49ers": {
+        "division": "NFC Oeste",
+        "conference": "NFC",
+        "stadium": "Levi's Stadium, Santa Clara, CA",
+        "channels_mx": "Canal 5 (abierta), FOX Sports, ESPN (Disney+), DAZN (NFL Game Pass)",
+        "seo_h2": "Donde ver a los San Francisco 49ers en Mexico 2026",
+        "seo_p": "Los San Francisco 49ers son uno de los equipos con mas tradicion en la NFL, con 5 titulos de Super Bowl. Juegan en la Division Oeste de la NFC en el Levi's Stadium. Sus partidos se transmiten por FOX, Canal 5 y ESPN. En DondeVer.app encuentras el canal confirmado para cada juego de los 49ers.",
+        "fun_fact": "Los 49ers dominaron la NFL en los anos 80 y 90 con Joe Montana y Steve Young, y siguen siendo uno de los equipos mas populares en la costa oeste de Mexico.",
+    },
+    "eagles": {
+        "division": "NFC Este",
+        "conference": "NFC",
+        "stadium": "Lincoln Financial Field, Philadelphia, PA",
+        "channels_mx": "Canal 5 (abierta), FOX Sports, ESPN (Disney+), DAZN (NFL Game Pass)",
+        "seo_h2": "Donde ver a los Philadelphia Eagles en Mexico 2026",
+        "seo_p": "Los Philadelphia Eagles, conocidos como 'Las Aguilas', han ganado popularidad en Mexico tras sus recientes apariciones en el Super Bowl. Juegan en la Division Este de la NFC en el Lincoln Financial Field. Sus juegos se ven por FOX, Canal 5 y ESPN. DondeVer.app te dice donde ver cada partido de los Eagles.",
+        "fun_fact": "La aficion de los Eagles es considerada una de las mas apasionadas y exigentes de toda la NFL.",
+    },
+    "steelers": {
+        "division": "AFC Norte",
+        "conference": "AFC",
+        "stadium": "Acrisure Stadium, Pittsburgh, PA",
+        "channels_mx": "Canal 5 (abierta), CBS, FOX Sports, ESPN (Disney+), DAZN",
+        "seo_h2": "Donde ver a los Pittsburgh Steelers en Mexico 2026",
+        "seo_p": "Los Pittsburgh Steelers, con sus 6 titulos de Super Bowl, son un equipo historico de la NFL con seguidores en todo Mexico. Juegan en la Division Norte de la AFC. Sus partidos se transmiten por CBS, FOX y ESPN. En DondeVer.app te decimos donde ver cada juego de los Steelers.",
+        "fun_fact": "Los Steelers poseen el record de mas Super Bowls ganados (6) empatados con los Patriots.",
+    },
+    "packers": {
+        "division": "NFC Norte",
+        "conference": "NFC",
+        "stadium": "Lambeau Field, Green Bay, WI",
+        "channels_mx": "Canal 5 (abierta), FOX Sports, ESPN (Disney+), DAZN (NFL Game Pass)",
+        "seo_h2": "Donde ver a los Green Bay Packers en Mexico 2026",
+        "seo_p": "Los Green Bay Packers son el unico equipo de propiedad comunitaria en la NFL y juegan en el legendario Lambeau Field. Compiten en la Division Norte de la NFC. Sus partidos se transmiten por FOX, Canal 5 y ESPN. Consulta DondeVer.app para ver en que canal pasan cada juego de los Packers.",
+        "fun_fact": "El Lambeau Field, conocido como 'The Frozen Tundra', es uno de los estadios mas iconicos del deporte mundial.",
+    },
+}
+
 
 @app.get("/liga/{league_slug}", response_class=HTMLResponse)
 async def league_page(request: Request, league_slug: str):
@@ -2931,11 +3025,13 @@ async def sitemap_xml():
             all_team_slugs.add(_slugify_team(game[side]["name"]))
     all_team_slugs.discard("")
     for team_slug in sorted(all_team_slugs):
+        # NFL teams get higher priority (season starting Sept 2026)
+        t_priority = "0.8" if team_slug in NFL_TEAM_EXTRA else "0.7"
         urls.append(
             f'  <url>\n    <loc>{APP_URL}/equipo/{team_slug}</loc>\n'
             f'    <lastmod>{today_str}</lastmod>\n'
             f'    <changefreq>daily</changefreq>\n'
-            f'    <priority>0.7</priority>\n  </url>'
+            f'    <priority>{t_priority}</priority>\n  </url>'
         )
 
     # Team × Country pages (programmatic SEO: "donde ver america en colombia")
@@ -4172,6 +4268,7 @@ async def team_page(request: Request, team_slug: str):
         "form_guide": form_guide,
         "faq_items": faq_items,
         "top_channels": top_channels,
+        "nfl_team_extra": NFL_TEAM_EXTRA.get(team_slug) if team_sport == "futbol americano" else None,
     })
 
 

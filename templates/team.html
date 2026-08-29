@@ -3,11 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if nfl_team_extra %}
+    <title>D&oacute;nde ver {{ team_name }} hoy en vivo: canal en M&eacute;xico, horario NFL | DondeVer</title>
+    <meta name="description" content="D&oacute;nde ver a {{ team_name }} hoy en vivo en M&eacute;xico. Canal de TV (Canal 5, FOX, ESPN), horario, streaming, momios y resultados NFL actualizados. {{ nfl_team_extra.division }}.">
+    <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal mexico, {{ team_aka }}, NFL en vivo, {{ team_name }} horario mexico, {{ team_name }} canal 5, {{ team_name }} fox sports">
+    {% else %}
     <title>D&oacute;nde ver {{ team_name }} hoy en vivo: horario, canal y TV | DondeVer</title>
     <meta name="description" content="D&oacute;nde ver a {{ team_name }} hoy en vivo. Horario, canal de TV, streaming y cuotas de {{ team_league }} en M&eacute;xico, USA y Latinoam&eacute;rica. Toda la informaci&oacute;n actualizada.">
     <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal, {{ team_aka }}, {{ team_league }} en vivo, {{ team_name }} horario">
+    {% endif %}
+    {% if nfl_team_extra %}
+    <meta property="og:title" content="D&oacute;nde ver {{ team_name }} hoy en vivo: canal en M&eacute;xico, horario NFL | DondeVer">
+    <meta property="og:description" content="Canal de TV, horario y streaming de {{ team_name }} (NFL) en M&eacute;xico. {{ nfl_team_extra.division }}.">
+    {% else %}
     <meta property="og:title" content="D&oacute;nde ver {{ team_name }} hoy en vivo: horario, canal y TV | DondeVer">
     <meta property="og:description" content="Horario, canal de TV y streaming de {{ team_name }} ({{ team_league }}) en M&eacute;xico, USA y Latinoam&eacute;rica.">
+    {% endif %}
     <meta property="og:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -887,8 +898,15 @@
                 <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
                 <p>{{ team_name }} es uno de los equipos de la {{ team_league }}, la liga de baloncesto más seguida del planeta. La temporada regular de la NBA va de octubre a abril, seguida por los playoffs y las Finales. Los partidos de {{ team_name }} se pueden ver en Mexico, USA y Latinoamerica a través de varios canales y plataformas de streaming que actualizamos a diario en DondeVer.app.</p>
                 {% elif team_sport == 'futbol americano' %}
-                <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
-                <p>{{ team_name }} compite en la {{ team_league }}, la liga de fútbol americano con mayor audiencia en el mundo. La temporada de la NFL inicia en septiembre y culmina con el Super Bowl en febrero. Los juegos de {{ team_name }} se transmiten en México por TV abierta y cable, además de plataformas de streaming. Aquí en DondeVer.app te decimos exactamente dónde verlos.</p>
+                <h3>{{ team_name }} en la {{ team_league }} — Temporada 2026-27</h3>
+                {% if nfl_team_extra %}
+                <p>{{ nfl_team_extra.seo_p }}</p>
+                <p><strong>Division:</strong> {{ nfl_team_extra.division }} · <strong>Conferencia:</strong> {{ nfl_team_extra.conference }} · <strong>Estadio:</strong> {{ nfl_team_extra.stadium }}</p>
+                <p><strong>Canales en Mexico:</strong> {{ nfl_team_extra.channels_mx }}</p>
+                <p style="font-style:italic;color:#6b7280;">{{ nfl_team_extra.fun_fact }}</p>
+                {% else %}
+                <p>{{ team_name }} compite en la {{ team_league }}, la liga de fútbol americano con mayor audiencia en el mundo. La temporada 2026 de la NFL arranca el 9 de septiembre y culmina con el Super Bowl LXI en febrero de 2027. Los juegos de {{ team_name }} se transmiten en México por Canal 5 (TV abierta), FOX Sports, ESPN (Disney+) y DAZN con NFL Game Pass. Aquí en DondeVer.app te decimos exactamente dónde verlos.</p>
+                {% endif %}
                 {% elif team_sport == 'hockey' %}
                 <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
                 <p>{{ team_name }} juega en la {{ team_league }}, la principal liga de hockey sobre hielo. Los partidos de la NHL se transmiten en diversas plataformas. En DondeVer.app encontrarás los canales y horarios actualizados para seguir a {{ team_name }}.</p>
@@ -914,9 +932,18 @@
                 <p>Los canales de la NBA cambian segun el partido y la semana. En DondeVer.app mostramos el canal confirmado para cada juego de {{ team_name }} actualizado en tiempo real.</p>
                 <p>Cubrimos TV abierta, cable y streaming en Mexico, Estados Unidos y Latinoamerica.</p>
                 {% elif team_sport == 'futbol americano' %}
-                <h2>Cómo ver a {{ team_name }} (NFL) en Mexico, USA y Latinoamerica</h2>
+                <h2>Cómo ver a {{ team_name }} (NFL) en Mexico 2026</h2>
+                {% if nfl_team_extra %}
+                <h3>TV abierta</h3>
+                <p>Canal 5 (Televisa) transmite juegos selectos de la NFL cada domingo y en fechas especiales como Thanksgiving y playoffs. Si {{ team_name }} juega en horario estelar o es el juego destacado de la semana, es probable que lo pasen por Canal 5 gratis.</p>
+                <h3>Cable y streaming</h3>
+                <p>FOX Sports y ESPN (via Disney+) cubren la mayoria de los juegos de la NFL en Mexico. DAZN ofrece NFL Game Pass con todos los partidos en vivo y on-demand. Netflix transmite juegos selectos de la temporada 2026.</p>
+                <h3>Horarios en Mexico</h3>
+                <p>Los juegos de {{ team_name }} generalmente se transmiten los domingos a las 12:00 PM o 3:25 PM (hora centro de Mexico), con juegos de domingo por la noche a las 7:20 PM y Monday Night Football a las 7:15 PM. DondeVer.app te muestra el horario exacto de cada partido.</p>
+                {% else %}
                 <p>La NFL reparte sus juegos entre multiples cadenas y plataformas que rotan cada semana. En DondeVer.app te decimos exactamente donde ver cada partido de {{ team_name }} con el canal confirmado en tiempo real.</p>
                 <p>Cubrimos TV abierta, cable y streaming en Mexico, Estados Unidos y Latinoamerica.</p>
+                {% endif %}
                 {% elif team_sport == 'hockey' %}
                 <h2>Cómo ver a {{ team_name }} (NHL) en Mexico, USA y Latinoamerica</h2>
                 <p>Los partidos de la NHL se transmiten en diferentes canales segun el juego. En DondeVer.app mostramos el canal confirmado para cada partido de {{ team_name }} en tiempo real.</p>
@@ -936,6 +963,22 @@
                     <div class="faq-answer">{{ faq.a }}</div>
                 </div>
                 {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if nfl_team_extra %}
+            <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;">
+                <h3 style="font-size:0.9rem;margin-bottom:0.5rem;color:#1a1a2e;">Equipos NFL populares en Mexico</h3>
+                <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                    {% for slug, label in [('cowboys','Cowboys'),('chiefs','Chiefs'),('raiders','Raiders'),('seahawks','Seahawks'),('dolphins','Dolphins'),('49ers','49ers'),('eagles','Eagles'),('steelers','Steelers'),('packers','Packers'),('patriots','Patriots')] %}
+                    {% if slug != team_slug %}
+                    <a href="/equipo/{{ slug }}" style="font-size:0.75rem;padding:4px 10px;background:#f3f4f6;border-radius:6px;color:#374151;text-decoration:none;">{{ label }}</a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <div style="margin-top:0.5rem;">
+                    <a href="/liga/nfl" style="font-size:0.8rem;color:#10b981;text-decoration:none;font-weight:600;">Ver todos los partidos NFL &rarr;</a>
+                </div>
             </div>
             {% endif %}
         </div>
