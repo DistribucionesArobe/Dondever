@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if league_slug == 'nfl' %}
+    <title>NFL hoy en vivo: D&oacute;nde ver, horarios, canales y resultados | DondeVer.app</title>
+    <meta name="description" content="NFL en vivo hoy: partidos, horarios y dónde verlos en México. Canales confirmados (Canal 5, FOX, ESPN, DAZN), resultados, standings y momios actualizados.">
+    {% else %}
     <title>{{ league_name }} en vivo hoy — Partidos, horarios y resultados | DondeVer.app</title>
     <meta name="description" content="{{ league_name }} en vivo hoy: partidos, horarios, resultados y tabla de posiciones. Consulta que juegos hay ahora y donde verlos en Mexico, USA y Latinoamerica.">
+    {% endif %}
     <!-- Open Graph -->
     <meta property="og:title" content="{{ league_name }} en vivo hoy — Partidos y resultados | DondeVer">
     <meta property="og:description" content="{{ league_name }} hoy: partidos en vivo, horarios, resultados y tabla de posiciones actualizada.">
@@ -222,8 +227,13 @@
 </header>
 
 <div class="hero">
+    {% if league_slug == 'nfl' %}
+    <h1>{{ emoji }} NFL hoy en vivo: D&oacute;nde ver, horarios y resultados</h1>
+    <p>Todos los partidos de la NFL con canales confirmados para M&eacute;xico (Canal 5, FOX, ESPN), horarios y resultados en tiempo real.</p>
+    {% else %}
     <h1>{{ emoji }} {{ league_name }} en vivo hoy — Partidos y resultados</h1>
     <p>Todos los juegos de {{ league_name }} con horarios, canales de TV y opciones de streaming para Mexico, Estados Unidos y Latinoamerica.</p>
+    {% endif %}
 </div>
 
 <!-- Other leagues -->
@@ -455,6 +465,22 @@
         <p>Consulta la tabla de posiciones actualizada de {{ league_name }} arriba en esta pagina. Las posiciones se actualizan automaticamente despues de cada jornada.</p>
         {% endif %}
     </div>
+
+    {% if league_seo_extra %}
+    <div class="seo-card" style="margin-top:1rem;">
+        <h2>{{ league_seo_extra.h2 }}</h2>
+        {% for p in league_seo_extra.paragraphs %}
+        <p>{{ p }}</p>
+        {% endfor %}
+        {% if league_seo_extra.links %}
+        <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+            {% for link in league_seo_extra.links %}
+            <a href="{{ link.url }}" style="display:inline-block;padding:0.35rem 0.75rem;background:#f0fdf4;border:1px solid #d1fae5;border-radius:6px;font-size:0.78rem;">{{ link.text }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <!-- WhatsApp -->

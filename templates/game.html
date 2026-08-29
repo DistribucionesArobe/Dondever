@@ -25,6 +25,7 @@
     <meta name="twitter:title" content="{{ first_team }} vs {{ second_team }}: {% if odds %}Momios y Pronóstico{% else %}Dónde Ver{% endif %}">
     <meta name="twitter:description" content="{% if odds %}Cuotas actualizadas, pronóstico y picks. {% endif %}{{ game.league_name }} — canales y streaming en México y LATAM">
     <link rel="canonical" href="{{ app_url }}{{ game|game_url }}">
+    {% if noindex %}<meta name="robots" content="noindex, follow">{% endif %}
     {{ hreflang_tags(request.url) }}
     <!-- JSON-LD Structured Data: SportsEvent -->
     <script type="application/ld+json">
@@ -1224,7 +1225,7 @@
             {% elif odds %}
                 {# No stats, but we have odds — show the favorite based on odds #}
                 <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
-                    Las momios sugieren
+                    Los momios sugieren
                     {% if left_odds_val and right_odds_val %}
                         {% if left_odds_val|string|first == '-' and right_odds_val|string|first == '+' %}
                         a <strong style="color:white;">{{ left_team.name }}</strong> como favorito ({{ left_odds_val }}).
@@ -1303,7 +1304,7 @@
             <div class="wa-cta-top">
                 <div>
                     <div class="wa-cta-title">&#9993; Picks diarios por Email</div>
-                    <div class="wa-cta-sub">Recibe cada manana el pick del dia, momios y tips directo en tu correo. Gratis.</div>
+                    <div class="wa-cta-sub">Recibe cada mañana el pick del día, momios y tips directo en tu correo. Gratis.</div>
                 </div>
             </div>
             <div class="wa-cta-features">

@@ -851,13 +851,20 @@ async def game_semantic(request: Request, slug: str):
         if home_form:
             hw = home_form.count("W")
             hl = home_form.count("L")
-            extra.append(f"{game['home']['name']} llega con {hw}G-{len(home_form)-hw-hl}E-{hl}P en sus últimos {len(home_form)} partidos")
+            n = len(home_form)
+            extra.append(f"{game['home']['name']} llega con {hw}G-{n-hw-hl}E-{hl}P en {'su último partido' if n == 1 else f'sus últimos {n} partidos'}")
         if away_form:
             aw = away_form.count("W")
             al_ = away_form.count("L")
             extra.append(f"{game['away']['name']} tiene marca de {aw}G-{len(away_form)-aw-al_}E-{al_}P")
         if extra:
             match_preview["full"] = match_preview["full"] + " " + ". ".join(extra) + "."
+
+    # Mark TBD games as noindex — no real content for search engines
+    noindex = (
+        game.get("home", {}).get("name", "") == "TBD"
+        or game.get("away", {}).get("name", "") == "TBD"
+    )
 
     return templates.TemplateResponse(
         request, "game.html", context={
@@ -870,6 +877,7 @@ async def game_semantic(request: Request, slug: str):
             "home_form": home_form, "away_form": away_form,
             "implied_probs": implied_probs,
             "match_preview": match_preview,
+            "noindex": noindex,
         }
     )
 
@@ -1145,6 +1153,23 @@ async def legacy_game_redirect(request: Request, old_id: str):
     )
 
 
+# ── League-specific SEO extra content ─────────────────────
+LEAGUE_SEO_EXTRA = {
+    "nfl": {
+        "h2": "Donde ver NFL en Mexico 2026: Canales y Streaming",
+        "paragraphs": [
+            "La temporada 2026 de la NFL arranca el 9 de septiembre con el kickoff game. La temporada regular consta de 18 semanas (17 juegos por equipo), seguida de los playoffs en enero y el Super Bowl LXI en febrero de 2027.",
+            "Los canales para ver NFL en Mexico incluyen Canal 5 (gratis, senal abierta), FOX y FOX One, ESPN a traves de Disney+, DAZN con NFL Game Pass, y Netflix con juegos selectos. La pretemporada se puede ver gratis en DAZN sin suscripcion.",
+            "Los equipos mas populares de la NFL en Mexico son los Dallas Cowboys, Kansas City Chiefs, Las Vegas Raiders, Seattle Seahawks y Miami Dolphins. DondeVer.app te muestra en que canal pasan cada partido de tu equipo favorito.",
+        ],
+        "links": [
+            {"text": "Guia: NFL en Mexico", "url": "/guia/donde-ver-nfl-en-mexico"},
+            {"text": "Pronosticos NFL", "url": "/pronosticos-hoy"},
+        ],
+    },
+}
+
+
 @app.get("/liga/{league_slug}", response_class=HTMLResponse)
 async def league_page(request: Request, league_slug: str):
     """
@@ -1209,6 +1234,7 @@ async def league_page(request: Request, league_slug: str):
             "upcoming_games": upcoming_games,
             "league_channels_today": league_channels_today[:8],
             "default_channels": default_channels,
+            "league_seo_extra": LEAGUE_SEO_EXTRA.get(league_slug),
         }
     )
 
@@ -1373,6 +1399,18 @@ async def momios_hoy_redirect(request: Request):
 async def apuestas_hoy_redirect(request: Request):
     """Redirect /apuestas-deportivas-hoy → /pronosticos-hoy."""
     return RedirectResponse(url="/pronosticos-hoy", status_code=301)
+
+
+@app.get("/nfl-hoy")
+async def nfl_hoy_redirect():
+    """Redirect /nfl-hoy → /liga/nfl for SEO consolidation."""
+    return RedirectResponse(url="/liga/nfl", status_code=301)
+
+
+@app.get("/nfl-en-vivo")
+async def nfl_en_vivo_redirect():
+    """Redirect /nfl-en-vivo → /liga/nfl for SEO consolidation."""
+    return RedirectResponse(url="/liga/nfl", status_code=301)
 
 
 # ── API Routes ───────────────────────────────────────────
@@ -2553,6 +2591,7 @@ async def robots_txt():
         "Allow: /\n"
         "Allow: /partido/\n"
         "Allow: /pronosticos-hoy\n"
+        "Allow: /nfl-hoy\n"
         "Allow: /liga/\n"
         "Disallow: /api/\n"
         "Disallow: /webhook/\n"
@@ -2752,6 +2791,9 @@ async def sitemap_xml():
     ]
 
     for game in games:
+        # Skip TBD placeholder games — they have no real content
+        if game.get("home", {}).get("name", "") == "TBD" or game.get("away", {}).get("name", "") == "TBD":
+            continue
         game_loc = f'{APP_URL}{_game_url(game)}'
         urls.append(
             f'  <url>\n    <loc>{game_loc}</loc>\n'
@@ -2773,6 +2815,7 @@ async def sitemap_xml():
         # donde-ver-champions-league redirects 301 → donde-ver-champions-en-mexico
         ("guia/como-ver-tudn-en-usa", "weekly", "0.8"),
         ("pronosticos-hoy", "daily", "0.9"),
+        ("nfl-hoy", "daily", "0.9"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
         # New "Como ver" guides
@@ -3370,7 +3413,7 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
         faq.append({
             "q": f"¿Cómo le fue a {team_name} en su último partido?",
             "a": f"El resultado más reciente fue {score}. "
-                 f"En sus últimos {len(recent_results)} partidos: {form_str}."
+                 f"{'En su último partido' if len(recent_results) == 1 else f'En sus últimos {len(recent_results)} partidos'}: {form_str}."
         })
 
     # ── 5. Streaming gratis — sport-specific with real platforms ──
