@@ -112,6 +112,127 @@ def _hreflang_tags(request_url: str) -> str:
 templates.env.globals["hreflang_tags"] = _hreflang_tags
 
 
+# ── Free channels & Interest scoring ─────────────────────
+FREE_CHANNELS = {
+    "canal 5", "azteca 7", "las estrellas", "azteca uno", "azteca deportes",
+    "univision", "unimás", "telemundo", "nbc", "cbs", "abc", "fox",
+    "tv azteca", "nu9ve", "pluto tv",
+}
+
+_LEAGUE_TIER = {
+    "liga-mx": 30, "nfl": 30, "champions": 30, "copa-del-mundo": 30,
+    "premier-league": 25, "la-liga": 25, "nba": 25, "serie-a": 25,
+    "bundesliga": 20, "ligue-1": 20, "mlb": 20, "mls": 20,
+    "liga-argentina": 20, "copa-libertadores": 20,
+    "copa-mx": 15, "liga-expansion": 15, "eredivisie": 15,
+    "liga-portuguesa": 15, "fa-cup": 15, "copa-del-rey": 15,
+    "leagues-cup": 15, "euro": 30, "concacaf-champions": 15,
+}
+
+DERBIES = [
+    ({"america", "chivas"}, 25),
+    ({"america", "cruz azul"}, 25),
+    ({"pumas", "america"}, 20),
+    ({"monterrey", "tigres"}, 25),
+    ({"real madrid", "barcelona"}, 25),
+    ({"real madrid", "atletico"}, 20),
+    ({"liverpool", "manchester"}, 20),
+    ({"arsenal", "tottenham"}, 20),
+    ({"boca", "river"}, 25),
+    ({"yankees", "red sox"}, 20),
+    ({"dodgers", "giants"}, 15),
+    ({"cowboys", "eagles"}, 20),
+    ({"packers", "bears"}, 15),
+    ({"lakers", "celtics"}, 20),
+    ({"inter miami", "la galaxy"}, 15),
+    ({"santos", "leon"}, 15),
+    ({"atlas", "chivas"}, 20),
+    ({"milan", "inter"}, 20),
+    ({"man city", "manchester united"}, 20),
+]
+
+
+def _is_free_broadcast(channel_name: str) -> bool:
+    """Check if a channel is free / over-the-air."""
+    c = channel_name.lower().strip()
+    # Exact "fox" but not "fox sports", "fox deportes", etc.
+    if c == "fox":
+        return True
+    if "fox" in c and c != "fox":
+        return False
+    return any(free in c for free in FREE_CHANNELS)
+
+
+def score_game_interest(game: dict) -> int:
+    """Score a game 0-100 for the 'must watch' section."""
+    score = 0
+    league_slug = game.get("league_slug", "")
+    home_name = game.get("home", {}).get("name", "").lower()
+    away_name = game.get("away", {}).get("name", "").lower()
+
+    # 1. League tier (0-30)
+    score += _LEAGUE_TIER.get(league_slug, 10)
+
+    # 2. Rivalry detection (0-25)
+    for teams, bonus in DERBIES:
+        team_list = list(teams)
+        if ((team_list[0] in home_name or team_list[0] in away_name) and
+                (team_list[1] in home_name or team_list[1] in away_name)):
+            score += bonus
+            break
+
+    # 3. Free TV bonus (0-15)
+    broadcasts = game.get("broadcasts", [])
+    if any(_is_free_broadcast(b.get("channel", "")) for b in broadcasts):
+        score += 15
+
+    # 4. Has odds (0-5)
+    if game.get("odds"):
+        score += 5
+
+    # 5. Prime time MX (0-10)
+    raw_date = game.get("date", "")
+    try:
+        dt = datetime.fromisoformat(raw_date.replace("Z", "+00:00")).astimezone(TZ_MX)
+        hour = dt.hour
+        if 18 <= hour <= 22:
+            score += 10
+        elif 12 <= hour < 18:
+            score += 5
+    except Exception:
+        pass
+
+    # 6. Close game bonus (0-10)
+    odds = game.get("odds")
+    if odds:
+        try:
+            home_ml = float(odds.get("home", 0))
+            away_ml = float(odds.get("away", 0))
+            if home_ml and away_ml:
+                # Convert American odds to implied probability
+                def _implied(ml):
+                    ml = float(ml)
+                    if ml > 0:
+                        return 100 / (ml + 100)
+                    else:
+                        return abs(ml) / (abs(ml) + 100)
+                p_home = _implied(home_ml)
+                p_away = _implied(away_ml)
+                fav_prob = max(p_home, p_away)
+                if fav_prob < 0.60:
+                    score += 10
+                elif fav_prob < 0.65:
+                    score += 5
+        except (ValueError, TypeError):
+            pass
+
+    # 7. Live game bonus (0-5)
+    if game.get("status", {}).get("state") == "in":
+        score += 5
+
+    return min(score, 100)
+
+
 # ── Google Analytics middleware ──────────────────────────
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -291,6 +412,20 @@ templates.env.globals["team_shop_meli"] = TEAM_SHOP_MELI
 templates.env.globals["popular_teams"] = POPULAR_TEAMS
 
 
+# ── Free / OTA channels ────────────────────────────────
+FREE_CHANNELS = {
+    "canal 5", "azteca 7", "las estrellas", "azteca uno", "azteca deportes",
+    "univision", "unimás", "telemundo", "nbc", "cbs", "abc", "fox",
+    "tv azteca", "canal 5 nu9ve", "nu9ve", "pluto tv", "vix free",
+}
+
+
+def _is_free_broadcast(channel_name: str) -> bool:
+    """Check if a channel is free/OTA."""
+    c = channel_name.lower().strip()
+    return any(free in c for free in FREE_CHANNELS)
+
+
 def _team_name_to_slug(team_name: str) -> str | None:
     """Reverse lookup: ESPN team display name → DondeVer slug."""
     if not team_name:
@@ -406,6 +541,29 @@ async def home(
         g["prediction"] = _quick_prediction_from_odds(g) if g.get("odds") else None
         g["preview"] = generate_match_preview(g)
 
+    # ── Interest scoring for all games ─────────────────
+    for g in games:
+        g["interest_score"] = score_game_interest(g)
+
+    # ── Must-watch "Los 5 imperdibles" ─────────────────
+    must_watch = sorted(
+        [g for g in games if g["status"]["state"] in ("pre", "in") and g["interest_score"] >= 30],
+        key=lambda g: g["interest_score"],
+        reverse=True,
+    )[:5]
+
+    # ── Free games (TV abierta / streaming gratis) ─────
+    free_games = [
+        g for g in games
+        if g["status"]["state"] in ("pre", "in")
+        and any(_is_free_broadcast(b.get("channel", "")) for b in g.get("broadcasts", []))
+    ]
+    for g in free_games:
+        g["free_channels"] = [
+            b["channel"] for b in g.get("broadcasts", [])
+            if _is_free_broadcast(b.get("channel", ""))
+        ]
+
     # ── Live games section ──────────────────────────────
     live_games = [g for g in games if g["status"]["state"] == "in"]
 
@@ -510,6 +668,8 @@ async def home(
             "pick_game": pick_game,
             "live_games": live_games,
             "featured_games": featured_games,
+            "must_watch": must_watch,
+            "free_games": free_games,
             "sport_counts": sport_counts,
             "home_standings": home_standings,
             "is_historical": is_historical,
@@ -519,6 +679,70 @@ async def home(
     response.headers["Cache-Control"] = "public, max-age=90, s-maxage=90"
     response.headers["Vary"] = "Accept-Encoding"
     return response
+
+
+@app.get("/gratis-hoy", response_class=HTMLResponse)
+async def free_today(request: Request):
+    """Landing page: free sports events today — TV abierta & free streaming."""
+    games = await get_todays_games()
+
+    # Attach odds to upcoming/live games
+    odds_leagues = set()
+    for g in games:
+        if g["status"]["state"] in ("pre", "in"):
+            odds_leagues.add(g.get("league_slug", ""))
+    from sports_api import ODDS_PRIORITY_LEAGUES
+    sorted_leagues = sorted(
+        odds_leagues,
+        key=lambda ls: ODDS_PRIORITY_LEAGUES.index(ls) if ls in ODDS_PRIORITY_LEAGUES else 99,
+    )
+    odds_by_league: dict[str, list] = {}
+    for ls in sorted_leagues:
+        try:
+            ol = await fetch_odds(ls)
+            if ol:
+                odds_by_league[ls] = ol
+        except Exception:
+            pass
+    for g in games:
+        ls = g.get("league_slug", "")
+        if g["status"]["state"] in ("pre", "in") and ls in odds_by_league:
+            g["odds"] = match_odds_to_game(g, odds_by_league[ls])
+        else:
+            g["odds"] = None
+        g["prediction"] = _quick_prediction_from_odds(g) if g.get("odds") else None
+
+    # Filter free games
+    free_games = [
+        g for g in games
+        if g["status"]["state"] in ("pre", "in")
+        and any(_is_free_broadcast(b.get("channel", "")) for b in g.get("broadcasts", []))
+    ]
+    for g in free_games:
+        g["free_channels"] = [
+            b["channel"] for b in g.get("broadcasts", [])
+            if _is_free_broadcast(b.get("channel", ""))
+        ]
+        g["interest_score"] = score_game_interest(g)
+
+    # Group by sport
+    free_by_sport: dict[str, list] = {}
+    for g in free_games:
+        s = g.get("sport", "other")
+        free_by_sport.setdefault(s, []).append(g)
+
+    today = datetime.now(TZ_MX)
+
+    return templates.TemplateResponse(
+        request,
+        "gratis_hoy.html",
+        context={
+            "free_games": free_games,
+            "free_by_sport": free_by_sport,
+            "total_free": len(free_games),
+            "today_display": format_date_es(today),
+        },
+    )
 
 
 @app.get("/canales-tv", response_class=HTMLResponse)
@@ -2909,6 +3133,7 @@ async def sitemap_xml():
         ("guia/como-ver-tudn-en-usa", "weekly", "0.8"),
         ("pronosticos-hoy", "daily", "0.9"),
         ("nfl-hoy", "daily", "0.9"),
+        ("gratis-hoy", "daily", "0.9"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
         # New "Como ver" guides

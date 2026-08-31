@@ -1643,6 +1643,111 @@
     </div>
     {% endif %}
 
+    {# ── 🔥 LOS IMPERDIBLES DE HOY ── #}
+    {% if must_watch %}
+    <section class="priority-section" id="secMustWatch">
+        <h2 class="priority-header" style="background:linear-gradient(135deg,#ff6b35,#ff8c42);color:#fff;border-radius:12px 12px 0 0;">
+            <span style="font-weight:700;">&#128293; Lo imperdible de hoy</span>
+            <span class="league-count" style="background:rgba(255,255,255,.25);color:#fff;">{{ must_watch|length }} partido{{ 's' if must_watch|length != 1 else '' }}</span>
+        </h2>
+        {% for game in must_watch %}
+        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+        {% set top_team = game.home if home_left else game.away %}
+        {% set bottom_team = game.away if home_left else game.home %}
+        <div class="game-card" style="border-left:3px solid #ff6b35;" data-game-id="{{ game.id }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+            <div class="gc-compact-top">
+                <div class="gc-compact-left">
+                    <span class="gc-time">{{ game.status.display }}</span>
+                    {% if game.broadcasts %}
+                    <span class="channel-tag {{ game.broadcasts[0].info.get('type', 'unknown') if game.broadcasts[0].info else 'unknown' }}" style="font-size:0.58rem;">{{ game.broadcasts[0].channel }}</span>
+                    {% endif %}
+                    <span class="game-card-league-tag">{{ game.emoji }} {{ game.league_name }}</span>
+                    <span style="display:inline-block;background:#fff3e0;color:#e65100;font-size:.62rem;padding:1px 5px;border-radius:6px;font-weight:700;">⭐ {{ game.interest_score }}%</span>
+                </div>
+                <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
+            </div>
+            <a href="{{ game|game_url }}" class="gc-teams-link">
+                <div class="gc-team-row">
+                    {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="gc-logo" loading="lazy">{% endif %}
+                    <span class="gc-team-name">{{ top_team.name }}</span>
+                    {% if game.status.state == 'post' %}<span class="gc-score">{{ top_team.score }}</span>{% endif %}
+                </div>
+                <div class="gc-team-row">
+                    {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="gc-logo" loading="lazy">{% endif %}
+                    <span class="gc-team-name">{{ bottom_team.name }}</span>
+                    {% if game.status.state == 'post' %}<span class="gc-score">{{ bottom_team.score }}</span>{% endif %}
+                </div>
+            </a>
+            {% if game.status.state == 'in' %}
+            <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
+            {% endif %}
+            {% if game.preview and game.preview.snippet %}
+            <div class="gc-preview-snippet">{{ game.preview.snippet }}</div>
+            {% endif %}
+            <div class="gc-accordion-body" style="display:none;">
+                <div class="gc-channels-full">
+                    {% for b in game.broadcasts %}
+                    <span class="channel-tag {{ b.info.get('type','unknown') if b.info else 'unknown' }}">{{ b.channel }}</span>
+                    {% endfor %}
+                </div>
+                <a href="{{ game|game_url }}" class="gc-details-link">Dónde ver →</a>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    {# ── 📺 GRATIS HOY ── #}
+    {% if free_games %}
+    <section class="priority-section" id="secFreeToday">
+        <h2 class="priority-header" style="background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff;border-radius:12px 12px 0 0;">
+            <span style="font-weight:700;">📺 Gratis hoy</span>
+            <span class="league-count" style="background:rgba(255,255,255,.25);color:#fff;">{{ free_games|length }} en TV abierta</span>
+        </h2>
+        {% for game in free_games %}
+        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+        {% set top_team = game.home if home_left else game.away %}
+        {% set bottom_team = game.away if home_left else game.home %}
+        <div class="game-card" style="border-left:3px solid #2e7d32;" data-game-id="{{ game.id }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+            <div class="gc-compact-top">
+                <div class="gc-compact-left">
+                    <span class="gc-time">{{ game.status.display }}</span>
+                    {% if game.free_channels %}
+                    <span class="channel-tag broadcast" style="font-size:0.58rem;background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7;">📺 {{ game.free_channels|join(', ') }}</span>
+                    {% endif %}
+                    <span class="game-card-league-tag">{{ game.emoji }} {{ game.league_name }}</span>
+                    <span style="display:inline-block;background:#e8f5e9;color:#1b5e20;font-size:.62rem;padding:1px 5px;border-radius:6px;font-weight:700;">GRATIS</span>
+                </div>
+                <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
+            </div>
+            <a href="{{ game|game_url }}" class="gc-teams-link">
+                <div class="gc-team-row">
+                    {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="gc-logo" loading="lazy">{% endif %}
+                    <span class="gc-team-name">{{ top_team.name }}</span>
+                    {% if game.status.state == 'post' %}<span class="gc-score">{{ top_team.score }}</span>{% endif %}
+                </div>
+                <div class="gc-team-row">
+                    {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="gc-logo" loading="lazy">{% endif %}
+                    <span class="gc-team-name">{{ bottom_team.name }}</span>
+                    {% if game.status.state == 'post' %}<span class="gc-score">{{ bottom_team.score }}</span>{% endif %}
+                </div>
+            </a>
+            {% if game.status.state == 'in' %}
+            <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
+            {% endif %}
+            <div class="gc-accordion-body" style="display:none;">
+                <div class="gc-channels-full">
+                    {% for b in game.broadcasts %}
+                    <span class="channel-tag {{ b.info.get('type','unknown') if b.info else 'unknown' }}">{{ b.channel }}</span>
+                    {% endfor %}
+                </div>
+                <a href="{{ game|game_url }}" class="gc-details-link">Dónde ver →</a>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
     {# ── EN VIVO section (same card format as league games) ── #}
     {% if live_games %}
     <section class="priority-section" id="secLive">

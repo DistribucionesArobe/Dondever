@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deportes gratis hoy en TV abierta y streaming | DondeVer.app</title>
+    <meta name="description" content="Todos los partidos y eventos deportivos que puedes ver gratis hoy en TV abierta (Canal 5, Azteca 7, TUDN) y streaming gratuito. {{ total_free }} eventos gratis hoy.">
+    <meta property="og:title" content="Deportes gratis hoy en TV abierta y streaming">
+    <meta property="og:description" content="{{ total_free }} eventos deportivos gratis hoy en TV abierta y streaming gratuito en México.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ app_url }}/gratis-hoy">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta property="og:locale" content="es_MX">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Deportes gratis hoy | DondeVer.app">
+    <meta name="twitter:description" content="{{ total_free }} eventos gratis hoy en TV abierta y streaming.">
+    <link rel="canonical" href="{{ app_url }}/gratis-hoy">
+    {{ hreflang_tags(request.url) }}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ app_url }}/"},
+        {"@type": "ListItem", "position": 2, "name": "Gratis hoy", "item": "{{ app_url }}/gratis-hoy"}
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Deportes gratis hoy en TV abierta y streaming",
+      "description": "Listado de todos los eventos deportivos gratuitos de hoy en México.",
+      "url": "{{ app_url }}/gratis-hoy",
+      "mainEntity": {
+        "@type": "ItemList",
+        "name": "Eventos deportivos gratis hoy",
+        "numberOfItems": {{ total_free }}
+      }
+    }
+    </script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2576227882415709" crossorigin="anonymous"></script>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script>
+    (function(){var t=localStorage.getItem('dv-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; min-height: 100vh; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .hero { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 1rem; text-align: center; }
+        .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; }
+        .hero .count-badge {
+            display: inline-block; background: #d1fae5; color: #065f46;
+            font-size: 0.85rem; font-weight: 700; padding: 0.3rem 0.8rem;
+            border-radius: 2rem; margin-bottom: 0.5rem;
+        }
+        .hero p { color: #6b7280; font-size: 0.9rem; max-width: 600px; margin: 0 auto; line-height: 1.6; }
+        .main { max-width: 900px; margin: 1rem auto; padding: 0 1rem 2rem; }
+
+        /* Sport section */
+        .sport-section { margin-bottom: 1.5rem; }
+        .sport-header {
+            font-size: 0.95rem; font-weight: 700; color: #065f46;
+            margin-bottom: 0.6rem; padding: 0.5rem 0.75rem;
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .sport-header .count { font-size: 0.75rem; color: #047857; font-weight: 600; }
+
+        /* Game cards */
+        .game-card {
+            background: white; border: 1px solid #e5e7eb; border-radius: 10px;
+            padding: 0.75rem 1rem; margin-bottom: 0.5rem;
+            text-decoration: none; color: inherit; cursor: pointer; transition: all 0.15s;
+            border-left: 3px solid #2e7d32;
+        }
+        .game-card:hover { border-color: #10b981; box-shadow: 0 2px 10px rgba(16,185,129,0.1); }
+        .game-card.live { border-left: 4px solid #ef4444; background: #fef2f2; }
+        .gc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; }
+        .gc-teams { font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; flex: 1; }
+        .gc-teams img { width: 22px; height: 22px; border-radius: 50%; object-fit: contain; background: #f3f4f6; }
+        .gc-vs { color: #9ca3af; font-weight: 400; font-size: 0.8rem; margin: 0 0.2rem; }
+        .gc-time { font-size: 0.8rem; font-weight: 700; color: #f97316; white-space: nowrap; }
+        .gc-score { font-size: 1rem; font-weight: 800; color: #059669; }
+        .live-badge { display: inline-block; background: #ef4444; color: white; font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; animation: pulse 2s infinite; }
+        .final-badge { display: inline-block; background: #f3f4f6; color: #6b7280; font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+        .gc-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.3rem; }
+        .gc-league { font-size: 0.7rem; color: #9ca3af; }
+        .gc-channels { display: flex; flex-wrap: wrap; gap: 0.2rem; }
+        .free-tag {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.68rem; font-weight: 700;
+            background: #d1fae5; color: #065f46;
+        }
+        .gc-link { font-size: 0.75rem; color: #059669; font-weight: 600; text-decoration: none; }
+
+        .no-games { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
+        .no-games h2 { font-size: 1.2rem; color: #374151; margin-bottom: 0.4rem; }
+
+        /* SEO content */
+        .seo-content { max-width: 900px; margin: 1rem auto; padding: 0 1rem; }
+        .seo-card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.5rem; }
+        .seo-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: #1a1a2e; }
+        .seo-card h3 { font-size: 0.9rem; font-weight: 600; margin: 1rem 0 0.3rem; color: #374151; }
+        .seo-card p { font-size: 0.8rem; color: #6b7280; line-height: 1.7; margin-bottom: 0.5rem; }
+        .seo-card a { color: #059669; text-decoration: none; font-weight: 600; }
+
+        .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+
+        .wa-float {
+            position: fixed; bottom: 1.5rem; right: 1.5rem;
+            background: #25d366; color: white; width: 52px; height: 52px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            text-decoration: none; box-shadow: 0 3px 12px rgba(37,211,102,0.4); z-index: 1000;
+        }
+
+        /* Breadcrumbs */
+        .breadcrumbs { max-width: 900px; margin: 0 auto; padding: 0.5rem 1rem 0; }
+        .breadcrumbs a { color: #059669; text-decoration: none; font-size: 0.72rem; font-weight: 600; }
+        .breadcrumbs span { color: #9ca3af; font-size: 0.72rem; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 1.2rem; }
+            .gc-teams { font-size: 0.82rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+        <a href="/" class="back">&larr; Todos los juegos</a>
+        <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.25rem 0.4rem;border-radius:8px;color:#94a3b8;">&#127769;</button>
+    </div>
+</header>
+
+<nav class="breadcrumbs">
+    <a href="/">Inicio</a> <span>&rsaquo;</span> <span>Gratis hoy</span>
+</nav>
+
+<div class="hero">
+    <div class="count-badge">{{ total_free }} evento{{ 's' if total_free != 1 else '' }} gratis hoy</div>
+    <h1>Deportes gratis hoy en TV abierta y streaming</h1>
+    <p>Todos los partidos y eventos deportivos que puedes ver gratis hoy {{ today_display }} en canales de TV abierta como Canal 5, Azteca 7, TUDN y plataformas de streaming gratuito.</p>
+</div>
+
+<main class="main">
+    {% if free_games %}
+        {% set sport_names = {"soccer": "Futbol", "football": "Futbol Americano", "basketball": "Basquetbol", "baseball": "Beisbol", "hockey": "Hockey", "mma": "MMA", "boxing": "Box"} %}
+        {% for sport_key, sport_games in free_by_sport.items() %}
+        <div class="sport-section">
+            <div class="sport-header">
+                <span>{{ sport_games[0].emoji if sport_games else '' }} {{ sport_names.get(sport_key, sport_key|capitalize) }} gratis hoy</span>
+                <span class="count">{{ sport_games|length }} juego{{ 's' if sport_games|length != 1 else '' }}</span>
+            </div>
+            {% for game in sport_games|sort(attribute='interest_score', reverse=true) %}
+            {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+            {% set t1 = game.home if home_left else game.away %}
+            {% set t2 = game.away if home_left else game.home %}
+            <a href="{{ game_url(game) }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
+                <div class="gc-top">
+                    <div class="gc-teams">
+                        {% if t1.logo %}<img src="{{ t1.logo }}" alt="" loading="lazy">{% endif %}
+                        <span>{{ t1.displayName }}</span>
+                        <span class="gc-vs">vs</span>
+                        <span>{{ t2.displayName }}</span>
+                        {% if t2.logo %}<img src="{{ t2.logo }}" alt="" loading="lazy">{% endif %}
+                    </div>
+                    <div>
+                        {% if game.status.state == 'in' %}
+                            <span class="live-badge">EN VIVO</span>
+                            <span class="gc-score">{{ t1.score }} - {{ t2.score }}</span>
+                        {% elif game.status.state == 'post' %}
+                            <span class="final-badge">FINAL</span>
+                            <span class="gc-score">{{ t1.score }} - {{ t2.score }}</span>
+                        {% else %}
+                            <span class="gc-time">{{ format_mx_time(game.date) }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="gc-bottom">
+                    <span class="gc-league">{{ game.league_name }}</span>
+                    <div class="gc-channels">
+                        {% for ch in game.free_channels %}
+                        <span class="free-tag">GRATIS {{ ch }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-games">
+            <h2>No hay eventos gratis programados hoy</h2>
+            <p>Revisa la <a href="/" style="color:#059669;font-weight:600;">programación completa</a> para ver todos los eventos del día.</p>
+        </div>
+    {% endif %}
+</main>
+
+<!-- SEO Content -->
+<div class="seo-content">
+    <div class="seo-card">
+        <h2>Dónde ver deportes gratis hoy en México</h2>
+        <p>En DondeVer.app te mostramos todos los partidos y eventos deportivos que puedes ver completamente gratis hoy en televisión abierta y plataformas de streaming gratuitas. No necesitas pagar suscripción para disfrutar de estos eventos.</p>
+
+        <h3>Canales de TV abierta con deportes en México</h3>
+        <p>Los principales canales gratuitos que transmiten deportes en México incluyen Canal 5 (Televisa), Azteca 7, Azteca Deportes, Las Estrellas, TUDN en abierto y Nu9ve. Estos canales transmiten regularmente partidos de la Liga MX, selección mexicana, NFL en español y eventos especiales.</p>
+
+        <h3>Streaming gratuito de deportes</h3>
+        <p>Plataformas como Pluto TV ofrecen canales deportivos gratuitos con publicidad. Además, algunas transmisiones de TUDN y TV Azteca están disponibles en sus apps y sitios web sin costo adicional.</p>
+
+        <p><a href="/">Ver toda la programación deportiva de hoy &rarr;</a></p>
+    </div>
+</div>
+
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Tu guía deportiva en México y LATAM</p>
+    <p style="margin-top:0.3rem"><a href="/sobre-nosotros">Sobre nosotros</a> &middot; <a href="/canales-tv">Canales</a> &middot; <a href="/equipos">Equipos</a></p>
+</footer>
+
+<a href="https://wa.me/528118001161?text=Hola%20DondeVer%21" class="wa-float" target="_blank" rel="noopener" aria-label="WhatsApp">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.389 0-4.636-.85-6.438-2.265l-.357-.292-3.1 1.04 1.04-3.1-.292-.357A9.965 9.965 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+</a>
+
+<script src="/static/dark-mode.js"></script>
+</body>
+</html>
