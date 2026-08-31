@@ -1666,21 +1666,18 @@
                 </div>
                 <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
             </div>
-            <a href="{{ game|game_url }}" class="gc-teams-link">
-                <div class="gc-team-row">
-                    {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="gc-logo" loading="lazy">{% endif %}
-                    <span class="gc-team-name">{{ top_team.name }}</span>
-                    {% if game.status.state == 'post' %}<span class="gc-score">{{ top_team.score }}</span>{% endif %}
+            <a href="{{ game|game_url }}" style="text-decoration:none;color:inherit;">
+                <div class="gc-row">
+                    {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
+                    <span class="team-name">{{ top_team.name }}</span>
+                    {% if game.status.state in ('in', 'post') %}<span class="gc-right"><span class="team-score">{{ top_team.score }}</span></span>{% endif %}
                 </div>
-                <div class="gc-team-row">
-                    {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="gc-logo" loading="lazy">{% endif %}
-                    <span class="gc-team-name">{{ bottom_team.name }}</span>
-                    {% if game.status.state == 'post' %}<span class="gc-score">{{ bottom_team.score }}</span>{% endif %}
+                <div class="gc-row">
+                    {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">{% endif %}
+                    <span class="team-name">{{ bottom_team.name }}</span>
+                    {% if game.status.state in ('in', 'post') %}<span class="gc-right"><span class="team-score">{{ bottom_team.score }}</span></span>{% endif %}
                 </div>
             </a>
-            {% if game.status.state == 'in' %}
-            <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
-            {% endif %}
             {% if game.preview and game.preview.snippet %}
             <div class="gc-preview-snippet">{{ game.preview.snippet }}</div>
             {% endif %}
@@ -1720,21 +1717,18 @@
                 </div>
                 <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
             </div>
-            <a href="{{ game|game_url }}" class="gc-teams-link">
-                <div class="gc-team-row">
-                    {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="gc-logo" loading="lazy">{% endif %}
-                    <span class="gc-team-name">{{ top_team.name }}</span>
-                    {% if game.status.state == 'post' %}<span class="gc-score">{{ top_team.score }}</span>{% endif %}
+            <a href="{{ game|game_url }}" style="text-decoration:none;color:inherit;">
+                <div class="gc-row">
+                    {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
+                    <span class="team-name">{{ top_team.name }}</span>
+                    {% if game.status.state in ('in', 'post') %}<span class="gc-right"><span class="team-score">{{ top_team.score }}</span></span>{% endif %}
                 </div>
-                <div class="gc-team-row">
-                    {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="gc-logo" loading="lazy">{% endif %}
-                    <span class="gc-team-name">{{ bottom_team.name }}</span>
-                    {% if game.status.state == 'post' %}<span class="gc-score">{{ bottom_team.score }}</span>{% endif %}
+                <div class="gc-row">
+                    {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">{% endif %}
+                    <span class="team-name">{{ bottom_team.name }}</span>
+                    {% if game.status.state in ('in', 'post') %}<span class="gc-right"><span class="team-score">{{ bottom_team.score }}</span></span>{% endif %}
                 </div>
             </a>
-            {% if game.status.state == 'in' %}
-            <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
-            {% endif %}
             <div class="gc-accordion-body" style="display:none;">
                 <div class="gc-channels-full">
                     {% for b in game.broadcasts %}
