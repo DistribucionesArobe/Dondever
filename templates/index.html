@@ -2079,18 +2079,29 @@
     </div>
     {% endif %}
 
-    {# ── Affiliate banner: after 4th league section ── #}
+    {# ── Affiliate banner: after 4th league section (geo-targeted) ── #}
     {% if league_idx[0] == 4 and not is_historical %}
-    {% for key, aff in affiliates.items() %}
-    {% if loop.first %}
-    <div class="promo-interstitial" style="border-color:#f59e0b;">
-        <div class="promo-inter-title">&#127942; {{ aff.name }} &mdash; {{ aff.bonus }}</div>
+    {# MX: Jubilee #}
+    <div class="promo-interstitial" style="border-color:#d97706;" data-geo="mx">
+        <div class="promo-inter-title">&#127942; {{ affiliates.jubilee.name }} &mdash; {{ affiliates.jubilee.bonus }}</div>
         <div class="promo-inter-sub">Casa de apuestas autorizada. Bono de bienvenida disponible para nuevos usuarios.</div>
-        <a href="/go/{{ key }}?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ key }}" class="promo-inter-cta" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Registrarme &#8599;</a>
+        <a href="/go/jubilee?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" class="promo-inter-cta" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Registrarme &#8599;</a>
         <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
-    {% endif %}
-    {% endfor %}
+    {# US: Betsson #}
+    <div class="promo-interstitial" style="border-color:#ea580c;display:none;" data-geo="us">
+        <div class="promo-inter-title">&#127942; {{ affiliates.betsson.name }} &mdash; {{ affiliates.betsson.bonus }}</div>
+        <div class="promo-inter-sub">Casa de apuestas autorizada. Bono de bienvenida disponible para nuevos usuarios.</div>
+        <a href="/go/betsson?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="promo-inter-cta" style="background:linear-gradient(135deg,#ea580c,#dc2626);">Registrarme &#8599;</a>
+        <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
+    </div>
+    {# LATAM/resto: 1xBet #}
+    <div class="promo-interstitial" style="border-color:#1a5276;display:none;" data-geo="latam">
+        <div class="promo-inter-title">&#127942; {{ affiliates['1xbet'].name }} &mdash; {{ affiliates['1xbet'].bonus }}</div>
+        <div class="promo-inter-sub">Casa de apuestas autorizada. Bono de bienvenida disponible para nuevos usuarios.</div>
+        <a href="/go/1xbet?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" class="promo-inter-cta" style="background:linear-gradient(135deg,#1a5276,#2c6e9e);">Registrarme &#8599;</a>
+        <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
+    </div>
     {% endif %}
     {% endfor %}
     {# Close hiddenLeagues div if it was opened #}
@@ -3138,8 +3149,8 @@
         // ── Action buttons ──
         html += '<div class="tp-actions">';
         html += '<a href="/equipo/' + d.slug + '" class="tp-btn tp-btn-primary">Ver todo sobre ' + d.name + ' ↗</a>';
-        var _betBrand = window.__geoRegion === 'us' ? ['betsson','Betsson'] : window.__geoRegion === 'latam' ? ['1xbet','1xBet'] : ['jubilee','Jubilee'];
-        html += '<a href="/go/' + _betBrand[0] + '?s=search-panel" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="' + _betBrand[0] + '" data-placement="search-panel">Momios en ' + _betBrand[1] + ' ↗</a>';
+        var _betLabel = window.__geoRegion === 'us' ? 'Betsson' : window.__geoRegion === 'latam' ? '1xBet' : 'Jubilee';
+        html += '<a href="/go/bet?s=search-panel" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="bet" data-placement="search-panel">Apostar ↗</a>';
         html += '</div>';
 
         html += '</div>';
