@@ -94,9 +94,14 @@ AFFILIATES = {
     },
 }
 
-# Bookmaker keys from the-odds-api that correspond to paying affiliates.
-# Only these will appear in odds comparison / bookmaker counts.
-PAYING_BOOKMAKER_KEYS = {"betsson", "1xbet"}
+# Paying affiliates by geo:
+#   MX → Jubilee, Vivento  (via /go/bet smart routing)
+#   US → Betsson
+#   LATAM/España/resto → 1xBet
+# Bookmaker keys (the-odds-api) that correspond to paying affiliates.
+# Only these appear in odds comparison / bookmaker counts.
+# (Jubilee/Vivento are too small to appear in the API, but included for completeness.)
+PAYING_BOOKMAKER_KEYS = {"betsson", "1xbet", "jubilee", "vivento"}
 
 # ── MercadoLibre Afiliados (Mexico / LATAM) ──────────────
 # Profile: Distribuciones Arobe — tracked short links via meli.la

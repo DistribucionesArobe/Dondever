@@ -121,17 +121,17 @@
             </a>
         </div>
         <div class="pick-odds">
-            <a href="/go/betsson?s=pronosticos" target="_blank" rel="sponsored nofollow noopener" class="odds-chip">
+            <a href="/go/bet?s=pronosticos" target="_blank" rel="sponsored nofollow noopener" class="odds-chip">
                 <div class="odds-label">{{ left_team.name[:12] }}</div>
                 <div class="odds-value">{{ left_odds or '—' }}</div>
             </a>
             {% if odds.draw_odds %}
-            <a href="/go/betsson?s=pronosticos" target="_blank" rel="sponsored nofollow noopener" class="odds-chip odds-draw">
+            <a href="/go/bet?s=pronosticos" target="_blank" rel="sponsored nofollow noopener" class="odds-chip odds-draw">
                 <div class="odds-label">Empate</div>
                 <div class="odds-value">{{ odds.draw_odds }}</div>
             </a>
             {% endif %}
-            <a href="/go/betsson?s=pronosticos" target="_blank" rel="sponsored nofollow noopener" class="odds-chip">
+            <a href="/go/bet?s=pronosticos" target="_blank" rel="sponsored nofollow noopener" class="odds-chip">
                 <div class="odds-label">{{ right_team.name[:12] }}</div>
                 <div class="odds-value">{{ right_odds or '—' }}</div>
             </a>
@@ -144,7 +144,7 @@
         {% endif %}
         <div class="pick-cta">
             <a href="{{ game|game_url }}" class="btn-ver btn-partido">Ver Partido</a>
-            <a href="/go/betsson?s=pronosticos-cta" target="_blank" rel="sponsored nofollow noopener" class="btn-ver btn-apostar">Apostar</a>
+            <a href="/go/bet?s=pronosticos-cta" target="_blank" rel="sponsored nofollow noopener" class="btn-ver btn-apostar">Apostar</a>
         </div>
     </div>
     {% endfor %}
