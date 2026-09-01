@@ -1457,6 +1457,16 @@
             .info-grid { grid-template-columns: 1fr; }
             .wa-cta-inner { flex-direction: column; align-items: flex-start; }
         }
+
+        /* ── Auto-ads: no ads in hero on mobile, cap size elsewhere ── */
+        @media (max-width: 767px) {
+            .hero-inner > .google-auto-placed {
+                display: none !important;
+            }
+            .google-auto-placed ins.adsbygoogle {
+                max-height: 200px !important;
+            }
+        }
     </style>
 </head>
 <body>
