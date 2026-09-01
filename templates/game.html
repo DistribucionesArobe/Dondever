@@ -35,7 +35,7 @@
       "name": "{{ game.away.name }} vs {{ game.home.name }}",
       "description": "{% if odds %}Momios, pronóstico y {% endif %}dónde ver {{ game.away.name }} vs {{ game.home.name }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.",
       "startDate": "{{ game.date }}",
-      "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.display == 'Postponed' %}EventPostponed{% elif game.status.display == 'Cancelled' %}EventCancelled{% else %}EventScheduled{% endif %}",
+      "eventStatus": "https://schema.org/{% if game.status.display in ('Pospuesto', 'Postponed') %}EventPostponed{% elif game.status.display in ('Cancelado', 'Cancelled') %}EventCancelled{% elif game.status.state == 'post' %}EventCompleted{% else %}EventScheduled{% endif %}",
       "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
       "image": "{{ app_url }}/og/partido/{{ game|game_url|replace('/partido/', '') }}.png",
       "url": "{{ app_url }}{{ game|game_url }}",
@@ -619,7 +619,8 @@
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
         <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
             <div style="text-align:center;margin-bottom:0.75rem;">
-                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#8b5cf6;font-weight:600;">Forma reciente &mdash; &uacute;ltimos 5</div>
+                {% set _form_count = [home_form|length, away_form|length]|max %}
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#8b5cf6;font-weight:600;">Forma reciente{% if _form_count %} &mdash; &uacute;ltimos {{ _form_count }}{% endif %}</div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
                 {# Home team form #}
@@ -705,13 +706,13 @@
                 <tbody>
                     <tr style="border-top:1px solid #f3f4f6;">
                         <td style="padding:0.5rem 0;font-weight:700;">{{ left_stats.record }}</td>
-                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Record</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">R&eacute;cord</td>
                         <td style="text-align:right;font-weight:700;">{{ right_stats.record }}</td>
                     </tr>
                     {% if left_stats.win_pct and right_stats.win_pct %}
                     <tr style="border-top:1px solid #f3f4f6;">
                         <td style="padding:0.5rem 0;font-weight:700;color:{% if left_stats.win_pct > right_stats.win_pct %}#059669{% else %}#1a1a2e{% endif %};">{{ left_stats.win_pct }}</td>
-                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Win %</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">% Victorias</td>
                         <td style="text-align:right;font-weight:700;color:{% if right_stats.win_pct > left_stats.win_pct %}#059669{% else %}#1a1a2e{% endif %};">{{ right_stats.win_pct }}</td>
                     </tr>
                     {% endif %}
@@ -1055,7 +1056,7 @@
         <div style="background:linear-gradient(135deg,#1a1a2e,#2d2b55);border-radius:14px;padding:1.25rem;color:white;">
             <div style="text-align:center;margin-bottom:1rem;">
                 <h2 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#10b981;font-weight:600;margin:0;">Momios {{ first_team }} vs {{ second_team }} &mdash; Cuotas de Apuestas</h2>
-                <div style="font-size:0.65rem;color:#9ca3af;margin-top:0.15rem;">via {{ odds.bookmaker }}</div>
+                <div style="font-size:0.65rem;color:#9ca3af;margin-top:0.15rem;">Cuotas de referencia</div>
             </div>
 
             {# ── Ganador (Moneyline / h2h) ── #}
@@ -1169,7 +1170,7 @@
                     {% if left_team.logo %}<img src="{{ left_team.logo }}" alt="" style="width:32px;height:32px;">{% endif %}
                     <div style="flex:1;">
                         <div style="font-size:0.85rem;font-weight:700;color:white;">{{ left_team.name }}</div>
-                        <div style="font-size:0.7rem;color:#9ca3af;">Record: {{ left_stats.record }} ({{ left_stats.win_pct }}) · Racha: {{ left_stats.streak or 'N/A' }}</div>
+                        <div style="font-size:0.7rem;color:#9ca3af;">R&eacute;cord: {{ left_stats.record }} ({{ left_stats.win_pct }}) &middot; Racha: {{ left_stats.streak or 'N/A' }}</div>
                     </div>
                     <div style="font-size:1.1rem;font-weight:800;color:#10b981;">{{ left_odds_val or '' }}</div>
                 </div>
@@ -1190,7 +1191,7 @@
                     {% if right_team.logo %}<img src="{{ right_team.logo }}" alt="" style="width:32px;height:32px;">{% endif %}
                     <div style="flex:1;">
                         <div style="font-size:0.85rem;font-weight:700;color:white;">{{ right_team.name }}</div>
-                        <div style="font-size:0.7rem;color:#9ca3af;">Record: {{ right_stats.record }} ({{ right_stats.win_pct }}) · Racha: {{ right_stats.streak or 'N/A' }}</div>
+                        <div style="font-size:0.7rem;color:#9ca3af;">R&eacute;cord: {{ right_stats.record }} ({{ right_stats.win_pct }}) &middot; Racha: {{ right_stats.streak or 'N/A' }}</div>
                     </div>
                     <div style="font-size:1.1rem;font-weight:800;color:#10b981;">{{ right_odds_val or '' }}</div>
                 </div>

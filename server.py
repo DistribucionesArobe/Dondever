@@ -577,12 +577,20 @@ async def home(
     # ── Live games section ──────────────────────────────
     live_games = [g for g in games if g["status"]["state"] == "in"]
 
-    # ── Featured games (DESTACADOS) ───────────────────────
-    # Algorithmically pick 5-8 of the most interesting upcoming games
+    # ── IDs already shown in must-watch / free / live ──
+    _priority_ids = set()
+    for g in must_watch:
+        _priority_ids.add(g["id"])
+    for g in free_games:
+        _priority_ids.add(g["id"])
+    for g in live_games:
+        _priority_ids.add(g["id"])
+
+    # ── Featured games (DESTACADOS) — exclude already-shown ──
     priority_leagues = ["liga-mx", "premier-league", "champions", "nfl", "nba",
                         "la-liga", "mlb", "nhl", "mls", "liga-argentina",
                         "copa-del-rey", "fa-cup", "leagues-cup", "euro"]
-    upcoming = [g for g in games if g["status"]["state"] == "pre"]
+    upcoming = [g for g in games if g["status"]["state"] == "pre" and g["id"] not in _priority_ids]
     featured_games = []
     # 1. Priority leagues with broadcasts first
     for pl in priority_leagues:
@@ -609,15 +617,11 @@ async def home(
                     break
 
     # Pick del dia — best single game for the card
-    pick_game = featured_games[0] if featured_games else (live_games[0] if live_games else None)
+    pick_game = featured_games[0] if featured_games else (must_watch[0] if must_watch else (live_games[0] if live_games else None))
 
     # ── Dedup: collect IDs already shown in priority sections ──
-    shown_ids = set()
-    for g in must_watch:
-        shown_ids.add(g["id"])
-    for g in free_games:
-        shown_ids.add(g["id"])
-    for g in live_games:
+    shown_ids = set(_priority_ids)
+    for g in featured_games:
         shown_ids.add(g["id"])
 
     # Available sports for filter

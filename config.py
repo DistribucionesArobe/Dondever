@@ -94,6 +94,10 @@ AFFILIATES = {
     },
 }
 
+# Bookmaker keys from the-odds-api that correspond to paying affiliates.
+# Only these will appear in odds comparison / bookmaker counts.
+PAYING_BOOKMAKER_KEYS = {"betsson", "1xbet"}
+
 # ── MercadoLibre Afiliados (Mexico / LATAM) ──────────────
 # Profile: Distribuciones Arobe — tracked short links via meli.la
 # Etiqueta: du20260520124652  (contacto@arobegroup.com)

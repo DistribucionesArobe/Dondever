@@ -14,7 +14,8 @@ from cachetools import TTLCache
 
 from config import (
     ESPN_BASE, SPORTSDB_BASE, SPORTSDB_KEY,
-    LEAGUES, ALL_LEAGUES, CHANNEL_ALIASES, ESPN_CHANNEL_NORMALIZE, TZ_MX, TEAM_ALIASES
+    LEAGUES, ALL_LEAGUES, CHANNEL_ALIASES, ESPN_CHANNEL_NORMALIZE, TZ_MX, TEAM_ALIASES,
+    PAYING_BOOKMAKER_KEYS,
 )
 
 logger = logging.getLogger("dondever.sports")
@@ -1659,18 +1660,24 @@ def match_odds_to_game(game: dict, odds_list: list[dict]) -> dict | None:
             if not all_bookies:
                 return None
 
-            # Primary result: best odds across all bookmakers
+            # Filter to only paying affiliate bookmakers for display
+            paying_bookies = [
+                b for b in all_bookies
+                if any(pk in b["bookmaker"].lower() for pk in PAYING_BOOKMAKER_KEYS)
+            ]
+
+            # Primary result: best odds across ALL bookmakers (for accuracy),
+            # but only list/count paying bookmakers
             result = {
-                "bookmaker": all_bookies[0]["bookmaker"],
+                "bookmaker": paying_bookies[0]["bookmaker"] if paying_bookies else all_bookies[0]["bookmaker"],
                 "home_odds": best_home_odds,
                 "away_odds": best_away_odds,
                 "draw_odds": best_draw_odds,
                 "best_home_bookie": best_home_bookie,
                 "best_away_bookie": best_away_bookie,
                 "best_draw_bookie": best_draw_bookie,
-                # Top bookmakers for comparison (max 5)
-                "bookmakers": all_bookies[:5],
-                "total_bookmakers": len(all_bookies),
+                "bookmakers": paying_bookies,
+                "total_bookmakers": len(paying_bookies),
             }
             return result
 
@@ -1707,10 +1714,11 @@ def match_full_odds_to_game(game: dict, odds_list: list[dict]) -> dict | None:
             if not bookmakers:
                 return None
 
-            # Collect odds from multiple bookmakers
-            preferred = ["draftkings", "fanduel", "betmgm", "pinnacle", "bet365"]
+            # Prefer paying affiliate bookmakers; fall back to any
+            paying_prefs = list(PAYING_BOOKMAKER_KEYS)
+            fallback = ["draftkings", "fanduel", "betmgm", "pinnacle", "bet365"]
             bookie = None
-            for pref in preferred:
+            for pref in paying_prefs + fallback:
                 bookie = next((b for b in bookmakers if pref in b["key"].lower()), None)
                 if bookie:
                     break
