@@ -113,11 +113,23 @@ templates.env.globals["hreflang_tags"] = _hreflang_tags
 
 
 # ── Free channels & Interest scoring ─────────────────────
-FREE_CHANNELS = {
+# ── Free channels by country ──────────────────────────────────────────
+# MX: TV abierta en México (Canal 5, Azteca 7, etc.)
+# US: broadcast networks + Spanish-language OTA in the US
+FREE_CHANNELS_MX = {
     "canal 5", "azteca 7", "las estrellas", "azteca uno", "azteca deportes",
-    "univision", "unimás", "telemundo", "nbc", "cbs", "abc", "fox",
-    "tv azteca", "nu9ve", "pluto tv",
+    "tv azteca", "nu9ve", "canal 5 nu9ve", "canal once", "canal 22",
+    "pluto tv",
 }
+# Prefixes for MX — match "ViX (free)" or "YouTube (official)" etc.
+FREE_PREFIXES_MX = {"vix"}
+
+FREE_CHANNELS_US = {
+    "nbc", "cbs", "abc", "fox", "the cw",
+    "univision", "unimás", "telemundo",
+    "pluto tv",
+}
+FREE_PREFIXES_US = {"vix"}
 
 _LEAGUE_TIER = {
     "liga-mx": 30, "nfl": 30, "champions": 30, "copa-del-mundo": 30,
@@ -152,15 +164,23 @@ DERBIES = [
 ]
 
 
-def _is_free_broadcast(channel_name: str) -> bool:
-    """Check if a channel is free / over-the-air."""
+def _is_free_broadcast(channel_name: str, country: str = "MX") -> bool:
+    """Check if a channel is free OTA in the given country."""
     c = channel_name.lower().strip()
-    # Exact "fox" but not "fox sports", "fox deportes", etc.
-    if c == "fox":
-        return True
-    if "fox" in c and c != "fox":
+    if not c:
         return False
-    return any(free in c for free in FREE_CHANNELS)
+    if country == "US":
+        channels, prefixes = FREE_CHANNELS_US, FREE_PREFIXES_US
+    else:
+        channels, prefixes = FREE_CHANNELS_MX, FREE_PREFIXES_MX
+    # Exact match
+    if c in channels:
+        return True
+    # Prefix match (e.g. "vix" matches "vix free", "vix premium" should NOT)
+    for pfx in prefixes:
+        if c.startswith(pfx) and ("premium" not in c and "plus" not in c and "+" not in c):
+            return True
+    return False
 
 
 def score_game_interest(game: dict) -> int:
@@ -413,17 +433,7 @@ templates.env.globals["popular_teams"] = POPULAR_TEAMS
 
 
 # ── Free / OTA channels ────────────────────────────────
-FREE_CHANNELS = {
-    "canal 5", "azteca 7", "las estrellas", "azteca uno", "azteca deportes",
-    "univision", "unimás", "telemundo", "nbc", "cbs", "abc", "fox",
-    "tv azteca", "canal 5 nu9ve", "nu9ve", "pluto tv", "vix free",
-}
-
-
-def _is_free_broadcast(channel_name: str) -> bool:
-    """Check if a channel is free/OTA."""
-    c = channel_name.lower().strip()
-    return any(free in c for free in FREE_CHANNELS)
+# FREE_CHANNELS and _is_free_broadcast defined above (near line 116)
 
 
 def _team_name_to_slug(team_name: str) -> str | None:
@@ -601,6 +611,15 @@ async def home(
     # Pick del dia — best single game for the card
     pick_game = featured_games[0] if featured_games else (live_games[0] if live_games else None)
 
+    # ── Dedup: collect IDs already shown in priority sections ──
+    shown_ids = set()
+    for g in must_watch:
+        shown_ids.add(g["id"])
+    for g in free_games:
+        shown_ids.add(g["id"])
+    for g in live_games:
+        shown_ids.add(g["id"])
+
     # Available sports for filter
     sport_types = sorted(set(v[0] for v in LEAGUES.values()))
 
@@ -673,6 +692,7 @@ async def home(
             "sport_counts": sport_counts,
             "home_standings": home_standings,
             "is_historical": is_historical,
+            "shown_ids": shown_ids,
         },
     )
     # Short cache to prevent stale dates — 90s browser, 90s CDN

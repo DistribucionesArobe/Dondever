@@ -598,7 +598,9 @@
         }
         .team-name {
             font-weight: 600; font-size: 0.82rem; color: #0f172a;
-            flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            flex: 1; overflow: hidden; text-overflow: ellipsis;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            white-space: normal; line-height: 1.3;
         }
         .gc-right { text-align: right; flex-shrink: 0; }
         .team-score { font-size: 1rem; font-weight: 800; color: #059669; }
@@ -1458,6 +1460,24 @@
             .wa-cta-inner { flex-direction: column; align-items: flex-start; }
         }
 
+        /* ── Collapsed results (finished games) ── */
+        .results-collapsed { margin-top: 0.5rem; border-top: 1px solid var(--border, #e5e7eb); padding-top: 0.5rem; }
+        .results-toggle {
+            background: none; border: none; color: var(--text-secondary, #6b7280);
+            font-size: 0.78rem; font-weight: 600; cursor: pointer; padding: 0.3rem 0;
+            display: flex; align-items: center; gap: 0.3rem;
+        }
+        .results-toggle:hover { color: #10b981; }
+        .toggle-arrow { font-size: 0.65rem; }
+        .result-mini {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.35rem 0; border-bottom: 1px solid var(--border, #f3f4f6);
+            font-size: 0.78rem;
+        }
+        .rm-teams { font-weight: 600; color: var(--text-primary, #374151); }
+        .rm-status { font-size: 0.7rem; color: #6b7280; font-weight: 500; }
+        [data-theme="dark"] .rm-teams { color: #e2e8f0; }
+
         /* ── Auto-ads: no ads in hero on mobile, cap size elsewhere ── */
         @media (max-width: 767px) {
             .hero-inner > .google-auto-placed {
@@ -1548,7 +1568,7 @@
             </a>
             <a href="/?sport=basketball" class="sport-card {% if current_sport == 'basketball' %}active{% endif %}">
                 <span class="sc-emoji">&#127936;</span>
-                <span class="sc-label">Basket</span>
+                <span class="sc-label">NBA</span>
                 <span class="sc-count">{% if sport_counts.get('basketball') %}{{ sport_counts['basketball'] }}{% endif %}</span>
             </a>
             <a href="/?sport=football" class="sport-card {% if current_sport == 'football' %}active{% endif %}">
@@ -1982,14 +2002,33 @@
 
     {# ── ALL GAMES by league ── #}
     {% set league_idx = [0] %}
+    {% set MAX_VISIBLE_LEAGUES = 5 %}
     {% for league_name, league_data in sports_grouped.items() %}
+    {% set deduped_games = league_data.games | rejectattr('id', 'in', shown_ids) | list %}
+    {% set active_games = deduped_games | selectattr('status.state', 'in', ['pre', 'in']) | list %}
+    {% set finished_games = deduped_games | selectattr('status.state', 'eq', 'post') | list %}
+    {% if deduped_games %}
+
+    {# Insert "Mostrar más" button before 6th league #}
+    {% if league_idx[0] == MAX_VISIBLE_LEAGUES %}
+    <div id="showMoreLeagues" style="text-align:center;padding:1rem;">
+        <button onclick="document.getElementById('hiddenLeagues').style.display='block';this.parentElement.style.display='none';"
+                style="background:#10b981;color:white;border:none;padding:0.7rem 2rem;border-radius:8px;font-weight:700;font-size:0.9rem;cursor:pointer;">
+            Mostrar m&aacute;s ligas &#9660;
+        </button>
+    </div>
+    <div id="hiddenLeagues" style="display:none;">
+    {% endif %}
+
     <section class="league-section">
         <h2 class="league-header">
             <span>{{ league_data.emoji }} {{ league_name }}</span>
-            <span class="league-count">{{ league_data.games | length }} partido{{ 's' if league_data.games | length != 1 else '' }}</span>
+            <span class="league-count">{{ active_games | length + finished_games | length }} partido{{ 's' if (active_games | length + finished_games | length) != 1 else '' }}</span>
         </h2>
 
+        {# ── Active games (pre/in) shown directly ── #}
         {% for game in league_data.games %}
+        {% if game.id not in shown_ids and game.status.state != 'post' %}
         {% set state = game.status.state %}
         {# Soccer/boxing/mma convention: home team shown first (top row) #}
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
@@ -2179,10 +2218,34 @@
                 </div>
             </div>
         </div>
+        {% endif %}{# end active game filter #}
         {% endfor %}
-    </section>
 
-    {% set _ = league_idx.__setitem__(0, league_idx[0] + 1) %}
+        {# ── Finished games collapsed ── #}
+        {% if finished_games %}
+        <div class="results-collapsed">
+            <button class="results-toggle" onclick="var c=this.nextElementSibling;c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.toggle-arrow').textContent=c.style.display==='none'?'&#9660;':'&#9650;';">
+                Resultados ({{ finished_games | length }}) <span class="toggle-arrow">&#9660;</span>
+            </button>
+            <div style="display:none;">
+            {% for game in league_data.games %}
+            {% if game.id not in shown_ids and game.status.state == 'post' %}
+            {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+            {% set top_team = game.home if home_left else game.away %}
+            {% set bottom_team = game.away if home_left else game.home %}
+            <a href="{{ game|game_url }}" class="result-mini" style="text-decoration:none;color:inherit;">
+                <span class="rm-teams">{{ top_team.name }} {{ top_team.score }} - {{ bottom_team.score }} {{ bottom_team.name }}</span>
+                <span class="rm-status">Final</span>
+            </a>
+            {% endif %}
+            {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}{# end deduped_games non-empty #}
+
+    {% if deduped_games %}{% set _ = league_idx.__setitem__(0, league_idx[0] + 1) %}{% endif %}
 
     {# ── Interstitial promo: after 2nd league section ── #}
     {% if league_idx[0] == 2 and not is_historical %}
@@ -2208,54 +2271,19 @@
     {% endfor %}
     {% endif %}
     {% endfor %}
+    {# Close hiddenLeagues div if it was opened #}
+    {% if league_idx[0] > MAX_VISIBLE_LEAGUES %}</div>{% endif %}
 </main>
 
-<!-- Standings compactos -->
+<!-- Standings — compact link bar (full tables on league pages) -->
 {% if home_standings %}
-<div class="standings-compact">
-    <h2>&#127942; Tablas de posiciones</h2>
-    <div class="standings-grid">
+<div class="standings-compact" style="padding:0.8rem 1rem;">
+    <h2 style="font-size:1rem;margin-bottom:0.6rem;">&#127942; Tablas de posiciones</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
         {% for league_slug, st_data in home_standings.items() %}
-        <div class="standings-mini-card">
-            <div class="standings-mini-header">
-                <span>{{ st_data.emoji }} {{ st_data.name }}</span>
-                <a href="/liga/{{ league_slug }}">Ver completa &rarr;</a>
-            </div>
-            <table class="standings-mini-table">
-                <thead>
-                    <tr>
-                        <th>Equipo</th>
-                        {% if st_data.sport == 'soccer' %}
-                        <th>PJ</th><th>G</th><th>E</th><th>P</th><th>Pts</th>
-                        {% else %}
-                        <th>G</th><th>P</th><th>%</th>
-                        {% endif %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for team in st_data.entries[:5] %}
-                    <tr>
-                        <td>
-                            <span class="st-rank">{{ loop.index }}</span>
-                            {% if team.team_logo %}<img src="{{ team.team_logo }}" class="st-logo" loading="lazy">{% endif %}
-                            {{ team.team_short or team.team_name[:12] }}
-                        </td>
-                        {% if st_data.sport == 'soccer' %}
-                        <td>{{ team.games_played }}</td>
-                        <td>{{ team.wins }}</td>
-                        <td>{{ team.ties }}</td>
-                        <td>{{ team.losses }}</td>
-                        <td><strong>{{ team.points }}</strong></td>
-                        {% else %}
-                        <td>{{ team.wins }}</td>
-                        <td>{{ team.losses }}</td>
-                        <td>{{ team.win_pct or '' }}</td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <a href="/liga/{{ league_slug }}" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;background:var(--bg-muted,#f3f4f6);border-radius:6px;font-size:0.78rem;font-weight:600;color:var(--text-primary,#374151);text-decoration:none;">
+            {{ st_data.emoji }} {{ st_data.name }} &rarr;
+        </a>
         {% endfor %}
     </div>
 </div>

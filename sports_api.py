@@ -19,6 +19,42 @@ from config import (
 
 logger = logging.getLogger("dondever.sports")
 
+# ── ESPN status description → Spanish translation ──
+_STATUS_ES = {
+    "Scheduled": "Programado",
+    "In Progress": "En vivo",
+    "Final": "Final",
+    "Final/OT": "Final/Prórroga",
+    "Final/SO": "Final/Shootout",
+    "Postponed": "Pospuesto",
+    "Cancelled": "Cancelado",
+    "Suspended": "Suspendido",
+    "Delayed": "Demorado",
+    "Rain Delay": "Demora por lluvia",
+    "Halftime": "Medio tiempo",
+    "End of Period": "Fin del periodo",
+    "Full Time": "Tiempo completo",
+    "After Extra Time": "Después de prórroga",
+    "After Penalties": "Después de penales",
+    "Abandoned": "Abandonado",
+    "1st Half": "1er Tiempo",
+    "2nd Half": "2do Tiempo",
+    "Pre-Game": "Por iniciar",
+    "Warmup": "Calentamiento",
+    "End of Regulation": "Fin del tiempo regular",
+}
+
+
+def _translate_status(desc: str) -> str:
+    """Translate ESPN status description to Spanish."""
+    if desc in _STATUS_ES:
+        return _STATUS_ES[desc]
+    # Try case-insensitive match
+    for en, es in _STATUS_ES.items():
+        if en.lower() == desc.lower():
+            return es
+    return desc
+
 def _normalize_channel(raw: str) -> str:
     """Normalize ESPN's truncated channel names to canonical form."""
     raw = raw.strip()
@@ -860,7 +896,7 @@ async def parse_espn_events_enriched(
         status = {
             "state": status_type.get("state", "pre"),
             "detail": detail,
-            "display": status_type.get("description", "Scheduled"),
+            "display": _translate_status(status_type.get("description", "Scheduled")),
             "clock": raw_clock,
             "period": period,
         }
