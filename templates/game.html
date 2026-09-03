@@ -32,8 +32,8 @@
     {
       "@context": "https://schema.org",
       "@type": "SportsEvent",
-      "name": "{{ game.away.name }} vs {{ game.home.name }}",
-      "description": "{% if odds %}Momios, pronóstico y {% endif %}dónde ver {{ game.away.name }} vs {{ game.home.name }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.",
+      "name": "{{ first_team }} vs {{ second_team }}",
+      "description": "{% if odds %}Momios, pronóstico y {% endif %}dónde ver {{ first_team }} vs {{ second_team }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.",
       "startDate": "{{ game.date }}",
       "eventStatus": "https://schema.org/{% if game.status.display in ('Pospuesto', 'Postponed') %}EventPostponed{% elif game.status.display in ('Cancelado', 'Cancelled') %}EventCancelled{% elif game.status.state == 'post' %}EventCompleted{% else %}EventScheduled{% endif %}",
       "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
@@ -92,7 +92,7 @@
       "itemListElement": [
         {"@type": "ListItem", "position": 1, "name": "DondeVer", "item": "{{ app_url }}/"},
         {"@type": "ListItem", "position": 2, "name": "{{ game.league_name }}", "item": "{{ app_url }}/liga/{{ game.league_slug }}"},
-        {"@type": "ListItem", "position": 3, "name": "{{ game.away.name }} vs {{ game.home.name }}"}
+        {"@type": "ListItem", "position": 3, "name": "{{ first_team }} vs {{ second_team }}"}
       ]
     }
     </script>
@@ -381,7 +381,7 @@
                 <div style="font-size:1.5rem;font-weight:700;color:#6b7280">FINAL</div>
             {% else %}
                 <div class="time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</div>
-                <div class="tz" id="tz-label">Hora centro de Mexico | {{ format_us_time(game.date) }}</div>
+                <div class="tz" id="tz-label">Hora centro de M&eacute;xico | {{ format_us_time(game.date) }}</div>
             {% endif %}
         </div>
         {% if match_preview %}
@@ -412,7 +412,8 @@
             {# Form guide #}
             {% if home_form or away_form %}
             <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:0.85rem;margin-bottom:1rem;">
-                <div style="font-size:0.65rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.6rem;">Forma reciente (últimos 5)</div>
+                {% set _preview_form_count = [home_form|length, away_form|length]|max %}
+                <div style="font-size:0.65rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.6rem;">Forma reciente (últimos {{ _preview_form_count }})</div>
                 {% set home_left_form = game.sport in ('soccer', 'boxing', 'mma') %}
                 {# Team 1 form #}
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
@@ -471,8 +472,8 @@
             {# CTA #}
             {% if odds %}
             <div style="text-align:center;">
-                <a href="/go/bet?s=analysis-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;font-size:0.75rem;font-weight:700;padding:0.6rem 2rem;border-radius:8px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                    Apostar en este partido →
+                <a href="#momios" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;font-size:0.75rem;font-weight:700;padding:0.6rem 2rem;border-radius:8px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    Ver cuotas &darr;
                 </a>
                 <div style="font-size:0.55rem;color:#475569;margin-top:0.35rem;">+18 apuesta responsablemente. Publicidad.</div>
             </div>
@@ -566,21 +567,16 @@
             <button id="copyBtn" onclick="dvCopy()" style="display:inline-flex;align-items:center;gap:0.3rem;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:0.45rem 0.85rem;font-size:0.78rem;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;transition:background 0.15s;">&#128279; Copiar enlace</button>
         </div>
 
-        {# ── Betting Strip — naranja, prominente, dentro del card ── #}
-        {% if game.status.state == 'pre' %}
-        <div style="margin:0.75rem -1.25rem -1.25rem;background:linear-gradient(135deg,#7c2d12,#9a3412);border-radius:0 0 16px 16px;padding:0.65rem 1rem;">
-            <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:#fed7aa;font-weight:600;margin-bottom:0.4rem;text-align:center;">Cuotas del partido</div>
-            <div style="display:flex;gap:0.35rem;justify-content:center;flex-wrap:wrap;">
-                <a href="/go/bet?s=game-strip" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" data-geo="us" style="display:none;background:#ea580c;color:white;font-size:0.7rem;font-weight:700;padding:0.4rem 0.85rem;border-radius:6px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Betsson</a>
-                <a href="/go/jubilee?s=game-strip" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" style="background:#d97706;color:white;font-size:0.7rem;font-weight:700;padding:0.4rem 0.85rem;border-radius:6px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Jubilee</a>
-                <a href="/go/vivento?s=game-strip" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" data-geo="mx" style="background:#dc2626;color:white;font-size:0.7rem;font-weight:700;padding:0.4rem 0.85rem;border-radius:6px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Vivento</a>
-                <a href="/go/1xbet?s=game-strip" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" data-geo="latam" style="display:none;background:#1a5276;color:white;font-size:0.7rem;font-weight:700;padding:0.4rem 0.85rem;border-radius:6px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">1xBet</a>
-            </div>
-            <div style="font-size:0.5rem;color:#fed7aa;opacity:0.5;text-align:center;margin-top:0.3rem;">+18 Publicidad. Apuesta responsablemente.</div>
+        {# ── Betting Strip — sutil, dentro del card ── #}
+        {% if game.status.state == 'pre' and odds %}
+        <div style="margin:0.75rem -1.25rem -1.25rem;background:#1e293b;border-radius:0 0 16px 16px;padding:0.5rem 1rem;text-align:center;">
+            <a href="#momios" style="color:#10b981;font-size:0.75rem;font-weight:700;text-decoration:none;">Ver cuotas del partido &darr;</a>
         </div>
         {% endif %}
     </div>
 
+    {# ── Analysis block (wrapped to prevent auto-ad insertion) ── #}
+    <div data-nosnippet data-ad-layout="none">
     {# ── Horarios por país ── #}
     {% if game.status.state == 'pre' %}
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
@@ -693,7 +689,7 @@
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
         <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
             <div style="text-align:center;margin-bottom:0.75rem;">
-                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#059669;font-weight:600;">Comparacion de equipos</div>
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#059669;font-weight:600;">Comparaci&oacute;n de equipos</div>
             </div>
             <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
                 <thead>
@@ -724,7 +720,7 @@
                     </tr>
                     {% endif %}
                     {# Soccer-specific: points, rank, goal diff #}
-                    {% if left_stats.points and right_stats.points %}
+                    {% if left_stats.points and right_stats.points and game.sport in ('soccer', 'hockey') %}
                     <tr style="border-top:1px solid #f3f4f6;">
                         <td style="padding:0.5rem 0;font-weight:700;color:{% if left_stats.points|int > right_stats.points|int %}#059669{% else %}#1a1a2e{% endif %};">{{ left_stats.points }} pts</td>
                         <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Puntos</td>
@@ -734,7 +730,7 @@
                     {% if left_stats.rank and right_stats.rank %}
                     <tr style="border-top:1px solid #f3f4f6;">
                         <td style="padding:0.5rem 0;font-weight:700;color:{% if left_stats.rank|int < right_stats.rank|int %}#059669{% else %}#1a1a2e{% endif %};">#{{ left_stats.rank }}</td>
-                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Posicion</td>
+                        <td style="text-align:center;color:#6b7280;font-size:0.7rem;">Posici&oacute;n</td>
                         <td style="text-align:right;font-weight:700;color:{% if right_stats.rank|int < left_stats.rank|int %}#059669{% else %}#1a1a2e{% endif %};">#{{ right_stats.rank }}</td>
                     </tr>
                     {% endif %}
@@ -850,12 +846,12 @@
     </div>
     {% endif %}
 
-    {# ── Tabla de Posiciones (mini) ── #}
+    {# ── Tabla de Posici&oacute;nes (mini) ── #}
     {% if summary and summary.standings %}
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;">
         <div class="gd-card" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
             <div style="text-align:center;margin-bottom:0.75rem;">
-                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#059669;font-weight:600;">Tabla de Posiciones</div>
+                <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#059669;font-weight:600;">Tabla de Posici&oacute;nes</div>
             </div>
             {% for group in summary.standings %}
             {% if not loop.first %}<div style="margin-top:0.75rem;"></div>{% endif %}
@@ -970,6 +966,8 @@
     </div>
     {% endif %}
 
+    </div>{# end analysis block #}
+
     {# ── CTAs contextuales basados en los canales del partido ── #}
     {# Find the first streaming affiliate that matches a broadcast channel #}
     {% set featured_saff = namespace(found=false, key='', name='', cta='', bg='', color='') %}
@@ -1017,38 +1015,9 @@
         </a>
     {% endif %}
 
-    {# 3. Apuestas — siempre, pero contextual al partido #}
     {% set home_left_bet = game.sport in ('soccer', 'boxing', 'mma') %}
     {% set team1 = game.home.name if home_left_bet else game.away.name %}
     {% set team2 = game.away.name if home_left_bet else game.home.name %}
-        {# US: Betsson #}
-        <a href="/go/bet?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" data-geo="us" data-display="flex" style="display:none;align-items:center;gap:1rem;background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #059669;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
-            <div style="flex:1;">
-                <div style="font-size:1rem;font-weight:800;color:white;">⚽ {{ team1 }} vs {{ team2 }}</div>
-                <div style="font-size:0.8rem;color:#6ee7b7;margin:0.2rem 0;">Apuesta en el partido</div>
-                <div style="font-size:0.65rem;color:#34d399;">{{ affiliates.betsson.name }} · +18</div>
-            </div>
-            <div style="background:#059669;color:white;font-weight:800;font-size:0.8rem;padding:0.6rem 1.1rem;border-radius:8px;white-space:nowrap;">VER MOMIOS &rarr;</div>
-        </a>
-        {# MX: Jubilee #}
-        <a href="/go/jubilee?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" data-display="flex" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #059669;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
-            <div style="flex:1;">
-                <div style="font-size:1rem;font-weight:800;color:white;">⚽ {{ team1 }} vs {{ team2 }}</div>
-                <div style="font-size:0.8rem;color:#6ee7b7;margin:0.2rem 0;">Apuesta en el partido</div>
-                <div style="font-size:0.65rem;color:#34d399;">{{ affiliates.jubilee.name }} · +18</div>
-            </div>
-            <div style="background:#059669;color:white;font-weight:800;font-size:0.8rem;padding:0.6rem 1.1rem;border-radius:8px;white-space:nowrap;">VER MOMIOS &rarr;</div>
-        </a>
-        {# LATAM: 1xBet #}
-        <a href="/go/1xbet?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" data-geo="latam" data-display="flex" style="display:none;align-items:center;gap:1rem;background:linear-gradient(135deg,#0c2d48,#1a5276);border:1px solid #2980b9;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
-            <div style="flex:1;">
-                <div style="font-size:1rem;font-weight:800;color:white;">⚽ {{ team1 }} vs {{ team2 }}</div>
-                <div style="font-size:0.8rem;color:#85c1e9;margin:0.2rem 0;">Apuesta en el partido</div>
-                <div style="font-size:0.65rem;color:#5dade2;">1xBet · +18</div>
-            </div>
-            <div style="background:#2980b9;color:white;font-weight:800;font-size:0.8rem;padding:0.6rem 1.1rem;border-radius:8px;white-space:nowrap;">VER MOMIOS &rarr;</div>
-        </a>
-
     </div>
 
     {% if odds %}
@@ -1071,19 +1040,19 @@
                 <a href="/go/bet?s=odds" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">{{ left_name }}</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ left_odds or '—' }}</div>
-                    <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
+                    <div style="font-size:0.6rem;color:#6b7280;">Ver cuota</div>
                 </a>
                 {% if odds.draw_odds %}
                 <a href="/go/bet?s=odds" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:80px;max-width:140px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#f97316'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">Empate</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#f97316;margin:0.25rem 0;">{{ odds.draw_odds }}</div>
-                    <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
+                    <div style="font-size:0.6rem;color:#6b7280;">Ver cuota</div>
                 </a>
                 {% endif %}
                 <a href="/go/bet?s=odds" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.75rem 1.25rem;text-align:center;flex:1;min-width:100px;max-width:180px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='#374151'">
                     <div style="font-size:0.7rem;color:#9ca3af;">{{ right_name }}</div>
                     <div style="font-size:1.4rem;font-weight:800;color:#10b981;margin:0.25rem 0;">{{ right_odds or '—' }}</div>
-                    <div style="font-size:0.6rem;color:#6b7280;">Apostar</div>
+                    <div style="font-size:0.6rem;color:#6b7280;">Ver cuota</div>
                 </a>
             </div>
 
@@ -1116,7 +1085,7 @@
                 <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:#9ca3af;font-weight:600;margin-bottom:0.5rem;text-align:center;">Total (Over/Under) — {{ odds.total_point }}</div>
                 <div style="display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;">
                     <a href="/go/bet?s=odds-total" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" style="text-decoration:none;background:#0f0f14;border-radius:10px;padding:0.6rem 1rem;text-align:center;flex:1;min-width:120px;max-width:200px;border:1px solid #374151;transition:border-color 0.15s;" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='#374151'">
-                        <div style="font-size:0.65rem;color:#9ca3af;">Over (Mas de)</div>
+                        <div style="font-size:0.65rem;color:#9ca3af;">Over (M&aacute;s de)</div>
                         <div style="font-size:1.1rem;font-weight:800;color:#22c55e;margin:0.15rem 0;">↑ {{ odds.total_point }}</div>
                         <div style="font-size:0.75rem;color:#cbd5e1;">{{ odds.total_over }}</div>
                     </a>
@@ -1136,7 +1105,17 @@
     </div>
     {% endif %}
 
-    {# ── Pick del dia / Prediccion ── #}
+    {# ── Ad placement (after momios, before pick) ── #}
+    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;min-height:100px;text-align:center;">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-2576227882415709"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    {# ── Pick del d&iacute;a / Prediccion ── #}
     {% if odds and game.status.state == 'pre' %}
     {% set left_odds_val = odds.home_odds if home_left else odds.away_odds %}
     {% set right_odds_val = odds.away_odds if home_left else odds.home_odds %}
@@ -1178,7 +1157,7 @@
                     📊 <strong style="color:white;">{{ left_team.name.split(' ')[-1] }}</strong> tiene mejor porcentaje de victorias
                     ({{ left_stats.win_pct }} vs {{ right_stats.win_pct }}).
                     {% if left_stats.all_stats and left_stats.all_stats.get('Last Ten Games') %}
-                    En los ultimos 10 juegos: {{ left_stats.all_stats.get('Last Ten Games') }}.
+                    En los &uacute;ltimos 10 juegos: {{ left_stats.all_stats.get('Last Ten Games') }}.
                     {% endif %}
                     {% if diff >= 0.12 %}
                     <span style="color:#10b981;">Ventaja clara.</span>
@@ -1199,7 +1178,7 @@
                     📊 <strong style="color:white;">{{ right_team.name.split(' ')[-1] }}</strong> tiene mejor porcentaje de victorias
                     ({{ right_stats.win_pct }} vs {{ left_stats.win_pct }}).
                     {% if right_stats.all_stats and right_stats.all_stats.get('Last Ten Games') %}
-                    En los ultimos 10 juegos: {{ right_stats.all_stats.get('Last Ten Games') }}.
+                    En los &uacute;ltimos 10 juegos: {{ right_stats.all_stats.get('Last Ten Games') }}.
                     {% endif %}
                     {% if diff >= 0.12 %}
                     <span style="color:#10b981;">Ventaja clara.</span>
@@ -1217,10 +1196,10 @@
                 <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
                     ⚖️ Equipos con rendimiento similar. Considera el factor local y rachas recientes antes de decidir.
                     {% if left_stats.all_stats and left_stats.all_stats.get('Last Ten Games') %}
-                    {{ left_team.name.split(' ')[-1] }} ultimos 10: {{ left_stats.all_stats.get('Last Ten Games') }}.
+                    {{ left_team.name.split(' ')[-1] }} &uacute;ltimos 10: {{ left_stats.all_stats.get('Last Ten Games') }}.
                     {% endif %}
                     {% if right_stats.all_stats and right_stats.all_stats.get('Last Ten Games') %}
-                    {{ right_team.name.split(' ')[-1] }} ultimos 10: {{ right_stats.all_stats.get('Last Ten Games') }}.
+                    {{ right_team.name.split(' ')[-1] }} &uacute;ltimos 10: {{ right_stats.all_stats.get('Last Ten Games') }}.
                     {% endif %}
                 </div>
                 {% endif %}
@@ -1260,7 +1239,7 @@
 
             <div style="text-align:center;margin-top:0.75rem;">
                 <a href="/go/bet?s=pick" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" style="display:inline-block;background:#10b981;color:white;font-size:0.75rem;font-weight:700;padding:0.5rem 1.5rem;border-radius:8px;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
-                    Apostar en Betsson &rarr;
+                    Ver cuotas completas &rarr;
                 </a>
             </div>
             <div style="text-align:center;margin-top:0.5rem;font-size:0.55rem;color:#6b7280;">
@@ -1270,35 +1249,7 @@
     </div>
     {% endif %}
 
-    {# Betsson secondary CTA — más pequeño, debajo de odds o al final #}
-    <div style="max-width:650px;margin:0 auto 0.75rem;padding:0 1rem;">
-        {# US: Betsson #}
-        <a href="/go/bet?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" data-geo="us" data-display="flex" style="display:none;align-items:center;gap:0.75rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;">
-            <div style="flex:1;">
-                <div style="font-size:0.8rem;font-weight:700;color:white;">⚽ Apuesta en {{ team1 }} vs {{ team2 }}</div>
-                <div style="font-size:0.65rem;color:#9ca3af;">{{ affiliates.betsson.name }} · {{ affiliates.betsson.bonus }} · +18</div>
-            </div>
-            <div style="color:#f97316;font-weight:700;font-size:0.7rem;white-space:nowrap;">VER MOMIOS &rarr;</div>
-        </a>
-        {# MX: Vivento #}
-        <a href="/go/vivento?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="vivento" data-geo="mx" data-display="flex" style="display:flex;align-items:center;gap:0.75rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;">
-            <div style="flex:1;">
-                <div style="font-size:0.8rem;font-weight:700;color:white;">⚽ Apuesta en {{ team1 }} vs {{ team2 }}</div>
-                <div style="font-size:0.65rem;color:#9ca3af;">{{ affiliates.vivento.name }} · {{ affiliates.vivento.bonus }} · +18</div>
-            </div>
-            <div style="color:#f97316;font-weight:700;font-size:0.7rem;white-space:nowrap;">VER MOMIOS &rarr;</div>
-        </a>
-        {# LATAM: 1xBet #}
-        <a href="/go/1xbet?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" data-geo="latam" data-display="flex" style="display:none;align-items:center;gap:0.75rem;background:#1a1a2e;border:1px solid #374151;border-radius:10px;padding:0.75rem 1rem;text-decoration:none;">
-            <div style="flex:1;">
-                <div style="font-size:0.8rem;font-weight:700;color:white;">⚽ Apuesta en {{ team1 }} vs {{ team2 }}</div>
-                <div style="font-size:0.65rem;color:#9ca3af;">1xBet · Bono primer deposito hasta $6,500 MXN · +18</div>
-            </div>
-            <div style="color:#5dade2;font-weight:700;font-size:0.7rem;white-space:nowrap;">VER MOMIOS &rarr;</div>
-        </a>
-    </div>
-
-    {# Jubilee & Vivento CTAs moved to betting strip inside game card #}
+    {# Secondary CTAs removed — simplified to odds section + single CTA #}
 
     <!-- Email Newsletter CTA -->
     <div class="wa-cta" id="email-subscribe" style="background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 100%);">
@@ -1310,10 +1261,10 @@
                 </div>
             </div>
             <div class="wa-cta-features">
-                <span>Pick del dia</span>
+                <span>Pick del d&iacute;a</span>
                 <span>Momios</span>
                 <span>6+ juegos</span>
-                <span>Tips estadisticos</span>
+                <span>Tips estad&iacute;sticos</span>
             </div>
             <form class="wa-form" id="emailForm" onsubmit="return emailSubscribe(event)">
                 <input type="email" id="emailInput" placeholder="tu@email.com" required
@@ -1458,7 +1409,7 @@ function emailSubscribe(e) {
   .then(function(data) {
     if (data.ok) {
       msg.className = 'wa-msg success';
-      msg.textContent = data.is_new ? 'Listo! Recibiras picks diarios en tu correo.' : 'Ya estas suscrito. Revisa tu bandeja manana.';
+      msg.textContent = data.is_new ? '¡Listo! Recibirás picks diarios en tu correo.' : 'Ya estás suscrito. Revisa tu bandeja mañana.';
       msg.style.display = 'block';
       btn.textContent = 'SUSCRITO';
       if (typeof gtag === 'function') {
@@ -1466,7 +1417,7 @@ function emailSubscribe(e) {
       }
     } else {
       msg.className = 'wa-msg error';
-      msg.textContent = data.error === 'invalid_email' ? 'Email no valido. Verifica e intenta de nuevo.' : 'Error al registrar. Intenta de nuevo.';
+      msg.textContent = data.error === 'invalid_email' ? 'Email no válido. Verifica e intenta de nuevo.' : 'Error al registrar. Intenta de nuevo.';
       msg.style.display = 'block';
       btn.disabled = false;
       btn.textContent = 'SUSCRIBIRME GRATIS';
@@ -1474,7 +1425,7 @@ function emailSubscribe(e) {
   })
   .catch(function() {
     msg.className = 'wa-msg error';
-    msg.textContent = 'Error de conexion. Intenta de nuevo.';
+    msg.textContent = 'Error de conexión. Intenta de nuevo.';
     msg.style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'SUSCRIBIRME GRATIS';

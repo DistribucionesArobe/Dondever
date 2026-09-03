@@ -60,9 +60,14 @@ def _slugify(text: str) -> str:
 
 
 def _make_game_slug(game: dict) -> str:
-    """Build a semantic slug: 'america-vs-cruz-azul-2026-08-11'."""
+    """Build a semantic slug matching title order.
+    Soccer/boxing/MMA: home-vs-away.  Other sports: away-vs-home."""
     home = _slugify(game.get("home", {}).get("name", "home"))
     away = _slugify(game.get("away", {}).get("name", "away"))
+    sport = game.get("sport", "")
+    home_first = sport in ("soccer", "boxing", "mma")
+    first = home if home_first else away
+    second = away if home_first else home
     # Parse date from ISO string (e.g. '2026-08-11T22:00Z')
     raw_date = game.get("date", "")
     try:
@@ -70,7 +75,7 @@ def _make_game_slug(game: dict) -> str:
         date_str = dt.astimezone(TZ_MX).strftime("%Y-%m-%d")
     except Exception:
         date_str = datetime.now(TZ_MX).strftime("%Y-%m-%d")
-    return f"{home}-vs-{away}-{date_str}"
+    return f"{first}-vs-{second}-{date_str}"
 
 
 def _game_url(game: dict) -> str:
@@ -557,7 +562,7 @@ async def home(
 
     # ── Must-watch "Los 5 imperdibles" ─────────────────
     must_watch = sorted(
-        [g for g in games if g["status"]["state"] in ("pre", "in") and g["interest_score"] >= 30],
+        [g for g in games if g["status"]["state"] == "pre" and g["interest_score"] >= 30],
         key=lambda g: g["interest_score"],
         reverse=True,
     )[:5]
@@ -565,7 +570,7 @@ async def home(
     # ── Free games (TV abierta / streaming gratis) ─────
     free_games = [
         g for g in games
-        if g["status"]["state"] in ("pre", "in")
+        if g["status"]["state"] == "pre"
         and any(_is_free_broadcast(b.get("channel", "")) for b in g.get("broadcasts", []))
     ]
     for g in free_games:
@@ -917,8 +922,8 @@ async def game_semantic(request: Request, slug: str):
             context={"message": "URL de partido no válida."}
         )
 
-    home_slug_part = match.group(1)
-    away_slug_part = match.group(2)
+    slug_part_1 = match.group(1)
+    slug_part_2 = match.group(2)
     date_str = match.group(3).replace("-", "")  # YYYYMMDD for API
 
     # Search across the target date and adjacent days
@@ -935,10 +940,11 @@ async def game_semantic(request: Request, slug: str):
             if g_slug == slug:
                 game = g
                 break
-            # Fallback: match just team slugs (handles timezone edge cases)
+            # Fallback: match team slugs in either order (handles old URLs + tz edge cases)
             g_home = _slugify(g.get("home", {}).get("name", ""))
             g_away = _slugify(g.get("away", {}).get("name", ""))
-            if g_home == home_slug_part and g_away == away_slug_part:
+            if (g_home == slug_part_1 and g_away == slug_part_2) or \
+               (g_away == slug_part_1 and g_home == slug_part_2):
                 game = g
                 break
         if game:
@@ -1182,8 +1188,8 @@ async def og_game_image(slug: str):
     if not match:
         return Response(status_code=404)
 
-    home_slug_part = match.group(1)
-    away_slug_part = match.group(2)
+    slug_part_1 = match.group(1)
+    slug_part_2 = match.group(2)
     date_str = match.group(3).replace("-", "")
 
     # Find the game
@@ -1198,7 +1204,8 @@ async def og_game_image(slug: str):
         for g in all_games:
             g_home = _slugify(g.get("home", {}).get("name", ""))
             g_away = _slugify(g.get("away", {}).get("name", ""))
-            if g_home == home_slug_part and g_away == away_slug_part:
+            if (g_home == slug_part_1 and g_away == slug_part_2) or \
+               (g_away == slug_part_1 and g_home == slug_part_2):
                 game = g
                 break
         if game:
@@ -1206,8 +1213,8 @@ async def og_game_image(slug: str):
 
     if not game:
         # Fallback: generate with slug parts only
-        home_name = home_slug_part.replace("-", " ").title()
-        away_name = away_slug_part.replace("-", " ").title()
+        home_name = slug_part_1.replace("-", " ").title()
+        away_name = slug_part_2.replace("-", " ").title()
         date_display = match.group(3)
         png = await generate_game_og(home_name, away_name, date_str=date_display)
     else:
@@ -3924,26 +3931,25 @@ def generate_match_preview(game: dict) -> dict | None:
     underdog = prediction["underdog"] if prediction else None
     value = prediction.get("value") if prediction else None
 
-    # ── Snippet (1 line for homepage) ──
+    # ── Snippet (short, data-first for homepage) ──
     if fav and prob:
         if prob >= 70:
-            snippet_parts.append(f"{fav} es amplio favorito ({prob}%)")
+            snippet_parts.append(f"Favorito: {fav} · {prob}%")
             tone = "neutral"
         elif prob >= 55:
-            snippet_parts.append(f"{fav} parte como favorito ({prob}%)")
+            snippet_parts.append(f"Favorito: {fav} · {prob}%")
             tone = "neutral"
         else:
-            snippet_parts.append(f"Partido parejo entre {home} y {away}")
+            snippet_parts.append(f"Partido parejo · {prob}%")
             tone = "exciting"
 
         if value:
-            snippet_parts.append(f"{value['team']} puede dar la sorpresa ({value['odds']})")
+            snippet_parts.append(f"{value['team']} {value['odds']}")
             tone = "exciting"
     else:
-        snippet_parts.append(f"{home} recibe a {away}" if sport == "soccer"
-                             else f"{home} vs {away}")
+        snippet_parts.append(f"{home} vs {away}")
 
-    snippet = ". ".join(snippet_parts) + "."
+    snippet = " | ".join(snippet_parts)
 
     # ── Full preview (for /partido/ page) ──
     # Opening line
@@ -5256,8 +5262,8 @@ async def recap_page(request: Request, slug: str):
         return templates.TemplateResponse(request, "404.html", status_code=404,
                                           context={"message": "URL de resultado no válida."})
 
-    home_slug_part = match.group(1)
-    away_slug_part = match.group(2)
+    slug_part_1 = match.group(1)
+    slug_part_2 = match.group(2)
     date_str = match.group(3).replace("-", "")
 
     # Find the game
@@ -5272,7 +5278,8 @@ async def recap_page(request: Request, slug: str):
         for g in all_games:
             g_home = _slugify(g.get("home", {}).get("name", ""))
             g_away = _slugify(g.get("away", {}).get("name", ""))
-            if g_home == home_slug_part and g_away == away_slug_part:
+            if (g_home == slug_part_1 and g_away == slug_part_2) or \
+               (g_away == slug_part_1 and g_home == slug_part_2):
                 game = g
                 break
         if game:
