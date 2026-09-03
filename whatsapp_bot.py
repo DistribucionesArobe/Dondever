@@ -4,6 +4,7 @@ Receives messages via Twilio webhook, searches for games,
 and responds with where to watch + affiliate links.
 """
 
+import asyncio
 import logging
 import random
 from datetime import datetime, timezone, timedelta
@@ -12,6 +13,9 @@ from config import AFFILIATES, APP_URL, LEAGUES, TZ_MX, get_affiliate_url, get_s
 from sports_api import search_games, get_todays_games
 from subscribers import subscribe, unsubscribe, update_last_active
 from whatsapp_alerts import add_favorite_team, remove_favorite_team, get_favorites_list
+
+# Keep strong references to background tasks so GC doesn't collect them
+_wa_bg_tasks: set = set()
 
 logger = logging.getLogger("dondever.whatsapp")
 
@@ -229,23 +233,29 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     ):
         is_new = subscribe(from_number)
         if is_new:
-            # Send today's picks via Meta Cloud API
-            try:
-                from send_whatsapp_daily import compose_daily_message
-                import meta_whatsapp
-                picks_msg = await compose_daily_message()
-                if picks_msg and meta_whatsapp.is_configured():
-                    result = meta_whatsapp.send_text(from_number, picks_msg)
-                    logger.info(f"Welcome picks sent via Meta to {from_number}: {result.get('ok')}")
-            except Exception as e:
-                logger.exception(f"Failed to send welcome picks: {e}")
+            # Send today's picks in BACKGROUND — compose_daily_message() takes
+            # 30-60s (fetches odds+standings for all leagues) which would
+            # exceed Meta's 20s webhook timeout and cause retries/deactivation.
+            async def _send_welcome_picks():
+                try:
+                    from send_whatsapp_daily import compose_daily_message
+                    import meta_whatsapp
+                    picks_msg = await compose_daily_message()
+                    if picks_msg and meta_whatsapp.is_configured():
+                        result = meta_whatsapp.send_text(from_number, picks_msg)
+                        logger.info(f"Welcome picks sent via Meta to {from_number}: {result.get('ok')}")
+                except Exception as e:
+                    logger.exception(f"Failed to send welcome picks: {e}")
+            task = asyncio.create_task(_send_welcome_picks())
+            _wa_bg_tasks.add(task)
+            task.add_done_callback(_wa_bg_tasks.discard)
             return (
                 "Te suscribiste a *picks diarios* de DondeVer!\n\n"
                 "Cada manana recibiras:\n"
                 "- Pick del dia\n"
                 "- Los mejores juegos\n"
                 "- Donde verlos\n\n"
-                "Te acabo de mandar los picks de *hoy* de regalo.\n\n"
+                "En unos segundos te mando los picks de *hoy* de regalo.\n\n"
                 "Escribe *salir* para cancelar cuando quieras."
             )
         return (
@@ -278,20 +288,25 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
         return "__BUTTONS_WELCOME__"
 
     # VER — triggered by reply to daily template broadcast.
-    # Sends the full daily message (with newlines, bold) as freeform.
+    # Sends the full daily message in BACKGROUND (compose takes 30-60s,
+    # would exceed Meta's 20s webhook timeout).
     if body_clean in ("ver", "ver picks", "ver resumen", "ver juegos"):
         subscribe(from_number)
-        try:
-            from send_whatsapp_daily import compose_daily_message
-            import meta_whatsapp
-            picks_msg = await compose_daily_message()
-            if picks_msg and meta_whatsapp.is_configured():
-                result = meta_whatsapp.send_text(from_number, picks_msg)
-                logger.info(f"VER picks sent via Meta to {from_number}: {result.get('ok')}")
-                return "__SENT_DIRECTLY__"  # signal webhook not to send duplicate
-        except Exception as e:
-            logger.exception(f"Failed to send VER picks: {e}")
-        return f"Checa tus picks en dondever.app"
+
+        async def _send_ver_picks():
+            try:
+                from send_whatsapp_daily import compose_daily_message
+                import meta_whatsapp
+                picks_msg = await compose_daily_message()
+                if picks_msg and meta_whatsapp.is_configured():
+                    result = meta_whatsapp.send_text(from_number, picks_msg)
+                    logger.info(f"VER picks sent via Meta to {from_number}: {result.get('ok')}")
+            except Exception as e:
+                logger.exception(f"Failed to send VER picks: {e}")
+        task = asyncio.create_task(_send_ver_picks())
+        _wa_bg_tasks.add(task)
+        task.add_done_callback(_wa_bg_tasks.discard)
+        return "__SENT_DIRECTLY__"  # signal webhook: we'll send picks separately
 
     # Picks del dia (auto-subscribe anyone who asks for picks) + button reply
     if body_clean in ("picks", "pick", "pick del dia", "sugerencia", "tip", "btn_picks"):

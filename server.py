@@ -2107,7 +2107,12 @@ async def meta_whatsapp_verify(request: Request):
 
 @app.post("/webhook/meta-whatsapp")
 async def meta_whatsapp_webhook(request: Request):
-    """Meta WhatsApp Cloud API webhook — receives messages and replies."""
+    """Meta WhatsApp Cloud API webhook — receives messages and replies.
+
+    CRITICAL: Meta has a ~20s webhook timeout. If we don't respond in time,
+    Meta retries (causing duplicates) and may deactivate the webhook entirely.
+    Solution: acknowledge immediately, process + reply in background.
+    """
     try:
         payload = await request.json()
     except Exception:
@@ -2117,7 +2122,8 @@ async def meta_whatsapp_webhook(request: Request):
     if not messages:
         return {"status": "ok"}
 
-    for msg in messages:
+    async def _process_message(msg: dict):
+        """Process a single inbound WhatsApp message in background."""
         from_number = msg["from"]
         body = msg["body"]
         message_id = msg.get("message_id")
@@ -2142,8 +2148,8 @@ async def meta_whatsapp_webhook(request: Request):
 
         # Special markers — already handled or need special treatment
         if response_text == "__SENT_DIRECTLY__":
-            logger.info(f"Meta WA: already sent directly to {from_number}, skipping duplicate")
-            continue
+            logger.info(f"Meta WA: picks being sent in background to {from_number}")
+            return
 
         # Special marker: send interactive buttons instead of plain text
         if response_text == "__BUTTONS_WELCOME__":
@@ -2158,6 +2164,12 @@ async def meta_whatsapp_webhook(request: Request):
         else:
             result = meta_whatsapp.send_text(from_number, response_text)
             logger.info(f"Meta WA reply to {from_number}: ok={result.get('ok')}")
+
+    # Fire-and-forget: process all messages in background, respond to Meta immediately
+    for msg in messages:
+        task = asyncio.create_task(_process_message(msg))
+        _background_tasks.add(task)
+        task.add_done_callback(_background_tasks.discard)
 
     return {"status": "ok"}
 
@@ -2239,24 +2251,45 @@ async def internal_email_subscribers(key: str = ""):
 
 @app.get("/whatsapp/debug")
 async def whatsapp_debug():
-    """Diagnostico del webhook de WhatsApp."""
+    """Diagnostico unificado: Meta Cloud API + Twilio + subscribers."""
     import os as _os
     from subscribers import get_active_subscribers, get_subscriber_count
+    from meta_whatsapp import is_configured as meta_ok
+
+    # Meta Cloud API (current system for broadcasts + incoming)
+    meta_token = _os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    meta_phone_id = _os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    meta_verify = _os.getenv("WHATSAPP_VERIFY_TOKEN", "")
+
+    # Twilio (legacy — may still handle some incoming)
     sid = _os.getenv("TWILIO_ACCOUNT_SID", "")
-    token = _os.getenv("TWILIO_AUTH_TOKEN", "")
+    twilio_token = _os.getenv("TWILIO_AUTH_TOKEN", "")
     wa_num = _os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+15715463202")
+
     info = {
-        "twilio_sid_set": bool(sid),
-        "twilio_sid_prefix": sid[:6] + "..." if sid else None,
-        "twilio_token_set": bool(token),
-        "whatsapp_number": wa_num,
-        "webhook_url_expected": "https://dondever.app/webhook/whatsapp (POST)",
-        "total_subscribers": 0,
+        "meta_cloud_api": {
+            "configured": meta_ok(),
+            "access_token_set": bool(meta_token),
+            "phone_number_id": meta_phone_id[:6] + "..." if meta_phone_id else None,
+            "verify_token_set": bool(meta_verify),
+            "webhook_url": "https://dondever.app/webhook/meta-whatsapp (GET=verify, POST=messages)",
+            "note": "Check Meta Developer Console → WhatsApp → Configuration to verify webhook URL is set",
+        },
+        "twilio_legacy": {
+            "sid_set": bool(sid),
+            "sid_prefix": sid[:6] + "..." if sid else None,
+            "token_set": bool(twilio_token),
+            "whatsapp_number": wa_num,
+            "webhook_url": "https://dondever.app/webhook/whatsapp (POST)",
+        },
+        "subscribers": {"total": 0, "active": 0},
+        "last_broadcast": _last_broadcast,
     }
     try:
-        info["total_subscribers"] = get_subscriber_count()
+        info["subscribers"]["total"] = get_subscriber_count()
+        info["subscribers"]["active"] = len(get_active_subscribers())
     except Exception as e:
-        info["subscribers_error"] = str(e)
+        info["subscribers"]["error"] = str(e)
     return info
 
 
@@ -2516,32 +2549,7 @@ async def whatsapp_test_send(to: str):
         return {"ok": False, "error": str(e), "type": type(e).__name__}
 
 
-@app.get("/whatsapp/debug")
-async def whatsapp_debug():
-    """Diagnostico completo del sistema WhatsApp: subscribers, twilio, scheduler."""
-    from subscribers import get_active_subscribers, _load, SUBSCRIBERS_FILE
-    from whatsapp_broadcast import get_twilio_client, CONTENT_SID
-    from config import TWILIO_WA_NUMBER
-
-    # Subscriber info
-    data = _load()
-    active = get_active_subscribers()
-
-    # Twilio check
-    client = get_twilio_client()
-    twilio_ok = client is not None
-
-    return {
-        "subscribers_file": SUBSCRIBERS_FILE,
-        "total_subscribers": len(data.get("subscribers", {})),
-        "active_subscribers": len(active),
-        "subscriber_numbers": active,  # remove in production if privacy concern
-        "all_data": data,
-        "twilio_configured": twilio_ok,
-        "twilio_from": TWILIO_WA_NUMBER,
-        "content_template_sid": CONTENT_SID or "NOT SET — broadcasts only work within 24h window",
-        "hint": "Si el broadcast falla, el usuario debe mandar un mensaje al bot dentro de las 24h previas, O configura TWILIO_CONTENT_SID con un template aprobado.",
-    }
+# (duplicate /whatsapp/debug removed — unified endpoint is above)
 
 
 # Store last broadcast result for diagnostics + deduplication
