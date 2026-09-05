@@ -1352,13 +1352,14 @@
         .rm-status { font-size: 0.7rem; color: #6b7280; font-weight: 500; }
         [data-theme="dark"] .rm-teams { color: #e2e8f0; }
 
-        /* ── Auto-ads: no ads ABOVE first game on mobile, cap size elsewhere ── */
+        /* ── Auto-ads: hide above games, cap height on mobile ── */
         @media (max-width: 767px) {
             .hero-inner > .google-auto-placed {
                 display: none !important;
             }
-            .google-auto-placed ins.adsbygoogle {
-                max-height: 120px !important;
+            .google-auto-placed {
+                max-height: 100px !important;
+                overflow: hidden !important;
             }
         }
     </style>
@@ -2374,20 +2375,37 @@
 </a>
 
 <script>
-    // ── Hide auto-placed ads ABOVE first game on mobile (keep ads between leagues) ──
+    // ── Cap auto-placed ads on mobile: hide above games, limit height everywhere ──
     if (window.innerWidth < 768) {
-        setTimeout(function() {
-            var main = document.getElementById('gamesContainer');
-            if (!main) return;
-            // Only hide ads that are siblings BEFORE main, not inside it
-            var el = main.previousElementSibling;
-            while (el) {
-                if (el.classList && el.classList.contains('google-auto-placed')) {
+        function capAds() {
+            document.querySelectorAll('.google-auto-placed').forEach(function(el) {
+                // Hide ads above the main content
+                var main = document.getElementById('gamesContainer');
+                if (main && !main.contains(el) && el.compareDocumentPosition(main) & Node.DOCUMENT_POSITION_FOLLOWING) {
                     el.style.display = 'none';
+                    return;
                 }
-                el = el.previousElementSibling;
-            }
-        }, 2000);
+                // Force cap height on all others
+                el.style.maxHeight = '100px';
+                el.style.overflow = 'hidden';
+            });
+        }
+        // Run immediately and after delays (ads load async)
+        capAds();
+        setTimeout(capAds, 1500);
+        setTimeout(capAds, 4000);
+        // MutationObserver: cap new ads as they appear
+        var obs = new MutationObserver(function(mutations) {
+            mutations.forEach(function(m) {
+                m.addedNodes.forEach(function(n) {
+                    if (n.classList && n.classList.contains('google-auto-placed')) {
+                        n.style.maxHeight = '100px';
+                        n.style.overflow = 'hidden';
+                    }
+                });
+            });
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
     }
 
     // ── League scroller: hide arrow when scrolled to end ──
