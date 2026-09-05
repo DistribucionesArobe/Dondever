@@ -1326,12 +1326,115 @@
         /* ── Responsive ─────────────────────── */
         @media (max-width: 640px) {
             .hero h1 { font-size: 1.1rem; }
-            .main { padding: 0.75rem 0.75rem 1.5rem; }
-            .game-card { padding: 0.75rem; }
-            .team-name { font-size: 0.8rem; }
+            .main { padding: 0.5rem 0 1.5rem; }
             .teams-grid { grid-template-columns: repeat(3, 1fr); }
             .info-grid { grid-template-columns: 1fr; }
             .wa-cta-inner { flex-direction: column; align-items: flex-start; }
+
+            /* ── COMPACT CARDS (Apple Sports style) ── */
+            .game-card {
+                border-radius: 0;
+                border: none;
+                border-bottom: 1px solid #e5e7eb;
+                box-shadow: none;
+                padding: 0.5rem 0.85rem;
+                margin-bottom: 0;
+            }
+            .game-card:hover { border-color: #e5e7eb; box-shadow: none; }
+            .game-card.live {
+                border-left: none;
+                border-bottom: 1px solid #fecaca;
+                background: linear-gradient(135deg, #fef8f8 0%, #fff5f5 100%);
+            }
+            body.dark-mode .game-card { border-bottom-color: #374151; }
+            body.dark-mode .game-card.live { border-bottom-color: #7f1d1d; }
+
+            /* Hide verbose elements on mobile home */
+            .gc-compact-top .gc-toggle,
+            .gc-compact-top .gc-notify-btn,
+            .gc-bet-preview,
+            .gc-preview-snippet,
+            .gc-recap,
+            .gc-accordion,
+            .gc-accordion-body,
+            .gc-compact-top .game-card-league-tag { display: none !important; }
+
+            .gc-compact-top {
+                margin-bottom: 0.15rem;
+                min-height: auto;
+            }
+            .gc-compact-left { gap: 0.3rem; }
+            .gc-compact-right { display: none; }
+
+            .gc-row { padding: 0.1rem 0; gap: 0.4rem; }
+            .team-logo { width: 20px; height: 20px; }
+            .team-name { font-size: 0.82rem; -webkit-line-clamp: 1; white-space: nowrap; }
+            .team-score { font-size: 1.1rem; }
+            .game-card.live .team-score { font-size: 1.2rem; }
+            .gc-time { font-size: 0.82rem; }
+
+            /* Channel inline — visible as our differentiator */
+            .gc-compact-top .channel-tag {
+                font-size: 0.6rem !important;
+                padding: 1px 5px;
+            }
+
+            /* Hide redundant labels on mobile */
+            .pre-badge { display: none; }
+            .gc-sub.tz-hora-label { display: none; }
+            .countdown { display: none; }
+
+            /* Live badge compact */
+            .live-badge { font-size: 0.6rem; padding: 2px 7px; }
+            .gc-clock { font-size: 0.72rem; }
+            .final-badge { font-size: 0.55rem; padding: 2px 6px; }
+
+            /* Section headers compact */
+            .priority-header {
+                border-radius: 0 !important;
+                padding: 0.5rem 0.85rem;
+                font-size: 0.82rem;
+            }
+            .league-section h2 {
+                padding: 0.4rem 0.85rem;
+                font-size: 0.82rem;
+            }
+
+            /* Sections edge-to-edge on mobile */
+            .priority-section, .league-section {
+                margin-bottom: 0.8rem;
+            }
+            .league-section {
+                border-top: 2px solid #10b981;
+            }
+            .league-header {
+                margin-bottom: 0;
+                border-bottom: none;
+                padding: 0.5rem 0.85rem 0.3rem;
+            }
+
+            /* Mis equipos compact */
+            .my-teams-section { margin-bottom: 0.5rem; }
+            .my-teams-header {
+                border-radius: 0;
+                padding: 0.5rem 0.85rem;
+                font-size: 0.82rem;
+            }
+            .my-teams-body {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+            .my-teams-body .game-card { border-left: none; }
+
+            /* Sub-filter bar */
+            .sub-filter-bar { padding: 0.4rem 0.85rem; }
+
+            /* Make game-card entire area tappable */
+            .game-card { cursor: pointer; }
+
+            /* For pre-game: show channel on right of second team row */
+            .game-card .gc-row:last-of-type .gc-right .gc-sub.tz-hora-label { display: none; }
         }
 
         /* ── Collapsed results (finished games) ── */
