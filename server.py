@@ -24,6 +24,7 @@ from sports_api import (
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
     get_recent_league_results, get_upcoming_league_games, fetch_team_news,
     fetch_meli_product_image, fetch_espn_event_summary,
+    generate_nfl_power_rankings, generate_nfl_picks, get_nfl_team_advanced_stats,
 )
 from whatsapp_bot import handle_whatsapp_message
 import meta_whatsapp
@@ -1569,6 +1570,19 @@ async def league_page(request: Request, league_slug: str):
     from sports_api import DEFAULT_LEAGUE_CHANNELS
     default_channels = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
 
+    # NFL-specific: Power Rankings & Picks
+    power_rankings = []
+    nfl_picks = []
+    if league_slug == "nfl":
+        try:
+            power_rankings = await generate_nfl_power_rankings()
+        except Exception:
+            pass
+        try:
+            nfl_picks = await generate_nfl_picks(upcoming_games, standings)
+        except Exception:
+            pass
+
     return templates.TemplateResponse(
         request, "league.html", context={
             "league_slug": league_slug,
@@ -1584,6 +1598,8 @@ async def league_page(request: Request, league_slug: str):
             "league_channels_today": league_channels_today[:8],
             "default_channels": default_channels,
             "league_seo_extra": LEAGUE_SEO_EXTRA.get(league_slug),
+            "power_rankings": power_rankings,
+            "nfl_picks": nfl_picks,
         }
     )
 
@@ -4531,6 +4547,7 @@ async def team_page(request: Request, team_slug: str):
         "faq_items": faq_items,
         "top_channels": top_channels,
         "nfl_team_extra": NFL_TEAM_EXTRA.get(team_slug) if team_sport == "futbol americano" else None,
+        "nfl_advanced": await get_nfl_team_advanced_stats(team_slug) if team_sport == "futbol americano" else {},
     })
 
 

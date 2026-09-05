@@ -373,6 +373,75 @@
 </div>
 {% endif %}
 
+<!-- NFL Power Rankings -->
+{% if power_rankings %}
+<div class="standings-section">
+    <h2>🏈 Power Rankings NFL — Semana actual</h2>
+    <p style="font-size:0.78rem;color:#6b7280;margin-bottom:0.8rem;">Ranking basado en record, diferencial de puntos y rachas. Se actualiza automaticamente.</p>
+    <table class="standings-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Equipo</th>
+                <th>Record</th>
+                <th>Dif</th>
+                <th>Tier</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in power_rankings %}
+            <tr{% if loop.index <= 5 %} style="background:#f0fdf4;"{% endif %}>
+                <td style="font-weight:800;font-size:0.85rem;color:#1a1a2e;">{{ team.power_rank }}</td>
+                <td>
+                    <div class="st-team">
+                        {% if team.team_logo %}<img src="{{ team.team_logo }}" alt="{{ team.team_name }}" class="st-logo" loading="lazy">{% endif %}
+                        <span>{{ team.team_short or team.team_name }}</span>
+                    </div>
+                </td>
+                <td style="font-weight:600;">{{ team.wins }}-{{ team.losses }}</td>
+                <td style="font-weight:700;color:{% if team.pt_diff > 0 %}#059669{% elif team.pt_diff < 0 %}#ef4444{% else %}#6b7280{% endif %};">{% if team.pt_diff > 0 %}+{% endif %}{{ team.pt_diff }}</td>
+                <td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;font-weight:700;color:white;background:{{ team.tier_color }};">{{ team.tier }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- NFL Picks / Pronosticos -->
+{% if nfl_picks %}
+<div class="standings-section">
+    <h2>🎯 Pronosticos NFL — Proximos partidos</h2>
+    <p style="font-size:0.78rem;color:#6b7280;margin-bottom:0.8rem;">Picks basados en records, rachas y ventaja de local. Solo como referencia.</p>
+    <div style="display:flex;flex-direction:column;gap:0.6rem;">
+        {% for pick in nfl_picks %}
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;">
+            <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:200px;">
+                <div style="text-align:center;">
+                    {% if pick.away_logo %}<img src="{{ pick.away_logo }}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:contain;">{% endif %}
+                    <div style="font-size:0.7rem;font-weight:600;">{{ pick.away }}</div>
+                    <div style="font-size:0.6rem;color:#6b7280;">{{ pick.away_record }}</div>
+                </div>
+                <span style="font-size:0.75rem;font-weight:700;color:#6b7280;">@</span>
+                <div style="text-align:center;">
+                    {% if pick.home_logo %}<img src="{{ pick.home_logo }}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:contain;">{% endif %}
+                    <div style="font-size:0.7rem;font-weight:600;">{{ pick.home }}</div>
+                    <div style="font-size:0.6rem;color:#6b7280;">{{ pick.home_record }}</div>
+                </div>
+            </div>
+            <div style="text-align:right;min-width:140px;">
+                <div style="font-size:0.72rem;font-weight:800;color:#1a1a2e;">Pick: {{ pick.pick_team }}</div>
+                <div style="font-size:0.65rem;margin-top:2px;">
+                    <span style="display:inline-block;padding:2px 6px;border-radius:4px;font-weight:700;color:white;background:{{ pick.conf_color }};font-size:0.6rem;">{{ pick.conf_label }} ({{ pick.confidence }}%)</span>
+                </div>
+                <div style="font-size:0.6rem;color:#6b7280;margin-top:3px;">{{ pick.reasoning }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- Recent Results -->
 {% if recent_results %}
 <div class="standings-section">

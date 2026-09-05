@@ -1398,6 +1398,240 @@ async def get_league_standings(sport: str, league: str, limit: int = 10) -> list
     return standings[:limit]
 
 
+async def generate_nfl_power_rankings() -> list[dict]:
+    """
+    Generate NFL Power Rankings based on standings data.
+    Ranks all 32 teams by win percentage, point differential, and streak.
+    Returns list sorted by power_rank with tier labels.
+    """
+    standings = await fetch_standings("football", "nfl")
+    if not standings:
+        return []
+
+    # Score each team: win_pct (50%) + normalized point_diff (30%) + streak bonus (20%)
+    scored = []
+    for team in standings:
+        try:
+            w = int(team.get("wins") or 0)
+            l = int(team.get("losses") or 0)
+            total = w + l
+            win_pct = w / total if total > 0 else 0.0
+        except (ValueError, ZeroDivisionError):
+            win_pct = 0.0
+
+        # Point differential
+        try:
+            pts_for = float(team.get("goals_for") or team.get("all_stats", {}).get("pointsFor", 0))
+            pts_against = float(team.get("goals_against") or team.get("all_stats", {}).get("pointsAgainst", 0))
+            pt_diff = pts_for - pts_against
+        except (ValueError, TypeError):
+            pt_diff = 0.0
+
+        # Streak bonus
+        streak_str = str(team.get("streak", ""))
+        streak_bonus = 0.0
+        if streak_str.startswith("W"):
+            try:
+                streak_bonus = int(streak_str[1:]) * 0.02
+            except ValueError:
+                streak_bonus = 0.02
+        elif streak_str.startswith("L"):
+            try:
+                streak_bonus = -int(streak_str[1:]) * 0.02
+            except ValueError:
+                streak_bonus = -0.02
+
+        # Composite score (0-100 scale)
+        score = (win_pct * 50) + (min(max(pt_diff / 200, -1), 1) * 30) + (streak_bonus * 20)
+
+        scored.append({
+            **team,
+            "power_score": round(score, 1),
+            "pt_diff": int(pt_diff),
+            "win_pct_display": f"{win_pct:.3f}",
+        })
+
+    # Sort by power_score descending
+    scored.sort(key=lambda x: x["power_score"], reverse=True)
+
+    # Assign ranks and tiers
+    for i, team in enumerate(scored):
+        team["power_rank"] = i + 1
+        if i < 5:
+            team["tier"] = "Elite"
+            team["tier_color"] = "#059669"
+        elif i < 12:
+            team["tier"] = "Contendiente"
+            team["tier_color"] = "#2563eb"
+        elif i < 20:
+            team["tier"] = "En la pelea"
+            team["tier_color"] = "#f59e0b"
+        elif i < 27:
+            team["tier"] = "En desarrollo"
+            team["tier_color"] = "#f97316"
+        else:
+            team["tier"] = "Reconstruccion"
+            team["tier_color"] = "#ef4444"
+
+        # Movement indicator (placeholder — could track week-over-week later)
+        team["movement"] = "—"
+
+    return scored
+
+
+async def generate_nfl_picks(upcoming_games: list[dict], standings: list[dict]) -> list[dict]:
+    """
+    Generate simple picks/predictions for upcoming NFL games.
+    Based on win percentage differential and home advantage.
+    Returns list of game dicts with pick info.
+    """
+    if not upcoming_games or not standings:
+        return []
+
+    # Build lookup by team name
+    team_stats = {}
+    for t in standings:
+        team_stats[t["team_name"].lower()] = t
+        team_stats[t["team_short"].lower()] = t
+
+    picks = []
+    for game in upcoming_games[:10]:
+        home_name = game.get("home", "").lower()
+        away_name = game.get("away", "").lower()
+
+        home_data = team_stats.get(home_name, {})
+        away_data = team_stats.get(away_name, {})
+
+        # Calculate win probabilities
+        try:
+            h_w = int(home_data.get("wins") or 0)
+            h_l = int(home_data.get("losses") or 0)
+            h_pct = h_w / (h_w + h_l) if (h_w + h_l) > 0 else 0.5
+        except (ValueError, ZeroDivisionError):
+            h_pct = 0.5
+
+        try:
+            a_w = int(away_data.get("wins") or 0)
+            a_l = int(away_data.get("losses") or 0)
+            a_pct = a_w / (a_w + a_l) if (a_w + a_l) > 0 else 0.5
+        except (ValueError, ZeroDivisionError):
+            a_pct = 0.5
+
+        # Home advantage bonus (+3%)
+        h_pct_adj = min(h_pct + 0.03, 1.0)
+
+        # Determine pick
+        if h_pct_adj >= a_pct:
+            pick_team = game.get("home", "Local")
+            confidence = min(int((h_pct_adj - a_pct) * 100 + 55), 90)
+        else:
+            pick_team = game.get("away", "Visitante")
+            confidence = min(int((a_pct - h_pct_adj) * 100 + 55), 90)
+
+        # Confidence label
+        if confidence >= 75:
+            conf_label = "Alta"
+            conf_color = "#059669"
+        elif confidence >= 60:
+            conf_label = "Media"
+            conf_color = "#f59e0b"
+        else:
+            conf_label = "Baja"
+            conf_color = "#ef4444"
+
+        home_record = f"{home_data.get('wins', '?')}-{home_data.get('losses', '?')}"
+        away_record = f"{away_data.get('wins', '?')}-{away_data.get('losses', '?')}"
+
+        picks.append({
+            "home": game.get("home", ""),
+            "away": game.get("away", ""),
+            "home_logo": game.get("home_logo", ""),
+            "away_logo": game.get("away_logo", ""),
+            "home_record": home_record,
+            "away_record": away_record,
+            "date": game.get("date", ""),
+            "pick_team": pick_team,
+            "confidence": confidence,
+            "conf_label": conf_label,
+            "conf_color": conf_color,
+            "reasoning": _pick_reasoning(game.get("home", ""), game.get("away", ""),
+                                         h_pct, a_pct, home_data, away_data),
+        })
+
+    return picks
+
+
+def _pick_reasoning(home: str, away: str, h_pct: float, a_pct: float,
+                    home_data: dict, away_data: dict) -> str:
+    """Generate a short reasoning sentence for a pick."""
+    reasons = []
+    if h_pct > a_pct + 0.1:
+        reasons.append(f"{home} tiene mejor record")
+    elif a_pct > h_pct + 0.1:
+        reasons.append(f"{away} tiene mejor record")
+    else:
+        reasons.append("Records muy parejos")
+
+    h_streak = str(home_data.get("streak", ""))
+    a_streak = str(away_data.get("streak", ""))
+    if h_streak.startswith("W") and len(h_streak) > 1:
+        reasons.append(f"{home} en racha de {h_streak[1:]} victorias")
+    if a_streak.startswith("W") and len(a_streak) > 1:
+        reasons.append(f"{away} en racha de {a_streak[1:]} victorias")
+
+    reasons.append("ventaja de local")
+    return ". ".join(reasons[:2]) + "."
+
+
+async def get_nfl_team_advanced_stats(team_slug: str) -> dict:
+    """
+    Get advanced NFL team stats from ESPN: points per game, yards,
+    turnovers, etc. Returns dict with enriched stats.
+    """
+    league_info = TEAM_LEAGUE_MAP.get(team_slug)
+    if not league_info or league_info[0] != "football":
+        return {}
+
+    standings = await fetch_standings("football", "nfl")
+    if not standings:
+        return {}
+
+    # Find team
+    from config import TEAM_ALIASES
+    search = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " ")).lower()
+
+    for entry in standings:
+        name_lower = entry["team_name"].lower()
+        short_lower = entry["team_short"].lower()
+        if (search in name_lower or name_lower in search or
+            team_slug.replace("-", "") in name_lower.replace(" ", "") or
+            search in short_lower):
+            stats = entry.get("all_stats", {})
+            w = int(entry.get("wins") or 0)
+            l = int(entry.get("losses") or 0)
+            total = w + l
+
+            return {
+                "record": f"{w}-{l}",
+                "win_pct": f"{(w/total*100):.1f}%" if total else "—",
+                "division": entry.get("group", ""),
+                "streak": entry.get("streak", "—"),
+                "pts_for": stats.get("pointsFor", "—"),
+                "pts_against": stats.get("pointsAgainst", "—"),
+                "pt_diff": str(int(float(stats.get("pointsFor", 0)) - float(stats.get("pointsAgainst", 0)))) if stats.get("pointsFor") else "—",
+                "ppg": f"{float(stats.get('pointsFor', 0))/total:.1f}" if total and stats.get("pointsFor") else "—",
+                "ppg_against": f"{float(stats.get('pointsAgainst', 0))/total:.1f}" if total and stats.get("pointsAgainst") else "—",
+                "div_record": stats.get("divisionRecord", stats.get("vsDivision", "—")),
+                "conf_record": stats.get("conferenceRecord", stats.get("vsConference", "—")),
+                "home_record": stats.get("Home", stats.get("homeRecord", "—")),
+                "away_record": stats.get("Road", stats.get("awayRecord", stats.get("roadRecord", "—"))),
+                "team_logo": entry.get("team_logo", ""),
+                "team_name": entry.get("team_name", ""),
+            }
+
+    return {}
+
+
 # ── Recent & Upcoming Games (for enriched pages) ──────
 
 async def get_recent_league_results(sport: str, league: str, days: int = 5, limit: int = 10) -> list[dict]:

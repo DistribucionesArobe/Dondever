@@ -505,6 +505,39 @@
     </div>
     {% endif %}
 
+    {# ══ NFL ADVANCED STATS ══ #}
+    {% if nfl_advanced and nfl_advanced.record %}
+    <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:0.9rem 1rem;margin-bottom:1rem;">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;font-weight:700;margin-bottom:0.6rem;">📊 Estadisticas avanzadas NFL</div>
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.5rem;">
+            <div style="text-align:center;padding:0.4rem;background:#f9fafb;border-radius:8px;">
+                <div style="font-size:0.6rem;color:#6b7280;">PPG</div>
+                <div style="font-size:1rem;font-weight:800;color:#059669;">{{ nfl_advanced.ppg }}</div>
+            </div>
+            <div style="text-align:center;padding:0.4rem;background:#f9fafb;border-radius:8px;">
+                <div style="font-size:0.6rem;color:#6b7280;">PPG Rival</div>
+                <div style="font-size:1rem;font-weight:800;color:#ef4444;">{{ nfl_advanced.ppg_against }}</div>
+            </div>
+            <div style="text-align:center;padding:0.4rem;background:#f9fafb;border-radius:8px;">
+                <div style="font-size:0.6rem;color:#6b7280;">Diferencial</div>
+                <div style="font-size:1rem;font-weight:800;color:{% if nfl_advanced.pt_diff.startswith('-') %}#ef4444{% else %}#059669{% endif %};">{{ nfl_advanced.pt_diff }}</div>
+            </div>
+            <div style="text-align:center;padding:0.4rem;background:#f9fafb;border-radius:8px;">
+                <div style="font-size:0.6rem;color:#6b7280;">Local</div>
+                <div style="font-size:0.8rem;font-weight:700;">{{ nfl_advanced.home_record }}</div>
+            </div>
+            <div style="text-align:center;padding:0.4rem;background:#f9fafb;border-radius:8px;">
+                <div style="font-size:0.6rem;color:#6b7280;">Visitante</div>
+                <div style="font-size:0.8rem;font-weight:700;">{{ nfl_advanced.away_record }}</div>
+            </div>
+            <div style="text-align:center;padding:0.4rem;background:#f9fafb;border-radius:8px;">
+                <div style="font-size:0.6rem;color:#6b7280;">Division</div>
+                <div style="font-size:0.8rem;font-weight:700;">{{ nfl_advanced.div_record }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {# ══ PARTIDOS DE HOY (lo mas importante arriba) ══ #}
     {% if games %}
     <h2>Partidos de hoy <span class="game-count">({{ games|length }})</span></h2>
