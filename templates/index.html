@@ -1352,16 +1352,13 @@
         .rm-status { font-size: 0.7rem; color: #6b7280; font-weight: 500; }
         [data-theme="dark"] .rm-teams { color: #e2e8f0; }
 
-        /* ── Auto-ads: no big ads on mobile, keep content accessible ── */
+        /* ── Auto-ads: no ads ABOVE first game on mobile, cap size elsewhere ── */
         @media (max-width: 767px) {
-            .hero-inner > .google-auto-placed,
-            .hero + .google-auto-placed,
-            .sub-filter-bar + .google-auto-placed,
-            .sub-filter-bar ~ .google-auto-placed:not(.main .google-auto-placed) {
+            .hero-inner > .google-auto-placed {
                 display: none !important;
             }
             .google-auto-placed ins.adsbygoogle {
-                max-height: 90px !important;
+                max-height: 120px !important;
             }
         }
     </style>
@@ -2377,14 +2374,15 @@
 </a>
 
 <script>
-    // ── Hide large auto-placed ads above games on mobile ──
+    // ── Hide auto-placed ads ABOVE first game on mobile (keep ads between leagues) ──
     if (window.innerWidth < 768) {
         setTimeout(function() {
             var main = document.getElementById('gamesContainer');
             if (!main) return;
+            // Only hide ads that are siblings BEFORE main, not inside it
             var el = main.previousElementSibling;
             while (el) {
-                if (el.classList && el.classList.contains('google-auto-placed') && el.offsetHeight > 100) {
+                if (el.classList && el.classList.contains('google-auto-placed')) {
                     el.style.display = 'none';
                 }
                 el = el.previousElementSibling;
