@@ -1636,7 +1636,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card live" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card live" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
             <div class="gc-compact-top">
                 <div class="gc-compact-left">
                     <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
@@ -1722,7 +1722,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card" style="border-left:3px solid #ea580c;" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card" style="border-left:3px solid #ea580c;" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
             <div class="gc-compact-top">
                 <div class="gc-compact-left">
                     <span class="pre-badge">PR&Oacute;XIMO</span>
@@ -2987,9 +2987,7 @@
     // League suggestions
     var AC_LEAGUES = [
         {% for slug, val in leagues.items() %}
-        {% if val[0] == 'soccer' %}
-        {s:"{{ slug }}", n:"{{ val[2] }}", type:"liga"},
-        {% endif %}
+        {s:"{{ slug }}", n:"{{ val[2] }}", type:"{{ val[0] }}"},
         {% endfor %}
     ];
 
