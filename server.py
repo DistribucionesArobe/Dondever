@@ -562,12 +562,12 @@ async def home(
     for g in games:
         g["interest_score"] = score_game_interest(g)
 
-    # ── Must-watch "Los 5 imperdibles" ─────────────────
+    # ── Must-watch "Lo imperdible" — send 15, JS picks best 5 per user ──
     must_watch = sorted(
-        [g for g in games if g["status"]["state"] == "pre" and g["interest_score"] >= 30],
+        [g for g in games if g["status"]["state"] == "pre" and g["interest_score"] >= 20],
         key=lambda g: g["interest_score"],
         reverse=True,
-    )[:5]
+    )[:15]
 
     # ── Free games (TV abierta / streaming gratis) ─────
     free_games = [

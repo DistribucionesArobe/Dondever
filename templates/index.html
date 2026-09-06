@@ -2779,35 +2779,51 @@
     reorderLeaguesForFavs();
 
     // ── Personalizar "Lo imperdible" según favoritos ──
+    // Server sends up to 15 candidates; JS picks the best 5 for this user
     function personalizeMustWatch() {
-        if (favTeams.length === 0 && favLeaguesList.length === 0) return;
         var sec = document.getElementById('secMustWatch');
         if (!sec) return;
         var cards = Array.from(sec.querySelectorAll('.game-card'));
         if (cards.length < 2) return;
 
+        var hasFavs = favTeams.length > 0 || favLeaguesList.length > 0;
+
         // Derive implicit preferred leagues from fav teams
         var implicitLeagues = new Set();
-        document.querySelectorAll('.game-card[data-league]').forEach(function(c) {
-            var teams = (c.dataset.teams || '').split(',');
-            if (teams.some(function(t) { return favTeams.includes(t); })) {
-                implicitLeagues.add(c.dataset.league);
-            }
-        });
-
-        // Score: 3 = team match, 2 = explicit league fav, 1 = implicit league, 0 = none
-        cards.sort(function(a, b) {
-            function scoreCard(c) {
+        if (hasFavs) {
+            document.querySelectorAll('.game-card[data-league]').forEach(function(c) {
                 var teams = (c.dataset.teams || '').split(',');
-                if (teams.some(function(t) { return favTeams.includes(t); })) return 3;
-                if (favLeaguesList.includes(c.dataset.league)) return 2;
-                if (implicitLeagues.has(c.dataset.league)) return 1;
-                return 0;
-            }
-            return scoreCard(b) - scoreCard(a);
+                if (teams.some(function(t) { return favTeams.includes(t); })) {
+                    implicitLeagues.add(c.dataset.league);
+                }
+            });
+        }
+
+        // Score: 3 = team match, 2 = explicit league fav, 1 = implicit league, 0 = server default
+        function scoreCard(c) {
+            if (!hasFavs) return 0;
+            var teams = (c.dataset.teams || '').split(',');
+            if (teams.some(function(t) { return favTeams.includes(t); })) return 3;
+            if (favLeaguesList.includes(c.dataset.league)) return 2;
+            if (implicitLeagues.has(c.dataset.league)) return 1;
+            return 0;
+        }
+
+        // Sort by personalization score (stable: keeps server order within same score)
+        cards.sort(function(a, b) { return scoreCard(b) - scoreCard(a); });
+
+        // Show top 5, hide the rest
+        cards.forEach(function(c, i) {
+            sec.appendChild(c);
+            c.style.display = i < 5 ? '' : 'none';
         });
 
-        cards.forEach(function(c) { sec.appendChild(c); });
+        // Update counter
+        var countEl = sec.querySelector('.league-count');
+        if (countEl) {
+            var shown = Math.min(cards.length, 5);
+            countEl.textContent = shown + ' partido' + (shown !== 1 ? 's' : '');
+        }
     }
     personalizeMustWatch();
 
