@@ -541,13 +541,17 @@ async def home(
         key=lambda ls: ODDS_PRIORITY_LEAGUES.index(ls) if ls in ODDS_PRIORITY_LEAGUES else 99
     )
     odds_by_league: dict[str, list] = {}
-    for ls in sorted_leagues:
+    # Fetch all odds in parallel instead of sequentially
+    async def _fetch_one_odds(ls):
         try:
             ol = await fetch_odds(ls)
-            if ol:
-                odds_by_league[ls] = ol
+            return (ls, ol) if ol else None
         except Exception:
-            pass
+            return None
+    _odds_results = await asyncio.gather(*[_fetch_one_odds(ls) for ls in sorted_leagues])
+    for r in _odds_results:
+        if r:
+            odds_by_league[r[0]] = r[1]
     # Attach odds to each game (pre + live) + quick prediction from odds
     for g in games:
         ls = g.get("league_slug", "")
@@ -728,13 +732,20 @@ async def free_today(request: Request):
         key=lambda ls: ODDS_PRIORITY_LEAGUES.index(ls) if ls in ODDS_PRIORITY_LEAGUES else 99,
     )
     odds_by_league: dict[str, list] = {}
-    for ls in sorted_leagues:
+
+    async def _fetch_one_odds_gratis(ls):
         try:
             ol = await fetch_odds(ls)
-            if ol:
-                odds_by_league[ls] = ol
+            return (ls, ol) if ol else None
         except Exception:
-            pass
+            return None
+
+    _odds_results = await asyncio.gather(
+        *[_fetch_one_odds_gratis(ls) for ls in sorted_leagues]
+    )
+    for r in _odds_results:
+        if r:
+            odds_by_league[r[0]] = r[1]
     for g in games:
         ls = g.get("league_slug", "")
         if g["status"]["state"] in ("pre", "in") and ls in odds_by_league:
