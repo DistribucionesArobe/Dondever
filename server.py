@@ -523,6 +523,7 @@ async def home(
         if league_name not in sports_grouped:
             sports_grouped[league_name] = {
                 "emoji": game["emoji"],
+                "slug": game["league_slug"],
                 "games": [],
             }
         sports_grouped[league_name]["games"].append(game)

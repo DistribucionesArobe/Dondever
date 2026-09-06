@@ -622,6 +622,8 @@
 
         .fav-btn { background:none; border:none; cursor:pointer; font-size:0.75rem; opacity:0.2; transition:opacity 0.2s; padding:0 3px; z-index:2; flex-shrink:0; line-height:1; }
         .fav-btn:hover, .fav-btn.active { opacity:1; }
+        .league-fav-btn { background:none; border:none; cursor:pointer; font-size:0.85rem; opacity:0.3; transition:opacity 0.2s; padding:0 4px; line-height:1; }
+        .league-fav-btn:hover, .league-fav-btn.active { opacity:1; }
 
         /* ── Accordion (hidden by default) ──── */
         .gc-accordion {
@@ -1541,14 +1543,13 @@
     {# ── ⭐ MIS EQUIPOS (populated dynamically via JS) ── #}
     <section class="my-teams-section" id="secMyTeams" style="display:none;">
         <div class="my-teams-header">
-            <span>&#11088; Mis equipos hoy</span>
+            <span>&#11088; Mis favoritos hoy</span>
             <span class="league-count" id="myTeamsCount">0</span>
         </div>
         <div class="my-teams-body" id="myTeamsBody">
             <div class="my-teams-empty" id="myTeamsEmpty">
-                <div id="myTeamsEmptyMsg">Toca &#9733; en cualquier partido para seguir a ese equipo</div>
+                <div id="myTeamsEmptyMsg">Toca &#9733; junto a un equipo o liga para personalizar tu experiencia</div>
                 <div class="quick-add-teams" id="quickAddTeams"></div>
-                <a class="quick-add-search" onclick="document.getElementById('searchInput').focus();document.getElementById('searchInput').scrollIntoView({behavior:'smooth',block:'center'});return false;">&#128269; Buscar equipo</a>
             </div>
         </div>
     </section>
@@ -1831,7 +1832,7 @@
     <div id="hiddenLeagues" style="display:none;">
     {% endif %}
 
-    <section class="league-section">
+    <section class="league-section" data-league-slug="{{ league_data.slug }}">
         <h2 class="league-header">
             <span>{{ league_data.emoji }} {{ league_name }}</span>
             <span class="league-count">{{ active_games | length + finished_games | length }} partido{{ 's' if (active_games | length + finished_games | length) != 1 else '' }}</span>
@@ -1845,7 +1846,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
 
             {# ── Compact top: badge + primary channel + toggle ── #}
             <div class="gc-compact-top">
@@ -2503,12 +2504,16 @@
     updateCountdowns();
     setInterval(updateCountdowns, 60000);
 
-    // ── Favorite Teams ─────────────────────
+    // ── Favorite Teams & Leagues ─────────────────────
     let favTeams = JSON.parse(localStorage.getItem('dv_favs') || '[]');
+    let favLeaguesList = JSON.parse(localStorage.getItem('dv_fav_leagues') || '[]');
     let favFilterActive = false;
 
     function saveFavs() {
         localStorage.setItem('dv_favs', JSON.stringify(favTeams));
+    }
+    function saveFavLeagues() {
+        localStorage.setItem('dv_fav_leagues', JSON.stringify(favLeaguesList));
     }
 
     function toggleFav(teamName, btn, e) {
@@ -2545,11 +2550,47 @@
         });
     });
 
+    // Add star buttons to league headers
+    function toggleLeagueFav(slug, btn, e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var idx = favLeaguesList.indexOf(slug);
+        if (idx >= 0) {
+            favLeaguesList.splice(idx, 1);
+            btn.classList.remove('active');
+            btn.title = 'Seguir esta liga';
+        } else {
+            favLeaguesList.push(slug);
+            btn.classList.add('active');
+            btn.title = 'Dejar de seguir';
+        }
+        saveFavLeagues();
+        updateFavPill();
+        personalizeMustWatch();
+        reorderLeaguesForFavs();
+    }
+    document.querySelectorAll('.league-section[data-league-slug]').forEach(function(sec) {
+        var slug = sec.dataset.leagueSlug;
+        if (!slug) return;
+        var header = sec.querySelector('.league-header');
+        if (!header) return;
+        var nameSpan = header.querySelector('span');
+        if (!nameSpan) return;
+        var btn = document.createElement('button');
+        btn.className = 'league-fav-btn' + (favLeaguesList.includes(slug) ? ' active' : '');
+        btn.innerHTML = '&#9733;';
+        btn.title = favLeaguesList.includes(slug) ? 'Dejar de seguir' : 'Seguir esta liga';
+        btn.onclick = function(e) { toggleLeagueFav(slug, btn, e); };
+        nameSpan.appendChild(document.createTextNode(' '));
+        nameSpan.appendChild(btn);
+    });
+
     function updateFavPill() {
         const pill = document.getElementById('favFilter');
-        if (favTeams.length > 0) {
+        var totalFavs = favTeams.length + favLeaguesList.length;
+        if (totalFavs > 0) {
             pill.style.display = '';
-            pill.textContent = '⭐ Mis equipos (' + favTeams.length + ')';
+            pill.textContent = '⭐ Mis favoritos (' + totalFavs + ')';
         } else {
             pill.style.display = 'none';
             favFilterActive = false;
@@ -2570,8 +2611,9 @@
                 return;
             }
             const teams = (card.dataset.teams || '').split(',');
-            const match = teams.some(t => favTeams.includes(t));
-            card.style.display = match ? '' : 'none';
+            const teamMatch = teams.some(t => favTeams.includes(t));
+            const leagueMatch = favLeaguesList.includes(card.dataset.league);
+            card.style.display = (teamMatch || leagueMatch) ? '' : 'none';
         });
         // Hide empty league sections
         document.querySelectorAll('.league-section').forEach(sec => {
@@ -2599,37 +2641,37 @@
         var quickAdd = document.getElementById('quickAddTeams');
         var quickSearch = document.getElementById('quickAddSearch');
 
-        if (favTeams.length === 0) {
+        if (favTeams.length === 0 && favLeaguesList.length === 0) {
             // No favorites at all — show onboarding
             sec.style.display = 'block';
             if (emptyEl) emptyEl.style.display = '';
-            if (emptyMsg) emptyMsg.textContent = 'Toca ★ en cualquier partido para seguir a ese equipo';
+            if (emptyMsg) emptyMsg.textContent = 'Toca ★ junto a un equipo o liga para personalizar';
             if (quickAdd) quickAdd.style.display = '';
-            if (quickSearch) quickSearch.style.display = '';
             countEl.textContent = '0';
             return;
         }
 
-        // Find matching game cards from all sections
+        // Find matching game cards from all sections (teams + leagues)
         var seenIds = {};
         var matched = [];
         document.querySelectorAll('.game-card:not(.my-teams-body .game-card)').forEach(function(card) {
             var gid = card.dataset.gameId;
             if (seenIds[gid]) return;
             var teams = (card.dataset.teams || '').split(',');
-            if (teams.some(function(t) { return favTeams.includes(t); })) {
+            var teamMatch = teams.some(function(t) { return favTeams.includes(t); });
+            var leagueMatch = favLeaguesList.includes(card.dataset.league);
+            if (teamMatch || leagueMatch) {
                 seenIds[gid] = true;
                 matched.push(card);
             }
         });
 
+        var totalFavs = favTeams.length + favLeaguesList.length;
         if (matched.length === 0) {
-            // Has favorites but none play today
             sec.style.display = 'block';
             if (emptyEl) emptyEl.style.display = '';
-            if (emptyMsg) emptyMsg.textContent = 'Ninguno de tus ' + favTeams.length + ' equipos juega hoy';
+            if (emptyMsg) emptyMsg.textContent = 'Ninguno de tus ' + totalFavs + ' favoritos juega hoy';
             if (quickAdd) quickAdd.style.display = 'none';
-            if (quickSearch) quickSearch.style.display = 'none';
             countEl.textContent = '0';
             return;
         }
@@ -2707,25 +2749,27 @@
 
     buildMyTeamsSection();
 
-    // Also reorder league sections: leagues with fav teams first
+    // Also reorder league sections: fav leagues and leagues with fav teams first
     function reorderLeaguesForFavs() {
-        if (favTeams.length === 0) return;
+        if (favTeams.length === 0 && favLeaguesList.length === 0) return;
         var container = document.querySelector('.league-section') ? document.querySelector('.league-section').parentNode : null;
         if (!container) return;
         var sections = Array.from(container.querySelectorAll('.league-section'));
-        var withFav = [];
-        var withoutFav = [];
+        var leagueFav = [];   // explicitly favorited league
+        var teamFav = [];     // has a favorite team playing
+        var neither = [];
         sections.forEach(function(sec) {
+            var slug = sec.dataset.leagueSlug || '';
+            if (favLeaguesList.includes(slug)) { leagueFav.push(sec); return; }
             var cards = sec.querySelectorAll('.game-card');
-            var hasFav = Array.from(cards).some(function(c) {
+            var hasFavTeam = Array.from(cards).some(function(c) {
                 var teams = (c.dataset.teams || '').split(',');
                 return teams.some(function(t) { return favTeams.includes(t); });
             });
-            if (hasFav) withFav.push(sec);
-            else withoutFav.push(sec);
+            if (hasFavTeam) teamFav.push(sec);
+            else neither.push(sec);
         });
-        // Reinsert: fav leagues first, then the rest
-        withFav.concat(withoutFav).forEach(function(sec) {
+        leagueFav.concat(teamFav).concat(neither).forEach(function(sec) {
             container.appendChild(sec);
         });
     }
@@ -2734,34 +2778,33 @@
 
     // ── Personalizar "Lo imperdible" según favoritos ──
     function personalizeMustWatch() {
-        if (favTeams.length === 0) return;
+        if (favTeams.length === 0 && favLeaguesList.length === 0) return;
         var sec = document.getElementById('secMustWatch');
         if (!sec) return;
         var cards = Array.from(sec.querySelectorAll('.game-card'));
         if (cards.length < 2) return;
 
-        // Derive user's preferred leagues by scanning ALL game cards on page
-        var favLeagues = new Set();
+        // Derive implicit preferred leagues from fav teams
+        var implicitLeagues = new Set();
         document.querySelectorAll('.game-card[data-league]').forEach(function(c) {
             var teams = (c.dataset.teams || '').split(',');
             if (teams.some(function(t) { return favTeams.includes(t); })) {
-                favLeagues.add(c.dataset.league);
+                implicitLeagues.add(c.dataset.league);
             }
         });
 
-        // Score each must-watch card: 2 = team match, 1 = league match, 0 = neither
+        // Score: 3 = team match, 2 = explicit league fav, 1 = implicit league, 0 = none
         cards.sort(function(a, b) {
-            var aTeams = (a.dataset.teams || '').split(',');
-            var bTeams = (b.dataset.teams || '').split(',');
-            var aTeamMatch = aTeams.some(function(t) { return favTeams.includes(t); }) ? 2 : 0;
-            var bTeamMatch = bTeams.some(function(t) { return favTeams.includes(t); }) ? 2 : 0;
-            var aScore = aTeamMatch || (favLeagues.has(a.dataset.league) ? 1 : 0);
-            var bScore = bTeamMatch || (favLeagues.has(b.dataset.league) ? 1 : 0);
-            return bScore - aScore;
+            function scoreCard(c) {
+                var teams = (c.dataset.teams || '').split(',');
+                if (teams.some(function(t) { return favTeams.includes(t); })) return 3;
+                if (favLeaguesList.includes(c.dataset.league)) return 2;
+                if (implicitLeagues.has(c.dataset.league)) return 1;
+                return 0;
+            }
+            return scoreCard(b) - scoreCard(a);
         });
 
-        // Reinsert sorted cards
-        var header = sec.querySelector('.priority-header');
         cards.forEach(function(c) { sec.appendChild(c); });
     }
     personalizeMustWatch();
