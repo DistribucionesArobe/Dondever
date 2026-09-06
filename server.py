@@ -998,41 +998,70 @@ async def game_semantic(request: Request, slug: str):
     # ── Reuse game_detail logic ──
     event_id = game["id"]
 
-    # Fetch odds
-    odds = None
-    if game["status"]["state"] in ("pre", "in"):
-        try:
-            league_slug = game.get("league_slug", "")
-            odds_list = await fetch_odds(league_slug)
-            odds = match_full_odds_to_game(game, odds_list)
-        except Exception as e:
-            logger.warning(f"Odds fetch failed for game {event_id}: {e}")
-
+    # ── Parallel fetch: odds, stats, summary, recent, upcoming ──
     home_slug = _team_name_to_slug(game["home"]["name"])
     away_slug = _team_name_to_slug(game["away"]["name"])
-
-    home_stats = {}
-    away_stats = {}
-    try:
-        if home_slug:
-            home_stats = await get_team_stats(home_slug)
-        if away_slug:
-            away_stats = await get_team_stats(away_slug)
-    except Exception as e:
-        logger.warning(f"Stats fetch failed for game {event_id}: {e}")
-
-    summary = {}
     sport = game.get("sport", "")
     league_slug = game.get("league_slug", "")
-    espn_league = ""
-    try:
-        from config import ALL_LEAGUES
-        league_info = ALL_LEAGUES.get(league_slug)
-        espn_league = league_info[1] if isinstance(league_info, tuple) else league_slug
-        if sport and espn_league:
-            summary = await fetch_espn_event_summary(sport, espn_league, event_id)
-    except Exception as e:
-        logger.warning(f"Summary fetch failed for game {event_id}: {e}")
+
+    from config import ALL_LEAGUES
+    league_info = ALL_LEAGUES.get(league_slug)
+    espn_league = league_info[1] if isinstance(league_info, tuple) else league_slug
+
+    async def _fetch_game_odds():
+        if game["status"]["state"] not in ("pre", "in"):
+            return None
+        try:
+            odds_list = await fetch_odds(league_slug)
+            return match_full_odds_to_game(game, odds_list)
+        except Exception as e:
+            logger.warning(f"Odds fetch failed for game {event_id}: {e}")
+            return None
+
+    async def _fetch_home_stats():
+        try:
+            return await get_team_stats(home_slug) if home_slug else {}
+        except Exception:
+            return {}
+
+    async def _fetch_away_stats():
+        try:
+            return await get_team_stats(away_slug) if away_slug else {}
+        except Exception:
+            return {}
+
+    async def _fetch_summary():
+        try:
+            if sport and espn_league:
+                return await fetch_espn_event_summary(sport, espn_league, event_id)
+        except Exception as e:
+            logger.warning(f"Summary fetch failed for game {event_id}: {e}")
+        return {}
+
+    async def _fetch_recent():
+        try:
+            if sport and espn_league:
+                return await get_recent_league_results(sport, espn_league, days=10, limit=40)
+        except Exception:
+            pass
+        return []
+
+    async def _fetch_upcoming_games():
+        try:
+            if sport and espn_league:
+                return await get_upcoming_league_games(sport, espn_league, days=10, limit=40)
+        except Exception:
+            pass
+        return []
+
+    odds, home_stats, away_stats, summary, all_recent, all_upcoming_games = await asyncio.gather(
+        _fetch_game_odds(),
+        _fetch_home_stats(),
+        _fetch_away_stats(),
+        _fetch_summary(),
+        _fetch_recent(),
+        _fetch_upcoming_games(),
+    )
 
     # ── Forma reciente + próximos partidos de ambos equipos ──
     home_recent = []
@@ -1044,8 +1073,6 @@ async def game_semantic(request: Request, slug: str):
 
     if sport and espn_league:
         try:
-            all_recent = await get_recent_league_results(sport, espn_league, days=10, limit=40)
-            all_upcoming_games = await get_upcoming_league_games(sport, espn_league, days=10, limit=40)
 
             home_name_lower = game["home"]["name"].lower()
             away_name_lower = game["away"]["name"].lower()
