@@ -326,6 +326,8 @@
         .ac-item:hover, .ac-item.ac-active { background: rgba(16,185,129,0.15); }
         .ac-item img { width: 24px; height: 24px; object-fit: contain; border-radius: 4px; }
         .ac-item .ac-meta { font-size: 0.65rem; color: #64748b; margin-left: auto; }
+        .ac-fav { background:none; border:none; cursor:pointer; font-size:0.9rem; opacity:0.3; padding:0 4px; line-height:1; flex-shrink:0; }
+        .ac-fav:hover, .ac-fav.active { opacity:1; }
         .ac-divider { border-top: 1px solid rgba(255,255,255,0.08); margin: 0.2rem 0; }
 
         .date-nav {
@@ -3020,9 +3022,60 @@
         results.forEach(function(r, i) {
             var href = r.type === 'team' ? '/equipo/' + r.slug : '/?league=' + r.slug;
             var icon = r.logo ? '<img src="' + r.logo + '" alt="">' : '<span style="width:24px;text-align:center;">⚽</span>';
-            html += '<a href="' + href + '" class="ac-item" data-idx="' + i + '">' + icon + '<span>' + r.name + '</span><span class="ac-meta">' + r.meta + '</span></a>';
+            var isFav = r.type === 'team'
+                ? favTeams.includes(r.name.toLowerCase())
+                : favLeaguesList.includes(r.slug);
+            var starClass = 'ac-fav' + (isFav ? ' active' : '');
+            html += '<div class="ac-item" data-idx="' + i + '" data-href="' + href + '" data-type="' + r.type + '" data-slug="' + r.slug + '" data-name="' + r.name + '">'
+                + icon + '<span>' + r.name + '</span><span class="ac-meta">' + r.meta + '</span>'
+                + '<button class="' + starClass + '" title="' + (isFav ? 'Quitar de favoritos' : 'Seguir') + '">★</button>'
+                + '</div>';
         });
         acDropdown.innerHTML = html;
+        // Wire up click handlers
+        acDropdown.querySelectorAll('.ac-item').forEach(function(item) {
+            // Star button toggles favorite
+            var star = item.querySelector('.ac-fav');
+            star.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                var type = item.dataset.type;
+                var name = item.dataset.name;
+                var slug = item.dataset.slug;
+                if (type === 'team') {
+                    var t = name.toLowerCase();
+                    var idx = favTeams.indexOf(t);
+                    if (idx >= 0) { favTeams.splice(idx, 1); star.classList.remove('active'); }
+                    else { favTeams.push(t); star.classList.add('active'); }
+                    saveFavs();
+                } else {
+                    var li = favLeaguesList.indexOf(slug);
+                    if (li >= 0) { favLeaguesList.splice(li, 1); star.classList.remove('active'); }
+                    else { favLeaguesList.push(slug); star.classList.add('active'); }
+                    saveFavLeagues();
+                }
+                updateFavPill();
+                buildMyTeamsSection();
+                personalizeMustWatch();
+                reorderLeaguesForFavs();
+                // Update league header stars
+                document.querySelectorAll('.league-fav-btn').forEach(function(b) {
+                    var sec = b.closest('.league-section');
+                    if (sec) b.classList.toggle('active', favLeaguesList.includes(sec.dataset.leagueSlug));
+                });
+                // Update team fav buttons
+                document.querySelectorAll('.fav-btn').forEach(function(b) {
+                    var row = b.closest('.gc-row');
+                    if (!row) return;
+                    var nameEl = row.querySelector('.team-name');
+                    if (nameEl) b.classList.toggle('active', favTeams.includes(nameEl.textContent.toLowerCase()));
+                });
+            });
+            // Clicking the item itself navigates
+            item.addEventListener('click', function() {
+                window.location.href = item.dataset.href;
+            });
+        });
         acDropdown.classList.add('show');
         _acIdx = -1;
     }
