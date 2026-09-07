@@ -1726,7 +1726,7 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
             home_c = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
             away_c = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
 
-            # Extract broadcast channels (normalized display names)
+            # Extract broadcast channels with country info
             channels = []
             seen_ch = set()
             for geo in comp.get("geoBroadcasts", []):
@@ -1738,7 +1738,10 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
                 display = info.get("name", ch)
                 if display.lower() not in seen_ch:
                     seen_ch.add(display.lower())
-                    channels.append(display)
+                    channels.append({
+                        "name": display,
+                        "country": info.get("country", ""),
+                    })
 
             upcoming.append({
                 "id": event.get("id", ""),
@@ -1747,7 +1750,7 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
                 "home_logo": home_c.get("team", {}).get("logo", ""),
                 "away_logo": away_c.get("team", {}).get("logo", ""),
                 "date": event.get("date", ""),
-                "channels": channels[:4],
+                "channels": channels[:6],
             })
 
     upcoming.sort(key=lambda x: x.get("date", ""))

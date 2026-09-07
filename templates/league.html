@@ -327,12 +327,13 @@
         {# When no games today, show upcoming schedule immediately #}
         {% if upcoming_games %}
         <div class="standings-section" style="margin-top:1rem;">
-            <h2>Proxima jornada de {{ league_name }}</h2>
+            <h2>Pr&oacute;xima jornada de {{ league_name }}</h2>
+            <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.3rem;">Horarios en hora centro de M&eacute;xico (CDMX)</div>
             <table class="standings-table">
                 <thead>
                     <tr>
                         <th>Local</th>
-                        <th style="text-align:center">Fecha</th>
+                        <th style="text-align:center">Fecha y hora</th>
                         <th style="text-align:right">Visitante</th>
                     </tr>
                 </thead>
@@ -343,7 +344,7 @@
                             {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
                             {{ u.home }}
                         </td>
-                        <td style="text-align:center;font-weight:600;color:#f97316;" data-utc="{{ u.date }}">{{ format_mx_time(u.date) }}</td>
+                        <td style="text-align:center;font-weight:600;color:#f97316;" data-utc="{{ u.date }}">{{ format_mx_day_time(u.date) }}</td>
                         <td style="text-align:right;">
                             {{ u.away }}
                             {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;margin-left:0.4rem;">{% endif %}
@@ -351,7 +352,18 @@
                     </tr>
                     {% if u.channels %}
                     <tr>
-                        <td colspan="3" style="font-size:0.7rem;color:#6b7280;padding:0 0.5rem 0.4rem;">&#128250; {{ u.channels|join(', ') }}</td>
+                        <td colspan="3" style="font-size:0.7rem;color:#6b7280;padding:0 0.5rem 0.4rem;">
+                            &#128250;
+                            {% set mx_ch = u.channels|selectattr('country','equalto','MX')|list %}
+                            {% set us_ch = u.channels|selectattr('country','equalto','US')|list %}
+                            {% set other_ch = u.channels|rejectattr('country','in',['MX','US'])|list %}
+                            {% if mx_ch %}<span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}{% endif %}
+                            {% if mx_ch and us_ch %} · {% endif %}
+                            {% if us_ch %}<span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}{% endif %}
+                            {% if (mx_ch or us_ch) and other_ch %} · {% endif %}
+                            {% if other_ch %}{{ other_ch|map(attribute='name')|join(', ') }}{% endif %}
+                            {% if not mx_ch and not us_ch and not other_ch %}{{ u.channels|map(attribute='name')|join(', ') }}{% endif %}
+                        </td>
                     </tr>
                     {% endif %}
                     {% endfor %}
@@ -513,12 +525,13 @@
 <!-- Upcoming Games (only when there are games today — otherwise shown above) -->
 {% if upcoming_games and games %}
 <div class="standings-section">
-    <h2>Proximos partidos de {{ league_name }}</h2>
+    <h2>Pr&oacute;ximos partidos de {{ league_name }}</h2>
+    <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.3rem;">Horarios en hora centro de M&eacute;xico (CDMX)</div>
     <table class="standings-table">
         <thead>
             <tr>
                 <th>Local</th>
-                <th style="text-align:center">Fecha</th>
+                <th style="text-align:center">Fecha y hora</th>
                 <th style="text-align:right">Visitante</th>
             </tr>
         </thead>
@@ -529,7 +542,7 @@
                     {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
                     {{ u.home }}
                 </td>
-                <td style="text-align:center;font-weight:600;color:#f97316;" data-utc="{{ u.date }}">{{ format_mx_time(u.date) }}</td>
+                <td style="text-align:center;font-weight:600;color:#f97316;" data-utc="{{ u.date }}">{{ format_mx_day_time(u.date) }}</td>
                 <td style="text-align:right;">
                     {{ u.away }}
                     {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;margin-left:0.4rem;">{% endif %}

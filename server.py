@@ -427,6 +427,7 @@ def format_us_time(iso_date: str) -> str:
 
 
 templates.env.globals["format_mx_time"] = format_mx_time
+templates.env.globals["format_mx_day_time"] = format_mx_day_time
 templates.env.globals["format_us_time"] = format_us_time
 templates.env.globals["affiliates"] = AFFILIATES
 templates.env.globals["streaming_aff"] = STREAMING_AFFILIATES

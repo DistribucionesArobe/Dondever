@@ -1,0 +1,123 @@
+RESUMEN GOOGLE SEARCH CONSOLE — DondeVer.app
+Periodo: Últimos 3 meses (junio–septiembre 2026)
+Fuente: Google Search Console → Rendimiento → Búsqueda Web
+
+═══════════════════════════════════════════════
+MÉTRICAS GENERALES
+═══════════════════════════════════════════════
+• Clics totales: 5,960
+• Impresiones totales: 347,000
+• CTR medio: 1.7%
+• Posición media: 9.9
+• Tendencia: Crecimiento sostenido desde ~0 clics/día a finales de junio hasta 250-375 clics/día en agosto-septiembre
+
+═══════════════════════════════════════════════
+TOP 10 CONSULTAS (por clics)
+═══════════════════════════════════════════════
+#   Consulta                                          Clics   Impresiones
+1.  "donde ver dodgers hoy"                           129     2,127
+2.  "partido dodgers hoy en vivo, canal"               110     2,855
+3.  "donde ver yankees hoy"                            110     1,002
+4.  "donde ver el juego de los yankees hoy"             63       919
+5.  "donde ver el juego de los mets hoy"                62       712
+6.  "wnba en vivo gratis"                               46       562
+7.  "dodgers hoy donde ver"                             42       925
+8.  "a que hora juegan los dodgers hoy y en que canal"  40     2,624
+9.  "donde ver el juego de los dodgers hoy"             30       942
+10. "wnba en vivo"                                      29     1,564
+
+Total de consultas únicas: 1,000
+
+Observaciones:
+- Dodgers dominan (5 de las top 10 queries son sobre Dodgers)
+- Yankees son el segundo equipo más buscado
+- WNBA aparece 2 veces — audiencia de nicho pero con intención clara
+- Las queries son muy transaccionales: "donde ver", "en vivo", "canal", "a que hora"
+- La query #8 tiene alto volumen de impresiones (2,624) pero bajo CTR → oportunidad de optimizar title/meta
+
+═══════════════════════════════════════════════
+TOP 10 PÁGINAS (por clics)
+═══════════════════════════════════════════════
+#   URL                                    Clics   Impresiones
+1.  /equipo/dodgers                        2,075    98,559
+2.  /equipo/yankees                        1,074    30,749
+3.  /equipo/mets                             312    20,084
+4.  /equipo/phillies                         255     6,788
+5.  /equipo/padres                           237    10,471
+6.  /liga/wnba                               234     5,007
+7.  /equipo/tigres                           207    21,501
+8.  /juego/401816378                         120     1,385
+9.  /equipo/red-sox                          106     7,418
+10. /equipo/indiana-fever                     47     1,006
+
+Total de páginas indexadas con tráfico: 1,000
+
+Observaciones:
+- Las páginas /equipo/ son las que más tráfico orgánico generan (8 de 10)
+- /equipo/dodgers es la estrella: 2,075 clics y casi 100K impresiones
+- /equipo/tigres tiene muchas impresiones (21,501) pero CTR bajo (~1%) → oportunidad
+- /liga/wnba es la única página de liga en el top 10
+- Solo 1 página de partido individual (/juego/401816378) en el top 10
+- La home NO aparece en el top 10 → el tráfico orgánico llega por long-tail a equipos
+
+═══════════════════════════════════════════════
+TOP 10 PAÍSES (por clics)
+═══════════════════════════════════════════════
+#   País                     Clics   Impresiones
+1.  México                   2,491   166,445
+2.  Venezuela                1,038    32,049
+3.  Panamá                     551    16,264
+4.  Estados Unidos             379    50,031
+5.  República Dominicana       267    14,631
+6.  Colombia                   191     7,304
+7.  España                     130     6,719
+8.  Nicaragua                  108    12,235
+9.  Costa Rica                 105     5,798
+10. Puerto Rico                102     6,300
+
+Total de países: 146
+
+Observaciones:
+- México es el mercado principal (42% de clics)
+- Venezuela sorprende como #2 (17% de clics) — mercado con alto interés en MLB
+- Panamá en #3 — relevante para béisbol (Panamá tiene tradición beisbolera)
+- Estados Unidos tiene MUCHAS impresiones (50K) pero pocos clics (379) → CTR bajísimo (~0.76%) — compite contra contenido en inglés
+- Centroamérica bien representada (Nicaragua, Costa Rica, Panamá)
+- Caribe hispanohablante presente (RD, Puerto Rico)
+- El sitio tiene alcance panamericano real, no solo México
+
+═══════════════════════════════════════════════
+DISPOSITIVOS
+═══════════════════════════════════════════════
+Dispositivo    Clics    Impresiones    % Clics
+Móviles        5,533    315,035        93%
+Ordenador        356     29,438         6%
+Tablet            66      2,728         1%
+
+Observaciones:
+- 93% del tráfico viene de móvil — la experiencia mobile es CRÍTICA
+- Desktop casi irrelevante en clics (6%)
+- Coherente con el caso de uso: "¿dónde veo el juego AHORA?" es una búsqueda mobile-first
+
+═══════════════════════════════════════════════
+CONCLUSIONES Y OPORTUNIDADES
+═══════════════════════════════════════════════
+
+1. CRECIMIENTO ACELERADO: De 0 a ~300 clics/día en ~3 meses. Tendencia alcista clara.
+
+2. DODGERS = MOTOR DE TRÁFICO: 35% de todos los clics vienen de páginas/queries relacionadas con Dodgers. Riesgo de concentración si la temporada termina.
+
+3. PÁGINAS DE EQUIPO SON EL CORE SEO: 8/10 top pages son /equipo/. La estrategia de crear páginas por equipo funciona muy bien.
+
+4. CTR GENERAL BAJO (1.7%): Con posición media 9.9, muchas páginas están en la segunda mitad de la página 1. Optimizar titles y metas podría subir CTR significativamente.
+
+5. OPORTUNIDADES ESPECÍFICAS:
+   - /equipo/tigres: 21,501 impresiones pero solo 207 clics (CTR ~1%) → mejorar title
+   - Estados Unidos: 50K impresiones, 379 clics → crear contenido en español para latinos en US
+   - "a que hora juegan los dodgers hoy y en que canal": 2,624 impresiones, solo 40 clics → optimizar snippet
+
+6. MERCADO OBJETIVO CONFIRMADO: México + Venezuela + Centroamérica + Caribe hispanohablante. El contenido en español para fanáticos de béisbol/deportes americanos tiene demanda real.
+
+7. MOBILE-FIRST ES OBLIGATORIO: 93% mobile. Cada decisión de UX debe priorizarse para pantalla pequeña.
+
+8. DIVERSIFICACIÓN NECESARIA: Necesita más tráfico de NFL, fútbol, y otros deportes para no depender solo de MLB/temporada de béisbol.

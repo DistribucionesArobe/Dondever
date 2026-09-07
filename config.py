@@ -674,6 +674,28 @@ STREAMING_AFFILIATES = {
         "is_affiliate": False,
         "bg": "#002be7", "color": "white",
     },
+    "Disney+": {
+        "key": "disneyplus",
+        "name": "Disney+",
+        "aliases": ["disney+", "disney plus", "star+"],
+        "url": os.getenv("AFFILIATE_DISNEYPLUS", "") or "https://www.disneyplus.com/",
+        "affiliate_url": os.getenv("AFFILIATE_DISNEYPLUS", "") or None,
+        "cta": "Ver en Disney+",
+        "countries": ["MX"],
+        "is_affiliate": False,
+        "bg": "#113ccf", "color": "white",
+    },
+    "ESPN MX": {
+        "key": "disneyplus",
+        "name": "ESPN MX",
+        "aliases": ["espn mx", "espn mexico"],
+        "url": os.getenv("AFFILIATE_DISNEYPLUS", "") or "https://www.disneyplus.com/",
+        "affiliate_url": os.getenv("AFFILIATE_DISNEYPLUS", "") or None,
+        "cta": "ESPN en Disney+",
+        "countries": ["MX"],
+        "is_affiliate": False,
+        "bg": "#d00", "color": "white",
+    },
 }
 
 # Alias for new code — same object, clearer name
@@ -729,7 +751,7 @@ LEAGUES = {
     "club-friendly": ("soccer", "fifa.friendly", "Amistosos",        "\u26bd"),
     # Futbol Americano
     "nfl":           ("football", "nfl",         "NFL",              "NFL"),
-    "college-football": ("football", "college-football", "College Football", "NFL"),
+    "college-football": ("football", "college-football", "Fútbol Americano Universitario", "🏈"),
     # Basquetbol
     "nba":           ("basketball", "nba",       "NBA",              "NBA"),
     "wnba":          ("basketball", "wnba",      "WNBA",            "NBA"),
