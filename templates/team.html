@@ -299,6 +299,153 @@
         </div>
     </div>
 
+    {# ══ PARTIDOS DE HOY (lo mas importante arriba) ══ #}
+    {% if games %}
+    <h2>Partidos de hoy <span class="game-count">({{ games|length }})</span></h2>
+
+    {% for game in games %}
+    {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+    {% set left = game.home if home_left else game.away %}
+    {% set right = game.away if home_left else game.home %}
+    <a href="{{ game|game_url }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
+        <div class="team away">
+            <div>
+                <div class="team-name">{{ left.name }}</div>
+                {% if game.status.state != 'pre' %}
+                <div class="team-score">{{ left.score }}</div>
+                {% endif %}
+            </div>
+            {% if left.logo %}
+            <img src="{{ left.logo }}" alt="{{ left.name }}" class="team-logo-sm">
+            {% endif %}
+        </div>
+        <div class="game-center">
+            {% if game.status.state == 'in' %}
+                <div class="live-badge">EN VIVO</div>
+            {% elif game.status.state == 'post' %}
+                <div class="final-badge">FINAL</div>
+            {% else %}
+                <div class="game-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</div>
+                <div class="countdown" data-kickoff="{{ game.date }}"></div>
+            {% endif %}
+            <div class="game-meta">{{ game.league_name }}</div>
+        </div>
+        <div class="team">
+            {% if right.logo %}
+            <img src="{{ right.logo }}" alt="{{ right.name }}" class="team-logo-sm">
+            {% endif %}
+            <div>
+                <div class="team-name">{{ right.name }}</div>
+                {% if game.status.state != 'pre' %}
+                <div class="team-score">{{ right.score }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </a>
+    <div class="channels" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem;">
+        <span>Donde verlo:</span>
+        {% if game.broadcasts %}
+            {% for b in game.broadcasts[:4] %}
+            {% set saff = streaming_aff.get(b.channel) %}
+            {% if saff %}
+            <a href="/go/{{ saff.key }}?s=team-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" data-league="{{ game.league_slug }}" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
+            {% else %}
+            <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;font-weight:600;">{{ b.channel }}</span>
+            {% endif %}
+            {% endfor %}
+        {% else %}
+            <span>Canal por confirmar</span>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="no-games" style="text-align:left;background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;">
+        <h2 style="font-size:1.05rem;color:#1a1a2e;">No hay partido de {{ team_name }} hoy</h2>
+        {% if upcoming_games %}
+        {% set nxt = upcoming_games[0] %}
+        <div style="margin-top:0.9rem;padding:0.9rem 1rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;font-weight:700;margin-bottom:0.4rem;">Próximo partido</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                {% if nxt.home_logo %}<img src="{{ nxt.home_logo }}" alt="" style="width:24px;height:24px;object-fit:contain;">{% endif %}
+                <span style="font-weight:800;color:#1a1a2e;">{{ nxt.home }}</span>
+                <span style="color:#9ca3af;font-weight:600;">vs</span>
+                <span style="font-weight:800;color:#1a1a2e;">{{ nxt.away }}</span>
+                {% if nxt.away_logo %}<img src="{{ nxt.away_logo }}" alt="" style="width:24px;height:24px;object-fit:contain;">{% endif %}
+            </div>
+            <div style="margin-top:0.4rem;font-weight:700;color:#f97316;font-size:0.9rem;">{{ format_mx_day_time(nxt.date) }} <span style="color:#9ca3af;font-weight:500;font-size:0.75rem;">(hora CDMX)</span></div>
+            {% if nxt.channels %}
+            <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;font-size:0.75rem;color:#6b7280;">
+                <span>&#128250;</span>
+                {% for ch in nxt.channels %}
+                <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ ch }}</span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="margin-top:0.5rem;font-size:0.75rem;color:#9ca3af;">Canales por confirmar — revisa esta página el día del partido.</div>
+            {% endif %}
+        </div>
+        {% else %}
+        <p style="margin-top:0.5rem;color:#6b7280;">Consulta abajo los últimos resultados y activa alertas por WhatsApp para que te avisemos cuando jueguen.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="alert-box">
+        <div>
+            <div style="font-weight:700;font-size:0.9rem;">Recibe alertas de {{ team_name }}</div>
+            <div style="font-size:0.75rem;opacity:0.8;">1 hora antes del partido + {% if team_sport == 'beisbol' %}notificacion de anotaciones{% elif team_sport == 'futbol' or team_sport == 'hockey' %}notificacion de goles{% else %}notificacion de scores{% endif %}</div>
+        </div>
+        <a href="https://wa.me/15715463202?text=alerta%20{{ team_slug }}">Activar alertas</a>
+    </div>
+
+    {# ══ PROXIMOS PARTIDOS ══ #}
+    {% if upcoming_games %}
+    <div style="margin-top:1rem;">
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Proximos partidos</h2>
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            {% for u in upcoming_games %}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
+                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;">
+                    {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                    <span style="font-size:0.8rem;font-weight:600;">{{ u.home }}</span>
+                </div>
+                <div style="font-weight:700;color:#f97316;font-size:0.78rem;padding:0 0.5rem;" data-utc="{{ u.date }}">{{ format_mx_time(u.date) }}</div>
+                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;justify-content:flex-end;">
+                    <span style="font-size:0.8rem;font-weight:600;">{{ u.away }}</span>
+                    {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                </div>
+            </div>
+            {% if u.channels %}
+            <div style="padding:0 0.8rem 0.5rem;font-size:0.68rem;color:#9ca3af;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">&#128250; {{ u.channels|join(', ') }}</div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ══ RESULTADOS RECIENTES ══ #}
+    {% if recent_results %}
+    <div style="margin-top:1rem;">
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Ultimos resultados</h2>
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            {% for r in recent_results %}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
+                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;">
+                    {% if r.home_logo %}<img src="{{ r.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                    <span style="font-size:0.8rem;font-weight:600;">{{ r.home }}</span>
+                </div>
+                <div style="font-weight:800;color:#059669;font-size:0.85rem;padding:0 0.5rem;">{{ r.home_score }} - {{ r.away_score }}</div>
+                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;justify-content:flex-end;">
+                    <span style="font-size:0.8rem;font-weight:600;">{{ r.away }}</span>
+                    {% if r.away_logo %}<img src="{{ r.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     {% if stats %}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.5rem;margin-bottom:1rem;">
         {% if stats.rank %}
@@ -538,106 +685,6 @@
     </div>
     {% endif %}
 
-    {# ══ PARTIDOS DE HOY (lo mas importante arriba) ══ #}
-    {% if games %}
-    <h2>Partidos de hoy <span class="game-count">({{ games|length }})</span></h2>
-
-    {% for game in games %}
-    {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
-    {% set left = game.home if home_left else game.away %}
-    {% set right = game.away if home_left else game.home %}
-    <a href="{{ game|game_url }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
-        <div class="team away">
-            <div>
-                <div class="team-name">{{ left.name }}</div>
-                {% if game.status.state != 'pre' %}
-                <div class="team-score">{{ left.score }}</div>
-                {% endif %}
-            </div>
-            {% if left.logo %}
-            <img src="{{ left.logo }}" alt="{{ left.name }}" class="team-logo-sm">
-            {% endif %}
-        </div>
-        <div class="game-center">
-            {% if game.status.state == 'in' %}
-                <div class="live-badge">EN VIVO</div>
-            {% elif game.status.state == 'post' %}
-                <div class="final-badge">FINAL</div>
-            {% else %}
-                <div class="game-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</div>
-                <div class="countdown" data-kickoff="{{ game.date }}"></div>
-            {% endif %}
-            <div class="game-meta">{{ game.league_name }}</div>
-        </div>
-        <div class="team">
-            {% if right.logo %}
-            <img src="{{ right.logo }}" alt="{{ right.name }}" class="team-logo-sm">
-            {% endif %}
-            <div>
-                <div class="team-name">{{ right.name }}</div>
-                {% if game.status.state != 'pre' %}
-                <div class="team-score">{{ right.score }}</div>
-                {% endif %}
-            </div>
-        </div>
-    </a>
-    <div class="channels" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem;">
-        <span>Donde verlo:</span>
-        {% if game.broadcasts %}
-            {% for b in game.broadcasts[:4] %}
-            {% set saff = streaming_aff.get(b.channel) %}
-            {% if saff %}
-            <a href="/go/{{ saff.key }}?s=team-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" data-league="{{ game.league_slug }}" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
-            {% else %}
-            <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;font-weight:600;">{{ b.channel }}</span>
-            {% endif %}
-            {% endfor %}
-        {% else %}
-            <span>Canal por confirmar</span>
-        {% endif %}
-    </div>
-    {% endfor %}
-
-    {% else %}
-    <div class="no-games" style="text-align:left;background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;">
-        <h2 style="font-size:1.05rem;color:#1a1a2e;">No hay partido de {{ team_name }} hoy</h2>
-        {% if upcoming_games %}
-        {% set nxt = upcoming_games[0] %}
-        <div style="margin-top:0.9rem;padding:0.9rem 1rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;">
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;font-weight:700;margin-bottom:0.4rem;">Próximo partido</div>
-            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-                {% if nxt.home_logo %}<img src="{{ nxt.home_logo }}" alt="" style="width:24px;height:24px;object-fit:contain;">{% endif %}
-                <span style="font-weight:800;color:#1a1a2e;">{{ nxt.home }}</span>
-                <span style="color:#9ca3af;font-weight:600;">vs</span>
-                <span style="font-weight:800;color:#1a1a2e;">{{ nxt.away }}</span>
-                {% if nxt.away_logo %}<img src="{{ nxt.away_logo }}" alt="" style="width:24px;height:24px;object-fit:contain;">{% endif %}
-            </div>
-            <div style="margin-top:0.4rem;font-weight:700;color:#f97316;font-size:0.9rem;">{{ format_mx_day_time(nxt.date) }} <span style="color:#9ca3af;font-weight:500;font-size:0.75rem;">(hora CDMX)</span></div>
-            {% if nxt.channels %}
-            <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;font-size:0.75rem;color:#6b7280;">
-                <span>&#128250;</span>
-                {% for ch in nxt.channels %}
-                <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ ch }}</span>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div style="margin-top:0.5rem;font-size:0.75rem;color:#9ca3af;">Canales por confirmar — revisa esta página el día del partido.</div>
-            {% endif %}
-        </div>
-        {% else %}
-        <p style="margin-top:0.5rem;color:#6b7280;">Consulta abajo los últimos resultados y activa alertas por WhatsApp para que te avisemos cuando jueguen.</p>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    <div class="alert-box">
-        <div>
-            <div style="font-weight:700;font-size:0.9rem;">Recibe alertas de {{ team_name }}</div>
-            <div style="font-size:0.75rem;opacity:0.8;">1 hora antes del partido + notificacion de goles</div>
-        </div>
-        <a href="https://wa.me/15715463202?text=alerta%20{{ team_slug }}">Activar alertas</a>
-    </div>
-
     {# ══ TIENDA DEL EQUIPO (Amazon + MercadoLibre) ══ #}
     {% set amz_tag = "dondever2000-20" %}
     {% set amz_team = team_name|replace("á","a")|replace("é","e")|replace("í","i")|replace("ó","o")|replace("ú","u")|replace("ñ","n")|replace("ü","u") %}
@@ -758,53 +805,6 @@
     (function(){var s=document.querySelector('.shop-section');if(s&&!s.querySelector('.shop-card.has-img'))s.style.display='none';})();
     </script>
 
-    {# ══ RESULTADOS RECIENTES ══ #}
-    {% if recent_results %}
-    <div style="margin-top:1rem;">
-        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Ultimos resultados</h2>
-        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
-            {% for r in recent_results %}
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
-                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;">
-                    {% if r.home_logo %}<img src="{{ r.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
-                    <span style="font-size:0.8rem;font-weight:600;">{{ r.home }}</span>
-                </div>
-                <div style="font-weight:800;color:#059669;font-size:0.85rem;padding:0 0.5rem;">{{ r.home_score }} - {{ r.away_score }}</div>
-                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;justify-content:flex-end;">
-                    <span style="font-size:0.8rem;font-weight:600;">{{ r.away }}</span>
-                    {% if r.away_logo %}<img src="{{ r.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    {# ══ PROXIMOS PARTIDOS ══ #}
-    {% if upcoming_games %}
-    <div style="margin-top:1rem;">
-        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Proximos partidos</h2>
-        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
-            {% for u in upcoming_games %}
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
-                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;">
-                    {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
-                    <span style="font-size:0.8rem;font-weight:600;">{{ u.home }}</span>
-                </div>
-                <div style="font-weight:700;color:#f97316;font-size:0.78rem;padding:0 0.5rem;" data-utc="{{ u.date }}">{{ format_mx_time(u.date) }}</div>
-                <div style="display:flex;align-items:center;gap:0.4rem;flex:1;justify-content:flex-end;">
-                    <span style="font-size:0.8rem;font-weight:600;">{{ u.away }}</span>
-                    {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
-                </div>
-            </div>
-            {% if u.channels %}
-            <div style="padding:0 0.8rem 0.5rem;font-size:0.68rem;color:#9ca3af;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">&#128250; {{ u.channels|join(', ') }}</div>
-            {% endif %}
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
     {# ══ TABLA DE POSICIONES ══ #}
     {% if league_standings %}
     <div style="margin-top:1.25rem;">
@@ -818,10 +818,12 @@
                             <th style="padding:0.5rem 0.4rem;text-align:left;color:#6b7280;font-weight:700;">Equipo</th>
                             <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">JJ</th>
                             <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">G</th>
+                            {% if team_sport == 'futbol' or team_sport == 'hockey' %}
                             <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">E</th>
+                            {% endif %}
                             <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">P</th>
-                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">DIF</th>
-                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;background:#f0fdf4;">PTS</th>
+                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;">{% if team_sport == 'beisbol' or team_sport == 'basketball' or team_sport == 'futbol americano' %}DIF{% else %}DIF{% endif %}</th>
+                            <th style="padding:0.5rem 0.3rem;text-align:center;color:#6b7280;font-weight:700;background:#f0fdf4;">{% if team_sport == 'futbol' or team_sport == 'hockey' %}PTS{% else %}PCT{% endif %}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -837,10 +839,12 @@
                             </td>
                             <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.games_played or '-' }}</td>
                             <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.wins or '-' }}</td>
+                            {% if team_sport == 'futbol' or team_sport == 'hockey' %}
                             <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.ties or '-' }}</td>
+                            {% endif %}
                             <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.losses or '-' }}</td>
                             <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.goal_diff or '-' }}</td>
-                            <td style="padding:0.45rem 0.3rem;text-align:center;font-weight:800;background:{% if is_this_team %}#d1fae5{% else %}#f0fdf4{% endif %};">{{ row.points or row.win_pct or '-' }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;font-weight:800;background:{% if is_this_team %}#d1fae5{% else %}#f0fdf4{% endif %};">{% if team_sport == 'futbol' or team_sport == 'hockey' %}{{ row.points or '-' }}{% else %}{{ row.win_pct or '-' }}{% endif %}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -919,7 +923,7 @@
                 {% if games %}
                 <p>Hoy {{ today_date_str }}, {{ team_name }} tiene {{ games|length }} partido{{ 's' if games|length > 1 else '' }} programado{{ 's' if games|length > 1 else '' }}. En esta página encuentras los canales de TV, horarios en hora de México y opciones de streaming actualizados en tiempo real para que no te pierdas ningún juego.</p>
                 {% else %}
-                <p>Hoy {{ today_date_str }}, {{ team_name }} no tiene partidos programados. Sin embargo, puedes activar alertas por WhatsApp para recibir una notificación 1 hora antes de su próximo juego, así como avisos de goles en tiempo real.</p>
+                <p>Hoy {{ today_date_str }}, {{ team_name }} no tiene partidos programados. Sin embargo, puedes activar alertas por WhatsApp para recibir una notificación 1 hora antes de su próximo juego, así como avisos de {% if team_sport == 'beisbol' %}anotaciones{% elif team_sport == 'futbol' or team_sport == 'hockey' %}goles{% else %}scores{% endif %} en tiempo real.</p>
                 {% endif %}
 
                 {% if team_sport == 'futbol' %}
