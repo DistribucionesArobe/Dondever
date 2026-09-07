@@ -357,12 +357,9 @@
                             {% set mx_ch = u.channels|selectattr('country','equalto','MX')|list %}
                             {% set us_ch = u.channels|selectattr('country','equalto','US')|list %}
                             {% set other_ch = u.channels|rejectattr('country','in',['MX','US'])|list %}
-                            {% if mx_ch %}<span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}{% endif %}
-                            {% if mx_ch and us_ch %} · {% endif %}
-                            {% if us_ch %}<span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}{% endif %}
-                            {% if (mx_ch or us_ch) and other_ch %} · {% endif %}
-                            {% if other_ch %}{{ other_ch|map(attribute='name')|join(', ') }}{% endif %}
-                            {% if not mx_ch and not us_ch and not other_ch %}{{ u.channels|map(attribute='name')|join(', ') }}{% endif %}
+                            {% if mx_ch %}<span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}{% else %}<span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span>{% endif %}
+                            {% if us_ch %} · <span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}{% endif %}
+                            {% if other_ch %} · {{ other_ch|map(attribute='name')|join(', ') }}{% endif %}
                         </td>
                     </tr>
                     {% endif %}

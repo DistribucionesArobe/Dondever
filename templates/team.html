@@ -423,9 +423,8 @@
                 {% if u.channels[0] is mapping %}
                     {% set mx_ch = u.channels|selectattr('country','equalto','MX')|list %}
                     {% set us_ch = u.channels|selectattr('country','equalto','US')|list %}
-                    {% if mx_ch %}<span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}{% endif %}
-                    {% if mx_ch and us_ch %} · {% endif %}
-                    {% if us_ch %}<span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}{% endif %}
+                    {% if mx_ch %}<span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}{% else %}<span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span>{% endif %}
+                    {% if us_ch %} · <span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}{% endif %}
                 {% else %}
                     {{ u.channels|join(', ') }}
                 {% endif %}
