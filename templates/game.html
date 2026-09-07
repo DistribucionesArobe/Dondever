@@ -6,11 +6,11 @@
     {% set home_left_meta = game.sport in ('soccer', 'boxing', 'mma') %}
     {% set first_team = game.home.name if home_left_meta else game.away.name %}
     {% set second_team = game.away.name if home_left_meta else game.home.name %}
-    <title>{{ first_team }} vs {{ second_team }}: {% if odds %}Momios, Pron&oacute;stico y {% endif %}D&oacute;nde Ver Hoy — {{ game.league_name }} | DondeVer</title>
-    <meta name="description" content="{% if odds %}Momios, pronóstico y apuestas de {{ first_team }} vs {{ second_team }}. Cuotas actualizadas y picks. {% endif %}Dónde ver en vivo: hora, canales de TV y streaming para México, USA y Latinoamérica.{% if game.broadcasts %} Transmite: {{ game.broadcasts[0].channel }}.{% endif %}">
+    <title>{{ first_team }} vs {{ second_team }}: D&oacute;nde Ver Hoy{% if odds %}, Momios y Pron&oacute;stico{% endif %} — {{ game.league_name }} | DondeVer</title>
+    <meta name="description" content="Dónde ver {{ first_team }} vs {{ second_team }} en vivo: hora, canales de TV y streaming para México, USA y Latinoamérica.{% if game.broadcasts %} Transmite: {{ game.broadcasts[0].channel }}.{% endif %}{% if odds %} Momios, pronóstico y picks actualizados.{% endif %}">
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ first_team }} vs {{ second_team }}: {% if odds %}Momios y Pronóstico{% else %}Dónde Ver Hoy{% endif %}">
-    <meta property="og:description" content="{% if odds %}Cuotas, pronóstico y picks. {% endif %}{{ game.league_name }} en vivo — canales de TV y streaming en México, USA y Latinoamérica.">
+    <meta property="og:title" content="{{ first_team }} vs {{ second_team }}: Dónde Ver Hoy{% if odds %} — Momios y Pronóstico{% endif %}">
+    <meta property="og:description" content="{{ game.league_name }} en vivo — canales de TV y streaming en México, USA y Latinoamérica.{% if odds %} Cuotas y pronóstico.{% endif %}">
     <meta property="og:type" content="article">
     <meta property="og:url" content="{{ app_url }}{{ game|game_url }}">
     <meta property="og:site_name" content="DondeVer.app">
@@ -22,8 +22,8 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="{{ app_url }}/og/partido/{{ game|game_url|replace('/partido/', '') }}.png">
     <meta name="twitter:site" content="@dondeverapp">
-    <meta name="twitter:title" content="{{ first_team }} vs {{ second_team }}: {% if odds %}Momios y Pronóstico{% else %}Dónde Ver{% endif %}">
-    <meta name="twitter:description" content="{% if odds %}Cuotas actualizadas, pronóstico y picks. {% endif %}{{ game.league_name }} — canales y streaming en México y LATAM">
+    <meta name="twitter:title" content="{{ first_team }} vs {{ second_team }}: Dónde Ver{% if odds %} — Momios{% endif %}">
+    <meta name="twitter:description" content="{{ game.league_name }} — canales y streaming en México y LATAM.{% if odds %} Cuotas y pronóstico actualizados.{% endif %}">
     <link rel="canonical" href="{{ app_url }}{{ game|game_url }}">
     {% if noindex %}<meta name="robots" content="noindex, follow">{% endif %}
     {{ hreflang_tags(request.url) }}
@@ -33,7 +33,7 @@
       "@context": "https://schema.org",
       "@type": "SportsEvent",
       "name": "{{ first_team }} vs {{ second_team }}",
-      "description": "{% if odds %}Momios, pronóstico y {% endif %}dónde ver {{ first_team }} vs {{ second_team }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.",
+      "description": "Dónde ver {{ first_team }} vs {{ second_team }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.{% if odds %} Momios y pronóstico actualizados.{% endif %}",
       "startDate": "{{ game.date }}",
       "eventStatus": "https://schema.org/{% if game.status.display in ('Pospuesto', 'Postponed') %}EventPostponed{% elif game.status.display in ('Cancelado', 'Cancelled') %}EventCancelled{% elif game.status.state == 'post' %}EventCompleted{% else %}EventScheduled{% endif %}",
       "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
@@ -345,7 +345,7 @@
         <a href="/liga/{{ game.league_slug }}">{{ game.league_name }}</a> &rsaquo;
         <span>{{ first_team }} vs {{ second_team }}</span>
     </nav>
-    <h1 class="game-h1">{{ first_team }} vs {{ second_team }}: {% if odds %}Momios, Pron&oacute;stico y {% endif %}D&oacute;nde Ver Hoy &mdash; {{ game.league_name }}</h1>
+    <h1 class="game-h1">{{ first_team }} vs {{ second_team }}: D&oacute;nde Ver Hoy{% if odds %}, Momios y Pron&oacute;stico{% endif %} &mdash; {{ game.league_name }}</h1>
 
     <div class="game-hero">
         <div class="league-badge">{{ game.emoji }} {{ game.league_name }}</div>
@@ -384,6 +384,83 @@
                 <div class="tz" id="tz-label">Hora centro de M&eacute;xico | {{ format_us_time(game.date) }}</div>
             {% endif %}
         </div>
+        <div class="channels-section">
+            <h3>DONDE VERLO</h3>
+            {% if game.broadcasts %}
+                {% set mx_channels = [] %}
+                {% set us_channels = [] %}
+                {% set other_channels = [] %}
+                {% for b in game.broadcasts %}
+                    {% if b.info and b.info.get('country') == 'MX' %}
+                        {% if mx_channels.append(b) %}{% endif %}
+                    {% elif b.info and b.info.get('country') == 'US' %}
+                        {% if us_channels.append(b) %}{% endif %}
+                    {% else %}
+                        {% if other_channels.append(b) %}{% endif %}
+                    {% endif %}
+                {% endfor %}
+                {% if mx_channels %}
+                {% set mx_free = [] %}
+                {% set mx_paid = [] %}
+                {% for b in mx_channels %}
+                    {% if b.info.get('type') == 'broadcast' %}
+                        {% if mx_free.append(b) %}{% endif %}
+                    {% else %}
+                        {% if mx_paid.append(b) %}{% endif %}
+                    {% endif %}
+                {% endfor %}
+                {% if mx_free %}
+                <div class="channel-group">
+                    <span class="country-label free-label">TV ABIERTA</span>
+                    {% for b in mx_free %}
+                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill broadcast" style="text-decoration:none;">{{ b.channel }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if mx_paid %}
+                <div class="channel-group">
+                    <span class="country-label">MX</span>
+                    {% for b in mx_paid %}
+                    {% set saff = streaming_aff.get(b.channel) %}
+                    {% if saff %}
+                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
+                    {% else %}
+                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if us_channels %}
+                <div class="channel-group">
+                    <span class="country-label">USA</span>
+                    {% for b in us_channels %}
+                    {% set saff = streaming_aff.get(b.channel) %}
+                    {% if saff %}
+                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
+                    {% else %}
+                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if other_channels %}
+                <div class="channel-group">
+                    {% for b in other_channels %}
+                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill unknown" style="text-decoration:none;">{{ b.channel }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if not mx_channels and not us_channels and not other_channels %}
+                <span class="channel-pill unknown">Canales por confirmar</span>
+                {% endif %}
+            {% else %}
+                <span class="channel-pill unknown">Canales por confirmar</span>
+            {% endif %}
+        </div>
+
+        {% if game.venue %}<div class="venue">Sede: {{ game.venue }}</div>{% endif %}
+
         {% if match_preview %}
         <div class="preview-editorial" style="margin:1.25rem 0;padding:1.25rem;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:14px;border:1px solid #334155;">
             {# Header #}
@@ -480,82 +557,6 @@
             {% endif %}
         </div>
         {% endif %}
-
-        <div class="channels-section">
-            <h3>DONDE VERLO</h3>
-            {% if game.broadcasts %}
-                {% set mx_channels = [] %}
-                {% set us_channels = [] %}
-                {% set other_channels = [] %}
-                {% for b in game.broadcasts %}
-                    {% if b.info and b.info.get('country') == 'MX' %}
-                        {% if mx_channels.append(b) %}{% endif %}
-                    {% elif b.info and b.info.get('country') == 'US' %}
-                        {% if us_channels.append(b) %}{% endif %}
-                    {% else %}
-                        {% if other_channels.append(b) %}{% endif %}
-                    {% endif %}
-                {% endfor %}
-                {% if mx_channels %}
-                {% set mx_free = [] %}
-                {% set mx_paid = [] %}
-                {% for b in mx_channels %}
-                    {% if b.info.get('type') == 'broadcast' %}
-                        {% if mx_free.append(b) %}{% endif %}
-                    {% else %}
-                        {% if mx_paid.append(b) %}{% endif %}
-                    {% endif %}
-                {% endfor %}
-                {% if mx_free %}
-                <div class="channel-group">
-                    <span class="country-label free-label">TV ABIERTA</span>
-                    {% for b in mx_free %}
-                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill broadcast" style="text-decoration:none;">{{ b.channel }}</a>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% if mx_paid %}
-                <div class="channel-group">
-                    <span class="country-label">MX</span>
-                    {% for b in mx_paid %}
-                    {% set saff = streaming_aff.get(b.channel) %}
-                    {% if saff %}
-                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
-                    {% else %}
-                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% endif %}
-                {% if us_channels %}
-                <div class="channel-group">
-                    <span class="country-label">USA</span>
-                    {% for b in us_channels %}
-                    {% set saff = streaming_aff.get(b.channel) %}
-                    {% if saff %}
-                    <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
-                    {% else %}
-                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% if other_channels %}
-                <div class="channel-group">
-                    {% for b in other_channels %}
-                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill unknown" style="text-decoration:none;">{{ b.channel }}</a>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% if not mx_channels and not us_channels and not other_channels %}
-                <span class="channel-pill unknown">Canales por confirmar</span>
-                {% endif %}
-            {% else %}
-                <span class="channel-pill unknown">Canales por confirmar</span>
-            {% endif %}
-        </div>
-        {% if game.venue %}<div class="venue">Sede: {{ game.venue }}</div>{% endif %}
 
         {# ── Calendar + Share buttons ── #}
         <div style="display:flex;gap:0.4rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
@@ -969,9 +970,40 @@
     </div>{# end analysis block #}
 
     {# ── CTAs contextuales basados en los canales del partido ── #}
-    {# Find the first streaming affiliate that matches a broadcast channel #}
-    {% set featured_saff = namespace(found=false, key='', name='', cta='', bg='', color='') %}
+    {# Find the best streaming affiliate — prioritize MX channels (93% of traffic) #}
+    {% set featured_saff = namespace(found=false, key='', name='', cta='', bg='', color='', country='') %}
     {% if game.broadcasts %}
+        {# Pass 1: MX channels first #}
+        {% for b in game.broadcasts %}
+            {% if not featured_saff.found and b.info and b.info.get('country') == 'MX' %}
+                {% set saff = streaming_aff.get(b.channel) %}
+                {% if saff %}
+                    {% set featured_saff.found = true %}
+                    {% set featured_saff.key = saff.key %}
+                    {% set featured_saff.name = b.channel %}
+                    {% set featured_saff.cta = saff.cta %}
+                    {% set featured_saff.bg = saff.bg %}
+                    {% set featured_saff.color = saff.color %}
+                    {% set featured_saff.country = 'México' %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {# Pass 2: US channels if no MX match #}
+        {% for b in game.broadcasts %}
+            {% if not featured_saff.found and b.info and b.info.get('country') == 'US' %}
+                {% set saff = streaming_aff.get(b.channel) %}
+                {% if saff %}
+                    {% set featured_saff.found = true %}
+                    {% set featured_saff.key = saff.key %}
+                    {% set featured_saff.name = b.channel %}
+                    {% set featured_saff.cta = saff.cta %}
+                    {% set featured_saff.bg = saff.bg %}
+                    {% set featured_saff.color = saff.color %}
+                    {% set featured_saff.country = 'USA' %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        {# Pass 3: any channel as fallback #}
         {% for b in game.broadcasts %}
             {% if not featured_saff.found %}
                 {% set saff = streaming_aff.get(b.channel) %}
@@ -995,7 +1027,7 @@
     {# 1. Featured streaming service CTA #}
     {% if featured_saff.found %}
         <a href="/go/{{ featured_saff.key }}?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ featured_saff.key }}" style="display:block;background:linear-gradient(135deg,#00050d,#0f1923);border:2px solid {{ featured_saff.bg }};border-radius:14px;padding:1.25rem;text-decoration:none;text-align:center;">
-            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:{{ featured_saff.bg }};font-weight:600;margin-bottom:0.4rem;">Este partido se transmite en</div>
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:{{ featured_saff.bg }};font-weight:600;margin-bottom:0.4rem;">Este partido se transmite en{% if featured_saff.country %} ({{ featured_saff.country }}){% endif %}</div>
             <div style="font-size:1.3rem;font-weight:800;color:white;margin-bottom:0.3rem;">{{ featured_saff.name }}</div>
             <div style="font-size:0.85rem;color:#10b981;font-weight:700;margin-bottom:0.5rem;">{{ featured_saff.cta }}</div>
             <div style="display:inline-block;background:{{ featured_saff.bg }};color:{{ featured_saff.color }};font-weight:700;font-size:0.85rem;padding:0.5rem 1.5rem;border-radius:8px;">Ver ahora &rarr;</div>

@@ -1408,6 +1408,14 @@ async def generate_nfl_power_rankings() -> list[dict]:
     if not standings:
         return []
 
+    # Don't generate rankings if no team has played any games (preseason)
+    any_games_played = any(
+        (int(t.get("wins") or 0) + int(t.get("losses") or 0)) > 0
+        for t in standings
+    )
+    if not any_games_played:
+        return []
+
     # Score each team: win_pct (50%) + normalized point_diff (30%) + streak bonus (20%)
     scored = []
     for team in standings:
@@ -1486,6 +1494,14 @@ async def generate_nfl_picks(upcoming_games: list[dict], standings: list[dict]) 
     Returns list of game dicts with pick info.
     """
     if not upcoming_games or not standings:
+        return []
+
+    # Don't generate picks if no team has played any games (preseason)
+    any_games_played = any(
+        (int(t.get("wins") or 0) + int(t.get("losses") or 0)) > 0
+        for t in standings
+    )
+    if not any_games_played:
         return []
 
     # Build lookup by team name

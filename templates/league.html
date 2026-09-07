@@ -323,6 +323,43 @@
             <h2>No hay juegos de {{ league_name }} hoy</h2>
             <p>Regresa cuando haya jornada o revisa <a href="/" style="color:#059669;">todos los juegos de hoy</a>.</p>
         </div>
+
+        {# When no games today, show upcoming schedule immediately #}
+        {% if upcoming_games %}
+        <div class="standings-section" style="margin-top:1rem;">
+            <h2>Proxima jornada de {{ league_name }}</h2>
+            <table class="standings-table">
+                <thead>
+                    <tr>
+                        <th>Local</th>
+                        <th style="text-align:center">Fecha</th>
+                        <th style="text-align:right">Visitante</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in upcoming_games %}
+                    <tr>
+                        <td style="display:flex;align-items:center;gap:0.4rem;">
+                            {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
+                            {{ u.home }}
+                        </td>
+                        <td style="text-align:center;font-weight:600;color:#f97316;" data-utc="{{ u.date }}">{{ format_mx_time(u.date) }}</td>
+                        <td style="text-align:right;">
+                            {{ u.away }}
+                            {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;margin-left:0.4rem;">{% endif %}
+                        </td>
+                    </tr>
+                    {% if u.channels %}
+                    <tr>
+                        <td colspan="3" style="font-size:0.7rem;color:#6b7280;padding:0 0.5rem 0.4rem;">&#128250; {{ u.channels|join(', ') }}</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
     {% endif %}
 </main>
 
@@ -473,8 +510,8 @@
 </div>
 {% endif %}
 
-<!-- Upcoming Games -->
-{% if upcoming_games %}
+<!-- Upcoming Games (only when there are games today — otherwise shown above) -->
+{% if upcoming_games and games %}
 <div class="standings-section">
     <h2>Proximos partidos de {{ league_name }}</h2>
     <table class="standings-table">
