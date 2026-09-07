@@ -88,7 +88,7 @@
                 "startDate": "{{ game.date }}",
                 "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.state == 'in' %}EventScheduled{% else %}EventScheduled{% endif %}",
                 "url": "{{ app_url }}{{ game|game_url }}",
-                "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport == 'football' %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% else %}{{ game.sport }}{% endif %}",
+                "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport in ('football', 'college-football') %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% else %}{{ game.sport }}{% endif %}",
                 "homeTeam": {"@type": "SportsTeam", "name": "{{ game.home.name }}"},
                 "awayTeam": {"@type": "SportsTeam", "name": "{{ game.away.name }}"},
                 "organizer": {"@type": "SportsOrganization", "name": "{{ game.league_name }}"}

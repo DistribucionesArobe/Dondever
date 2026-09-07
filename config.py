@@ -751,7 +751,7 @@ LEAGUES = {
     "club-friendly": ("soccer", "fifa.friendly", "Amistosos",        "\u26bd"),
     # Futbol Americano
     "nfl":           ("football", "nfl",         "NFL",              "NFL"),
-    "college-football": ("football", "college-football", "Fútbol Americano Universitario", "🏈"),
+    "college-football": ("college-football", "college-football", "Fútbol Americano Universitario", "🏈"),
     # Basquetbol
     "nba":           ("basketball", "nba",       "NBA",              "NBA"),
     "wnba":          ("basketball", "wnba",      "WNBA",            "NBA"),

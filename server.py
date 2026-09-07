@@ -4022,6 +4022,7 @@ def generate_match_preview(game: dict) -> dict | None:
         "baseball": "chocan en el diamante",
         "basketball": "se miden en la duela",
         "football": "se enfrentan en el emparrillado",
+        "college-football": "se enfrentan en el emparrillado",
         "hockey": "chocan en el hielo",
     }.get(sport, "se enfrentan")
 
