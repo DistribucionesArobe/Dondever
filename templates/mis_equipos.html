@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis equipos — Agenda de 7 d&iacute;as | DondeVer</title>
+    <meta name="description" content="Tu agenda personalizada de partidos para los pr&oacute;ximos 7 d&iacute;as. Sigue a tus equipos favoritos y no te pierdas ning&uacute;n juego.">
+    <meta name="robots" content="noindex">
+    <link rel="icon" href="/static/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f8f9fb; color:#1a1a2e; }
+        .header {
+            background:linear-gradient(135deg,#0f172a,#1e293b); color:#f8f9fb;
+            padding:0.6rem 1rem; display:flex; justify-content:space-between; align-items:center;
+            position:sticky; top:0; z-index:100;
+        }
+        .header a { color:#10b981; text-decoration:none; }
+        .container { max-width:900px; margin:0 auto; padding:1rem; }
+        h1 { font-size:1.2rem; font-weight:800; margin-bottom:0.3rem; }
+        .subtitle { font-size:0.8rem; color:#6b7280; margin-bottom:1rem; }
+
+        .team-chips { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:1.25rem; }
+        .team-chip {
+            display:inline-flex; align-items:center; gap:0.3rem;
+            padding:0.3rem 0.7rem; border-radius:20px; font-size:0.72rem; font-weight:600;
+            background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; cursor:pointer;
+        }
+        .team-chip .remove { color:#6b7280; font-size:0.8rem; margin-left:0.2rem; }
+        .team-chip .remove:hover { color:#ef4444; }
+
+        .day-group { margin-bottom:1.5rem; }
+        .day-header {
+            font-size:0.85rem; font-weight:700; color:#0f172a; padding:0.5rem 0;
+            border-bottom:2px solid #10b981; margin-bottom:0.5rem;
+        }
+        .day-header .day-count { font-weight:400; color:#9ca3af; font-size:0.75rem; }
+
+        .game-row {
+            display:grid; grid-template-columns:55px 1fr auto; gap:0.6rem; align-items:center;
+            padding:0.6rem 0.75rem; border-bottom:1px solid #e5e7eb; text-decoration:none; color:inherit;
+            transition:background 0.15s;
+        }
+        .game-row:hover { background:#f0fdf4; }
+        .game-row:last-child { border-bottom:none; }
+        .gr-time { font-size:0.8rem; font-weight:700; color:#f97316; }
+        .gr-teams { font-size:0.85rem; font-weight:600; }
+        .gr-league { font-size:0.65rem; color:#9ca3af; }
+        .gr-channel { font-size:0.68rem; color:#059669; font-weight:600; text-align:right; }
+
+        .live-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#ef4444; margin-right:3px; animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+        .empty-state {
+            text-align:center; padding:3rem 1rem;
+        }
+        .empty-state h2 { font-size:1.1rem; margin-bottom:0.5rem; }
+        .empty-state p { font-size:0.85rem; color:#6b7280; margin-bottom:1rem; }
+        .empty-state a {
+            display:inline-block; padding:0.6rem 1.5rem; background:#10b981; color:white;
+            border-radius:8px; font-weight:700; font-size:0.85rem; text-decoration:none;
+        }
+
+        .loading { text-align:center; padding:3rem; color:#9ca3af; }
+
+        /* Dark mode */
+        body.dark-mode { background:#0f172a; color:#e2e8f0; }
+        body.dark-mode .header { background:linear-gradient(135deg,#020617,#0f172a); }
+        body.dark-mode .day-header { color:#f1f5f9; border-color:#059669; }
+        body.dark-mode .game-row { border-color:#334155; }
+        body.dark-mode .game-row:hover { background:#1e293b; }
+        body.dark-mode .team-chip { background:#064e3b; color:#a7f3d0; border-color:#065f46; }
+        body.dark-mode .empty-state p { color:#94a3b8; }
+        body.dark-mode .gr-league { color:#64748b; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <a href="/" style="color:#10b981;text-decoration:none;font-size:1.1rem;font-weight:800;">Donde<span style="color:#f8f9fb;">Ver</span></a>
+    <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.25rem 0.4rem;border-radius:8px;color:#94a3b8;">&#127769;</button>
+</div>
+
+<div class="container">
+    <nav style="font-size:0.7rem;color:#9ca3af;font-weight:500;margin-bottom:0.5rem;">
+        <a href="/" style="color:#10b981;text-decoration:none;">Inicio</a> &rsaquo;
+        <span>Mis equipos</span>
+    </nav>
+    <h1>&#11088; Mis equipos</h1>
+    <p class="subtitle">Tu agenda personalizada de los pr&oacute;ximos 7 d&iacute;as</p>
+
+    <div class="team-chips" id="teamChips"></div>
+
+    <div id="content">
+        <div class="loading" id="loadingMsg">Cargando agenda...</div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var slugs = [];
+    try { slugs = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e) {}
+
+    var contentEl = document.getElementById('content');
+    var chipsEl = document.getElementById('teamChips');
+
+    // If no teams followed, show empty state
+    if (!slugs || slugs.length === 0) {
+        contentEl.innerHTML = '<div class="empty-state">' +
+            '<h2>A&uacute;n no sigues equipos</h2>' +
+            '<p>Visita la p&aacute;gina de un equipo y toca "Seguir" para agregarlo a tu agenda.</p>' +
+            '<a href="/equipos">Explorar equipos</a>' +
+            '</div>';
+        return;
+    }
+
+    // Render team chips
+    slugs.forEach(function(slug) {
+        var chip = document.createElement('span');
+        chip.className = 'team-chip';
+        chip.innerHTML = slug.replace(/-/g,' ') + ' <span class="remove" title="Dejar de seguir">&times;</span>';
+        chip.querySelector('.remove').onclick = function() {
+            var arr = slugs.filter(function(s) { return s !== slug; });
+            localStorage.setItem('dv_my_teams', JSON.stringify(arr));
+            slugs = arr;
+            chip.remove();
+            if (arr.length === 0) location.reload();
+            else loadAgenda();
+        };
+        chipsEl.appendChild(chip);
+    });
+
+    function loadAgenda() {
+        contentEl.innerHTML = '<div class="loading">Cargando agenda...</div>';
+        fetch('/api/mis-equipos?teams=' + encodeURIComponent(slugs.join(',')))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) { contentEl.innerHTML = '<p style="color:#ef4444;">Error al cargar datos.</p>'; return; }
+            renderAgenda(data);
+        })
+        .catch(function() {
+            contentEl.innerHTML = '<p style="color:#ef4444;">Error de conexi&oacute;n. Intenta de nuevo.</p>';
+        });
+    }
+
+    function renderAgenda(data) {
+        var allGames = (data.today || []).concat(data.upcoming || []);
+        if (allGames.length === 0) {
+            contentEl.innerHTML = '<div class="empty-state">' +
+                '<h2>Sin partidos pr&oacute;ximos</h2>' +
+                '<p>Tus equipos no tienen partidos programados en los pr&oacute;ximos 7 d&iacute;as.</p>' +
+                '<a href="/">Ver partidos de hoy</a></div>';
+            return;
+        }
+
+        // Sort by date
+        allGames.sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+
+        // Group by day
+        var days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        var groups = {};
+        var order = [];
+        allGames.forEach(function(g) {
+            var d = new Date(g.date);
+            var key = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+            if (!groups[key]) {
+                groups[key] = { date: d, games: [] };
+                order.push(key);
+            }
+            groups[key].games.push(g);
+        });
+
+        var html = '';
+        var today = new Date();
+        var todayKey = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate();
+
+        order.forEach(function(key) {
+            var grp = groups[key];
+            var d = grp.date;
+            var label = key === todayKey ? 'Hoy' : days[d.getDay()] + ' ' + d.getDate() + ' de ' + months[d.getMonth()];
+            html += '<div class="day-group">';
+            html += '<div class="day-header">' + label + ' <span class="day-count">(' + grp.games.length + ' partido' + (grp.games.length !== 1 ? 's' : '') + ')</span></div>';
+            grp.games.forEach(function(g) {
+                var gd = new Date(g.date);
+                var h = gd.getHours(), m = gd.getMinutes();
+                var timeStr = h + ':' + (m < 10 ? '0' : '') + m;
+                var isLive = g.state === 'in';
+                var isFinal = g.state === 'post';
+                var url = g.url || '#';
+                var timeHtml = isLive ? '<span class="live-dot"></span>EN VIVO' : (isFinal ? 'FINAL' : timeStr);
+                var channel = g.channels || '';
+                html += '<a class="game-row" href="' + url + '">';
+                html += '<div class="gr-time">' + timeHtml + '</div>';
+                html += '<div><div class="gr-teams">' + (g.away_name || '?') + ' vs ' + (g.home_name || '?') + '</div>';
+                html += '<div class="gr-league">' + (g.league_name || '') + '</div></div>';
+                if (channel) html += '<div class="gr-channel">' + channel + '</div>';
+                html += '</a>';
+            });
+            html += '</div>';
+        });
+
+        contentEl.innerHTML = html;
+    }
+
+    loadAgenda();
+})();
+</script>
+<script src="/static/timezone.js" defer></script>
+<script src="/static/dark-mode.js" defer></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
+</body>
+</html>

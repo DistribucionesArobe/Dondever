@@ -108,6 +108,16 @@
         .team-logo-big { width:64px; height:64px; border-radius:50%; object-fit:contain; background:#f3f4f6; }
         .team-title { font-size:1.3rem; font-weight:800; }
         .team-league { font-size:0.85rem; color:#6b7280; }
+        .follow-btn {
+            margin-left:auto; display:flex; align-items:center; gap:0.4rem;
+            padding:0.5rem 1rem; border-radius:8px; font-size:0.8rem; font-weight:700;
+            cursor:pointer; border:2px solid #10b981; background:transparent; color:#10b981;
+            transition:all 0.2s; white-space:nowrap;
+        }
+        .follow-btn:hover { background:#ecfdf5; }
+        .follow-btn.following { background:#10b981; color:white; border-color:#10b981; }
+        .follow-btn.following:hover { background:#ef4444; border-color:#ef4444; }
+        .follow-btn .icon { font-size:1rem; }
 
         h2 { font-size:1rem; margin:1.25rem 0 0.5rem; color:#1a1a2e; }
         .game-count { color:#9ca3af; font-weight:400; font-size:0.8rem; }
@@ -297,6 +307,9 @@
             <div class="team-league">{{ team_league }}</div>
             {% endif %}
         </div>
+        <button id="followBtn" class="follow-btn" data-slug="{{ team_slug }}" data-name="{{ team_name }}" onclick="toggleFollow()">
+            <span class="icon">☆</span> <span class="label">Seguir</span>
+        </button>
     </div>
 
     {# ══ PARTIDOS DE HOY (lo mas importante arriba) ══ #}
@@ -1153,6 +1166,65 @@ function emailSubscribe(e) {
   });
   return false;
 }
+</script>
+<script>
+// ── Follow / Unfollow (dv_my_teams) ─────────────────
+(function(){
+  var btn = document.getElementById('followBtn');
+  if (!btn) return;
+  var slug = btn.dataset.slug;
+  var name = btn.dataset.name;
+
+  function getMyTeams() {
+    try { return JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e) { return []; }
+  }
+  function saveMyTeams(arr) { localStorage.setItem('dv_my_teams', JSON.stringify(arr)); }
+
+  // Sync with legacy dv_favs (stores lowercase names)
+  function getLegacyFavs() {
+    try { return JSON.parse(localStorage.getItem('dv_favs') || '[]'); } catch(e) { return []; }
+  }
+  function saveLegacyFavs(arr) { localStorage.setItem('dv_favs', JSON.stringify(arr)); }
+
+  function isFollowing() { return getMyTeams().indexOf(slug) !== -1; }
+
+  function render() {
+    if (isFollowing()) {
+      btn.classList.add('following');
+      btn.querySelector('.icon').textContent = '★';
+      btn.querySelector('.label').textContent = 'Siguiendo';
+    } else {
+      btn.classList.remove('following');
+      btn.querySelector('.icon').textContent = '☆';
+      btn.querySelector('.label').textContent = 'Seguir';
+    }
+  }
+
+  window.toggleFollow = function() {
+    var teams = getMyTeams();
+    var favs = getLegacyFavs();
+    var nameLC = name.toLowerCase();
+    var idx = teams.indexOf(slug);
+    if (idx === -1) {
+      teams.push(slug);
+      if (favs.indexOf(nameLC) === -1) favs.push(nameLC);
+    } else {
+      teams.splice(idx, 1);
+      var fi = favs.indexOf(nameLC);
+      if (fi !== -1) favs.splice(fi, 1);
+    }
+    saveMyTeams(teams);
+    saveLegacyFavs(favs);
+    render();
+    if (typeof gtag === 'function') {
+      gtag('event', idx === -1 ? 'team_follow' : 'team_unfollow', {
+        event_category: 'mis_equipos', event_label: slug
+      });
+    }
+  };
+
+  render();
+})();
 </script>
 <script src="/static/timezone.js" defer></script>
 <script src="/static/dark-mode.js" defer></script>

@@ -2088,6 +2088,160 @@ async def api_team_quick(team_slug: str):
     })
 
 
+# ── Mis Equipos API ─────────────────────────────────────
+
+@app.get("/api/mis-equipos")
+async def api_mis_equipos(teams: str = Query("", description="Comma-separated team slugs")):
+    """
+    Return today's games + upcoming 7-day games for a list of followed teams.
+    Used by the "Mis equipos" section on the homepage and /mis-equipos page.
+    """
+    from sports_api import TEAM_LEAGUE_MAP, get_upcoming_league_games
+    slugs = [s.strip() for s in teams.split(",") if s.strip()]
+    if not slugs:
+        return JSONResponse({"ok": False, "error": "no_teams"}, status_code=400)
+    if len(slugs) > 30:
+        slugs = slugs[:30]
+
+    # Resolve team info and search terms
+    team_map = {}  # slug -> {name, search_term, sport, league_key}
+    for slug in slugs:
+        info = POPULAR_TEAMS.get(slug)
+        if not info:
+            continue
+        search_term = TEAM_ALIASES.get(slug.replace("-", " "), slug.replace("-", " "))
+        league_info = TEAM_LEAGUE_MAP.get(slug)
+        team_map[slug] = {
+            "name": info["name"],
+            "search_term": search_term.lower(),
+            "sport": league_info[0] if league_info else "",
+            "league_key": league_info[1] if league_info else "",
+            "league_name": info.get("league", ""),
+            "logo": info.get("logo", ""),
+        }
+
+    if not team_map:
+        return JSONResponse({"ok": True, "teams": [], "today": [], "upcoming": []})
+
+    # 1) Get today's games (one fetch, shared for all teams)
+    all_today = await get_todays_games()
+    today_games = []
+    seen_today = set()
+    for g in all_today:
+        searchable = f"{g['home']['name']} {g['away']['name']}".lower()
+        for slug, tm in team_map.items():
+            if tm["search_term"] in searchable and g["id"] not in seen_today:
+                seen_today.add(g["id"])
+                sport = g.get("sport", "")
+                home_left = sport in ("soccer", "boxing", "mma")
+                first = g["home"] if home_left else g["away"]
+                second = g["away"] if home_left else g["home"]
+                channels = [b["channel"] for b in g.get("broadcasts", [])[:4]]
+                channels_str = ", ".join(channels) if channels else ""
+                today_games.append({
+                    "id": g["id"],
+                    "team_slug": slug,
+                    "home_name": g["home"]["name"],
+                    "away_name": g["away"]["name"],
+                    "home_logo": g["home"].get("logo", ""),
+                    "away_logo": g["away"].get("logo", ""),
+                    "date": g["date"],
+                    "time_mx": format_mx_time(g["date"]),
+                    "state": g["status"]["state"],
+                    "status_display": g["status"].get("display", ""),
+                    "status_detail": g["status"].get("detail", ""),
+                    "score_home": g["home"].get("score", "") if g["status"]["state"] != "pre" else "",
+                    "score_away": g["away"].get("score", "") if g["status"]["state"] != "pre" else "",
+                    "league_name": g.get("league_name", ""),
+                    "league_slug": g.get("league_slug", ""),
+                    "emoji": g.get("emoji", ""),
+                    "channels": channels_str,
+                    "url": f"/partido/{_make_game_slug(g)}",
+                })
+                break
+
+    # 2) Get upcoming games (deduplicate by sport/league, then filter)
+    unique_leagues = {}
+    for slug, tm in team_map.items():
+        if tm["sport"] and tm["league_key"]:
+            key = f"{tm['sport']}:{tm['league_key']}"
+            if key not in unique_leagues:
+                unique_leagues[key] = {"sport": tm["sport"], "league": tm["league_key"], "slugs": []}
+            unique_leagues[key]["slugs"].append(slug)
+
+    upcoming_games = []
+    if unique_leagues:
+        async def _fetch_upcoming(sport, league):
+            try:
+                return await get_upcoming_league_games(sport, league, days=7, limit=50)
+            except Exception:
+                return []
+
+        league_results = await asyncio.gather(*[
+            _fetch_upcoming(v["sport"], v["league"])
+            for v in unique_leagues.values()
+        ])
+
+        seen_upcoming = set()
+        for (key, league_data), games_list in zip(unique_leagues.items(), league_results):
+            for g in games_list:
+                g_id = g.get("id", f"{g['home']}-{g['away']}-{g['date']}")
+                if g_id in seen_upcoming:
+                    continue
+                home_lower = g["home"].lower()
+                away_lower = g["away"].lower()
+                matched_slug = None
+                for slug in league_data["slugs"]:
+                    st = team_map[slug]["search_term"]
+                    if st in home_lower or st in away_lower:
+                        matched_slug = slug
+                        break
+                if not matched_slug:
+                    continue
+                seen_upcoming.add(g_id)
+                # Parse channels
+                channels = []
+                if g.get("channels"):
+                    for ch in g["channels"]:
+                        if isinstance(ch, dict):
+                            channels.append(ch.get("name", ""))
+                        else:
+                            channels.append(str(ch))
+                upcoming_games.append({
+                    "id": g_id,
+                    "team_slug": matched_slug,
+                    "home_name": g["home"],
+                    "away_name": g["away"],
+                    "home_logo": g.get("home_logo", ""),
+                    "away_logo": g.get("away_logo", ""),
+                    "date": g.get("date", ""),
+                    "state": "pre",
+                    "channels": ", ".join(channels[:4]) if channels else "",
+                    "league_name": team_map[matched_slug]["league_name"],
+                    "url": "",
+                })
+
+    # Sort upcoming by date
+    upcoming_games.sort(key=lambda x: x.get("date", ""))
+
+    # Build team summary
+    teams_info = []
+    for slug, tm in team_map.items():
+        teams_info.append({
+            "slug": slug,
+            "name": tm["name"],
+            "league": tm["league_name"],
+            "logo": tm.get("logo", ""),
+        })
+
+    return JSONResponse({
+        "ok": True,
+        "teams": teams_info,
+        "today": today_games,
+        "upcoming": upcoming_games[:50],
+    })
+
+
 # ── WhatsApp Webhook ─────────────────────────────────────
 
 @app.post("/webhook/whatsapp")
@@ -5390,6 +5544,12 @@ async def recap_page(request: Request, slug: str):
         "home_slug": home_slug,
         "away_slug": away_slug,
     })
+
+
+@app.get("/mis-equipos", response_class=HTMLResponse)
+async def mis_equipos_page(request: Request):
+    """Client-side page: 7-day agenda for user's followed teams (read from localStorage)."""
+    return templates.TemplateResponse("mis_equipos.html", {"request": request})
 
 
 @app.get("/equipos", response_class=HTMLResponse)

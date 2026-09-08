@@ -1033,6 +1033,63 @@
         body.dark-mode .my-teams-body { background: #292524; border-color: #78350f; }
         body.dark-mode .my-teams-header { background: linear-gradient(135deg, #b45309, #92400e); }
         body.dark-mode .my-teams-empty { color: #fbbf24; }
+        #myTeamsUpcoming { padding: 0 0.75rem 0.5rem; }
+        #myTeamsUpcoming h3 { font-size: 0.75rem; font-weight: 700; color: #92400e; margin: 0.5rem 0 0.3rem; }
+        body.dark-mode #myTeamsUpcoming h3 { color: #fbbf24; }
+        .upcoming-mini { display:flex; align-items:center; gap:0.5rem; padding:0.4rem 0.5rem; border-bottom:1px solid #fde68a; font-size:0.75rem; text-decoration:none; color:inherit; }
+        .upcoming-mini:last-child { border-bottom:none; }
+        .upcoming-mini:hover { background:#fef3c7; }
+        body.dark-mode .upcoming-mini { border-color:#78350f; }
+        body.dark-mode .upcoming-mini:hover { background:#451a03; }
+        .upcoming-mini .um-date { color:#b45309; font-weight:700; min-width:55px; font-size:0.68rem; }
+        .upcoming-mini .um-teams { flex:1; font-weight:600; }
+        .upcoming-mini .um-league { color:#9ca3af; font-size:0.65rem; }
+        body.dark-mode .upcoming-mini .um-date { color:#fbbf24; }
+
+        /* ── Onboarding Modal ── */
+        .onboard-overlay {
+            display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:9999;
+            align-items:center; justify-content:center; padding:1rem;
+        }
+        .onboard-overlay.show { display:flex; }
+        .onboard-box {
+            background:white; border-radius:16px; width:100%; max-width:420px; max-height:85vh;
+            overflow-y:auto; padding:1.5rem; box-shadow:0 20px 60px rgba(0,0,0,.3);
+        }
+        body.dark-mode .onboard-box { background:#1e293b; color:#e2e8f0; }
+        .onboard-box h2 { font-size:1.1rem; font-weight:800; margin-bottom:0.3rem; text-align:center; }
+        .onboard-box .sub { font-size:0.78rem; color:#6b7280; text-align:center; margin-bottom:1rem; }
+        .onboard-search {
+            width:100%; padding:0.6rem 0.8rem; border:2px solid #e5e7eb; border-radius:10px;
+            font-size:0.85rem; margin-bottom:0.75rem; outline:none;
+        }
+        .onboard-search:focus { border-color:#10b981; }
+        body.dark-mode .onboard-search { background:#0f172a; border-color:#334155; color:#e2e8f0; }
+        .onboard-grid {
+            display:grid; grid-template-columns:repeat(2, 1fr); gap:0.4rem; margin-bottom:0.75rem;
+            max-height:40vh; overflow-y:auto;
+        }
+        .onboard-team {
+            display:flex; align-items:center; gap:0.4rem; padding:0.5rem 0.6rem;
+            border:2px solid #e5e7eb; border-radius:10px; cursor:pointer; font-size:0.75rem;
+            font-weight:600; transition:all 0.15s;
+        }
+        .onboard-team:hover { border-color:#10b981; background:#ecfdf5; }
+        .onboard-team.selected { border-color:#10b981; background:#d1fae5; }
+        body.dark-mode .onboard-team { border-color:#334155; }
+        body.dark-mode .onboard-team:hover { background:#064e3b; border-color:#10b981; }
+        body.dark-mode .onboard-team.selected { background:#065f46; border-color:#10b981; }
+        .onboard-team img { width:24px; height:24px; border-radius:50%; object-fit:contain; }
+        .onboard-count { font-size:0.72rem; color:#6b7280; text-align:center; margin-bottom:0.5rem; }
+        .onboard-btns { display:flex; gap:0.5rem; }
+        .onboard-btns button {
+            flex:1; padding:0.6rem; border-radius:10px; font-weight:700; font-size:0.85rem;
+            cursor:pointer; border:none;
+        }
+        .onboard-skip { background:#f3f4f6; color:#6b7280; }
+        .onboard-save { background:#10b981; color:white; }
+        .onboard-save:disabled { opacity:0.5; cursor:not-allowed; }
+        body.dark-mode .onboard-skip { background:#334155; color:#94a3b8; }
 
         /* ── Subscription Filter Bar ─────── */
         .sub-filter-bar {
@@ -1546,13 +1603,17 @@
     {# ── ⭐ MIS EQUIPOS (populated dynamically via JS) ── #}
     <section class="my-teams-section" id="secMyTeams" style="display:none;">
         <div class="my-teams-header">
-            <span>&#11088; Mis favoritos hoy</span>
+            <span>&#11088; Mis equipos</span>
             <span class="league-count" id="myTeamsCount">0</span>
         </div>
         <div class="my-teams-body" id="myTeamsBody">
             <div class="my-teams-empty" id="myTeamsEmpty">
                 <div id="myTeamsEmptyMsg">Toca &#9733; junto a un equipo o liga para personalizar tu experiencia</div>
                 <div class="quick-add-teams" id="quickAddTeams"></div>
+            </div>
+            <div id="myTeamsUpcoming" style="display:none;"></div>
+            <div id="myTeamsFooter" style="display:none; text-align:center; padding:0.6rem;">
+                <a href="/mis-equipos" style="color:#d97706; font-size:0.78rem; font-weight:700; text-decoration:none;">Ver agenda completa (7 d&iacute;as) &rarr;</a>
             </div>
         </div>
     </section>
@@ -2630,32 +2691,43 @@
 
     updateFavPill();
 
+    // ── Read dv_my_teams (slugs) alongside dv_favs (names) ──
+    var myTeamSlugs = [];
+    try { myTeamSlugs = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e) {}
+
     // ── Build "Mis equipos" section at top ────────
     function buildMyTeamsSection() {
         var sec = document.getElementById('secMyTeams');
         var body = document.getElementById('myTeamsBody');
         var countEl = document.getElementById('myTeamsCount');
         var emptyEl = document.getElementById('myTeamsEmpty');
+        var upcomingEl = document.getElementById('myTeamsUpcoming');
+        var footerEl = document.getElementById('myTeamsFooter');
         if (!sec || !body) return;
 
-        // Remove previously cloned cards (keep the empty message)
+        // Re-read slugs (may have changed via team page)
+        try { myTeamSlugs = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e) {}
+
+        // Remove previously cloned cards (keep the empty + upcoming + footer)
         body.querySelectorAll('.game-card').forEach(function(c) { c.remove(); });
 
         var emptyMsg = document.getElementById('myTeamsEmptyMsg');
         var quickAdd = document.getElementById('quickAddTeams');
-        var quickSearch = document.getElementById('quickAddSearch');
 
-        if (favTeams.length === 0 && favLeaguesList.length === 0) {
-            // No favorites at all — show onboarding
+        var hasFavs = favTeams.length > 0 || favLeaguesList.length > 0 || myTeamSlugs.length > 0;
+
+        if (!hasFavs) {
             sec.style.display = 'block';
             if (emptyEl) emptyEl.style.display = '';
             if (emptyMsg) emptyMsg.textContent = 'Toca ★ junto a un equipo o liga para personalizar';
             if (quickAdd) quickAdd.style.display = '';
+            if (upcomingEl) upcomingEl.style.display = 'none';
+            if (footerEl) footerEl.style.display = 'none';
             countEl.textContent = '0';
             return;
         }
 
-        // Find matching game cards from all sections (teams + leagues)
+        // Find matching game cards from today's DOM (teams + leagues)
         var seenIds = {};
         var matched = [];
         document.querySelectorAll('.game-card:not(.my-teams-body .game-card)').forEach(function(card) {
@@ -2670,41 +2742,75 @@
             }
         });
 
-        var totalFavs = favTeams.length + favLeaguesList.length;
+        sec.style.display = 'block';
+
         if (matched.length === 0) {
-            sec.style.display = 'block';
-            if (emptyEl) emptyEl.style.display = '';
-            if (emptyMsg) emptyMsg.textContent = 'Ninguno de tus ' + totalFavs + ' favoritos juega hoy';
+            if (emptyEl) { emptyEl.style.display = ''; }
+            if (emptyMsg) emptyMsg.textContent = 'Ninguno de tus favoritos juega hoy';
             if (quickAdd) quickAdd.style.display = 'none';
             countEl.textContent = '0';
-            return;
+        } else {
+            if (emptyEl) emptyEl.style.display = 'none';
+            countEl.textContent = matched.length + ' hoy';
+
+            matched.sort(function(a, b) {
+                var aLive = a.classList.contains('live') ? 0 : (a.classList.contains('final') ? 2 : 1);
+                var bLive = b.classList.contains('live') ? 0 : (b.classList.contains('final') ? 2 : 1);
+                return aLive - bLive;
+            });
+
+            var insertBefore = upcomingEl || footerEl || null;
+            matched.forEach(function(card) {
+                var clone = card.cloneNode(true);
+                clone.style.borderLeft = '3px solid #f59e0b';
+                var cloneTeams = (clone.dataset.teams || '').split(',');
+                clone.querySelectorAll('.fav-btn').forEach(function(btn, i) {
+                    var t = cloneTeams[i];
+                    if (t) btn.onclick = function(e) { toggleFav(t, btn, e); buildMyTeamsSection(); };
+                });
+                if (insertBefore) body.insertBefore(clone, insertBefore);
+                else body.appendChild(clone);
+            });
         }
 
-        sec.style.display = 'block';
-        if (emptyEl) emptyEl.style.display = 'none';
-        countEl.textContent = matched.length + ' partido' + (matched.length !== 1 ? 's' : '');
-
-        // Sort: live first, then pre, then post
-        matched.sort(function(a, b) {
-            var stateOrder = {'in': 0, 'pre': 1, 'post': 2};
-            var aLive = a.classList.contains('live') ? 0 : (a.classList.contains('final') ? 2 : 1);
-            var bLive = b.classList.contains('live') ? 0 : (b.classList.contains('final') ? 2 : 1);
-            return aLive - bLive;
-        });
-
-        matched.forEach(function(card) {
-            var clone = card.cloneNode(true);
-            clone.style.borderLeft = '3px solid #f59e0b';
-            // Re-attach fav button handlers on clone
-            var cloneTeams = (clone.dataset.teams || '').split(',');
-            clone.querySelectorAll('.fav-btn').forEach(function(btn, i) {
-                var t = cloneTeams[i];
-                if (t) {
-                    btn.onclick = function(e) { toggleFav(t, btn, e); buildMyTeamsSection(); };
+        // Fetch upcoming games from API if we have slugs
+        if (myTeamSlugs.length > 0 && upcomingEl) {
+            footerEl.style.display = 'block';
+            fetch('/api/mis-equipos?teams=' + encodeURIComponent(myTeamSlugs.join(',')))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.ok || !data.upcoming || data.upcoming.length === 0) {
+                    upcomingEl.style.display = 'none';
+                    return;
                 }
-            });
-            body.appendChild(clone);
-        });
+                // Show up to 4 upcoming games
+                var html = '<h3>Próximos partidos</h3>';
+                var shown = 0;
+                var days = ['dom','lun','mar','mié','jue','vie','sáb'];
+                var months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+                data.upcoming.forEach(function(g) {
+                    if (shown >= 4) return;
+                    var d = new Date(g.date);
+                    var dateStr = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+                    var h = d.getHours(), m = d.getMinutes();
+                    var timeStr = h + ':' + (m < 10 ? '0' : '') + m;
+                    var url = g.url || '#';
+                    html += '<a class="upcoming-mini" href="' + url + '">';
+                    html += '<span class="um-date">' + dateStr + ' ' + timeStr + '</span>';
+                    html += '<span class="um-teams">' + (g.away_name || '?') + ' vs ' + (g.home_name || '?') + '</span>';
+                    html += '<span class="um-league">' + (g.league_name || '') + '</span>';
+                    html += '</a>';
+                    shown++;
+                });
+                upcomingEl.innerHTML = html;
+                upcomingEl.style.display = '';
+            })
+            .catch(function() { upcomingEl.style.display = 'none'; });
+        } else if (upcomingEl) {
+            upcomingEl.style.display = 'none';
+            if (footerEl && myTeamSlugs.length > 0) footerEl.style.display = 'block';
+            else if (footerEl) footerEl.style.display = 'none';
+        }
     }
 
     // Populate quick-add buttons with popular teams from today's games
@@ -3502,6 +3608,119 @@ function emailSubscribe(e) {
     if(window.scrollY>600 && !shown){bar.classList.add('visible');shown=true;}
     else if(window.scrollY<=600 && shown){bar.classList.remove('visible');shown=false;}
   },{passive:true});
+})();
+</script>
+<!-- ── Onboarding Modal ── -->
+<div class="onboard-overlay" id="onboardOverlay">
+    <div class="onboard-box">
+        <h2>&#11088; Elige tus equipos</h2>
+        <p class="sub">Personaliza tu experiencia. Puedes cambiar esto cuando quieras.</p>
+        <input class="onboard-search" id="onboardSearch" type="text" placeholder="Buscar equipo...">
+        <div class="onboard-grid" id="onboardGrid"></div>
+        <div class="onboard-count" id="onboardCount">0 equipos seleccionados</div>
+        <div class="onboard-btns">
+            <button class="onboard-skip" onclick="closeOnboarding()">Saltar</button>
+            <button class="onboard-save" id="onboardSave" onclick="saveOnboarding()" disabled>Guardar</button>
+        </div>
+    </div>
+</div>
+<script>
+(function(){
+    // Only show if first visit (no dv_my_teams and no dv_favs)
+    var hasTeams = false;
+    try {
+        var mt = JSON.parse(localStorage.getItem('dv_my_teams') || '[]');
+        var fv = JSON.parse(localStorage.getItem('dv_favs') || '[]');
+        hasTeams = mt.length > 0 || fv.length > 0;
+    } catch(e) {}
+    if (hasTeams) return;
+    // Also skip if dismissed before
+    if (localStorage.getItem('dv_onboard_done')) return;
+
+    // Popular teams for Mexico/LATAM audience (curated)
+    var teams = [
+        {slug:'america', name:'Club América', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/225.png'},
+        {slug:'chivas', name:'Chivas', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/226.png'},
+        {slug:'cruz-azul', name:'Cruz Azul', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/231.png'},
+        {slug:'pumas-unam', name:'Pumas UNAM', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/232.png'},
+        {slug:'tigres-uanl', name:'Tigres UANL', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/4977.png'},
+        {slug:'monterrey', name:'Monterrey', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/233.png'},
+        {slug:'santos-laguna', name:'Santos Laguna', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/234.png'},
+        {slug:'leon', name:'León', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/228.png'},
+        {slug:'toluca', name:'Toluca', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/236.png'},
+        {slug:'atlas', name:'Atlas', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/223.png'},
+        {slug:'real-madrid', name:'Real Madrid', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/86.png'},
+        {slug:'fc-barcelona', name:'FC Barcelona', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/83.png'},
+        {slug:'inter-miami', name:'Inter Miami', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/10903.png'},
+        {slug:'manchester-united', name:'Man United', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/360.png'},
+        {slug:'los-angeles-dodgers', name:'LA Dodgers', logo:'https://a.espncdn.com/i/teamlogos/mlb/500/lad.png'},
+        {slug:'new-york-yankees', name:'NY Yankees', logo:'https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png'},
+        {slug:'kansas-city-chiefs', name:'KC Chiefs', logo:'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png'},
+        {slug:'dallas-cowboys', name:'Cowboys', logo:'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png'},
+        {slug:'los-angeles-lakers', name:'LA Lakers', logo:'https://a.espncdn.com/i/teamlogos/nba/500/lal.png'},
+        {slug:'golden-state-warriors', name:'Warriors', logo:'https://a.espncdn.com/i/teamlogos/nba/500/gs.png'},
+    ];
+
+    var selected = [];
+    var grid = document.getElementById('onboardGrid');
+    var countEl = document.getElementById('onboardCount');
+    var saveBtn = document.getElementById('onboardSave');
+    var searchInput = document.getElementById('onboardSearch');
+
+    function renderGrid(filter) {
+        grid.innerHTML = '';
+        var f = (filter || '').toLowerCase();
+        teams.forEach(function(t) {
+            if (f && t.name.toLowerCase().indexOf(f) === -1 && t.slug.indexOf(f) === -1) return;
+            var div = document.createElement('div');
+            div.className = 'onboard-team' + (selected.indexOf(t.slug) !== -1 ? ' selected' : '');
+            div.innerHTML = '<img src="' + t.logo + '" alt=""> ' + t.name;
+            div.onclick = function() {
+                var idx = selected.indexOf(t.slug);
+                if (idx === -1) selected.push(t.slug);
+                else selected.splice(idx, 1);
+                div.classList.toggle('selected');
+                updateCount();
+            };
+            grid.appendChild(div);
+        });
+    }
+
+    function updateCount() {
+        countEl.textContent = selected.length + ' equipo' + (selected.length !== 1 ? 's' : '') + ' seleccionado' + (selected.length !== 1 ? 's' : '');
+        saveBtn.disabled = selected.length === 0;
+    }
+
+    searchInput.addEventListener('input', function() { renderGrid(this.value); });
+
+    window.closeOnboarding = function() {
+        document.getElementById('onboardOverlay').classList.remove('show');
+        localStorage.setItem('dv_onboard_done', '1');
+    };
+
+    window.saveOnboarding = function() {
+        localStorage.setItem('dv_my_teams', JSON.stringify(selected));
+        // Also sync to dv_favs for backward compat
+        var names = [];
+        selected.forEach(function(slug) {
+            var t = teams.find(function(x) { return x.slug === slug; });
+            if (t) names.push(t.name.toLowerCase());
+        });
+        var existing = [];
+        try { existing = JSON.parse(localStorage.getItem('dv_favs') || '[]'); } catch(e) {}
+        names.forEach(function(n) { if (existing.indexOf(n) === -1) existing.push(n); });
+        localStorage.setItem('dv_favs', JSON.stringify(existing));
+        localStorage.setItem('dv_onboard_done', '1');
+        document.getElementById('onboardOverlay').classList.remove('show');
+        // Refresh favorites state
+        location.reload();
+    };
+
+    renderGrid();
+    // Show after short delay
+    setTimeout(function() {
+        document.getElementById('onboardOverlay').classList.add('show');
+    }, 1500);
 })();
 </script>
 </body>
