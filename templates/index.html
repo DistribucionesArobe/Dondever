@@ -1604,12 +1604,16 @@
     <section class="my-teams-section" id="secMyTeams" style="display:none;">
         <div class="my-teams-header">
             <span>&#11088; Mis equipos</span>
-            <span class="league-count" id="myTeamsCount">0</span>
+            <span style="display:flex;align-items:center;gap:0.4rem;">
+                <span class="league-count" id="myTeamsCount">0</span>
+                <span onclick="if(typeof showOnboarding==='function')showOnboarding()" style="cursor:pointer;background:rgba(255,255,255,.25);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;" title="Agregar equipos">+</span>
+            </span>
         </div>
         <div class="my-teams-body" id="myTeamsBody">
             <div class="my-teams-empty" id="myTeamsEmpty">
                 <div id="myTeamsEmptyMsg">Toca &#9733; junto a un equipo o liga para personalizar tu experiencia</div>
                 <div class="quick-add-teams" id="quickAddTeams"></div>
+                <span class="my-teams-empty .quick-add-search" onclick="if(typeof showOnboarding==='function')showOnboarding()" style="display:inline-block;margin-top:0.5rem;font-size:0.72rem;color:#d97706;cursor:pointer;text-decoration:underline;font-weight:600;">+ Agregar equipos</span>
             </div>
             <div id="myTeamsUpcoming" style="display:none;"></div>
             <div id="myTeamsFooter" style="display:none; text-align:center; padding:0.6rem;">
@@ -2594,6 +2598,18 @@
             btn.classList.add('active');
         }
         saveFavs();
+        // Sync dv_my_teams if we can resolve a slug
+        if (typeof TEAM_ALIASES_JS !== 'undefined') {
+            var slug = TEAM_ALIASES_JS[t];
+            if (slug) {
+                var mt = []; try { mt = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e){}
+                var mi = mt.indexOf(slug);
+                if (idx >= 0 && mi !== -1) { mt.splice(mi, 1); }
+                else if (idx < 0 && mi === -1) { mt.push(slug); }
+                localStorage.setItem('dv_my_teams', JSON.stringify(mt));
+                myTeamSlugs = mt;
+            }
+        }
         updateFavPill();
         if (favFilterActive) applyFavFilter();
     }
@@ -3170,6 +3186,13 @@
                     if (idx >= 0) { favTeams.splice(idx, 1); star.classList.remove('active'); }
                     else { favTeams.push(t); star.classList.add('active'); }
                     saveFavs();
+                    // Sync dv_my_teams (slugs)
+                    var mt = []; try { mt = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e){}
+                    var mi = mt.indexOf(slug);
+                    if (idx >= 0 && mi !== -1) { mt.splice(mi, 1); }
+                    else if (idx < 0 && mi === -1) { mt.push(slug); }
+                    localStorage.setItem('dv_my_teams', JSON.stringify(mt));
+                    myTeamSlugs = mt;
                 } else {
                     var li = favLeaguesList.indexOf(slug);
                     if (li >= 0) { favLeaguesList.splice(li, 1); star.classList.remove('active'); }
@@ -3626,17 +3649,7 @@ function emailSubscribe(e) {
 </div>
 <script>
 (function(){
-    // Only show if first visit (no dv_my_teams and no dv_favs)
-    var hasTeams = false;
-    try {
-        var mt = JSON.parse(localStorage.getItem('dv_my_teams') || '[]');
-        var fv = JSON.parse(localStorage.getItem('dv_favs') || '[]');
-        hasTeams = mt.length > 0 || fv.length > 0;
-    } catch(e) {}
-    if (hasTeams) return;
-    // Also skip if dismissed before
-    if (localStorage.getItem('dv_onboard_done')) return;
-
+    // Onboarding modal — only opens when user taps "Agregar equipos" in Mis equipos section
     // Popular teams for Mexico/LATAM audience (curated)
     var teams = [
         {slug:'america', name:'Club América', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/225.png'},
@@ -3717,10 +3730,11 @@ function emailSubscribe(e) {
     };
 
     renderGrid();
-    // Show after short delay
-    setTimeout(function() {
+
+    // Expose global function to open the modal
+    window.showOnboarding = function() {
         document.getElementById('onboardOverlay').classList.add('show');
-    }, 1500);
+    };
 })();
 </script>
 </body>
