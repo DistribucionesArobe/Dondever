@@ -1079,7 +1079,8 @@
         body.dark-mode .onboard-team { border-color:#334155; }
         body.dark-mode .onboard-team:hover { background:#064e3b; border-color:#10b981; }
         body.dark-mode .onboard-team.selected { background:#065f46; border-color:#10b981; }
-        .onboard-team img { width:24px; height:24px; border-radius:50%; object-fit:contain; }
+        body.dark-mode .onboard-grid div[style*="border-bottom"] { border-color:#334155 !important; color:#94a3b8 !important; }
+        .onboard-team img, .onboard-team span:first-child { width:24px; height:24px; border-radius:50%; object-fit:contain; }
         .onboard-count { font-size:0.72rem; color:#6b7280; text-align:center; margin-bottom:0.5rem; }
         .onboard-btns { display:flex; gap:0.5rem; }
         .onboard-btns button {
@@ -3649,53 +3650,69 @@ function emailSubscribe(e) {
 </div>
 <script>
 (function(){
-    // Onboarding modal — only opens when user taps "Agregar equipos" in Mis equipos section
-    // Popular teams for Mexico/LATAM audience (curated)
-    var teams = [
-        {slug:'america', name:'Club América', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/225.png'},
-        {slug:'chivas', name:'Chivas', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/226.png'},
-        {slug:'cruz-azul', name:'Cruz Azul', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/231.png'},
-        {slug:'pumas-unam', name:'Pumas UNAM', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/232.png'},
-        {slug:'tigres-uanl', name:'Tigres UANL', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/4977.png'},
-        {slug:'monterrey', name:'Monterrey', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/233.png'},
-        {slug:'santos-laguna', name:'Santos Laguna', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/234.png'},
-        {slug:'leon', name:'León', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/228.png'},
-        {slug:'toluca', name:'Toluca', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/236.png'},
-        {slug:'atlas', name:'Atlas', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/223.png'},
-        {slug:'real-madrid', name:'Real Madrid', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/86.png'},
-        {slug:'fc-barcelona', name:'FC Barcelona', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/83.png'},
-        {slug:'inter-miami', name:'Inter Miami', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/10903.png'},
-        {slug:'manchester-united', name:'Man United', logo:'https://a.espncdn.com/i/teamlogos/soccer/500/360.png'},
-        {slug:'los-angeles-dodgers', name:'LA Dodgers', logo:'https://a.espncdn.com/i/teamlogos/mlb/500/lad.png'},
-        {slug:'new-york-yankees', name:'NY Yankees', logo:'https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png'},
-        {slug:'kansas-city-chiefs', name:'KC Chiefs', logo:'https://a.espncdn.com/i/teamlogos/nfl/500/kc.png'},
-        {slug:'dallas-cowboys', name:'Cowboys', logo:'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png'},
-        {slug:'los-angeles-lakers', name:'LA Lakers', logo:'https://a.espncdn.com/i/teamlogos/nba/500/lal.png'},
-        {slug:'golden-state-warriors', name:'Warriors', logo:'https://a.espncdn.com/i/teamlogos/nba/500/gs.png'},
-    ];
+    // Full team list from server (293 teams)
+    var allTeams = {{ popular_teams_json|safe }};
+    // League display order — most relevant for MX/LATAM audience first
+    var leagueOrder = ['Liga MX','Liga MX Femenil','MLS','Liga Expansión MX',
+        'Premier League','La Liga','Serie A','Bundesliga','Ligue 1','Champions League','Europa League',
+        'Liga MX (Ascenso)','Eredivisie','Liga Portugal','Brazilian Serie A',
+        'Argentine Primera','Colombian Primera A','Peruvian Primera',
+        'NFL','NBA','MLB','NHL','WNBA',
+        'ATP Tennis','WTA Tennis','UFC','Boxing','Formula 1','NASCAR','PGA Tour','Liga ACB'];
+    // Color palette for initials
+    var colors = ['#ef4444','#f97316','#eab308','#22c55e','#10b981','#06b6d4','#3b82f6','#6366f1','#a855f7','#ec4899'];
 
     var selected = [];
+    // Pre-load existing selections
+    try { selected = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e) {}
+
     var grid = document.getElementById('onboardGrid');
     var countEl = document.getElementById('onboardCount');
     var saveBtn = document.getElementById('onboardSave');
     var searchInput = document.getElementById('onboardSearch');
 
+    function getInitials(name) {
+        var words = name.replace(/^(Club|FC|CF|CD|CA|Real|Deportivo|Atlético)\s+/i, '').split(/\s+/);
+        if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+        return name.substring(0,2).toUpperCase();
+    }
+    function getColor(slug) { var h = 0; for(var i=0;i<slug.length;i++) h = (h*31 + slug.charCodeAt(i)) & 0xffff; return colors[h % colors.length]; }
+
     function renderGrid(filter) {
         grid.innerHTML = '';
-        var f = (filter || '').toLowerCase();
-        teams.forEach(function(t) {
-            if (f && t.name.toLowerCase().indexOf(f) === -1 && t.slug.indexOf(f) === -1) return;
-            var div = document.createElement('div');
-            div.className = 'onboard-team' + (selected.indexOf(t.slug) !== -1 ? ' selected' : '');
-            div.innerHTML = '<img src="' + t.logo + '" alt=""> ' + t.name;
-            div.onclick = function() {
-                var idx = selected.indexOf(t.slug);
-                if (idx === -1) selected.push(t.slug);
-                else selected.splice(idx, 1);
-                div.classList.toggle('selected');
-                updateCount();
-            };
-            grid.appendChild(div);
+        var f = (filter || '').toLowerCase().trim();
+        // Group teams by league
+        var byLeague = {};
+        allTeams.forEach(function(t) {
+            if (f && t.name.toLowerCase().indexOf(f) === -1 && t.slug.indexOf(f) === -1 && t.league.toLowerCase().indexOf(f) === -1) return;
+            var lg = t.league;
+            if (!byLeague[lg]) byLeague[lg] = [];
+            byLeague[lg].push(t);
+        });
+        // Sort leagues by order, unknowns at end
+        var sortedLeagues = Object.keys(byLeague).sort(function(a, b) {
+            var ia = leagueOrder.indexOf(a), ib = leagueOrder.indexOf(b);
+            if (ia === -1) ia = 999;
+            if (ib === -1) ib = 999;
+            return ia - ib || a.localeCompare(b);
+        });
+        if (sortedLeagues.length === 0) {
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:1rem;font-size:0.8rem;">No se encontraron equipos</div>';
+            return;
+        }
+        sortedLeagues.forEach(function(lg) {
+            var header = document.createElement('div');
+            header.style.cssText = 'grid-column:1/-1;font-size:0.7rem;font-weight:700;color:#6b7280;padding:0.4rem 0 0.15rem;border-bottom:1px solid #e5e7eb;margin-top:0.3rem;';
+            header.textContent = lg;
+            grid.appendChild(header);
+            byLeague[lg].forEach(function(t) {
+                var div = document.createElement('div');
+                div.className = 'onboard-team' + (selected.indexOf(t.slug) !== -1 ? ' selected' : '');
+                div.setAttribute('data-slug', t.slug);
+                var c = getColor(t.slug);
+                div.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:' + c + ';color:white;font-size:0.55rem;font-weight:800;flex-shrink:0;">' + getInitials(t.name) + '</span> ' + t.name;
+                grid.appendChild(div);
+            });
         });
     }
 
@@ -3703,6 +3720,19 @@ function emailSubscribe(e) {
         countEl.textContent = selected.length + ' equipo' + (selected.length !== 1 ? 's' : '') + ' seleccionado' + (selected.length !== 1 ? 's' : '');
         saveBtn.disabled = selected.length === 0;
     }
+
+    // EVENT DELEGATION — fixes mobile touch/click issues
+    grid.addEventListener('click', function(e) {
+        var card = e.target.closest('.onboard-team');
+        if (!card) return;
+        var slug = card.getAttribute('data-slug');
+        if (!slug) return;
+        var idx = selected.indexOf(slug);
+        if (idx === -1) selected.push(slug);
+        else selected.splice(idx, 1);
+        card.classList.toggle('selected');
+        updateCount();
+    });
 
     searchInput.addEventListener('input', function() { renderGrid(this.value); });
 
@@ -3712,27 +3742,37 @@ function emailSubscribe(e) {
     };
 
     window.saveOnboarding = function() {
-        localStorage.setItem('dv_my_teams', JSON.stringify(selected));
+        // Merge with existing teams (don't overwrite)
+        var existing = [];
+        try { existing = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e) {}
+        selected.forEach(function(s) { if (existing.indexOf(s) === -1) existing.push(s); });
+        localStorage.setItem('dv_my_teams', JSON.stringify(existing));
         // Also sync to dv_favs for backward compat
         var names = [];
-        selected.forEach(function(slug) {
-            var t = teams.find(function(x) { return x.slug === slug; });
+        var teamMap = {};
+        allTeams.forEach(function(t) { teamMap[t.slug] = t; });
+        existing.forEach(function(slug) {
+            var t = teamMap[slug];
             if (t) names.push(t.name.toLowerCase());
         });
-        var existing = [];
-        try { existing = JSON.parse(localStorage.getItem('dv_favs') || '[]'); } catch(e) {}
-        names.forEach(function(n) { if (existing.indexOf(n) === -1) existing.push(n); });
-        localStorage.setItem('dv_favs', JSON.stringify(existing));
+        var existingFavs = [];
+        try { existingFavs = JSON.parse(localStorage.getItem('dv_favs') || '[]'); } catch(e) {}
+        names.forEach(function(n) { if (existingFavs.indexOf(n) === -1) existingFavs.push(n); });
+        localStorage.setItem('dv_favs', JSON.stringify(existingFavs));
         localStorage.setItem('dv_onboard_done', '1');
         document.getElementById('onboardOverlay').classList.remove('show');
-        // Refresh favorites state
         location.reload();
     };
 
     renderGrid();
+    updateCount();
 
-    // Expose global function to open the modal
     window.showOnboarding = function() {
+        // Re-read current selections
+        try { selected = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e) { selected = []; }
+        searchInput.value = '';
+        renderGrid();
+        updateCount();
         document.getElementById('onboardOverlay').classList.add('show');
     };
 })();

@@ -4,6 +4,7 @@ Where to watch sports in Mexico & USA
 """
 
 import asyncio
+import json
 import logging
 import os
 import re
@@ -437,6 +438,11 @@ templates.env.globals["team_shop"] = TEAM_SHOP
 templates.env.globals["meli_aff"] = MELI_AFF_PARAM
 templates.env.globals["team_shop_meli"] = TEAM_SHOP_MELI
 templates.env.globals["popular_teams"] = POPULAR_TEAMS
+# JSON list for onboarding JS: [{slug, name, league}, ...]
+templates.env.globals["popular_teams_json"] = json.dumps(
+    [{"slug": s, "name": i["name"], "league": i["league"]} for s, i in POPULAR_TEAMS.items()],
+    ensure_ascii=False
+)
 
 
 # ── Free / OTA channels ────────────────────────────────
