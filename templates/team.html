@@ -377,9 +377,16 @@
             {% if nxt.channels %}
             <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;font-size:0.75rem;color:#6b7280;">
                 <span>&#128250;</span>
-                {% for ch in nxt.channels %}
-                <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ ch }}</span>
-                {% endfor %}
+                {% if nxt.channels[0] is mapping %}
+                    {% set mx_ch = nxt.channels|selectattr('country','equalto','MX')|list %}
+                    {% set us_ch = nxt.channels|selectattr('country','equalto','US')|list %}
+                    {% if mx_ch %}<span style="font-weight:600;">MX:</span> {% for c in mx_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% else %}<span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span>{% endif %}
+                    {% if us_ch %}<span style="margin-left:0.3rem;font-weight:600;">USA:</span> {% for c in us_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% endif %}
+                {% else %}
+                    {% for ch in nxt.channels %}
+                    <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ ch }}</span>
+                    {% endfor %}
+                {% endif %}
             </div>
             {% else %}
             <div style="margin-top:0.5rem;font-size:0.75rem;color:#9ca3af;">Canales por confirmar — revisa esta página el día del partido.</div>
@@ -394,7 +401,7 @@
     <div class="alert-box">
         <div>
             <div style="font-weight:700;font-size:0.9rem;">Recibe alertas de {{ team_name }}</div>
-            <div style="font-size:0.75rem;opacity:0.8;">1 hora antes del partido + {% if team_sport == 'beisbol' %}notificacion de anotaciones{% elif team_sport == 'futbol' or team_sport == 'hockey' %}notificacion de goles{% else %}notificacion de scores{% endif %}</div>
+            <div style="font-size:0.75rem;opacity:0.8;">1 hora antes del partido + {% if team_sport == 'beisbol' %}aviso de anotaciones{% elif team_sport == 'futbol' or team_sport == 'hockey' %}aviso de goles{% else %}aviso de anotaciones{% endif %}</div>
         </div>
         <a href="https://wa.me/15715463202?text=alerta%20{{ team_slug }}">Activar alertas</a>
     </div>
@@ -617,10 +624,10 @@
             {% if gb and gb != '-' %}
             <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:0.6rem;text-align:center;">
                 <div style="font-size:1rem;font-weight:800;color:#ea580c;">{{ gb }}</div>
-                <div style="font-size:0.6rem;color:#9a3412;">Games Behind</div>
+                <div style="font-size:0.6rem;color:#9a3412;">Juegos atr&aacute;s</div>
             </div>
             {% endif %}
-            {% if stats.all_stats.get('playoffSeed') %}
+            {% if stats.all_stats.get('playoffSeed') and stats.all_stats.playoffSeed|int > 0 %}
             <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
                 <div style="font-size:1rem;font-weight:800;color:#1a1a2e;">#{{ stats.all_stats.playoffSeed }}</div>
                 <div style="font-size:0.6rem;color:#6b7280;">Seed</div>

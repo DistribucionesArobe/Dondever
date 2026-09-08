@@ -253,24 +253,37 @@
     <a href="/liga/f1" class="league-link {% if league_slug == 'f1' %}active{% endif %}">F1</a>
 </div>
 
-<!-- Affiliate Banner -->
-{% for key, aff in affiliates.items() %}
-{% if loop.first %}
-<div class="promo-banner">
+<!-- Affiliate Banner (geo-targeted) -->
+{% if affiliates.jubilee %}
+<div class="promo-banner" data-geo="mx">
     <div class="promo-banner-inner">
         <div class="promo-left">
-            <div style="font-size:1.5rem">&#9917;</div>
+            <div style="font-size:1.5rem">{{ emoji }}</div>
             <div>
-                <div class="promo-title">Quieres apostar en {{ league_name }}?</div>
-                <div class="promo-sub">Las mejores cuotas en {{ aff.name }}</div>
+                <div class="promo-title">&iquest;Quieres apostar en {{ league_name }}?</div>
+                <div class="promo-sub">Las mejores cuotas en {{ affiliates.jubilee.name }}</div>
                 <div class="promo-tiny">+18 solo responsablemente</div>
             </div>
         </div>
-        <a href="/go/{{ key }}?s=web" target="_blank" rel="sponsored nofollow noopener" class="promo-cta" data-affiliate="{{ key }}">Apostar ahora &#8599;</a>
+        <a href="/go/jubilee?s=league" target="_blank" rel="sponsored nofollow noopener" class="promo-cta" data-affiliate="jubilee">Apostar ahora &#8599;</a>
     </div>
 </div>
 {% endif %}
-{% endfor %}
+{% if affiliates.betsson %}
+<div class="promo-banner" data-geo="us" style="display:none;">
+    <div class="promo-banner-inner">
+        <div class="promo-left">
+            <div style="font-size:1.5rem">{{ emoji }}</div>
+            <div>
+                <div class="promo-title">&iquest;Quieres apostar en {{ league_name }}?</div>
+                <div class="promo-sub">Las mejores cuotas en {{ affiliates.betsson.name }}</div>
+                <div class="promo-tiny">+18 solo responsablemente</div>
+            </div>
+        </div>
+        <a href="/go/betsson?s=league" target="_blank" rel="sponsored nofollow noopener" class="promo-cta" data-affiliate="betsson">Apostar ahora &#8599;</a>
+    </div>
+</div>
+{% endif %}
 
 <!-- Games -->
 <main class="main">

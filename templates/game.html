@@ -1032,7 +1032,44 @@
             <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:#9ca3af;font-weight:600;margin-bottom:0.4rem;">Partido finalizado</div>
             <div style="font-size:1.1rem;font-weight:700;color:white;margin-bottom:0.3rem;">{{ featured_saff.name }}{% if featured_saff.country %} ({{ featured_saff.country }}){% endif %}</div>
             <div style="font-size:0.78rem;color:#6b7280;">La repetici&oacute;n puede estar disponible en la plataforma</div>
+            <div style="margin-top:0.75rem;display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+                <a href="/" style="display:inline-block;background:#10b981;color:white;font-weight:700;font-size:0.75rem;padding:0.45rem 1rem;border-radius:8px;text-decoration:none;">&#128308; Ver partidos en vivo</a>
+                {% if home_upcoming or away_upcoming %}
+                <a href="#post-game-next" style="display:inline-block;background:transparent;color:#10b981;font-weight:700;font-size:0.75rem;padding:0.45rem 1rem;border-radius:8px;text-decoration:none;border:1px solid #10b981;">Pr&oacute;ximo partido &darr;</a>
+                {% endif %}
+            </div>
         </div>
+        {# Próximos partidos prominentes para partido finalizado #}
+        {% if home_upcoming or away_upcoming %}
+        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+        {% set lu_post = home_upcoming if home_left else away_upcoming %}
+        {% set ru_post = away_upcoming if home_left else home_upcoming %}
+        <div id="post-game-next" style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:1rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <div style="text-align:center;margin-bottom:0.5rem;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;color:#0ea5e9;font-weight:600;">&iquest;Qu&eacute; sigue?</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div>
+                    <div style="font-size:0.7rem;font-weight:700;color:#1a1a2e;margin-bottom:0.3rem;text-align:center;">{{ game.home.name.split(' ')[-1] if home_left else game.away.name.split(' ')[-1] }}</div>
+                    {% for u in lu_post[:2] %}
+                    <a href="/equipo/{{ game.home.slug if home_left else game.away.slug }}" style="display:block;padding:0.3rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;text-decoration:none;color:#374151;">
+                        <div style="color:#9ca3af;font-size:0.6rem;">{{ u.date[:10] if u.date else '' }}</div>
+                        <div style="font-weight:600;">{{ u.home }} vs {{ u.away }}</div>
+                    </a>
+                    {% endfor %}
+                    {% if not lu_post %}<div style="font-size:0.7rem;color:#9ca3af;text-align:center;">Sin pr&oacute;ximos</div>{% endif %}
+                </div>
+                <div>
+                    <div style="font-size:0.7rem;font-weight:700;color:#1a1a2e;margin-bottom:0.3rem;text-align:center;">{{ game.away.name.split(' ')[-1] if home_left else game.home.name.split(' ')[-1] }}</div>
+                    {% for u in ru_post[:2] %}
+                    <a href="/equipo/{{ game.away.slug if home_left else game.home.slug }}" style="display:block;padding:0.3rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;text-decoration:none;color:#374151;">
+                        <div style="color:#9ca3af;font-size:0.6rem;">{{ u.date[:10] if u.date else '' }}</div>
+                        <div style="font-weight:600;">{{ u.home }} vs {{ u.away }}</div>
+                    </a>
+                    {% endfor %}
+                    {% if not ru_post %}<div style="font-size:0.7rem;color:#9ca3af;text-align:center;">Sin pr&oacute;ximos</div>{% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
         {% else %}
         <a href="/go/{{ featured_saff.key }}?s=game-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ featured_saff.key }}" style="display:block;background:linear-gradient(135deg,#00050d,#0f1923);border:2px solid {{ featured_saff.bg }};border-radius:14px;padding:1.25rem;text-decoration:none;text-align:center;">
             <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:{{ featured_saff.bg }};font-weight:600;margin-bottom:0.4rem;">Este partido se transmite en{% if featured_saff.country %} ({{ featured_saff.country }}){% endif %}</div>

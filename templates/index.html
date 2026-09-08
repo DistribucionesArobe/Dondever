@@ -2025,7 +2025,7 @@
     </section>
     {% endif %}{# end deduped_games non-empty #}
 
-    {% if deduped_games %}{% set _ = league_idx.__setitem__(0, league_idx[0] + 1) %}{% endif %}
+    {% if deduped_games %}{% set _ = league_idx.__setitem__(0, league_idx[0] + 1) %}
 
     {# ── Interstitial promo: after 2nd league section ── #}
     {% if league_idx[0] == 2 and not is_historical %}
@@ -2061,6 +2061,7 @@
         <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
     {% endif %}
+    {% endif %}{# end deduped_games guard for ads + counter #}
     {% endfor %}
     {# Close hiddenLeagues div if it was opened #}
     {% if league_idx[0] > MAX_VISIBLE_LEAGUES %}</div>{% endif %}
