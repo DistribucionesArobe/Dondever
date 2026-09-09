@@ -1468,9 +1468,158 @@ TEAM_LEAGUE_MAP = {
     "lenadores-durango": ("basketball", "sportsdb:5119"),
 }
 
-# ── TheSportsDB helpers for team pages (past/next events) ──
+# ── TheSportsDB helpers for team pages ──
 
 _sportsdb_events_cache = TTLCache(maxsize=20, ttl=1800)  # 30 min
+_sportsdb_standings_cache = TTLCache(maxsize=10, ttl=3600)  # 1 hour
+_sportsdb_team_cache = TTLCache(maxsize=60, ttl=86400)  # 24 hours
+
+# Season format per league: "summer" = YYYY, "winter" = YYYY-YYYY+1
+SPORTSDB_SEASON_FORMAT = {
+    "5109": "winter",  # LMP: Oct-Jan
+    "5064": "summer",  # LMB: Apr-Aug
+    "5119": "winter",  # LNBP: Feb-Jun (spans year boundary in naming)
+}
+
+
+def _get_sportsdb_season(league_id: str) -> str:
+    """Compute current season string for a TheSportsDB league."""
+    now = datetime.now(TZ_MX)
+    fmt = SPORTSDB_SEASON_FORMAT.get(league_id, "summer")
+    if fmt == "winter":
+        # Winter leagues: if month >= Oct, season is YYYY-YYYY+1; else YYYY-1-YYYY
+        if now.month >= 10:
+            return f"{now.year}-{now.year + 1}"
+        else:
+            return f"{now.year - 1}-{now.year}"
+    else:
+        return str(now.year)
+
+
+async def compute_sportsdb_standings(league_id: str) -> list[dict]:
+    """
+    Compute W/L standings from TheSportsDB season events.
+    Returns list of dicts compatible with fetch_standings() output.
+    """
+    cache_key = f"sdb_standings:{league_id}"
+    if cache_key in _sportsdb_standings_cache:
+        return _sportsdb_standings_cache[cache_key]
+
+    season = _get_sportsdb_season(league_id)
+    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_API_KEY}/eventsseason.php?id={league_id}&s={season}"
+
+    async with httpx.AsyncClient(timeout=20) as client:
+        try:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"SportsDB season events error for {league_id}/{season}: {e}")
+            return []
+
+    events = data.get("events") or []
+    teams = {}  # team_name → {w, l, team_id, badge}
+
+    for ev in events:
+        if ev.get("strStatus") != "FT":
+            continue
+        hs = ev.get("intHomeScore")
+        aws = ev.get("intAwayScore")
+        if hs is None or aws is None:
+            continue
+        try:
+            hs, aws = int(hs), int(aws)
+        except (ValueError, TypeError):
+            continue
+
+        home = ev.get("strHomeTeam", "")
+        away = ev.get("strAwayTeam", "")
+
+        if home not in teams:
+            teams[home] = {"w": 0, "l": 0, "team_id": ev.get("idHomeTeam", ""), "badge": ev.get("strHomeTeamBadge", "")}
+        if away not in teams:
+            teams[away] = {"w": 0, "l": 0, "team_id": ev.get("idAwayTeam", ""), "badge": ev.get("strAwayTeamBadge", "")}
+
+        if hs > aws:
+            teams[home]["w"] += 1
+            teams[away]["l"] += 1
+        elif aws > hs:
+            teams[away]["w"] += 1
+            teams[home]["l"] += 1
+        # ties: neither gets W or L (rare in baseball/basketball)
+
+    # Sort by win pct descending
+    entries = []
+    sorted_teams = sorted(teams.items(), key=lambda x: x[1]["w"] / max(x[1]["w"] + x[1]["l"], 1), reverse=True)
+
+    for rank, (name, stats) in enumerate(sorted_teams, 1):
+        total = stats["w"] + stats["l"]
+        pct = f"{stats['w'] / total:.3f}" if total > 0 else ".000"
+        entries.append({
+            "team_id": stats["team_id"],
+            "team_name": name,
+            "team_short": name.split(" de ")[0] if " de " in name else name.split()[-1],
+            "team_logo": stats["badge"],
+            "group": "",
+            "rank": str(rank),
+            "wins": str(stats["w"]),
+            "losses": str(stats["l"]),
+            "ties": "",
+            "points": "",
+            "games_played": str(total),
+            "goals_for": "",
+            "goals_against": "",
+            "goal_diff": "",
+            "win_pct": pct,
+            "streak": "",
+            "record": f"{stats['w']}-{stats['l']}",
+            "all_stats": {"wins": str(stats["w"]), "losses": str(stats["l"]), "winPercent": pct},
+        })
+
+    _sportsdb_standings_cache[cache_key] = entries
+    logger.info(f"Computed {len(entries)} standings for SportsDB league {league_id} ({season})")
+    return entries
+
+
+async def fetch_sportsdb_team_info(team_id: str) -> dict:
+    """Fetch rich team info from TheSportsDB lookupteam endpoint."""
+    cache_key = f"sdb_team:{team_id}"
+    if cache_key in _sportsdb_team_cache:
+        return _sportsdb_team_cache[cache_key]
+
+    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_API_KEY}/lookupteam.php?id={team_id}"
+    async with httpx.AsyncClient(timeout=10) as client:
+        try:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"SportsDB team lookup error for {team_id}: {e}")
+            return {}
+
+    teams = data.get("teams") or []
+    if not teams:
+        return {}
+
+    t = teams[0]
+    info = {
+        "team_id": t.get("idTeam", ""),
+        "name": t.get("strTeam", ""),
+        "stadium": t.get("strStadium", ""),
+        "location": t.get("strLocation", ""),
+        "stadium_capacity": t.get("intStadiumCapacity", ""),
+        "formed_year": t.get("intFormedYear", ""),
+        "description": t.get("strDescriptionES") or t.get("strDescriptionEN") or "",
+        "badge": t.get("strBadge", ""),
+        "jersey": t.get("strJersey", ""),
+        "country": t.get("strCountry", ""),
+        "website": t.get("strWebsite", ""),
+        "facebook": t.get("strFacebook", ""),
+        "twitter": t.get("strTwitter", ""),
+        "instagram": t.get("strInstagram", ""),
+    }
+    _sportsdb_team_cache[cache_key] = info
+    return info
 
 
 async def fetch_sportsdb_past_events(league_id: str) -> list[dict]:
@@ -1626,10 +1775,12 @@ async def get_team_stats(team_slug: str) -> dict:
         return {}
 
     sport, league = league_info
-    # TheSportsDB-only leagues have no standings data
+    # TheSportsDB-only leagues: compute standings from season events
     if league.startswith("sportsdb:"):
-        return {}
-    standings = await fetch_standings(sport, league)
+        league_id = league.split(":")[1]
+        standings = await compute_sportsdb_standings(league_id)
+    else:
+        standings = await fetch_standings(sport, league)
     if not standings:
         return {}
 
@@ -1710,7 +1861,9 @@ async def fetch_team_news(sport: str, league: str, team_name: str, limit: int = 
 async def get_league_standings(sport: str, league: str, limit: int = 10) -> list[dict]:
     """Get top N standings for a league."""
     if league.startswith("sportsdb:"):
-        return []  # No standings available from TheSportsDB for these leagues
+        league_id = league.split(":")[1]
+        standings = await compute_sportsdb_standings(league_id)
+        return standings[:limit]
     standings = await fetch_standings(sport, league)
     return standings[:limit]
 

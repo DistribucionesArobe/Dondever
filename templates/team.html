@@ -45,7 +45,13 @@
       "memberOf": {
         "@type": "SportsOrganization",
         "name": "{{ team_league }}"
-      }
+      }{% if sportsdb_team_info and sportsdb_team_info.get('stadium') %},
+      "location": {
+        "@type": "StadiumOrArena",
+        "name": "{{ sportsdb_team_info.stadium }}"{% if sportsdb_team_info.get('location') %},
+        "address": "{{ sportsdb_team_info.location }}"{% endif %}
+      }{% endif %}{% if sportsdb_team_info and sportsdb_team_info.get('formed_year') %},
+      "foundingDate": "{{ sportsdb_team_info.formed_year }}"{% endif %}
     }
     </script>
     <!-- JSON-LD: BreadcrumbList -->
@@ -311,6 +317,33 @@
             <span class="icon">☆</span> <span class="label">Seguir</span>
         </button>
     </div>
+
+    {# ══ INFO ENRIQUECIDA TheSportsDB (estadio, año, descripción, redes) ══ #}
+    {% if sportsdb_team_info and sportsdb_team_info.get('name') %}
+    <div style="margin:0.75rem 0;padding:0.75rem 1rem;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;">
+        {% if sportsdb_team_info.get('stadium') %}
+        <p style="margin:0 0 0.4rem;font-size:0.85rem;color:#374151;">
+            <strong>Estadio:</strong> {{ sportsdb_team_info.stadium }}{% if sportsdb_team_info.get('stadium_capacity') %} <span style="color:#6b7280;">({{ sportsdb_team_info.stadium_capacity }})</span>{% endif %}{% if sportsdb_team_info.get('location') %} · <strong>Ciudad:</strong> {{ sportsdb_team_info.location }}{% endif %}
+        </p>
+        {% endif %}
+        {% if sportsdb_team_info.get('formed_year') %}
+        <p style="margin:0 0 0.4rem;font-size:0.85rem;color:#374151;">
+            <strong>Fundado:</strong> {{ sportsdb_team_info.formed_year }}
+        </p>
+        {% endif %}
+        {% if sportsdb_team_info.get('description') %}
+        <p style="margin:0 0 0.4rem;font-size:0.82rem;color:#4b5563;line-height:1.45;">{{ sportsdb_team_info.description[:300] }}{% if sportsdb_team_info.description|length > 300 %}…{% endif %}</p>
+        {% endif %}
+        {% if sportsdb_team_info.get('website') or sportsdb_team_info.get('facebook') or sportsdb_team_info.get('twitter') or sportsdb_team_info.get('instagram') %}
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.3rem;">
+            {% if sportsdb_team_info.get('website') %}<a href="{{ sportsdb_team_info.website }}" target="_blank" rel="noopener" style="font-size:0.8rem;color:#2563eb;text-decoration:none;">Sitio web</a>{% endif %}
+            {% if sportsdb_team_info.get('facebook') %}<a href="{{ sportsdb_team_info.facebook }}" target="_blank" rel="noopener" style="font-size:0.8rem;color:#2563eb;text-decoration:none;">Facebook</a>{% endif %}
+            {% if sportsdb_team_info.get('twitter') %}<a href="{{ sportsdb_team_info.twitter }}" target="_blank" rel="noopener" style="font-size:0.8rem;color:#2563eb;text-decoration:none;">Twitter</a>{% endif %}
+            {% if sportsdb_team_info.get('instagram') %}<a href="{{ sportsdb_team_info.instagram }}" target="_blank" rel="noopener" style="font-size:0.8rem;color:#2563eb;text-decoration:none;">Instagram</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 
     {# ══ PARTIDOS DE HOY (lo mas importante arriba) ══ #}
     {% if games %}
@@ -983,7 +1016,15 @@
                 <h3>Próximas peleas de {{ team_name }}</h3>
                 <p>{{ team_name }} es la organización de artes marciales mixtas más importante del mundo. Las carteleras de la UFC incluyen eventos numerados (PPV), Fight Night y eventos especiales que se transmiten en Mexico, USA y Latinoamerica. Aquí te mostramos dónde ver cada evento actualizado al día de hoy.</p>
                 {% else %}
+                {% if sportsdb_team_info and sportsdb_team_info.get('description') %}
+                <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
+                <p>{{ sportsdb_team_info.description }}</p>
+                {% if sportsdb_team_info.get('stadium') %}
+                <p><strong>Estadio:</strong> {{ sportsdb_team_info.stadium }}{% if sportsdb_team_info.get('stadium_capacity') %} (capacidad: {{ sportsdb_team_info.stadium_capacity }}){% endif %}{% if sportsdb_team_info.get('location') %} · <strong>Ciudad:</strong> {{ sportsdb_team_info.location }}{% endif %}{% if sportsdb_team_info.get('formed_year') %} · <strong>Fundado:</strong> {{ sportsdb_team_info.formed_year }}{% endif %}</p>
+                {% endif %}
+                {% else %}
                 <p>En DondeVer.app te decimos en qué canal pasan los partidos de {{ team_name }} en Mexico, USA y Latinoamerica. Cubrimos TV abierta, cable y streaming para que siempre encuentres dónde verlo.</p>
+                {% endif %}
                 {% endif %}
             </div>
 

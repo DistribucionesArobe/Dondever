@@ -26,6 +26,7 @@ from sports_api import (
     get_recent_league_results, get_upcoming_league_games, fetch_team_news,
     fetch_meli_product_image, fetch_espn_event_summary,
     generate_nfl_power_rankings, generate_nfl_picks, get_nfl_team_advanced_stats,
+    fetch_sportsdb_team_info, compute_sportsdb_standings,
 )
 from whatsapp_bot import handle_whatsapp_message
 import meta_whatsapp
@@ -4815,6 +4816,26 @@ async def team_page(request: Request, team_slug: str):
     except Exception:
         pass
 
+    # Fetch TheSportsDB team info for sportsdb-only leagues
+    sportsdb_team_info = {}
+    if league_info_map and league_info_map[1].startswith("sportsdb:"):
+        try:
+            # Find team_id from standings (computed from season events)
+            league_id = league_info_map[1].split(":")[1]
+            sdb_standings = await compute_sportsdb_standings(league_id)
+            for entry in sdb_standings:
+                if (search_term.lower() in entry["team_name"].lower() or
+                        entry["team_name"].lower() in search_term.lower()):
+                    sdb_team_id = entry.get("team_id", "")
+                    if sdb_team_id:
+                        sportsdb_team_info = await fetch_sportsdb_team_info(sdb_team_id)
+                        # Use SportsDB badge as logo if we don't have one
+                        if not team_logo and sportsdb_team_info.get("badge"):
+                            team_logo = sportsdb_team_info["badge"]
+                    break
+        except Exception:
+            pass
+
     # Build form guide from recent results (W/D/L last 5)
     form_guide = []
     for r in recent_results[:5]:
@@ -4867,6 +4888,7 @@ async def team_page(request: Request, team_slug: str):
         "top_channels": top_channels,
         "nfl_team_extra": NFL_TEAM_EXTRA.get(team_slug) if team_sport == "futbol americano" else None,
         "nfl_advanced": await get_nfl_team_advanced_stats(team_slug) if team_sport == "futbol americano" else {},
+        "sportsdb_team_info": sportsdb_team_info,
     })
 
 
