@@ -1900,6 +1900,13 @@
     </nav>
     {% endif %}
 
+    {# ── LEAGUE FILTER FALLBACK (no games for that league today) ── #}
+    <div id="leagueFilterFallback" style="display:none;max-width:700px;margin:1.5rem auto;padding:1.5rem;border-radius:12px;background:var(--bg-card,#fff);border:1px solid var(--border,#e5e7eb);text-align:center;">
+        <p style="font-size:1.1rem;font-weight:600;color:var(--text-primary,#374151);margin:0 0 0.3rem;">No hay juegos de <span id="fallbackLeagueName"></span> hoy</p>
+        <p style="font-size:0.85rem;color:var(--text-secondary,#6b7280);margin:0 0 1rem;">Consulta posiciones, calendario y más en la página de la liga.</p>
+        <a id="fallbackLeagueLink" href="#" style="display:inline-block;padding:0.55rem 1.3rem;border-radius:8px;background:var(--accent,#10b981);color:white;font-weight:600;font-size:0.85rem;text-decoration:none;">Ver página de la liga →</a>
+    </div>
+
     {# ── ALL GAMES by league ── #}
     {% set league_idx = [0] %}
     {% set MAX_VISIBLE_LEAGUES = 5 %}
@@ -1915,7 +1922,6 @@
         <ins class="adsbygoogle"
              style="display:block"
              data-ad-client="ca-pub-2576227882415709"
-             data-ad-slot="auto"
              data-ad-format="auto"
              data-full-width-responsive="true"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
@@ -2568,24 +2574,43 @@
         var sections = document.querySelectorAll('.league-section');
         var showMore = document.getElementById('showMoreLeagues');
         var hidden = document.getElementById('hiddenLeagues');
+        var fallback = document.getElementById('leagueFilterFallback');
 
         if (slug === 'all') {
-            // Restore default view: first 5 visible, rest in hiddenLeagues
             sections.forEach(function(s) { s.style.display = ''; });
             if (showMore) showMore.style.display = '';
             if (hidden) hidden.style.display = 'none';
-            // Re-apply geo filter
+            if (fallback) fallback.style.display = 'none';
             applyGeoFilter();
             return;
         }
 
-        // Show only the matching league section
+        // Check if any section matches this slug
+        var found = false;
         sections.forEach(function(s) {
-            s.style.display = (s.getAttribute('data-league-slug') === slug) ? '' : 'none';
+            if (s.getAttribute('data-league-slug') === slug) {
+                s.style.display = '';
+                found = true;
+            } else {
+                s.style.display = 'none';
+            }
         });
-        // When filtering, show hidden container too so filtered league inside it is visible
         if (showMore) showMore.style.display = 'none';
         if (hidden) hidden.style.display = 'block';
+
+        // If no section matches → show fallback with league name & link
+        if (fallback) {
+            if (!found) {
+                var chipText = btn.textContent.trim();
+                var nameEl = document.getElementById('fallbackLeagueName');
+                var linkEl = document.getElementById('fallbackLeagueLink');
+                if (nameEl) nameEl.textContent = chipText;
+                if (linkEl) linkEl.href = '/liga/' + slug;
+                fallback.style.display = '';
+            } else {
+                fallback.style.display = 'none';
+            }
+        }
     }
 
     // ── Geo-filter: hide local leagues from non-matching countries ──
