@@ -469,6 +469,12 @@
         }
         .league-count { color: #9ca3af; font-weight: 600; font-size: 0.75rem; }
 
+        /* ── League filter chips bar ───────────── */
+        .league-chips-bar::-webkit-scrollbar { display: none; }
+        .lchip { transition: all 0.15s ease; }
+        .lchip:hover { filter: brightness(0.95); }
+        .lchip.active { background: var(--accent,#10b981) !important; color: white !important; border-color: var(--accent,#10b981) !important; }
+
         /* ── Priority Sections (EN VIVO / DESTACADOS) ─── */
         .priority-section {
             margin-bottom: 1.6rem;
@@ -1881,6 +1887,19 @@
     </section>
     {% endif %}
 
+    {# ── LEAGUE FILTER CHIPS ── #}
+    {% if sports_grouped|length > 1 %}
+    <nav id="leagueChips" class="league-chips-bar" aria-label="Filtrar por liga" style="display:flex;gap:0.4rem;overflow-x:auto;padding:0.5rem 0 0.75rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
+        <button class="lchip active" data-filter="all" onclick="filterLeague('all',this)" style="white-space:nowrap;padding:0.35rem 0.85rem;border-radius:20px;border:1.5px solid var(--accent,#10b981);background:var(--accent,#10b981);color:white;font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;">Todas</button>
+        {% for league_name, league_data in sports_grouped.items() %}
+        {% set deduped = league_data.games | rejectattr('id', 'in', shown_ids) | list %}
+        {% if deduped %}
+        <button class="lchip{% if league_data.slug in ('lvbp','lidom') %} geo-league{% endif %}" data-filter="{{ league_data.slug }}"{% if league_data.slug in ('lvbp',) %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %} onclick="filterLeague('{{ league_data.slug }}',this)" style="white-space:nowrap;padding:0.35rem 0.85rem;border-radius:20px;border:1.5px solid var(--border,#d1d5db);background:var(--bg-card,#fff);color:var(--text-primary,#374151);font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;">{{ league_data.emoji }} {{ league_name }}</button>
+        {% endif %}
+        {% endfor %}
+    </nav>
+    {% endif %}
+
     {# ── ALL GAMES by league ── #}
     {% set league_idx = [0] %}
     {% set MAX_VISIBLE_LEAGUES = 5 %}
@@ -1901,7 +1920,7 @@
     <div id="hiddenLeagues" style="display:none;">
     {% endif %}
 
-    <section class="league-section" data-league-slug="{{ league_data.slug }}">
+    <section class="league-section" data-league-slug="{{ league_data.slug }}"{% if league_data.slug in ('lvbp',) %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %}>
         <h2 class="league-header">
             <span>{{ league_data.emoji }} {{ league_name }}</span>
             <span class="league-count">{{ active_games | length + finished_games | length }} partido{{ 's' if (active_games | length + finished_games | length) != 1 else '' }}</span>
@@ -2518,6 +2537,76 @@
             if (btn) toggleAccordion(btn);
         });
     });
+
+    // ── League filter chips ──────────────────
+    function filterLeague(slug, btn) {
+        // Update active chip
+        document.querySelectorAll('.lchip').forEach(function(c) {
+            c.classList.remove('active');
+            c.style.background = 'var(--bg-card,#fff)';
+            c.style.color = 'var(--text-primary,#374151)';
+            c.style.borderColor = 'var(--border,#d1d5db)';
+        });
+        btn.classList.add('active');
+        btn.style.background = 'var(--accent,#10b981)';
+        btn.style.color = 'white';
+        btn.style.borderColor = 'var(--accent,#10b981)';
+
+        var sections = document.querySelectorAll('.league-section');
+        var showMore = document.getElementById('showMoreLeagues');
+        var hidden = document.getElementById('hiddenLeagues');
+
+        if (slug === 'all') {
+            // Restore default view: first 5 visible, rest in hiddenLeagues
+            sections.forEach(function(s) { s.style.display = ''; });
+            if (showMore) showMore.style.display = '';
+            if (hidden) hidden.style.display = 'none';
+            // Re-apply geo filter
+            applyGeoFilter();
+            return;
+        }
+
+        // Show only the matching league section
+        sections.forEach(function(s) {
+            s.style.display = (s.getAttribute('data-league-slug') === slug) ? '' : 'none';
+        });
+        // When filtering, show hidden container too so filtered league inside it is visible
+        if (showMore) showMore.style.display = 'none';
+        if (hidden) hidden.style.display = 'block';
+    }
+
+    // ── Geo-filter: hide local leagues from non-matching countries ──
+    function applyGeoFilter() {
+        var country = (window.__DV_COUNTRY || '').toUpperCase();
+        if (!country) {
+            try { country = (localStorage.getItem('dv_country') || '').toUpperCase(); } catch(e) {}
+        }
+        // Hide geo-restricted league SECTIONS
+        document.querySelectorAll('.league-section[data-geo-country]').forEach(function(s) {
+            var target = s.getAttribute('data-geo-country');
+            if (country && country !== target) {
+                s.style.display = 'none';
+            }
+        });
+        // Dim geo-restricted league CHIPS (but keep them clickable)
+        document.querySelectorAll('.lchip.geo-league').forEach(function(c) {
+            var target = c.getAttribute('data-geo-country');
+            if (country && country !== target) {
+                c.style.opacity = '0.5';
+                c.style.order = '99';
+            } else {
+                c.style.opacity = '';
+                c.style.order = '';
+            }
+        });
+    }
+
+    // Run geo-filter after timezone.js sets __DV_COUNTRY (defer)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(applyGeoFilter, 200); });
+    } else {
+        setTimeout(applyGeoFilter, 200);
+    }
 
     // ── Calendar + Share helpers ────────────
     function dvCal(btn) {
