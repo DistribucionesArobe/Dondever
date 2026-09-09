@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {% if league_slug == 'nfl' %}
+    {% if league_seo_extra and league_seo_extra.title %}
+    <title>{{ league_seo_extra.title }}</title>
+    <meta name="description" content="{{ league_seo_extra.meta_desc }}">
+    {% elif league_slug == 'nfl' %}
     <title>NFL hoy en vivo: D&oacute;nde ver, horarios, canales y resultados | DondeVer.app</title>
     <meta name="description" content="NFL en vivo hoy: partidos, horarios y dónde verlos en México. Canales confirmados (Canal 5, FOX, ESPN, DAZN), resultados, standings y momios actualizados.">
     {% else %}
@@ -11,8 +14,8 @@
     <meta name="description" content="{{ league_name }} en vivo hoy: partidos, horarios, resultados y tabla de posiciones. Consulta que juegos hay ahora y donde verlos en Mexico, USA y Latinoamerica.">
     {% endif %}
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ league_name }} en vivo hoy — Partidos y resultados | DondeVer">
-    <meta property="og:description" content="{{ league_name }} hoy: partidos en vivo, horarios, resultados y tabla de posiciones actualizada.">
+    <meta property="og:title" content="{{ league_seo_extra.title if league_seo_extra and league_seo_extra.title else league_name + ' en vivo hoy — Partidos y resultados | DondeVer' }}">
+    <meta property="og:description" content="{{ league_seo_extra.meta_desc if league_seo_extra and league_seo_extra.meta_desc else league_name + ' hoy: partidos en vivo, horarios, resultados y tabla de posiciones actualizada.' }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ app_url }}/liga/{{ league_slug }}">
     <meta property="og:site_name" content="DondeVer.app">

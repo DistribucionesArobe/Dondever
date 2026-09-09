@@ -1458,6 +1458,8 @@ async def legacy_game_redirect(request: Request, old_id: str):
 # ── League-specific SEO extra content ─────────────────────
 LEAGUE_SEO_EXTRA = {
     "lmp": {
+        "title": "Donde ver LMP hoy en vivo — Liga Mexicana del Pacifico | DondeVer",
+        "meta_desc": "Donde ver la LMP (Liga Mexicana del Pacifico) en vivo hoy: horarios, canales y resultados. Tomateros, Naranjeros, Yaquis, Aguilas y todos los equipos. TUDN, ESPN y Canal 5.",
         "h2": "Donde ver la Liga Mexicana del Pacifico (LMP) en vivo",
         "paragraphs": [
             "La Liga Mexicana del Pacifico (LMP) es la liga de beisbol invernal de Mexico, con temporada de octubre a enero. Cuenta con 10 equipos de los estados del noroeste: Tomateros de Culiacan, Naranjeros de Hermosillo, Yaquis de Obregon, Aguilas de Mexicali, Venados de Mazatlan, Caneros de Los Mochis, Mayos de Navojoa, Algodoneros de Guasave, Charros de Jalisco y Sultanes de Monterrey.",
@@ -1466,6 +1468,8 @@ LEAGUE_SEO_EXTRA = {
         "links": [],
     },
     "lmb": {
+        "title": "Donde ver LMB hoy en vivo — Liga Mexicana de Beisbol | DondeVer",
+        "meta_desc": "Donde ver la LMB (Liga Mexicana de Beisbol) en vivo hoy: horarios, canales y resultados. Diablos Rojos, Tigres, Leones, Sultanes y mas. ESPN y TUDN.",
         "h2": "Donde ver la Liga Mexicana de Beisbol (LMB) en vivo",
         "paragraphs": [
             "La Liga Mexicana de Beisbol (LMB) es la liga de beisbol de verano en Mexico, con temporada de abril a agosto. Cuenta con 16 equipos divididos en Zona Norte y Zona Sur, incluyendo los historicos Diablos Rojos del Mexico, Tigres de Quintana Roo, Leones de Yucatan y Sultanes de Monterrey.",
@@ -1838,6 +1842,42 @@ async def nfl_hoy_redirect():
 async def nfl_en_vivo_redirect():
     """Redirect /nfl-en-vivo → /liga/nfl for SEO consolidation."""
     return RedirectResponse(url="/liga/nfl", status_code=301)
+
+
+# ── LMP SEO redirects ──
+@app.get("/lmp-hoy")
+async def lmp_hoy_redirect():
+    return RedirectResponse(url="/liga/lmp", status_code=301)
+
+@app.get("/lmp-en-vivo")
+async def lmp_en_vivo_redirect():
+    return RedirectResponse(url="/liga/lmp", status_code=301)
+
+@app.get("/donde-ver-lmp")
+async def donde_ver_lmp_redirect():
+    return RedirectResponse(url="/liga/lmp", status_code=301)
+
+@app.get("/liga-mexicana-del-pacifico")
+async def liga_pacifico_redirect():
+    return RedirectResponse(url="/liga/lmp", status_code=301)
+
+
+# ── LMB SEO redirects ──
+@app.get("/lmb-hoy")
+async def lmb_hoy_redirect():
+    return RedirectResponse(url="/liga/lmb", status_code=301)
+
+@app.get("/lmb-en-vivo")
+async def lmb_en_vivo_redirect():
+    return RedirectResponse(url="/liga/lmb", status_code=301)
+
+@app.get("/donde-ver-lmb")
+async def donde_ver_lmb_redirect():
+    return RedirectResponse(url="/liga/lmb", status_code=301)
+
+@app.get("/liga-mexicana-de-beisbol")
+async def liga_beisbol_redirect():
+    return RedirectResponse(url="/liga/lmb", status_code=301)
 
 
 # ── API Routes ───────────────────────────────────────────
@@ -3180,6 +3220,8 @@ async def robots_txt():
         "Allow: /partido/\n"
         "Allow: /pronosticos-hoy\n"
         "Allow: /nfl-hoy\n"
+        "Allow: /lmp-hoy\n"
+        "Allow: /lmb-hoy\n"
         "Allow: /liga/\n"
         "Disallow: /api/\n"
         "Disallow: /webhook/\n"
@@ -3404,6 +3446,8 @@ async def sitemap_xml():
         ("guia/como-ver-tudn-en-usa", "weekly", "0.8"),
         ("pronosticos-hoy", "daily", "0.9"),
         ("nfl-hoy", "daily", "0.9"),
+        ("lmp-hoy", "daily", "0.8"),
+        ("lmb-hoy", "daily", "0.8"),
         ("gratis-hoy", "daily", "0.9"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
