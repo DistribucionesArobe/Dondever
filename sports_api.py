@@ -1418,7 +1418,125 @@ TEAM_LEAGUE_MAP = {
     "cusco-fc": ("soccer", "per.1"), "melgar": ("soccer", "per.1"),
     "sport-boys": ("soccer", "per.1"), "sport-huancayo": ("soccer", "per.1"),
     "sporting-cristal": ("soccer", "per.1"), "universitario": ("soccer", "per.1"),
+    # ── Liga MX Femenil (ESPN) ──
+    "america-femenil": ("soccer", "mex.w1"), "chivas-femenil": ("soccer", "mex.w1"),
+    "tigres-femenil": ("soccer", "mex.w1"), "monterrey-femenil": ("soccer", "mex.w1"),
+    "cruz-azul-femenil": ("soccer", "mex.w1"), "pumas-femenil": ("soccer", "mex.w1"),
+    "pachuca-femenil": ("soccer", "mex.w1"), "toluca-femenil": ("soccer", "mex.w1"),
+    "santos-femenil": ("soccer", "mex.w1"), "atlas-femenil": ("soccer", "mex.w1"),
+    "leon-femenil": ("soccer", "mex.w1"), "tijuana-femenil": ("soccer", "mex.w1"),
+    "necaxa-femenil": ("soccer", "mex.w1"), "puebla-femenil": ("soccer", "mex.w1"),
+    "queretaro-femenil": ("soccer", "mex.w1"), "mazatlan-femenil": ("soccer", "mex.w1"),
+    "juarez-femenil": ("soccer", "mex.w1"), "san-luis-femenil": ("soccer", "mex.w1"),
+    # ── LMP (TheSportsDB) ──
+    "aguilas-mexicali": ("baseball", "sportsdb:5109"),
+    "algodoneros-guasave": ("baseball", "sportsdb:5109"),
+    "caneros-los-mochis": ("baseball", "sportsdb:5109"),
+    "charros-jalisco": ("baseball", "sportsdb:5109"),
+    "mayos-navojoa": ("baseball", "sportsdb:5109"),
+    "naranjeros-hermosillo": ("baseball", "sportsdb:5109"),
+    "sultanes-monterrey-lmp": ("baseball", "sportsdb:5109"),
+    "tomateros-culiacan": ("baseball", "sportsdb:5109"),
+    "venados-mazatlan": ("baseball", "sportsdb:5109"),
+    "yaquis-obregon": ("baseball", "sportsdb:5109"),
+    # ── LMB (TheSportsDB) ──
+    "acereros-monclova": ("baseball", "sportsdb:5064"),
+    "bravos-leon": ("baseball", "sportsdb:5064"),
+    "diablos-rojos": ("baseball", "sportsdb:5064"),
+    "generales-durango": ("baseball", "sportsdb:5064"),
+    "guerreros-oaxaca": ("baseball", "sportsdb:5064"),
+    "leones-yucatan": ("baseball", "sportsdb:5064"),
+    "mariachis-guadalajara": ("baseball", "sportsdb:5064"),
+    "olmecas-tabasco": ("baseball", "sportsdb:5064"),
+    "pericos-puebla": ("baseball", "sportsdb:5064"),
+    "rieleros-aguascalientes": ("baseball", "sportsdb:5064"),
+    "saraperos-saltillo": ("baseball", "sportsdb:5064"),
+    "sultanes-monterrey-lmb": ("baseball", "sportsdb:5064"),
+    "tecolotes-dos-laredos": ("baseball", "sportsdb:5064"),
+    "tigres-quintana-roo": ("baseball", "sportsdb:5064"),
+    "toros-tijuana": ("baseball", "sportsdb:5064"),
+    # ── LNBP (TheSportsDB) ──
+    "astros-jalisco": ("basketball", "sportsdb:5119"),
+    "abejas-leon": ("basketball", "sportsdb:5119"),
+    "fuerza-regia": ("basketball", "sportsdb:5119"),
+    "capitanes-cdmx": ("basketball", "sportsdb:5119"),
+    "soles-mexicali": ("basketball", "sportsdb:5119"),
+    "libertadores-queretaro": ("basketball", "sportsdb:5119"),
+    "plateros-fresnillo": ("basketball", "sportsdb:5119"),
+    "dorados-chihuahua": ("basketball", "sportsdb:5119"),
+    "correcaminos-uam": ("basketball", "sportsdb:5119"),
+    "lenadores-durango": ("basketball", "sportsdb:5119"),
 }
+
+# ── TheSportsDB helpers for team pages (past/next events) ──
+
+_sportsdb_events_cache = TTLCache(maxsize=20, ttl=1800)  # 30 min
+
+
+async def fetch_sportsdb_past_events(league_id: str) -> list[dict]:
+    """Fetch last 15 completed events from TheSportsDB for a league."""
+    cache_key = f"sdb_past:{league_id}"
+    if cache_key in _sportsdb_events_cache:
+        return _sportsdb_events_cache[cache_key]
+
+    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_API_KEY}/eventspastleague.php?id={league_id}"
+    async with httpx.AsyncClient(timeout=12) as client:
+        try:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"SportsDB past events error for league {league_id}: {e}")
+            return []
+
+    events = data.get("events") or []
+    results = []
+    for ev in events:
+        results.append({
+            "id": ev.get("idEvent", ""),
+            "home": ev.get("strHomeTeam", ""),
+            "away": ev.get("strAwayTeam", ""),
+            "home_score": ev.get("intHomeScore", "0"),
+            "away_score": ev.get("intAwayScore", "0"),
+            "home_logo": ev.get("strHomeTeamBadge", ""),
+            "away_logo": ev.get("strAwayTeamBadge", ""),
+            "date": ev.get("strTimestamp") or ev.get("dateEvent", ""),
+        })
+    _sportsdb_events_cache[cache_key] = results
+    return results
+
+
+async def fetch_sportsdb_next_events(league_id: str) -> list[dict]:
+    """Fetch next 15 upcoming events from TheSportsDB for a league."""
+    cache_key = f"sdb_next:{league_id}"
+    if cache_key in _sportsdb_events_cache:
+        return _sportsdb_events_cache[cache_key]
+
+    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_API_KEY}/eventsnextleague.php?id={league_id}"
+    async with httpx.AsyncClient(timeout=12) as client:
+        try:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"SportsDB next events error for league {league_id}: {e}")
+            return []
+
+    events = data.get("events") or []
+    results = []
+    for ev in events:
+        results.append({
+            "id": ev.get("idEvent", ""),
+            "home": ev.get("strHomeTeam", ""),
+            "away": ev.get("strAwayTeam", ""),
+            "home_logo": ev.get("strHomeTeamBadge", ""),
+            "away_logo": ev.get("strAwayTeamBadge", ""),
+            "date_utc": ev.get("strTimestamp") or ev.get("dateEvent", ""),
+            "channels": [],
+        })
+    _sportsdb_events_cache[cache_key] = results
+    return results
+
 
 # Standings cache: 1 hour TTL
 _standings_cache = TTLCache(maxsize=15, ttl=3600)  # ~15 leagues
@@ -1508,6 +1626,9 @@ async def get_team_stats(team_slug: str) -> dict:
         return {}
 
     sport, league = league_info
+    # TheSportsDB-only leagues have no standings data
+    if league.startswith("sportsdb:"):
+        return {}
     standings = await fetch_standings(sport, league)
     if not standings:
         return {}
@@ -1588,6 +1709,8 @@ async def fetch_team_news(sport: str, league: str, team_name: str, limit: int = 
 
 async def get_league_standings(sport: str, league: str, limit: int = 10) -> list[dict]:
     """Get top N standings for a league."""
+    if league.startswith("sportsdb:"):
+        return []  # No standings available from TheSportsDB for these leagues
     standings = await fetch_standings(sport, league)
     return standings[:limit]
 
@@ -1849,6 +1972,11 @@ async def get_recent_league_results(sport: str, league: str, days: int = 5, limi
     Get completed games from the past N days for a league.
     Returns a list of simplified game dicts sorted by date desc.
     """
+    # TheSportsDB-only leagues
+    if league.startswith("sportsdb:"):
+        league_id = league.split(":")[1]
+        return (await fetch_sportsdb_past_events(league_id))[:limit]
+
     now = datetime.now(TZ_MX)
     results = []
 
@@ -1895,6 +2023,11 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
     Get upcoming (not started) games for the next N days for a league.
     Returns simplified game dicts sorted by date asc.
     """
+    # TheSportsDB-only leagues
+    if league.startswith("sportsdb:"):
+        league_id = league.split(":")[1]
+        return (await fetch_sportsdb_next_events(league_id))[:limit]
+
     now = datetime.now(TZ_MX)
     upcoming = []
 
