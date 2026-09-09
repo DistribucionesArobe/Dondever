@@ -1909,6 +1909,19 @@
     {% set finished_games = deduped_games | selectattr('status.state', 'eq', 'post') | list %}
     {% if deduped_games %}
 
+    {# Insert AdSense after league 1 (users scrolled past featured + first league) #}
+    {% if league_idx[0] == 1 %}
+    <div style="max-width:1100px;margin:0.5rem auto;text-align:center;min-height:90px;">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-2576227882415709"
+             data-ad-slot="auto"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+    {% endif %}
+
     {# Insert "Mostrar más" button before 6th league #}
     {% if league_idx[0] == MAX_VISIBLE_LEAGUES %}
     <div id="showMoreLeagues" style="text-align:center;padding:1rem;">
