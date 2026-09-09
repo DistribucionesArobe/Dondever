@@ -1457,6 +1457,22 @@ async def legacy_game_redirect(request: Request, old_id: str):
 
 # ── League-specific SEO extra content ─────────────────────
 LEAGUE_SEO_EXTRA = {
+    "lmp": {
+        "h2": "Donde ver la Liga Mexicana del Pacifico (LMP) en vivo",
+        "paragraphs": [
+            "La Liga Mexicana del Pacifico (LMP) es la liga de beisbol invernal de Mexico, con temporada de octubre a enero. Cuenta con 10 equipos de los estados del noroeste: Tomateros de Culiacan, Naranjeros de Hermosillo, Yaquis de Obregon, Aguilas de Mexicali, Venados de Mazatlan, Caneros de Los Mochis, Mayos de Navojoa, Algodoneros de Guasave, Charros de Jalisco y Sultanes de Monterrey.",
+            "Los partidos de la LMP se transmiten por TUDN, ESPN Mexico y Canal 5. El campeon de la LMP representa a Mexico en la Serie del Caribe. En DondeVer.app te mostramos donde ver cada juego de la LMP con horarios de Mexico.",
+        ],
+        "links": [],
+    },
+    "lmb": {
+        "h2": "Donde ver la Liga Mexicana de Beisbol (LMB) en vivo",
+        "paragraphs": [
+            "La Liga Mexicana de Beisbol (LMB) es la liga de beisbol de verano en Mexico, con temporada de abril a agosto. Cuenta con 16 equipos divididos en Zona Norte y Zona Sur, incluyendo los historicos Diablos Rojos del Mexico, Tigres de Quintana Roo, Leones de Yucatan y Sultanes de Monterrey.",
+            "Los juegos de la LMB se transmiten por ESPN Mexico y TUDN. La LMB es la liga Triple-A de MLB en Mexico y varios jugadores han dado el salto a las Grandes Ligas. En DondeVer.app te decimos en que canal pasan cada partido de la LMB.",
+        ],
+        "links": [],
+    },
     "nfl": {
         "h2": "Donde ver NFL en Mexico 2026: Canales y Streaming",
         "paragraphs": [

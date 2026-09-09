@@ -195,6 +195,9 @@ DEFAULT_LEAGUE_CHANNELS = {
     "wnba": ["ESPN MX", "Disney+"],
     # ── MLB 2026 ──
     "mlb": ["ESPN MX", "Disney+", "Fox Sports MX"],
+    # ── Béisbol México ──
+    "lmp": ["TUDN", "ESPN MX", "Canal 5"],
+    "lmb": ["ESPN MX", "TUDN"],
     # ── NHL 2025-26 ──
     "nhl": ["ESPN MX", "Disney+", "SKY"],
     # ── Combate ──
@@ -496,7 +499,13 @@ SPORTSDB_LEAGUE_MAP = {
     "nba": "4387",
     "mlb": "4424",
     "nhl": "4380",
+    # Ligas mexicanas (TheSportsDB-only, sin ESPN)
+    "lmp": "5109",
+    "lmb": "5064",
 }
+
+# Leagues that use TheSportsDB as PRIMARY source (no ESPN data)
+SPORTSDB_ONLY_LEAGUES = {"lmp", "lmb"}
 
 
 async def fetch_sportsdb_schedule(
@@ -957,6 +966,167 @@ async def parse_espn_events_enriched(
     return events
 
 
+# ── TheSportsDB-only event parser ───────────────────────
+
+async def parse_sportsdb_standalone_events(
+    league_slug: str, date_str: str
+) -> list[dict]:
+    """
+    Fetch and parse events from TheSportsDB for leagues without ESPN coverage.
+    Produces the same output format as parse_espn_events_enriched().
+    date_str format: YYYYMMDD
+    """
+    league_info = ALL_LEAGUES.get(league_slug, ())
+    sportsdb_id = SPORTSDB_LEAGUE_MAP.get(league_slug)
+    if not sportsdb_id:
+        return []
+
+    formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+    events_raw = await fetch_sportsdb_schedule(sportsdb_id, formatted_date)
+
+    events = []
+    for ev in events_raw:
+        home_name = ev.get("strHomeTeam") or "TBD"
+        away_name = ev.get("strAwayTeam") or "TBD"
+        home_score = ev.get("intHomeScore")
+        away_score = ev.get("intAwayScore")
+
+        home = {
+            "name": home_name,
+            "short": home_name[:3].upper() if home_name != "TBD" else "",
+            "logo": ev.get("strHomeTeamBadge") or "",
+            "score": str(home_score) if home_score is not None else "",
+            "record": "",
+        }
+        away = {
+            "name": away_name,
+            "short": away_name[:3].upper() if away_name != "TBD" else "",
+            "logo": ev.get("strAwayTeamBadge") or "",
+            "score": str(away_score) if away_score is not None else "",
+            "record": "",
+        }
+
+        # Determine game status from TheSportsDB fields
+        sdb_status = (ev.get("strStatus") or "").lower()
+        event_timestamp = ev.get("strTimestamp") or ""
+        sport_type = league_info[0] if isinstance(league_info, tuple) else "baseball"
+
+        if sdb_status in ("match finished", "ft", "aet", "finished"):
+            state = "post"
+            display = "Final"
+            detail = "Final"
+            clock = ""
+        elif sdb_status in ("not started", "ns", ""):
+            state = "pre"
+            display = "Programado"
+            # Parse time for display
+            raw_time = ev.get("strTime") or ""
+            if raw_time:
+                try:
+                    from datetime import datetime as _dt
+                    utc_time = _dt.strptime(raw_time, "%H:%M:%S").replace(
+                        tzinfo=timezone.utc
+                    )
+                    mx_time = utc_time.astimezone(TZ_MX)
+                    detail = mx_time.strftime("%H:%M") + " hrs"
+                except Exception:
+                    detail = raw_time
+            else:
+                detail = "Hora por confirmar"
+            clock = ""
+        else:
+            # In progress
+            state = "in"
+            display = "En vivo"
+            detail = sdb_status.title()
+            # Baseball inning display
+            if sport_type == "baseball":
+                progress = ev.get("intProgress") or ev.get("strProgress") or ""
+                clock = str(progress) if progress else ""
+            else:
+                clock = ""
+
+        status = {
+            "state": state,
+            "detail": detail,
+            "display": display,
+            "clock": clock,
+            "period": 0,
+        }
+
+        # Build broadcasts from TheSportsDB TV station or defaults
+        broadcasts = []
+        seen_channels = set()
+        tv_station = ev.get("strTVStation") or ""
+        if tv_station:
+            for ch in tv_station.split(","):
+                ch = ch.strip()
+                if ch:
+                    normalized = _normalize_channel(ch)
+                    info = CHANNEL_ALIASES.get(normalized, CHANNEL_ALIASES.get(ch, {"name": ch, "type": "cable"}))
+                    display_name = info.get("name", ch)
+                    key = display_name.lower()
+                    if key not in seen_channels:
+                        seen_channels.add(key)
+                        broadcasts.append({
+                            "channel": display_name,
+                            "market": "National",
+                            "info": info,
+                        })
+
+        # Add league defaults if no specific TV info
+        if not broadcasts:
+            for ch in DEFAULT_LEAGUE_CHANNELS.get(league_slug, []):
+                info = CHANNEL_ALIASES.get(ch, {"name": ch, "type": "cable"})
+                display_name = info.get("name", ch)
+                key = display_name.lower()
+                if key not in seen_channels:
+                    seen_channels.add(key)
+                    broadcasts.append({
+                        "channel": display_name,
+                        "market": "National",
+                        "info": info,
+                    })
+
+        # Recap for finished games
+        recap = {}
+        if state == "post" and home_score is not None and away_score is not None:
+            h = int(home_score)
+            a = int(away_score)
+            if h > a:
+                recap["winner"] = home_name
+            elif a > h:
+                recap["winner"] = away_name
+
+        # Build ISO date from TheSportsDB fields
+        date_event = ev.get("dateEvent") or formatted_date
+        time_event = ev.get("strTime") or "00:00:00"
+        iso_date = f"{date_event}T{time_event}+00:00"
+
+        venue = ev.get("strVenue") or ""
+        event_id = ev.get("idEvent") or ""
+
+        events.append({
+            "id": f"sdb-{event_id}",
+            "league_slug": league_slug,
+            "league_name": league_info[2] if isinstance(league_info, tuple) else league_slug,
+            "emoji": league_info[3] if isinstance(league_info, tuple) and len(league_info) > 3 else "⚾",
+            "sport": sport_type,
+            "date": iso_date,
+            "name": f"{away_name} vs {home_name}",
+            "short_name": f"{away['short']} @ {home['short']}",
+            "home": home,
+            "away": away,
+            "status": status,
+            "broadcasts": broadcasts,
+            "venue": venue,
+            "recap": recap,
+            "link": "",
+        })
+
+    return events
+
+
 # ── Main aggregator ──────────────────────────────────────
 
 async def get_todays_games(
@@ -972,8 +1142,10 @@ async def get_todays_games(
         now = datetime.now(TZ_MX)
         date_str = now.strftime("%Y%m%d")
 
-    tasks = []
-    slugs = []
+    espn_tasks = []
+    espn_slugs = []
+    sportsdb_tasks = []
+    sportsdb_slugs = []
 
     # Use ALL_LEAGUES when filtering specific league/sport, LEAGUES for homepage
     source = ALL_LEAGUES if (league_filter or sport_filter) else LEAGUES
@@ -983,19 +1155,38 @@ async def get_todays_games(
             continue
         if sport_filter and sport != sport_filter:
             continue
-        tasks.append(fetch_espn_scoreboard(sport, league, date_str))
-        slugs.append(slug)
+        if slug in SPORTSDB_ONLY_LEAGUES:
+            # TheSportsDB-only league — skip ESPN entirely
+            sportsdb_tasks.append(parse_sportsdb_standalone_events(slug, date_str))
+            sportsdb_slugs.append(slug)
+        else:
+            espn_tasks.append(fetch_espn_scoreboard(sport, league, date_str))
+            espn_slugs.append(slug)
 
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+    # Fetch ESPN and TheSportsDB in parallel
+    all_tasks = espn_tasks + sportsdb_tasks
+    results = await asyncio.gather(*all_tasks, return_exceptions=True)
+
+    espn_results = results[:len(espn_tasks)]
+    sportsdb_results = results[len(espn_tasks):]
 
     all_events = []
-    for slug, result in zip(slugs, results):
+
+    # Process ESPN results
+    for slug, result in zip(espn_slugs, espn_results):
         if isinstance(result, Exception):
             logger.error(f"Error fetching {slug}: {result}")
             continue
         # Use enriched parser with TheSportsDB TV data
         events = await parse_espn_events_enriched(result, slug, date_str)
         all_events.extend(events)
+
+    # Process TheSportsDB-only results (already parsed)
+    for slug, result in zip(sportsdb_slugs, sportsdb_results):
+        if isinstance(result, Exception):
+            logger.error(f"Error fetching TheSportsDB {slug}: {result}")
+            continue
+        all_events.extend(result)
 
     all_events.sort(key=lambda e: e.get("date", ""))
 

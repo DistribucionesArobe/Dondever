@@ -757,7 +757,8 @@ LEAGUES = {
     "wnba":          ("basketball", "wnba",      "WNBA",            "NBA"),
     # Beisbol
     "mlb":           ("baseball", "mlb",         "MLB",              "\u26be"),
-    # "lmp":           ("baseball", "mex.pacific", "Liga Mexicana del Pacifico", "\u26be"),  # fuera de temporada (oct-ene)
+    "lmp":           ("baseball", "sportsdb:5109", "Liga Mexicana del Pac\u00edfico", "\u26be"),
+    "lmb":           ("baseball", "sportsdb:5064", "Liga Mexicana de B\u00e9isbol",   "\u26be"),
     # Hockey
     "nhl":           ("hockey", "nhl",           "NHL",              "NHL"),
     # Combate
@@ -963,6 +964,33 @@ POPULAR_TEAMS = {
     "tigers": {"name": "Detroit Tigers", "league": "MLB"},
     "twins": {"name": "Minnesota Twins", "league": "MLB"},
     "white-sox": {"name": "Chicago White Sox", "league": "MLB"},
+    # LMP (Liga Mexicana del Pacífico)
+    "aguilas-mexicali": {"name": "Águilas de Mexicali", "league": "LMP"},
+    "algodoneros-guasave": {"name": "Algodoneros de Guasave", "league": "LMP"},
+    "caneros-los-mochis": {"name": "Cañeros de Los Mochis", "league": "LMP"},
+    "charros-jalisco": {"name": "Charros de Jalisco", "league": "LMP"},
+    "mayos-navojoa": {"name": "Mayos de Navojoa", "league": "LMP"},
+    "naranjeros-hermosillo": {"name": "Naranjeros de Hermosillo", "league": "LMP"},
+    "sultanes-monterrey-lmp": {"name": "Sultanes de Monterrey", "league": "LMP"},
+    "tomateros-culiacan": {"name": "Tomateros de Culiacán", "league": "LMP"},
+    "venados-mazatlan": {"name": "Venados de Mazatlán", "league": "LMP"},
+    "yaquis-obregon": {"name": "Yaquis de Obregón", "league": "LMP"},
+    # LMB (Liga Mexicana de Béisbol)
+    "acereros-monclova": {"name": "Acereros de Monclova", "league": "LMB"},
+    "bravos-leon": {"name": "Bravos de León", "league": "LMB"},
+    "diablos-rojos": {"name": "Diablos Rojos del México", "league": "LMB"},
+    "generales-durango": {"name": "Generales de Durango", "league": "LMB"},
+    "guerreros-oaxaca": {"name": "Guerreros de Oaxaca", "league": "LMB"},
+    "leones-yucatan": {"name": "Leones de Yucatán", "league": "LMB"},
+    "mariachis-guadalajara": {"name": "Mariachis de Guadalajara", "league": "LMB"},
+    "olmecas-tabasco": {"name": "Olmecas de Tabasco", "league": "LMB"},
+    "pericos-puebla": {"name": "Pericos de Puebla", "league": "LMB"},
+    "rieleros-aguascalientes": {"name": "Rieleros de Aguascalientes", "league": "LMB"},
+    "saraperos-saltillo": {"name": "Saraperos de Saltillo", "league": "LMB"},
+    "sultanes-monterrey-lmb": {"name": "Sultanes de Monterrey", "league": "LMB"},
+    "tecolotes-dos-laredos": {"name": "Tecolotes de los Dos Laredos", "league": "LMB"},
+    "tigres-quintana-roo": {"name": "Tigres de Quintana Roo", "league": "LMB"},
+    "toros-tijuana": {"name": "Toros de Tijuana", "league": "LMB"},
     # NHL
     "bruins": {"name": "Boston Bruins", "league": "NHL"},
     "golden-knights": {"name": "Vegas Golden Knights", "league": "NHL"},
