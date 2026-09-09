@@ -198,6 +198,8 @@ DEFAULT_LEAGUE_CHANNELS = {
     # ── Béisbol México ──
     "lmp": ["TUDN", "ESPN MX", "Canal 5"],
     "lmb": ["ESPN MX", "TUDN"],
+    # ── Basquetbol México ──
+    "lnbp": ["ESPN MX", "TUDN", "Claro Sports"],
     # ── NHL 2025-26 ──
     "nhl": ["ESPN MX", "Disney+", "SKY"],
     # ── Combate ──
@@ -502,10 +504,11 @@ SPORTSDB_LEAGUE_MAP = {
     # Ligas mexicanas (TheSportsDB-only, sin ESPN)
     "lmp": "5109",
     "lmb": "5064",
+    "lnbp": "5119",
 }
 
 # Leagues that use TheSportsDB as PRIMARY source (no ESPN data)
-SPORTSDB_ONLY_LEAGUES = {"lmp", "lmb"}
+SPORTSDB_ONLY_LEAGUES = {"lmp", "lmb", "lnbp"}
 
 
 async def fetch_sportsdb_schedule(

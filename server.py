@@ -1477,6 +1477,26 @@ LEAGUE_SEO_EXTRA = {
         ],
         "links": [],
     },
+    "liga-mx-femenil": {
+        "title": "Donde ver Liga MX Femenil hoy en vivo — Futbol femenil Mexico | DondeVer",
+        "meta_desc": "Donde ver la Liga MX Femenil en vivo hoy: horarios, canales y resultados. Tigres, America, Chivas, Monterrey y todos los equipos. TUDN, Canal 5 y Vix.",
+        "h2": "Donde ver la Liga MX Femenil en vivo hoy",
+        "paragraphs": [
+            "La Liga MX Femenil es la primera division del futbol femenil profesional en Mexico. Cuenta con 18 equipos que compiten en torneos Apertura y Clausura. Tigres UANL Femenil, America Femenil y Monterrey Femenil (Rayadas) son los equipos mas ganadores del torneo.",
+            "Los partidos de la Liga MX Femenil se transmiten por TUDN, Canal 5, Vix y ESPN Mexico. El futbol femenil mexicano ha crecido enormemente en popularidad y varias jugadoras han dado el salto a ligas europeas. En DondeVer.app te mostramos donde ver cada partido de la Liga MX Femenil con horarios de Mexico.",
+        ],
+        "links": [],
+    },
+    "lnbp": {
+        "title": "Donde ver LNBP hoy en vivo — Liga Nacional de Baloncesto Profesional | DondeVer",
+        "meta_desc": "Donde ver la LNBP (Liga Nacional de Baloncesto Profesional) en vivo hoy: horarios, canales y resultados. Fuerza Regia, Capitanes, Soles y mas. ESPN MX y Claro Sports.",
+        "h2": "Donde ver la LNBP (basquetbol mexicano) en vivo",
+        "paragraphs": [
+            "La LNBP (Liga Nacional de Baloncesto Profesional) es la maxima liga de basquetbol en Mexico. Cuenta con equipos como Fuerza Regia de Monterrey, Capitanes de la Ciudad de Mexico (afiliados a la NBA G League), Soles de Mexicali, Astros de Jalisco y Abejas de Leon.",
+            "Los juegos de la LNBP se transmiten por ESPN Mexico, Claro Sports y TUDN. La temporada regular va de febrero a junio, seguida de playoffs. En DondeVer.app te decimos en que canal pasan cada partido de la LNBP con horario de Mexico.",
+        ],
+        "links": [],
+    },
     "nfl": {
         "h2": "Donde ver NFL en Mexico 2026: Canales y Streaming",
         "paragraphs": [
@@ -1878,6 +1898,40 @@ async def donde_ver_lmb_redirect():
 @app.get("/liga-mexicana-de-beisbol")
 async def liga_beisbol_redirect():
     return RedirectResponse(url="/liga/lmb", status_code=301)
+
+# ── Liga MX Femenil SEO redirects ──
+@app.get("/liga-mx-femenil-hoy")
+async def femenil_hoy_redirect():
+    return RedirectResponse(url="/liga/liga-mx-femenil", status_code=301)
+
+@app.get("/liga-mx-femenil-en-vivo")
+async def femenil_en_vivo_redirect():
+    return RedirectResponse(url="/liga/liga-mx-femenil", status_code=301)
+
+@app.get("/donde-ver-liga-mx-femenil")
+async def donde_ver_femenil_redirect():
+    return RedirectResponse(url="/liga/liga-mx-femenil", status_code=301)
+
+@app.get("/futbol-femenil-mexico")
+async def futbol_femenil_redirect():
+    return RedirectResponse(url="/liga/liga-mx-femenil", status_code=301)
+
+# ── LNBP SEO redirects ──
+@app.get("/lnbp-hoy")
+async def lnbp_hoy_redirect():
+    return RedirectResponse(url="/liga/lnbp", status_code=301)
+
+@app.get("/lnbp-en-vivo")
+async def lnbp_en_vivo_redirect():
+    return RedirectResponse(url="/liga/lnbp", status_code=301)
+
+@app.get("/donde-ver-lnbp")
+async def donde_ver_lnbp_redirect():
+    return RedirectResponse(url="/liga/lnbp", status_code=301)
+
+@app.get("/basquetbol-mexico")
+async def basquetbol_mexico_redirect():
+    return RedirectResponse(url="/liga/lnbp", status_code=301)
 
 
 # ── API Routes ───────────────────────────────────────────
@@ -3222,6 +3276,8 @@ async def robots_txt():
         "Allow: /nfl-hoy\n"
         "Allow: /lmp-hoy\n"
         "Allow: /lmb-hoy\n"
+        "Allow: /liga-mx-femenil-hoy\n"
+        "Allow: /lnbp-hoy\n"
         "Allow: /liga/\n"
         "Disallow: /api/\n"
         "Disallow: /webhook/\n"
@@ -3448,6 +3504,8 @@ async def sitemap_xml():
         ("nfl-hoy", "daily", "0.9"),
         ("lmp-hoy", "daily", "0.8"),
         ("lmb-hoy", "daily", "0.8"),
+        ("liga-mx-femenil-hoy", "daily", "0.8"),
+        ("lnbp-hoy", "daily", "0.8"),
         ("gratis-hoy", "daily", "0.9"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),

@@ -706,7 +706,7 @@ PROVIDERS = STREAMING_AFFILIATES
 LEAGUES = {
     # Futbol
     "liga-mx":       ("soccer", "mex.1",        "Liga MX",          "\u26bd"),
-    # "liga-mx-femenil": ("soccer", "mex.w1",     "Liga MX Femenil",  "\u26bd"),  # fuera de temporada
+    "liga-mx-femenil": ("soccer", "mex.w1",     "Liga MX Femenil",  "\u26bd"),
     "mls":           ("soccer", "usa.1",         "MLS",              "\u26bd"),
     "liga-expansion": ("soccer", "mex.2",        "Liga Expansion MX","\u26bd"),
     "premier-league":("soccer", "eng.1",         "Premier League",   "\u26bd"),
@@ -755,6 +755,7 @@ LEAGUES = {
     # Basquetbol
     "nba":           ("basketball", "nba",       "NBA",              "NBA"),
     "wnba":          ("basketball", "wnba",      "WNBA",            "NBA"),
+    "lnbp":          ("basketball", "sportsdb:5119", "LNBP",        "NBA"),
     # Beisbol
     "mlb":           ("baseball", "mlb",         "MLB",              "\u26be"),
     "lmp":           ("baseball", "sportsdb:5109", "Liga Mexicana del Pac\u00edfico", "\u26be"),
@@ -855,6 +856,25 @@ POPULAR_TEAMS = {
     "mazatlan": {"name": "Mazatlán FC", "league": "Liga MX"},
     "tijuana": {"name": "Club Tijuana", "league": "Liga MX"},
     "juarez": {"name": "FC Juárez", "league": "Liga MX"},
+    # Liga MX Femenil
+    "america-femenil": {"name": "América Femenil", "league": "Liga MX Femenil"},
+    "chivas-femenil": {"name": "Chivas Femenil", "league": "Liga MX Femenil"},
+    "tigres-femenil": {"name": "Tigres UANL Femenil", "league": "Liga MX Femenil"},
+    "monterrey-femenil": {"name": "Monterrey Femenil", "league": "Liga MX Femenil"},
+    "cruz-azul-femenil": {"name": "Cruz Azul Femenil", "league": "Liga MX Femenil"},
+    "pumas-femenil": {"name": "Pumas Femenil", "league": "Liga MX Femenil"},
+    "pachuca-femenil": {"name": "Pachuca Femenil", "league": "Liga MX Femenil"},
+    "toluca-femenil": {"name": "Toluca Femenil", "league": "Liga MX Femenil"},
+    "santos-femenil": {"name": "Santos Laguna Femenil", "league": "Liga MX Femenil"},
+    "atlas-femenil": {"name": "Atlas Femenil", "league": "Liga MX Femenil"},
+    "leon-femenil": {"name": "León Femenil", "league": "Liga MX Femenil"},
+    "tijuana-femenil": {"name": "Tijuana Femenil", "league": "Liga MX Femenil"},
+    "necaxa-femenil": {"name": "Necaxa Femenil", "league": "Liga MX Femenil"},
+    "puebla-femenil": {"name": "Puebla Femenil", "league": "Liga MX Femenil"},
+    "queretaro-femenil": {"name": "Querétaro Femenil", "league": "Liga MX Femenil"},
+    "mazatlan-femenil": {"name": "Mazatlán Femenil", "league": "Liga MX Femenil"},
+    "juarez-femenil": {"name": "FC Juárez Femenil", "league": "Liga MX Femenil"},
+    "san-luis-femenil": {"name": "Atlético San Luis Femenil", "league": "Liga MX Femenil"},
     # Premier League
     "liverpool": {"name": "Liverpool", "league": "Premier League"},
     "manchester-city": {"name": "Manchester City", "league": "Premier League"},
@@ -933,6 +953,17 @@ POPULAR_TEAMS = {
     "thunder": {"name": "Oklahoma City Thunder", "league": "NBA"},
     "timberwolves": {"name": "Minnesota Timberwolves", "league": "NBA"},
     "cavaliers": {"name": "Cleveland Cavaliers", "league": "NBA"},
+    # LNBP (Liga Nacional de Baloncesto Profesional)
+    "astros-jalisco": {"name": "Astros de Jalisco", "league": "LNBP"},
+    "abejas-leon": {"name": "Abejas de León", "league": "LNBP"},
+    "fuerza-regia": {"name": "Fuerza Regia", "league": "LNBP"},
+    "capitanes-cdmx": {"name": "Capitanes de la Ciudad de México", "league": "LNBP"},
+    "soles-mexicali": {"name": "Soles de Mexicali", "league": "LNBP"},
+    "libertadores-queretaro": {"name": "Libertadores de Querétaro", "league": "LNBP"},
+    "plateros-fresnillo": {"name": "Plateros de Fresnillo", "league": "LNBP"},
+    "dorados-chihuahua": {"name": "Dorados de Chihuahua", "league": "LNBP"},
+    "correcaminos-uam": {"name": "Correcaminos UAM", "league": "LNBP"},
+    "lenadores-durango": {"name": "Leñadores de Durango", "league": "LNBP"},
     # MLB
     "dodgers": {"name": "Los Angeles Dodgers", "league": "MLB"},
     "yankees": {"name": "New York Yankees", "league": "MLB"},
@@ -1319,6 +1350,32 @@ TEAM_ALIASES = {
     "saltillo": "saraperos de saltillo",
     "generales": "generales de durango",
     "durango": "generales de durango",
+    # Liga MX Femenil
+    "america femenil": "america femenil",
+    "chivas femenil": "chivas femenil",
+    "tigres femenil": "tigres uanl femenil",
+    "monterrey femenil": "monterrey femenil",
+    "rayadas": "monterrey femenil",
+    "cruz azul femenil": "cruz azul femenil",
+    "pumas femenil": "pumas femenil",
+    "liga mx femenil": "liga mx femenil",
+    "futbol femenil": "liga mx femenil",
+    "futbol femenil mexico": "liga mx femenil",
+    # LNBP
+    "fuerza regia": "fuerza regia",
+    "capitanes": "capitanes de la ciudad de mexico",
+    "capitanes cdmx": "capitanes de la ciudad de mexico",
+    "soles": "soles de mexicali",
+    "astros jalisco": "astros de jalisco",
+    "abejas": "abejas de leon",
+    "libertadores": "libertadores de queretaro",
+    "plateros": "plateros de fresnillo",
+    "dorados chihuahua": "dorados de chihuahua",
+    "lenadores": "lenadores de durango",
+    "correcaminos": "correcaminos uam",
+    "lnbp": "lnbp",
+    "basquetbol mexico": "lnbp",
+    "basquetbol mexicano": "lnbp",
 }
 
 # ── Sports display conventions ──────────────────────────
