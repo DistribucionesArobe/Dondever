@@ -505,10 +505,12 @@ SPORTSDB_LEAGUE_MAP = {
     "lmp": "5109",
     "lmb": "5064",
     "lnbp": "5119",
+    # Ligas caribeñas (TheSportsDB-only)
+    "lvbp": "5112",
 }
 
 # Leagues that use TheSportsDB as PRIMARY source (no ESPN data)
-SPORTSDB_ONLY_LEAGUES = {"lmp", "lmb", "lnbp"}
+SPORTSDB_ONLY_LEAGUES = {"lmp", "lmb", "lnbp", "lvbp", "lidom"}
 
 
 async def fetch_sportsdb_schedule(
@@ -1466,6 +1468,22 @@ TEAM_LEAGUE_MAP = {
     "dorados-chihuahua": ("basketball", "sportsdb:5119"),
     "correcaminos-uam": ("basketball", "sportsdb:5119"),
     "lenadores-durango": ("basketball", "sportsdb:5119"),
+    # LVBP (Liga Venezolana de Béisbol Profesional)
+    "navegantes-del-magallanes": ("baseball", "sportsdb:5112"),
+    "leones-del-caracas": ("baseball", "sportsdb:5112"),
+    "tigres-de-aragua": ("baseball", "sportsdb:5112"),
+    "cardenales-de-lara": ("baseball", "sportsdb:5112"),
+    "aguilas-del-zulia": ("baseball", "sportsdb:5112"),
+    "tiburones-de-la-guaira": ("baseball", "sportsdb:5112"),
+    "caribes-de-anzoategui": ("baseball", "sportsdb:5112"),
+    "bravos-de-margarita": ("baseball", "sportsdb:5112"),
+    # LIDOM (Liga Dominicana de Béisbol Invernal) — no TheSportsDB data
+    "tigres-del-licey": ("baseball", "sportsdb:lidom"),
+    "aguilas-cibaenas": ("baseball", "sportsdb:lidom"),
+    "leones-del-escogido": ("baseball", "sportsdb:lidom"),
+    "estrellas-orientales": ("baseball", "sportsdb:lidom"),
+    "gigantes-del-cibao": ("baseball", "sportsdb:lidom"),
+    "toros-del-este": ("baseball", "sportsdb:lidom"),
 }
 
 # ── TheSportsDB helpers for team pages ──
@@ -1479,6 +1497,7 @@ SPORTSDB_SEASON_FORMAT = {
     "5109": "winter",  # LMP: Oct-Jan
     "5064": "summer",  # LMB: Apr-Aug
     "5119": "winter",  # LNBP: Feb-Jun (spans year boundary in naming)
+    "5112": "winter",  # LVBP: Oct-Feb
 }
 
 

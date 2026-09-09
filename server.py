@@ -139,6 +139,22 @@ FREE_CHANNELS_US = {
 }
 FREE_PREFIXES_US = {"vix"}
 
+FREE_CHANNELS_VE = {
+    "televen", "rctv", "pluto tv",
+}
+FREE_PREFIXES_VE = set()
+
+FREE_CHANNELS_DO = {
+    "teleantillas", "coral 39", "digital 15", "vtv canal 32",
+    "teleuniverso", "telenord", "cdn deportes",
+}
+FREE_PREFIXES_DO = set()
+
+FREE_CHANNELS_PA = {
+    "tvn panamá", "tvn", "tvmax", "rpc", "pluto tv",
+}
+FREE_PREFIXES_PA = set()
+
 _LEAGUE_TIER = {
     "liga-mx": 30, "nfl": 30, "champions": 30, "copa-del-mundo": 30,
     "premier-league": 25, "la-liga": 25, "nba": 25, "serie-a": 25,
@@ -177,10 +193,13 @@ def _is_free_broadcast(channel_name: str, country: str = "MX") -> bool:
     c = channel_name.lower().strip()
     if not c:
         return False
-    if country == "US":
-        channels, prefixes = FREE_CHANNELS_US, FREE_PREFIXES_US
-    else:
-        channels, prefixes = FREE_CHANNELS_MX, FREE_PREFIXES_MX
+    _FREE_MAP = {
+        "US": (FREE_CHANNELS_US, FREE_PREFIXES_US),
+        "VE": (FREE_CHANNELS_VE, FREE_PREFIXES_VE),
+        "DO": (FREE_CHANNELS_DO, FREE_PREFIXES_DO),
+        "PA": (FREE_CHANNELS_PA, FREE_PREFIXES_PA),
+    }
+    channels, prefixes = _FREE_MAP.get(country, (FREE_CHANNELS_MX, FREE_PREFIXES_MX))
     # Exact match
     if c in channels:
         return True
@@ -1488,6 +1507,26 @@ LEAGUE_SEO_EXTRA = {
         ],
         "links": [],
     },
+    "lvbp": {
+        "title": "Donde ver LVBP hoy en vivo — Liga Venezolana de Beisbol Profesional | DondeVer",
+        "meta_desc": "Donde ver la LVBP en vivo hoy: horarios, canales y resultados del beisbol venezolano. Magallanes, Caracas, Aragua, Lara, Zulia y mas. Televen, IVC, ByM Sport.",
+        "h2": "Donde ver la LVBP (beisbol venezolano) en vivo",
+        "paragraphs": [
+            "La LVBP (Liga Venezolana de Beisbol Profesional) es la liga de beisbol invernal de Venezuela, una de las mas importantes del Caribe. Cuenta con 8 equipos: Navegantes del Magallanes, Leones del Caracas, Tigres de Aragua, Cardenales de Lara, Aguilas del Zulia, Tiburones de La Guaira, Caribes de Anzoategui y Bravos de Margarita.",
+            "Los juegos de la LVBP se transmiten en Venezuela por Televen (TV abierta los fines de semana), IVC, ByM Sport y SimpleTV. En el resto de Latinoamerica por DirecTV Sports y ESPN. La temporada va de octubre a febrero y el campeon representa a Venezuela en la Serie del Caribe. En DondeVer.app te mostramos donde ver cada juego de la LVBP.",
+        ],
+        "links": [],
+    },
+    "lidom": {
+        "title": "Donde ver LIDOM hoy en vivo — Liga Dominicana de Beisbol | DondeVer",
+        "meta_desc": "Donde ver la LIDOM en vivo hoy: horarios, canales y resultados del beisbol dominicano. Licey, Aguilas, Escogido, Estrellas, Gigantes y Toros. CDN Deportes, Teleantillas.",
+        "h2": "Donde ver la LIDOM (beisbol dominicano) en vivo",
+        "paragraphs": [
+            "La LIDOM (Liga de Beisbol Profesional de la Republica Dominicana) es la liga invernal mas prestigiosa del Caribe. Cuenta con 6 equipos: Tigres del Licey, Aguilas Cibaenas, Leones del Escogido, Estrellas Orientales, Gigantes del Cibao y Toros del Este.",
+            "Los juegos de LIDOM se transmiten en Republica Dominicana por CDN Deportes (cable), Teleantillas Canal 10, Coral 39, Digital 15 y VTV Canal 32 (TV abierta). La temporada va de octubre a enero, seguida del round robin y la final. El campeon va a la Serie del Caribe. En DondeVer.app te mostramos los canales actualizados.",
+        ],
+        "links": [],
+    },
     "lnbp": {
         "title": "Donde ver LNBP hoy en vivo — Liga Nacional de Baloncesto Profesional | DondeVer",
         "meta_desc": "Donde ver la LNBP (Liga Nacional de Baloncesto Profesional) en vivo hoy: horarios, canales y resultados. Fuerza Regia, Capitanes, Soles y mas. ESPN MX y Claro Sports.",
@@ -1933,6 +1972,40 @@ async def donde_ver_lnbp_redirect():
 @app.get("/basquetbol-mexico")
 async def basquetbol_mexico_redirect():
     return RedirectResponse(url="/liga/lnbp", status_code=301)
+
+# ── LVBP SEO redirects ──
+@app.get("/lvbp-hoy")
+async def lvbp_hoy_redirect():
+    return RedirectResponse(url="/liga/lvbp", status_code=301)
+
+@app.get("/lvbp-en-vivo")
+async def lvbp_en_vivo_redirect():
+    return RedirectResponse(url="/liga/lvbp", status_code=301)
+
+@app.get("/donde-ver-lvbp")
+async def donde_ver_lvbp_redirect():
+    return RedirectResponse(url="/liga/lvbp", status_code=301)
+
+@app.get("/beisbol-venezuela")
+async def beisbol_venezuela_redirect():
+    return RedirectResponse(url="/liga/lvbp", status_code=301)
+
+# ── LIDOM SEO redirects ──
+@app.get("/lidom-hoy")
+async def lidom_hoy_redirect():
+    return RedirectResponse(url="/liga/lidom", status_code=301)
+
+@app.get("/lidom-en-vivo")
+async def lidom_en_vivo_redirect():
+    return RedirectResponse(url="/liga/lidom", status_code=301)
+
+@app.get("/donde-ver-lidom")
+async def donde_ver_lidom_redirect():
+    return RedirectResponse(url="/liga/lidom", status_code=301)
+
+@app.get("/beisbol-dominicano")
+async def beisbol_dominicano_redirect():
+    return RedirectResponse(url="/liga/lidom", status_code=301)
 
 
 # ── API Routes ───────────────────────────────────────────
@@ -3279,6 +3352,8 @@ async def robots_txt():
         "Allow: /lmb-hoy\n"
         "Allow: /liga-mx-femenil-hoy\n"
         "Allow: /lnbp-hoy\n"
+        "Allow: /lvbp-hoy\n"
+        "Allow: /lidom-hoy\n"
         "Allow: /liga/\n"
         "Disallow: /api/\n"
         "Disallow: /webhook/\n"
@@ -3507,6 +3582,8 @@ async def sitemap_xml():
         ("lmb-hoy", "daily", "0.8"),
         ("liga-mx-femenil-hoy", "daily", "0.8"),
         ("lnbp-hoy", "daily", "0.8"),
+        ("lvbp-hoy", "daily", "0.8"),
+        ("lidom-hoy", "daily", "0.8"),
         ("gratis-hoy", "daily", "0.9"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
@@ -3808,44 +3885,56 @@ COUNTRY_PAGES = {
     "venezuela": {
         "name": "Venezuela",
         "flag": "🇻🇪",
-        "desc": "Dónde ver deportes en vivo desde Venezuela. Canales disponibles, streaming y opciones gratuitas para béisbol, fútbol y más.",
+        "desc": "Dónde ver deportes en vivo desde Venezuela. Canales disponibles, streaming y opciones gratuitas para béisbol LVBP, MLB, fútbol y más.",
         "channels": [
+            {"name": "Televen", "type": "TV Abierta (gratis)", "sports": "LVBP selectos, eventos deportivos"},
+            {"name": "IVC (Inter)", "type": "Cable", "sports": "Béisbol LVBP en vivo"},
+            {"name": "ByM Sport", "type": "Cable", "sports": "LVBP, béisbol venezolano"},
+            {"name": "SimpleTV", "type": "Cable/Satélite", "sports": "Deportes, LVBP, eventos internacionales"},
             {"name": "ESPN Caribe/Latam", "type": "Cable", "sports": "MLB, NBA, NFL, Premier League, La Liga"},
-            {"name": "DirecTV Sports", "type": "Cable/Satélite", "sports": "Liga MX, Premier League, Champions"},
-            {"name": "IVC (Inter)", "type": "Cable", "sports": "Béisbol LVBP, eventos locales"},
+            {"name": "DirecTV Sports / DSports", "type": "Cable/Satélite", "sports": "Liga MX, Premier League, Champions"},
             {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
-            {"name": "Star+/Disney+", "type": "Streaming", "sports": "ESPN content, La Liga, Serie A"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "ESPN content, La Liga, Serie A"},
+            {"name": "DirecTV GO", "type": "Streaming", "sports": "Deportes en vivo, canales de cable"},
             {"name": "Paramount+", "type": "Streaming", "sports": "Champions League, Europa League"},
         ],
-        "tip": "Para MLB, la opción más completa es MLB.TV. Los juegos de la LVBP (liga venezolana) se transmiten por IVC y canales locales. Para fútbol europeo, Disney+ (ex Star+) tiene la mayoría de ligas.",
+        "tip": "La LVBP (béisbol venezolano, oct-feb) se transmite por IVC, ByM Sport y Televen. Para MLB, la opción más completa es MLB.TV. Para fútbol europeo, Disney+ tiene la mayoría de ligas.",
     },
     "republica-dominicana": {
         "name": "República Dominicana",
         "flag": "🇩🇴",
-        "desc": "Guía de dónde ver deportes en vivo en República Dominicana. Canales de TV y streaming para béisbol, fútbol y más.",
+        "desc": "Guía de dónde ver deportes en vivo en República Dominicana. Canales de TV y streaming para béisbol LIDOM, MLB, fútbol y más.",
         "channels": [
+            {"name": "CDN Deportes", "type": "Cable/TV", "sports": "LIDOM (béisbol dominicano) en vivo"},
+            {"name": "Teleantillas", "type": "TV Abierta", "sports": "Deportes selectos, eventos locales"},
+            {"name": "Coral 39", "type": "TV Abierta", "sports": "Deportes dominicanos, LIDOM selectos"},
+            {"name": "Digital 15", "type": "Cable", "sports": "Deportes, LIDOM"},
+            {"name": "VTV Canal 32", "type": "Cable", "sports": "Deportes y entretenimiento"},
             {"name": "ESPN Caribe", "type": "Cable", "sports": "MLB, NBA, NFL, fútbol europeo"},
-            {"name": "CDN Deportes", "type": "Cable/TV", "sports": "LIDOM (béisbol dominicano)"},
-            {"name": "Sky/Claro TV", "type": "Cable/Satélite", "sports": "Liga MX, Champions, NBA"},
+            {"name": "Sky / Claro TV", "type": "Cable/Satélite", "sports": "Liga MX, Champions, NBA"},
             {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
-            {"name": "Star+/Disney+", "type": "Streaming", "sports": "ESPN content, La Liga, Serie A"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "ESPN content, La Liga, Serie A"},
             {"name": "Paramount+", "type": "Streaming", "sports": "Champions League, Europa League"},
         ],
-        "tip": "La LIDOM se transmite por CDN y canales locales. Para MLB, la mejor opción es MLB.TV que incluye todos los juegos. Para fútbol europeo y NBA, Disney+ (ESPN) tiene la cobertura más amplia.",
+        "tip": "La LIDOM (béisbol dominicano, oct-ene) se transmite por CDN Deportes, Coral 39 y canales locales. Para MLB, la mejor opción es MLB.TV. Para fútbol europeo y NBA, Disney+ tiene la cobertura más amplia.",
     },
     "panama": {
         "name": "Panamá",
         "flag": "🇵🇦",
-        "desc": "Dónde ver deportes en vivo en Panamá. TV, cable y streaming disponibles para béisbol, fútbol y más.",
+        "desc": "Dónde ver deportes en vivo en Panamá. TV abierta, cable y streaming disponibles para béisbol, fútbol y más deportes.",
         "channels": [
+            {"name": "TVN", "type": "TV Abierta (gratis)", "sports": "Selección de Panamá, eventos deportivos"},
+            {"name": "RPC", "type": "TV Abierta (gratis)", "sports": "Deportes selectos, eventos locales"},
+            {"name": "TVMax", "type": "Cable", "sports": "Deportes panameños, Probeis"},
+            {"name": "Tigo Sports", "type": "Cable", "sports": "Fútbol, béisbol, deportes internacionales"},
             {"name": "ESPN Centroamérica", "type": "Cable", "sports": "MLB, NBA, NFL, fútbol europeo"},
-            {"name": "RPC / TVN", "type": "TV Abierta", "sports": "Selección de Panamá, eventos locales"},
             {"name": "Cable & Wireless", "type": "Cable", "sports": "Liga MX, Champions, NBA"},
+            {"name": "MedcomGO", "type": "Streaming", "sports": "TVN y RPC en vivo, deportes locales"},
             {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
-            {"name": "Star+/Disney+", "type": "Streaming", "sports": "ESPN content, LaLiga, Serie A"},
+            {"name": "Disney+ / Star+", "type": "Streaming", "sports": "ESPN content, La Liga, Serie A"},
             {"name": "Paramount+", "type": "Streaming", "sports": "Champions League, Europa League"},
         ],
-        "tip": "El béisbol profesional panameño (Probeis) se transmite por canales locales. Para MLB y deportes internacionales, ESPN Centroamérica y MLB.TV son las mejores opciones.",
+        "tip": "El béisbol profesional panameño (Probeis) se transmite por TVMax y canales locales. Para MLB y deportes internacionales, ESPN Centroamérica y MLB.TV son las mejores opciones. MedcomGO tiene la señal de TVN y RPC en streaming.",
     },
     "estados-unidos": {
         "name": "Estados Unidos",
@@ -3916,8 +4005,9 @@ COUNTRY_SPORT_PRIORITY = {
         ],
     },
     "venezuela": {
-        "leagues": ["mlb", "champions", "la-liga", "premier-league", "serie-a", "europa-league"],
+        "leagues": ["lvbp", "mlb", "champions", "la-liga", "premier-league", "serie-a", "europa-league"],
         "links": [
+            {"label": "⚾ Dónde ver LVBP hoy", "url": "/lvbp-hoy"},
             {"label": "⚾ Dónde ver MLB en Venezuela", "url": "/guia/donde-ver-mlb-en-venezuela"},
             {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
             {"label": "⚽ Dónde ver La Liga", "url": "/liga/la-liga"},
@@ -3925,19 +4015,21 @@ COUNTRY_SPORT_PRIORITY = {
         ],
     },
     "republica-dominicana": {
-        "leagues": ["mlb", "nba", "champions"],
+        "leagues": ["lidom", "mlb", "nba", "champions"],
         "links": [
+            {"label": "⚾ Dónde ver LIDOM hoy", "url": "/lidom-hoy"},
             {"label": "⚾ Dónde ver MLB en República Dominicana", "url": "/guia/donde-ver-mlb-en-republica-dominicana"},
             {"label": "🏀 Dónde ver NBA", "url": "/liga/nba"},
             {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
         ],
     },
     "panama": {
-        "leagues": ["mlb", "nba", "champions"],
+        "leagues": ["mlb", "nba", "champions", "premier-league"],
         "links": [
             {"label": "⚾ Dónde ver MLB en Panamá", "url": "/guia/donde-ver-mlb-en-panama"},
             {"label": "🏀 Dónde ver NBA", "url": "/liga/nba"},
             {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
+            {"label": "⚽ Dónde ver Premier League", "url": "/liga/premier-league"},
         ],
     },
     "estados-unidos": {
