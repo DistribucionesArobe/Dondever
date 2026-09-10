@@ -104,7 +104,7 @@
     }
     </script>
     {% endif %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2576227882415709" crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2576227882415709" crossorigin="anonymous" data-overlays="bottom"></script>
     <link rel="icon" type="image/png" href="/static/logo.png">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <link rel="manifest" href="/manifest.json">
@@ -1115,44 +1115,6 @@
         body.dark-mode .onboard-skip { background:#334155; color:#94a3b8; }
 
         /* ── Subscription Filter Bar ─────── */
-        .sub-filter-bar {
-            max-width: 1100px; margin: 0 auto; padding: 0.5rem 1rem;
-        }
-        .sub-filter-inner {
-            background: white; border: 1px solid #e5e7eb; border-radius: 10px;
-            padding: 0.5rem 0.75rem; display: flex; align-items: center; gap: 0.4rem;
-            flex-wrap: wrap;
-        }
-        .sub-filter-label {
-            font-size: 0.68rem; font-weight: 700; color: #374151;
-            white-space: nowrap;
-        }
-        .sub-chip {
-            display: inline-flex; align-items: center; gap: 0.2rem;
-            padding: 0.2rem 0.5rem; border-radius: 6px;
-            font-size: 0.6rem; font-weight: 700; cursor: pointer;
-            border: 1.5px solid #e5e7eb; background: white; color: #6b7280;
-            transition: all 0.15s; white-space: nowrap;
-        }
-        .sub-chip:hover { border-color: #10b981; color: #059669; }
-        .sub-chip.active { background: #d1fae5; border-color: #10b981; color: #059669; }
-        .sub-chip .sub-check { font-size: 0.55rem; }
-        .sub-filter-toggle {
-            margin-left: auto; font-size: 0.6rem; font-weight: 700;
-            color: #10b981; background: none; border: none; cursor: pointer;
-            padding: 0.2rem 0.4rem; border-radius: 4px;
-        }
-        .sub-filter-toggle:hover { background: #d1fae5; }
-        .sub-filter-toggle.active { color: #ef4444; }
-        .sub-upsell {
-            display: none; width: 100%; margin-top: 0.35rem; padding-top: 0.35rem;
-            border-top: 1px solid #f3f4f6; font-size: 0.6rem; color: #6b7280;
-        }
-        .sub-upsell.show { display: block; }
-        .sub-upsell a {
-            color: #6d28d9; font-weight: 700; text-decoration: none;
-        }
-        .sub-upsell a:hover { text-decoration: underline; }
 
         /* ── Fav Onboarding + Sync bar ── */
         /* fav-bar removed — favorites use localStorage only */
@@ -1593,24 +1555,6 @@
 </div>
 {% endif %}
 
-<!-- Subscription Filter -->
-<div class="sub-filter-bar" id="subFilterBar">
-    <div class="sub-filter-inner">
-        <span class="sub-filter-label">&#128250; Mis plataformas:</span>
-        <span class="sub-chip" data-sub="TUDN" onclick="toggleSub(this)"><span class="sub-check"></span>TUDN</span>
-        <span class="sub-chip" data-sub="ESPN" onclick="toggleSub(this)"><span class="sub-check"></span>ESPN</span>
-        <span class="sub-chip" data-sub="Fox Sports" onclick="toggleSub(this)"><span class="sub-check"></span>Fox Sports</span>
-        <span class="sub-chip" data-sub="ViX" onclick="toggleSub(this)"><span class="sub-check"></span>ViX</span>
-        <span class="sub-chip" data-sub="Prime Video" onclick="toggleSub(this)"><span class="sub-check"></span>Prime Video</span>
-        <span class="sub-chip" data-sub="ESPN+" onclick="toggleSub(this)"><span class="sub-check"></span>ESPN+</span>
-        <span class="sub-chip" data-sub="Azteca 7" onclick="toggleSub(this)"><span class="sub-check"></span>Azteca 7</span>
-        <span class="sub-chip" data-sub="Canal 5" onclick="toggleSub(this)"><span class="sub-check"></span>Canal 5</span>
-        <span class="sub-chip" data-sub="TNT" onclick="toggleSub(this)"><span class="sub-check"></span>TNT</span>
-        <span class="sub-chip" data-sub="Peacock" onclick="toggleSub(this)"><span class="sub-check"></span>Peacock</span>
-        <button class="sub-filter-toggle" id="subFilterToggle" onclick="applySubFilter()">Filtrar</button>
-        <div class="sub-upsell" id="subUpsell"></div>
-    </div>
-</div>
 
 
 <!-- Games -->
@@ -1628,15 +1572,16 @@
         <div class="my-teams-header">
             <span>&#11088; Mis equipos</span>
             <span style="display:flex;align-items:center;gap:0.4rem;">
-                <span class="league-count" id="myTeamsCount">0</span>
+                <span class="league-count" id="myTeamsCount" style="display:none;">0</span>
                 <span onclick="if(typeof showOnboarding==='function')showOnboarding()" style="cursor:pointer;background:rgba(255,255,255,.25);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;" title="Agregar equipos">+</span>
             </span>
         </div>
         <div class="my-teams-body" id="myTeamsBody">
             <div class="my-teams-empty" id="myTeamsEmpty">
                 <div id="myTeamsEmptyMsg">Toca &#9733; junto a un equipo o liga para personalizar tu experiencia</div>
+                <div id="myTeamsFollowedList" style="display:none;padding:0.5rem 0;"></div>
                 <div class="quick-add-teams" id="quickAddTeams"></div>
-                <span class="my-teams-empty .quick-add-search" onclick="if(typeof showOnboarding==='function')showOnboarding()" style="display:inline-block;margin-top:0.5rem;font-size:0.72rem;color:#d97706;cursor:pointer;text-decoration:underline;font-weight:600;">+ Agregar equipos</span>
+                <span class="quick-add-search" onclick="if(typeof showOnboarding==='function')showOnboarding()" style="display:inline-block;margin-top:0.5rem;font-size:0.72rem;color:#d97706;cursor:pointer;text-decoration:underline;font-weight:600;">+ Agregar equipos</span>
             </div>
             <div id="myTeamsUpcoming" style="display:none;"></div>
             <div id="myTeamsFooter" style="display:none; text-align:center; padding:0.6rem;">
@@ -1930,11 +1875,23 @@
     </div>
 
     {# ── LEAGUE FILTER FALLBACK (no games for that league today) ── #}
-    <div id="leagueFilterFallback" style="display:none;max-width:700px;margin:1.5rem auto;padding:1.5rem;border-radius:12px;background:var(--bg-card,#fff);border:1px solid var(--border,#e5e7eb);text-align:center;">
-        <p style="font-size:1.1rem;font-weight:600;color:var(--text-primary,#374151);margin:0 0 0.3rem;">No hay juegos de <span id="fallbackLeagueName"></span> hoy</p>
-        <p style="font-size:0.85rem;color:var(--text-secondary,#6b7280);margin:0 0 1rem;">Consulta posiciones, calendario y más en la página de la liga.</p>
-        <a id="fallbackLeagueLink" href="#" style="display:inline-block;padding:0.55rem 1.3rem;border-radius:8px;background:var(--accent,#10b981);color:white;font-weight:600;font-size:0.85rem;text-decoration:none;">Ver página de la liga →</a>
+    <div id="leagueFilterFallback" style="display:none;max-width:700px;margin:1.5rem auto;padding:1.5rem;border-radius:12px;background:var(--bg-card,#fff);border:1px solid var(--border,#e5e7eb);">
+        <div style="text-align:center;margin-bottom:1rem;">
+            <p style="font-size:1.1rem;font-weight:700;color:var(--text-primary,#374151);margin:0 0 0.3rem;">No hay juegos de <span id="fallbackLeagueName"></span> hoy</p>
+            <p style="font-size:0.82rem;color:var(--text-secondary,#6b7280);margin:0;">Pero puedes explorar la liga completa:</p>
+        </div>
+        <div id="fallbackChannels" style="display:none;margin-bottom:1rem;padding:0.75rem;border-radius:10px;background:var(--bg-main,#f8f9fb);border:1px solid var(--border,#e5e7eb);">
+            <p style="font-size:0.75rem;font-weight:700;color:var(--text-primary,#374151);margin:0 0 0.4rem;">📺 Dónde se transmite:</p>
+            <div id="fallbackChannelList" style="display:flex;flex-wrap:wrap;gap:0.3rem;"></div>
+        </div>
+        <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+            <a id="fallbackLeagueLink" href="#" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.5rem 1.1rem;border-radius:8px;background:var(--accent,#10b981);color:white;font-weight:600;font-size:0.82rem;text-decoration:none;">📊 Posiciones y calendario →</a>
+            <a id="fallbackAllGames" href="/" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.5rem 1.1rem;border-radius:8px;background:var(--bg-main,#f8f9fb);border:1px solid var(--border,#d1d5db);color:var(--text-primary,#374151);font-weight:600;font-size:0.82rem;text-decoration:none;">Ver todos los juegos de hoy</a>
+        </div>
     </div>
+    <script>
+    var __DV_LEAGUE_CHANNELS = {{ default_league_channels | tojson }};
+    </script>
 
     {# ── ALL GAMES by league ── #}
     {% set league_idx = [0] %}
@@ -1947,12 +1904,12 @@
 
     {# Insert AdSense after league 1 (users scrolled past featured + first league) #}
     {% if league_idx[0] == 1 %}
-    <div style="max-width:1100px;margin:0.5rem auto;text-align:center;min-height:90px;">
+    <div style="max-width:728px;margin:0.5rem auto;text-align:center;max-height:100px;overflow:hidden;">
         <ins class="adsbygoogle"
-             style="display:block"
+             style="display:block;max-height:90px;"
              data-ad-client="ca-pub-2576227882415709"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
+             data-ad-format="horizontal"
+             data-full-width-responsive="false"></ins>
         <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
     </div>
     {% endif %}
@@ -2627,14 +2584,29 @@
         if (showMore) showMore.style.display = 'none';
         if (hidden) hidden.style.display = 'block';
 
-        // If no section matches → show fallback with league name & link
+        // If no section matches → show fallback with league name, channels & links
         if (fallback) {
             if (!found) {
                 var chipText = btn.textContent.trim();
                 var nameEl = document.getElementById('fallbackLeagueName');
                 var linkEl = document.getElementById('fallbackLeagueLink');
+                var allGamesEl = document.getElementById('fallbackAllGames');
                 if (nameEl) nameEl.textContent = chipText;
                 if (linkEl) linkEl.href = '/liga/' + slug;
+                // Show channels for this league
+                var chWrap = document.getElementById('fallbackChannels');
+                var chList = document.getElementById('fallbackChannelList');
+                if (chWrap && chList && typeof __DV_LEAGUE_CHANNELS !== 'undefined') {
+                    var chs = __DV_LEAGUE_CHANNELS[slug] || [];
+                    if (chs.length > 0) {
+                        chList.innerHTML = chs.map(function(c) {
+                            return '<span style="display:inline-block;padding:0.2rem 0.55rem;border-radius:6px;background:var(--bg-card,#fff);border:1px solid var(--border,#d1d5db);font-size:0.72rem;font-weight:600;color:var(--text-primary,#374151);">' + c + '</span>';
+                        }).join('');
+                        chWrap.style.display = '';
+                    } else {
+                        chWrap.style.display = 'none';
+                    }
+                }
                 fallback.style.display = '';
             } else {
                 fallback.style.display = 'none';
@@ -3044,14 +3016,17 @@
 
         var hasFavs = favTeams.length > 0 || favLeaguesList.length > 0 || myTeamSlugs.length > 0;
 
+        var followedList = document.getElementById('myTeamsFollowedList');
+
         if (!hasFavs) {
             sec.style.display = 'block';
             if (emptyEl) emptyEl.style.display = '';
-            if (emptyMsg) emptyMsg.textContent = 'Toca ★ junto a un equipo o liga para personalizar';
+            if (emptyMsg) emptyMsg.textContent = 'Sigue a tus equipos favoritos para ver sus partidos aquí';
             if (quickAdd) quickAdd.style.display = '';
+            if (followedList) followedList.style.display = 'none';
             if (upcomingEl) upcomingEl.style.display = 'none';
             if (footerEl) footerEl.style.display = 'none';
-            countEl.textContent = '0';
+            countEl.style.display = 'none';
             return;
         }
 
@@ -3076,10 +3051,23 @@
             if (emptyEl) { emptyEl.style.display = ''; }
             if (emptyMsg) emptyMsg.textContent = 'Ninguno de tus favoritos juega hoy';
             if (quickAdd) quickAdd.style.display = 'none';
-            countEl.textContent = '0';
+            countEl.style.display = 'none';
+            // Show followed teams as clickable chips
+            if (followedList && myTeamSlugs.length > 0) {
+                var chipsHtml = '<p style="font-size:0.72rem;color:var(--text-secondary,#9ca3af);margin:0 0 0.4rem;">Tus equipos:</p><div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
+                myTeamSlugs.forEach(function(slug) {
+                    var name = slug.replace(/-/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+                    chipsHtml += '<a href="/equipo/' + slug + '" style="display:inline-block;padding:0.25rem 0.6rem;border-radius:16px;background:var(--bg-card,#f3f4f6);border:1px solid var(--border,#e5e7eb);color:var(--text-primary,#374151);font-size:0.7rem;font-weight:600;text-decoration:none;">' + name + '</a>';
+                });
+                chipsHtml += '</div>';
+                followedList.innerHTML = chipsHtml;
+                followedList.style.display = '';
+            }
         } else {
             if (emptyEl) emptyEl.style.display = 'none';
+            if (followedList) followedList.style.display = 'none';
             countEl.textContent = matched.length + ' hoy';
+            countEl.style.display = '';
 
             matched.sort(function(a, b) {
                 var aLive = a.classList.contains('live') ? 0 : (a.classList.contains('final') ? 2 : 1);
@@ -3274,80 +3262,6 @@
 
     // Favorites are stored in localStorage only — no sync needed
 
-    // ── Subscription Filter ("Mis Suscripciones") ─────
-    var mySubs = JSON.parse(localStorage.getItem('dv_subs') || '[]');
-    var subFilterOn = false;
-
-    // Restore saved subs
-    mySubs.forEach(function(s) {
-        var chip = document.querySelector('.sub-chip[data-sub="' + s + '"]');
-        if (chip) chip.classList.add('active');
-    });
-
-    function toggleSub(chip) {
-        var s = chip.dataset.sub;
-        chip.classList.toggle('active');
-        var idx = mySubs.indexOf(s);
-        if (idx >= 0) { mySubs.splice(idx, 1); } else { mySubs.push(s); }
-        localStorage.setItem('dv_subs', JSON.stringify(mySubs));
-        if (subFilterOn) applySubFilter();
-    }
-
-    function applySubFilter() {
-        var toggleBtn = document.getElementById('subFilterToggle');
-        if (mySubs.length === 0) {
-            subFilterOn = false;
-            toggleBtn.textContent = 'Filtrar';
-            toggleBtn.classList.remove('active');
-            // Show all
-            document.querySelectorAll('.game-card').forEach(function(c) { c.style.display = ''; });
-            document.querySelectorAll('.league-section').forEach(function(s) { s.style.display = ''; });
-            document.getElementById('subUpsell').className = 'sub-upsell';
-            return;
-        }
-        subFilterOn = !subFilterOn;
-        toggleBtn.classList.toggle('active', subFilterOn);
-        toggleBtn.textContent = subFilterOn ? 'Mostrar todos' : 'Filtrar';
-
-        if (!subFilterOn) {
-            document.querySelectorAll('.game-card').forEach(function(c) { c.style.display = ''; });
-            document.querySelectorAll('.league-section').forEach(function(s) { s.style.display = ''; });
-            document.getElementById('subUpsell').className = 'sub-upsell';
-            return;
-        }
-        // Filter cards
-        var hidden = 0;
-        var missingPlatforms = {};
-        document.querySelectorAll('.game-card').forEach(function(card) {
-            var channels = (card.dataset.channels || '').toLowerCase().split(',');
-            var match = mySubs.some(function(sub) {
-                return channels.some(function(ch) { return ch.indexOf(sub.toLowerCase()) >= 0; });
-            });
-            card.style.display = match ? '' : 'none';
-            if (!match) {
-                hidden++;
-                channels.forEach(function(ch) {
-                    if (ch.trim()) missingPlatforms[ch.trim()] = true;
-                });
-            }
-        });
-        // Hide empty sections
-        document.querySelectorAll('.league-section').forEach(function(sec) {
-            var any = Array.from(sec.querySelectorAll('.game-card')).some(function(c) { return c.style.display !== 'none'; });
-            sec.style.display = any ? '' : 'none';
-        });
-        // Upsell
-        var upsell = document.getElementById('subUpsell');
-        if (hidden > 0) {
-            var missList = Object.keys(missingPlatforms).slice(0, 3).map(function(p) {
-                return p.charAt(0).toUpperCase() + p.slice(1);
-            }).join(', ');
-            upsell.innerHTML = hidden + ' partidos no disponibles en tus plataformas. Agrega <strong>' + missList + '</strong> para verlos todos.';
-            upsell.className = 'sub-upsell show';
-        } else {
-            upsell.className = 'sub-upsell';
-        }
-    }
 
     // ── Live score polling (every 30s) ────────
     (function() {

@@ -27,6 +27,7 @@ from sports_api import (
     fetch_meli_product_image, fetch_espn_event_summary,
     generate_nfl_power_rankings, generate_nfl_picks, get_nfl_team_advanced_stats,
     fetch_sportsdb_team_info, compute_sportsdb_standings,
+    DEFAULT_LEAGUE_CHANNELS,
 )
 from whatsapp_bot import handle_whatsapp_message
 import meta_whatsapp
@@ -735,6 +736,7 @@ async def home(
             "home_standings": home_standings,
             "is_historical": is_historical,
             "shown_ids": shown_ids,
+            "default_league_channels": DEFAULT_LEAGUE_CHANNELS,
         },
     )
     # Short cache to prevent stale dates — 90s browser, 90s CDN
