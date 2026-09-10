@@ -104,7 +104,7 @@
     }
     </script>
     {% endif %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2576227882415709" crossorigin="anonymous" data-overlays="bottom"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2576227882415709" crossorigin="anonymous" data-overlays="bottom" data-ad-frequency-hint="30s"></script>
     <link rel="icon" type="image/png" href="/static/logo.png">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <link rel="manifest" href="/manifest.json">
@@ -1399,15 +1399,24 @@
         .rm-status { font-size: 0.7rem; color: #6b7280; font-weight: 500; }
         [data-theme="dark"] .rm-teams { color: #e2e8f0; }
 
-        /* ── Auto-ads: hide above games, cap height on mobile ── */
-        @media (max-width: 767px) {
-            .hero-inner > .google-auto-placed {
-                display: none !important;
-            }
-            .google-auto-placed {
-                max-height: 100px !important;
-                overflow: hidden !important;
-            }
+        /* ── Auto-ads: cap height everywhere, hide before main content ── */
+        .google-auto-placed {
+            max-height: 100px !important;
+            overflow: hidden !important;
+        }
+        .hero-inner > .google-auto-placed,
+        .header + .google-auto-placed,
+        .google-auto-placed:first-child {
+            display: none !important;
+        }
+        /* Hide auto-placed ads between header and games */
+        .main > .google-auto-placed:first-child {
+            display: none !important;
+        }
+        ins.adsbygoogle[data-ad-format="autorelaxed"],
+        ins.adsbygoogle[data-ad-format="auto"] {
+            max-height: 100px !important;
+            overflow: hidden !important;
         }
     </style>
 </head>
