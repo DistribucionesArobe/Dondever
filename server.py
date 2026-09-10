@@ -1537,6 +1537,26 @@ LEAGUE_SEO_EXTRA = {
         ],
         "links": [],
     },
+    "f1": {
+        "title": "Donde ver F1 hoy en vivo — Formula 1 en Mexico | DondeVer",
+        "meta_desc": "Donde ver la Formula 1 (F1) en vivo hoy en Mexico: horarios, canales y resultados de cada Gran Premio. Checo Perez, Verstappen, Hamilton. Fox Sports, Canal 5, F1 TV.",
+        "h2": "Donde ver Formula 1 en vivo hoy",
+        "paragraphs": [
+            "La Formula 1 (F1) es la maxima categoria del automovilismo mundial. La temporada 2026 cuenta con 24 Grandes Premios incluyendo el Gran Premio de Mexico en el Autodromo Hermanos Rodriguez (noviembre). Sergio 'Checo' Perez es el piloto mexicano que compite en la grilla junto a Max Verstappen, Lewis Hamilton y Carlos Sainz.",
+            "En Mexico, la F1 se transmite por Fox Sports MX (cable), Canal 5 (gratis en TV abierta los domingos de carrera), TUDN y F1 TV (streaming oficial). Cada fin de semana de carrera incluye practicas libres (viernes), clasificacion (sabado) y la carrera (domingo). En DondeVer.app te mostramos donde ver cada sesion del Gran Premio con horarios de Mexico.",
+        ],
+        "links": [],
+    },
+    "ufc": {
+        "title": "Donde ver UFC hoy en vivo — Peleas MMA en Mexico | DondeVer",
+        "meta_desc": "Donde ver la UFC en vivo hoy en Mexico: horarios, cartelera y canales. Peleas de MMA, UFC Fight Night y PPV. Paramount+, Fox Sports MX.",
+        "h2": "Donde ver UFC en vivo hoy",
+        "paragraphs": [
+            "La UFC (Ultimate Fighting Championship) es la organizacion de MMA (artes marciales mixtas) mas importante del mundo. Realiza eventos casi cada semana entre UFC Fight Night (carteleras regulares) y eventos numerados PPV (UFC 324, 325, etc.) con peleas de campeonato. Peleadores mexicanos como Brandon Moreno y Alexa Grasso compiten regularmente.",
+            "Desde 2026, la UFC se transmite en Mexico y Latinoamerica por Paramount+ (streaming). Fox Sports MX tambien transmite eventos selectos. Las carteleras suelen iniciar los sabados por la tarde (horario Mexico) con las preliminares, seguidas de la cartelera estelar por la noche. En DondeVer.app te mostramos donde ver cada evento de la UFC con horarios de Mexico.",
+        ],
+        "links": [],
+    },
     "nfl": {
         "h2": "Donde ver NFL en Mexico 2026: Canales y Streaming",
         "paragraphs": [
@@ -2006,6 +2026,44 @@ async def donde_ver_lidom_redirect():
 @app.get("/beisbol-dominicano")
 async def beisbol_dominicano_redirect():
     return RedirectResponse(url="/liga/lidom", status_code=301)
+
+# ── F1 SEO redirects ──
+@app.get("/f1-hoy")
+async def f1_hoy_redirect():
+    return RedirectResponse(url="/liga/f1", status_code=301)
+
+@app.get("/f1-en-vivo")
+async def f1_en_vivo_redirect():
+    return RedirectResponse(url="/liga/f1", status_code=301)
+
+@app.get("/donde-ver-f1")
+async def donde_ver_f1_redirect():
+    return RedirectResponse(url="/liga/f1", status_code=301)
+
+@app.get("/formula-1-hoy")
+async def formula_1_hoy_redirect():
+    return RedirectResponse(url="/liga/f1", status_code=301)
+
+@app.get("/donde-ver-formula-1")
+async def donde_ver_formula_1_redirect():
+    return RedirectResponse(url="/liga/f1", status_code=301)
+
+# ── UFC SEO redirects ──
+@app.get("/ufc-hoy")
+async def ufc_hoy_redirect():
+    return RedirectResponse(url="/liga/ufc", status_code=301)
+
+@app.get("/ufc-en-vivo")
+async def ufc_en_vivo_redirect():
+    return RedirectResponse(url="/liga/ufc", status_code=301)
+
+@app.get("/donde-ver-ufc")
+async def donde_ver_ufc_redirect():
+    return RedirectResponse(url="/liga/ufc", status_code=301)
+
+@app.get("/pelea-ufc-hoy")
+async def pelea_ufc_hoy_redirect():
+    return RedirectResponse(url="/liga/ufc", status_code=301)
 
 
 # ── API Routes ───────────────────────────────────────────

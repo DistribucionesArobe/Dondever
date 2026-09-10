@@ -765,15 +765,15 @@ LEAGUES = {
     # Hockey
     "nhl":           ("hockey", "nhl",           "NHL",              "NHL"),
     # Combate
-    "ufc":           ("mma", "ufc",             "UFC",              "BOX"),
-    # "boxing":        ("boxing", "boxing",        "Boxeo",            "BOX"),  # ESPN no soporta scoreboard con fecha
+    "ufc":           ("mma", "ufc",             "UFC",              "🥊"),
+    # Motorsport
+    "f1":            ("racing", "f1",            "Formula 1",        "🏎️"),
 }
 
 # Leagues that don't show team names well (individual sports)
 # Only loaded when explicitly filtered, not on homepage
 LEAGUES_INDIVIDUAL = {
-    "f1":            ("racing", "f1",            "Formula 1",        "F1"),
-    "nascar":        ("racing", "nascar",        "NASCAR",           "CAR"),
+    "nascar":        ("racing", "nascar",        "NASCAR",           "🏁"),
     "atp":           ("tennis", "atp",           "ATP Tennis",       "TEN"),
     "wta":           ("tennis", "wta",           "WTA Tennis",       "TEN"),
     "pga":           ("golf", "pga",             "PGA Tour",         "\u26f3"),
@@ -1229,6 +1229,21 @@ POPULAR_TEAMS = {
     "sport-huancayo": {"name": "Sport Huancayo", "league": "Liga 1 Perú"},
     "sporting-cristal": {"name": "Sporting Cristal", "league": "Liga 1 Perú"},
     "universitario": {"name": "Universitario", "league": "Liga 1 Perú"},
+    # ── F1 (pilotos) ──
+    "checo-perez": {"name": "Sergio 'Checo' Pérez", "league": "Formula 1"},
+    "verstappen": {"name": "Max Verstappen", "league": "Formula 1"},
+    "hamilton": {"name": "Lewis Hamilton", "league": "Formula 1"},
+    "sainz": {"name": "Carlos Sainz", "league": "Formula 1"},
+    "norris": {"name": "Lando Norris", "league": "Formula 1"},
+    "leclerc": {"name": "Charles Leclerc", "league": "Formula 1"},
+    "alonso": {"name": "Fernando Alonso", "league": "Formula 1"},
+    # ── UFC (peleadores) ──
+    "brandon-moreno": {"name": "Brandon Moreno", "league": "UFC"},
+    "alexa-grasso": {"name": "Alexa Grasso", "league": "UFC"},
+    "islam-makhachev": {"name": "Islam Makhachev", "league": "UFC"},
+    "alex-pereira": {"name": "Alex Pereira", "league": "UFC"},
+    "jon-jones": {"name": "Jon Jones", "league": "UFC"},
+    "ilia-topuria": {"name": "Ilia Topuria", "league": "UFC"},
 }
 
 
@@ -1420,6 +1435,38 @@ TEAM_ALIASES = {
     "lidom": "lidom",
     "beisbol dominicano": "lidom",
     "pelota dominicana": "lidom",
+    # F1
+    "checo": "sergio 'checo' perez",
+    "checo perez": "sergio 'checo' perez",
+    "sergio perez": "sergio 'checo' perez",
+    "perez f1": "sergio 'checo' perez",
+    "verstappen": "max verstappen",
+    "max": "max verstappen",
+    "hamilton": "lewis hamilton",
+    "lewis": "lewis hamilton",
+    "sainz": "carlos sainz",
+    "carlos sainz": "carlos sainz",
+    "norris": "lando norris",
+    "leclerc": "charles leclerc",
+    "alonso": "fernando alonso",
+    "formula 1": "f1",
+    "formula uno": "f1",
+    "gran premio": "f1",
+    "gp mexico": "f1",
+    # UFC / MMA
+    "moreno": "brandon moreno",
+    "brandon moreno": "brandon moreno",
+    "grasso": "alexa grasso",
+    "alexa grasso": "alexa grasso",
+    "makhachev": "islam makhachev",
+    "pereira ufc": "alex pereira",
+    "jon jones": "jon jones",
+    "bones": "jon jones",
+    "topuria": "ilia topuria",
+    "ufc": "ufc",
+    "mma": "ufc",
+    "artes marciales": "ufc",
+    "peleas ufc": "ufc",
 }
 
 # ── Sports display conventions ──────────────────────────

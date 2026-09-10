@@ -203,7 +203,9 @@ DEFAULT_LEAGUE_CHANNELS = {
     # ── NHL 2025-26 ──
     "nhl": ["ESPN MX", "Disney+", "SKY"],
     # ── Combate ──
-    "ufc": ["Fox Sports MX", "ESPN MX"],
+    "ufc": ["Paramount+", "Fox Sports MX"],
+    # ── Motorsport ──
+    "f1": ["Fox Sports MX", "Canal 5", "TUDN", "F1 TV"],
 }
 
 # Liga MX Apertura 2026: broadcast rights per team (home matches)
@@ -1484,6 +1486,21 @@ TEAM_LEAGUE_MAP = {
     "estrellas-orientales": ("baseball", "sportsdb:lidom"),
     "gigantes-del-cibao": ("baseball", "sportsdb:lidom"),
     "toros-del-este": ("baseball", "sportsdb:lidom"),
+    # ── F1 (pilotos) ──
+    "checo-perez": ("racing", "f1"),
+    "verstappen": ("racing", "f1"),
+    "hamilton": ("racing", "f1"),
+    "sainz": ("racing", "f1"),
+    "norris": ("racing", "f1"),
+    "leclerc": ("racing", "f1"),
+    "alonso": ("racing", "f1"),
+    # ── UFC (peleadores) ──
+    "brandon-moreno": ("mma", "ufc"),
+    "alexa-grasso": ("mma", "ufc"),
+    "islam-makhachev": ("mma", "ufc"),
+    "alex-pereira": ("mma", "ufc"),
+    "jon-jones": ("mma", "ufc"),
+    "ilia-topuria": ("mma", "ufc"),
 }
 
 # ── TheSportsDB helpers for team pages ──
