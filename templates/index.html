@@ -652,10 +652,26 @@
             font-size: 0.65rem; font-weight: 700;
         }
         .channel-tag.cable { background: #dbeafe; color: #1d4ed8; }
+        .channel-tag.cable::before { content: "📺 "; font-size: 0.55rem; }
         .channel-tag.streaming { background: #ede9fe; color: #6d28d9; }
+        .channel-tag.streaming::before { content: "📱 "; font-size: 0.55rem; }
         .channel-tag.broadcast { background: #d1fae5; color: #059669; }
+        .channel-tag.broadcast::before { content: "📡 "; font-size: 0.55rem; }
         .channel-tag.free-mx { background: #059669; color: white; }
+        .channel-tag.free-mx::before { content: "🆓 "; font-size: 0.55rem; }
         .channel-tag.unknown { background: #f3f4f6; color: #9ca3af; }
+        body.dark-mode .channel-tag.cable { background: #1e3a5f; color: #93c5fd; }
+        body.dark-mode .channel-tag.streaming { background: #3b1f6e; color: #c4b5fd; }
+        body.dark-mode .channel-tag.broadcast { background: #064e3b; color: #6ee7b7; }
+        body.dark-mode .channel-tag.free-mx { background: #047857; color: white; }
+        body.dark-mode .channel-tag.unknown { background: #374151; color: #9ca3af; }
+
+        /* ── Platform filter chips ─────── */
+        .plat-chip { display:inline-block; padding:0.3rem 0.7rem; border-radius:16px; font-size:0.7rem; font-weight:600; cursor:pointer; border:1.5px solid var(--border,#d1d5db); background:var(--bg-card,#fff); color:var(--text-secondary,#6b7280); transition:all 0.15s; }
+        .plat-chip:hover { border-color:var(--accent,#10b981); }
+        .plat-chip.active { background:var(--accent,#10b981); color:white; border-color:var(--accent,#10b981); }
+        body.dark-mode #platformPanel { background:#1f2937; border-color:#374151; }
+        body.dark-mode #platformFilterBtn { background:#1f2937; border-color:#374151; color:#d1d5db; }
 
         /* ── Streaming CTA (affiliate) ─────── */
         .gc-streaming-cta {
@@ -1900,6 +1916,19 @@
     </nav>
     {% endif %}
 
+    {# ── MIS PLATAFORMAS filter ── #}
+    <div id="platformFilterWrap" style="max-width:700px;margin:0 auto 0.5rem;padding:0 0.5rem;">
+        <button id="platformFilterBtn" onclick="togglePlatformPanel()" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.35rem 0.85rem;border-radius:20px;border:1.5px solid var(--border,#d1d5db);background:var(--bg-card,#fff);color:var(--text-secondary,#6b7280);font-size:0.75rem;font-weight:600;cursor:pointer;">
+            <span style="font-size:0.7rem;">📺</span> Mis plataformas <span id="platformCount" style="display:none;background:var(--accent,#10b981);color:white;border-radius:50%;width:16px;height:16px;font-size:0.6rem;line-height:16px;text-align:center;margin-left:2px;"></span>
+        </button>
+        <button id="platformClearBtn" onclick="clearPlatformFilter()" style="display:none;padding:0.3rem 0.6rem;border-radius:20px;border:1px solid #ef4444;background:transparent;color:#ef4444;font-size:0.68rem;font-weight:600;cursor:pointer;margin-left:0.3rem;">Mostrar todos</button>
+        <div id="platformPanel" style="display:none;margin-top:0.5rem;padding:0.75rem;border-radius:12px;background:var(--bg-card,#fff);border:1px solid var(--border,#e5e7eb);box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+            <p style="font-size:0.75rem;font-weight:700;color:var(--text-primary,#374151);margin:0 0 0.5rem;">Selecciona tus servicios y solo veras partidos disponibles en ellos:</p>
+            <div id="platformChips" style="display:flex;flex-wrap:wrap;gap:0.35rem;"></div>
+            <p style="font-size:0.65rem;color:var(--text-secondary,#9ca3af);margin:0.5rem 0 0;">Se guarda automaticamente en tu navegador.</p>
+        </div>
+    </div>
+
     {# ── LEAGUE FILTER FALLBACK (no games for that league today) ── #}
     <div id="leagueFilterFallback" style="display:none;max-width:700px;margin:1.5rem auto;padding:1.5rem;border-radius:12px;background:var(--bg-card,#fff);border:1px solid var(--border,#e5e7eb);text-align:center;">
         <p style="font-size:1.1rem;font-weight:600;color:var(--text-primary,#374151);margin:0 0 0.3rem;">No hay juegos de <span id="fallbackLeagueName"></span> hoy</p>
@@ -2645,6 +2674,161 @@
     } else {
         setTimeout(applyGeoFilter, 200);
     }
+
+    // ── "Mis plataformas" filter ──────────────
+    (function() {
+        var PLATFORMS = [
+            // TV abierta MX
+            {id:'canal-5',      label:'Canal 5',       type:'broadcast'},
+            {id:'azteca-7',     label:'Azteca 7',      type:'broadcast'},
+            {id:'las-estrellas',label:'Las Estrellas',  type:'broadcast'},
+            {id:'imagen-tv',    label:'Imagen TV',     type:'broadcast'},
+            // Cable MX
+            {id:'tudn',         label:'TUDN',          type:'cable'},
+            {id:'fox-sports-mx',label:'Fox Sports MX', type:'cable'},
+            {id:'espn-mx',      label:'ESPN MX',       type:'cable'},
+            {id:'claro-sports', label:'Claro Sports',  type:'cable'},
+            {id:'tnt-sports',   label:'TNT Sports',    type:'cable'},
+            {id:'afizzionados', label:'Afizzionados',  type:'cable'},
+            {id:'sky',          label:'SKY',           type:'cable'},
+            // Streaming
+            {id:'vix',          label:'ViX',           type:'streaming'},
+            {id:'disney-plus',  label:'Disney+',       type:'streaming'},
+            {id:'paramount-plus',label:'Paramount+',   type:'streaming'},
+            {id:'prime-video',  label:'Prime Video',   type:'streaming'},
+            {id:'apple-tv',     label:'Apple TV+',     type:'streaming'},
+            {id:'netflix',      label:'Netflix',       type:'streaming'},
+            {id:'max',          label:'Max',           type:'streaming'},
+            {id:'espn-plus',    label:'ESPN+',         type:'streaming'},
+            {id:'claro-video',  label:'Claro Video',   type:'streaming'},
+            {id:'blue-to-go',   label:'Blue To Go',    type:'streaming'},
+            {id:'caliente-tv',  label:'Caliente TV',   type:'streaming'},
+            {id:'mlb-tv',       label:'MLB.TV',        type:'streaming'},
+            {id:'nfl-plus',     label:'NFL+',          type:'streaming'},
+            {id:'mls-season-pass',label:'MLS Season Pass',type:'streaming'},
+            {id:'f1-tv',        label:'F1 TV',         type:'streaming'},
+            {id:'dazn',         label:'DAZN',          type:'streaming'},
+            {id:'tubi',         label:'Tubi',          type:'streaming'},
+            // US broadcast
+            {id:'fox',          label:'FOX',           type:'broadcast'},
+            {id:'espn',         label:'ESPN',          type:'cable'},
+            {id:'abc',          label:'ABC',           type:'broadcast'},
+            {id:'nbc',          label:'NBC',           type:'broadcast'},
+            {id:'cbs',          label:'CBS',           type:'broadcast'},
+            {id:'peacock',      label:'Peacock',       type:'streaming'},
+            {id:'univision',    label:'Univision',     type:'broadcast'},
+            {id:'telemundo',    label:'Telemundo',     type:'broadcast'},
+        ];
+
+        var selected = [];
+        try { selected = JSON.parse(localStorage.getItem('dv_my_platforms') || '[]'); } catch(e) { selected = []; }
+
+        var chipsEl = document.getElementById('platformChips');
+        var countEl = document.getElementById('platformCount');
+        var clearBtn = document.getElementById('platformClearBtn');
+        var filterBtn = document.getElementById('platformFilterBtn');
+
+        // Build chips
+        if (chipsEl) {
+            PLATFORMS.forEach(function(p) {
+                var chip = document.createElement('span');
+                chip.className = 'plat-chip' + (selected.indexOf(p.id) !== -1 ? ' active' : '');
+                chip.dataset.pid = p.id;
+                chip.dataset.label = p.label.toLowerCase();
+                chip.textContent = p.label;
+                chip.onclick = function() { togglePlatChip(p.id, chip); };
+                chipsEl.appendChild(chip);
+            });
+        }
+
+        function togglePlatChip(id, chip) {
+            var idx = selected.indexOf(id);
+            if (idx === -1) { selected.push(id); chip.classList.add('active'); }
+            else { selected.splice(idx, 1); chip.classList.remove('active'); }
+            try { localStorage.setItem('dv_my_platforms', JSON.stringify(selected)); } catch(e) {}
+            applyPlatformFilter();
+        }
+
+        function applyPlatformFilter() {
+            // Update badge
+            if (countEl) {
+                if (selected.length > 0) { countEl.style.display = ''; countEl.textContent = selected.length; }
+                else { countEl.style.display = 'none'; }
+            }
+            if (clearBtn) clearBtn.style.display = selected.length > 0 ? '' : 'none';
+            if (filterBtn) {
+                if (selected.length > 0) {
+                    filterBtn.style.borderColor = 'var(--accent,#10b981)';
+                    filterBtn.style.color = 'var(--accent,#10b981)';
+                } else {
+                    filterBtn.style.borderColor = 'var(--border,#d1d5db)';
+                    filterBtn.style.color = 'var(--text-secondary,#6b7280)';
+                }
+            }
+
+            if (selected.length === 0) {
+                // Show all cards (respect other filters)
+                document.querySelectorAll('.game-card[data-channels]').forEach(function(c) {
+                    c.removeAttribute('data-plat-hidden');
+                    if (!c.getAttribute('data-fav-hidden')) c.style.display = '';
+                });
+                updateLeagueSectionVisibility();
+                return;
+            }
+
+            // Build lookup of selected platform labels (lowercased)
+            var labels = [];
+            selected.forEach(function(id) {
+                var p = PLATFORMS.find(function(x) { return x.id === id; });
+                if (p) labels.push(p.label.toLowerCase());
+            });
+
+            document.querySelectorAll('.game-card[data-channels]').forEach(function(card) {
+                var channels = card.getAttribute('data-channels').split(',').map(function(c) { return c.trim(); });
+                var match = channels.some(function(ch) {
+                    return labels.some(function(lb) { return ch.indexOf(lb) !== -1 || lb.indexOf(ch) !== -1; });
+                });
+                if (match) {
+                    card.removeAttribute('data-plat-hidden');
+                    card.style.display = '';
+                } else {
+                    card.setAttribute('data-plat-hidden', '1');
+                    card.style.display = 'none';
+                }
+            });
+
+            updateLeagueSectionVisibility();
+        }
+
+        function updateLeagueSectionVisibility() {
+            document.querySelectorAll('.league-section').forEach(function(sec) {
+                var anyVisible = Array.from(sec.querySelectorAll('.game-card')).some(function(c) {
+                    return c.style.display !== 'none';
+                });
+                // Only hide if platform filter is active
+                if (selected.length > 0) {
+                    sec.style.display = anyVisible ? '' : 'none';
+                }
+            });
+        }
+
+        window.togglePlatformPanel = function() {
+            var panel = document.getElementById('platformPanel');
+            if (panel) panel.style.display = panel.style.display === 'none' ? '' : 'none';
+        };
+
+        window.clearPlatformFilter = function() {
+            selected = [];
+            try { localStorage.setItem('dv_my_platforms', JSON.stringify(selected)); } catch(e) {}
+            document.querySelectorAll('.plat-chip').forEach(function(c) { c.classList.remove('active'); });
+            applyPlatformFilter();
+        };
+
+        // Apply on load if user has saved platforms
+        if (selected.length > 0) {
+            setTimeout(applyPlatformFilter, 300);
+        }
+    })();
 
     // ── Calendar + Share helpers ────────────
     function dvCal(btn) {

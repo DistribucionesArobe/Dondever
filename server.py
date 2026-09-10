@@ -1569,6 +1569,30 @@ LEAGUE_SEO_EXTRA = {
             {"text": "Pronosticos NFL", "url": "/pronosticos-hoy"},
         ],
     },
+    "champions": {
+        "title": "Donde ver Champions League hoy en vivo — Canales en Mexico | DondeVer",
+        "meta_desc": "Donde ver la Champions League en vivo hoy en Mexico: horarios, canales y resultados. ViX, TUDN, Amazon Prime, Fox Sports y Canal 5. Partidos de hoy.",
+        "h2": "Donde ver la Champions League en Mexico",
+        "paragraphs": [
+            "La UEFA Champions League es el torneo de clubes mas prestigioso del mundo. En Mexico se transmite por ViX Premium y TUDN (mayoria de partidos), Amazon Prime Video (partidos selectos de martes), Fox Sports MX (partidos selectos) y Canal 5 (1 partido gratis por jornada en TV abierta).",
+            "Los partidos se juegan martes y miercoles a las 12:45 PM y 3:00 PM hora del centro de Mexico. Real Madrid, Barcelona, Manchester City, Bayern Munich y los clubes mas grandes de Europa compiten por el titulo. En DondeVer.app te mostramos el canal exacto para cada partido con horario de Mexico.",
+        ],
+        "links": [
+            {"text": "Guia completa: Champions en Mexico", "url": "/guia/donde-ver-champions-en-mexico"},
+        ],
+    },
+    "copa-libertadores": {
+        "title": "Donde ver Copa Libertadores hoy en vivo — Canales en Mexico | DondeVer",
+        "meta_desc": "Donde ver la Copa Libertadores en vivo hoy en Mexico: horarios, canales y resultados. ESPN MX, Disney+, Fox Sports. Boca, River, Flamengo y mas.",
+        "h2": "Donde ver la Copa Libertadores en Mexico",
+        "paragraphs": [
+            "La Copa CONMEBOL Libertadores es el torneo de clubes mas importante de Sudamerica. En Mexico se transmite por ESPN MX (cable), Disney+ (streaming) y Fox Sports MX (partidos selectos). Boca Juniors, River Plate, Flamengo, Palmeiras y los mejores equipos del continente compiten por el titulo.",
+            "Los partidos se juegan martes, miercoles y jueves entre las 5:00 PM y 8:00 PM hora de Mexico. El campeon clasifica al Mundial de Clubes de la FIFA. En DondeVer.app te mostramos donde ver cada partido de Libertadores con horario de Mexico.",
+        ],
+        "links": [
+            {"text": "Guia completa: Libertadores en Mexico", "url": "/guia/donde-ver-copa-libertadores-en-mexico"},
+        ],
+    },
 }
 
 # ── NFL team-specific SEO content for popular teams in Mexico ──
@@ -2064,6 +2088,33 @@ async def donde_ver_ufc_redirect():
 @app.get("/pelea-ufc-hoy")
 async def pelea_ufc_hoy_redirect():
     return RedirectResponse(url="/liga/ufc", status_code=301)
+
+# ── Copa America SEO redirects ──
+@app.get("/copa-america-hoy")
+async def copa_america_hoy_redirect():
+    return RedirectResponse(url="/guia/donde-ver-copa-america-en-mexico", status_code=301)
+
+@app.get("/donde-ver-copa-america")
+async def donde_ver_copa_america_redirect():
+    return RedirectResponse(url="/guia/donde-ver-copa-america-en-mexico", status_code=301)
+
+# ── Copa Libertadores SEO redirects ──
+@app.get("/libertadores-hoy")
+async def libertadores_hoy_redirect():
+    return RedirectResponse(url="/guia/donde-ver-copa-libertadores-en-mexico", status_code=301)
+
+@app.get("/donde-ver-libertadores")
+async def donde_ver_libertadores_redirect():
+    return RedirectResponse(url="/guia/donde-ver-copa-libertadores-en-mexico", status_code=301)
+
+# ── Mundial SEO redirects ──
+@app.get("/mundial-2026")
+async def mundial_2026_redirect():
+    return RedirectResponse(url="/guia/donde-ver-mundial-2026-gratis", status_code=301)
+
+@app.get("/donde-ver-mundial")
+async def donde_ver_mundial_redirect():
+    return RedirectResponse(url="/guia/donde-ver-mundial-2026-gratis", status_code=301)
 
 
 # ── API Routes ───────────────────────────────────────────
@@ -3645,6 +3696,8 @@ async def sitemap_xml():
         ("gratis-hoy", "daily", "0.9"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
+        ("guia/donde-ver-copa-america-en-mexico", "weekly", "0.8"),
+        ("guia/donde-ver-copa-libertadores-en-mexico", "weekly", "0.8"),
         # New "Como ver" guides
         ("guia/como-ver-premier-league-en-mexico", "weekly", "0.8"),
         ("guia/como-ver-la-liga-en-mexico", "weekly", "0.8"),
@@ -3835,6 +3888,11 @@ async def casinos_page(request: Request):
 GUIDE_REDIRECTS = {
     # Consolidate duplicate Champions League guides — avoid keyword cannibalization
     "donde-ver-champions-league": "donde-ver-champions-en-mexico",
+    # Copa America / Libertadores variants
+    "donde-ver-copa-america": "donde-ver-copa-america-en-mexico",
+    "copa-america-en-vivo": "donde-ver-copa-america-en-mexico",
+    "donde-ver-libertadores": "donde-ver-copa-libertadores-en-mexico",
+    "copa-libertadores-en-vivo": "donde-ver-copa-libertadores-en-mexico",
 }
 
 @app.get("/guia/{guide_slug}", response_class=HTMLResponse)
@@ -4056,6 +4114,8 @@ COUNTRY_SPORT_PRIORITY = {
             {"label": "🏈 Dónde ver NFL", "url": "/guia/donde-ver-nfl-en-mexico"},
             {"label": "🏀 Dónde ver NBA", "url": "/guia/donde-ver-nba-en-mexico"},
             {"label": "🏆 Dónde ver Champions League", "url": "/guia/donde-ver-champions-en-mexico"},
+            {"label": "🏆 Copa América", "url": "/guia/donde-ver-copa-america-en-mexico"},
+            {"label": "🏆 Copa Libertadores", "url": "/guia/donde-ver-copa-libertadores-en-mexico"},
             {"label": "🏎️ Dónde ver F1", "url": "/liga/f1"},
             {"label": "🏆 Mundial 2026 gratis", "url": "/guia/donde-ver-mundial-2026-gratis"},
             {"label": "📱 Apps para ver futbol", "url": "/guia/mejores-apps-ver-futbol-en-vivo"},
