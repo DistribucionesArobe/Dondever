@@ -130,40 +130,14 @@
             min-height: 100vh;
         }
 
-        /* ── Header (sticky, compact) ───────── */
+        /* ── Header (minimal, just dark-mode toggle) ── */
         .header {
-            background: #0f172a;
-            padding: 0.55rem 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-            position: sticky;
-            top: 0;
+            background: transparent;
+            position: absolute;
+            top: 0; right: 0;
             z-index: 100;
+            padding: 0.6rem 1rem;
         }
-        .header-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 0 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            text-decoration: none;
-        }
-        .logo img {
-            height: 24px;
-            width: auto;
-        }
-        .logo-text {
-            font-size: 1.05rem;
-            font-weight: 900;
-            letter-spacing: -0.5px;
-        }
-        .logo-text .donde { color: #f8f9fb; }
-        .logo-text .ver { color: #10b981; }
         .header-right { display: flex; align-items: center; gap: 0.3rem; }
         /* ── Country Picker (centered) ────────── */
         .country-picker-wrap {
@@ -204,18 +178,25 @@
         .country-btn:hover { background: #334155; color: #fff; }
         .country-btn.active { background: #059669; color: #fff; border-color: #059669; }
 
-        /* ── Hero — "¿Qué quieres ver hoy?" ── */
+        /* ── Hero — logo + title + search ── */
         .hero {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            padding: 1.2rem 1rem 0.8rem;
+            padding: 1.4rem 1rem 0.8rem;
             text-align: center;
+            position: relative;
         }
         .hero-inner { max-width: 1100px; margin: 0 auto; }
+        .hero-logo {
+            display: block;
+            margin: 0 auto 0.5rem;
+            width: 200px;
+            height: auto;
+        }
         .hero h1 {
-            font-size: 1.35rem;
-            font-weight: 900;
-            color: #fff;
-            letter-spacing: -0.5px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #94a3b8;
+            letter-spacing: -0.3px;
             margin-bottom: 0.15rem;
         }
         .hero h1 .accent { color: #34d399; }
@@ -427,7 +408,8 @@
             .sport-card { width: 88px; height: 72px; }
             .sport-card .sc-emoji { font-size: 1.7rem; }
             .sport-card .sc-label { font-size: 0.65rem; }
-            .hero h1 { font-size: 1.6rem; }
+            .hero h1 { font-size: 1.1rem; }
+            .hero-logo { width: 220px; }
         }
 
         /* ── Main Content ───────────────────── */
@@ -1367,7 +1349,8 @@
 
         /* ── Responsive ─────────────────────── */
         @media (max-width: 640px) {
-            .hero h1 { font-size: 1.1rem; }
+            .hero h1 { font-size: 0.85rem; }
+            .hero-logo { width: 160px; }
             .main { padding: 0.75rem 0.75rem 1.5rem; }
             .game-card { padding: 0.75rem; }
             .team-name { font-size: 0.8rem; }
@@ -1426,16 +1409,10 @@
 </head>
 <body>
 
-<!-- Header -->
+<!-- Header (dark mode toggle only) -->
 <header class="header">
-    <div class="header-inner">
-        <a href="/" class="logo">
-            <img src="/static/logo-full.png" alt="DondeVer">
-            <span class="logo-text"><span class="donde">Donde</span><span class="ver">Ver</span></span>
-        </a>
-        <div class="header-right">
-            <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button>
-        </div>
+    <div class="header-right">
+        <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button>
     </div>
 </header>
 
@@ -1444,10 +1421,11 @@
 {% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
 <div class="hero">
     <div class="hero-inner">
+        <a href="/"><img src="/static/logo-dondever.png" alt="DondeVer.app" class="hero-logo"></a>
         {% if is_historical %}
         <h1>Deportes del <span class="accent">{{ today_display }}</span></h1>
         {% else %}
-        <h1>D&oacute;nde ver <span class="accent">deportes en vivo</span> hoy</h1>
+        <h1>Deportes <span class="accent">en vivo</span> hoy &mdash; TV, horarios y streaming</h1>
         {% endif %}
         <div class="hero-sub" id="country-toggle">
             Nos ves desde: <span id="current-country" style="cursor:pointer;">&#127474;&#127485; M&eacute;xico &#9662;</span>
