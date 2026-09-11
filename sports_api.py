@@ -1947,11 +1947,15 @@ async def fetch_league_leaders(sport: str, league: str, top_n: int = 5) -> list[
     if league.startswith("sportsdb:"):
         return []
 
+    # Normalize sport for ESPN API and category lookup
+    # college-football uses sport="football" in ESPN URL path
+    espn_sport = "football" if sport == "college-football" else sport
+
     cache_key = f"leaders:{sport}:{league}"
     if cache_key in _leaders_cache:
         return _leaders_cache[cache_key]
 
-    url = f"https://site.api.espn.com/apis/site/v3/sports/{sport}/{league}/leaders"
+    url = f"https://site.api.espn.com/apis/site/v3/sports/{espn_sport}/{league}/leaders"
 
     async with httpx.AsyncClient(timeout=15) as client:
         try:
@@ -1967,7 +1971,7 @@ async def fetch_league_leaders(sport: str, league: str, top_n: int = 5) -> list[
         return []
 
     # Map ESPN category names to our display config
-    wanted = _LEADER_CATEGORIES.get(sport, [])
+    wanted = _LEADER_CATEGORIES.get(espn_sport, [])
     if not wanted:
         return []
 
