@@ -84,13 +84,15 @@
               "position": {{ counter.n }},
               "item": {
                 "@type": "SportsEvent",
-                "name": "{{ game.away.name }} vs {{ game.home.name }}",
+                "name": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}{{ game.name }}{% else %}{{ game.away.name }} vs {{ game.home.name }}{% endif %}",
                 "startDate": "{{ game.date }}",
                 "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.state == 'in' %}EventScheduled{% else %}EventScheduled{% endif %}",
                 "url": "{{ app_url }}{{ game|game_url }}",
-                "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport in ('football', 'college-football') %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% else %}{{ game.sport }}{% endif %}",
+                "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport in ('football', 'college-football') %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% elif game.sport == 'racing' %}Automovilismo{% elif game.sport == 'mma' %}MMA{% elif game.sport == 'boxing' %}Boxeo{% else %}{{ game.sport }}{% endif %}",
+                {% if game.sport not in ('racing', 'golf', 'tennis') and game.home.name != 'TBD' and game.away.name != 'TBD' %}
                 "homeTeam": {"@type": "SportsTeam", "name": "{{ game.home.name }}"},
                 "awayTeam": {"@type": "SportsTeam", "name": "{{ game.away.name }}"},
+                {% endif %}
                 "organizer": {"@type": "SportsOrganization", "name": "{{ game.league_name }}"}
                 {% if game.broadcasts %},
                 "broadcast": [{% for bc in game.broadcasts[:3] %}{% if not loop.first %},{% endif %}{"@type": "BroadcastEvent", "isLiveBroadcast": true, "publishedOn": {"@type": "BroadcastService", "name": "{{ bc.channel }}"}}{% endfor %}]
@@ -1753,110 +1755,6 @@
                         <span class="channel-tag unknown">Por confirmar</span>
                     {% endif %}
                 </div>
-                <div class="gc-actions">
-                    <a href="{{ game|game_url }}" class="gc-act-detail" onclick="event.stopPropagation();">D&oacute;nde ver &rarr;</a>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </section>
-    {% endif %}
-
-    {# ── DESTACADOS section (same card format as league games) ── #}
-    {% if featured_games %}
-    <section class="priority-section" id="secFeatured">
-        <h2 class="priority-header featured-header">
-            <span>&#128293; DESTACADOS</span>
-            <span class="league-count">{{ featured_games|length }} partido{{ 's' if featured_games|length != 1 else '' }}</span>
-        </h2>
-        {% for game in featured_games %}
-        {% set state = 'pre' %}
-        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
-        {% set top_team = game.home if home_left else game.away %}
-        {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card" style="border-left:3px solid #ea580c;" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
-            <div class="gc-compact-top">
-                <div class="gc-compact-left">
-                    <span class="pre-badge">PR&Oacute;XIMO</span>
-                    {% if game.broadcasts %}
-                    <span class="channel-tag {{ game.broadcasts[0].info.get('type', 'unknown') if game.broadcasts[0].info else 'unknown' }}" style="font-size:0.58rem;">{{ game.broadcasts[0].channel }}</span>
-                    {% endif %}
-                    <span class="game-card-league-tag">{{ game.emoji }} {{ game.league_name }}</span>
-                </div>
-                <div class="gc-compact-right">
-                    <button class="gc-notify-btn" onclick="event.stopPropagation();dvNotify(this)" data-game-id="{{ game.id }}" data-kickoff="{{ game.date }}" data-title="{{ top_team.name }} vs {{ bottom_team.name }}" data-league="{{ game.league_name }}" data-channels="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}" aria-label="Notificarme">&#128276;</button>
-                    <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
-                </div>
-            </div>
-            <div class="gc-row">
-                {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
-                <span class="team-name">{{ top_team.name }}</span>
-                <span class="gc-right"><span class="gc-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</span></span>
-            </div>
-            <div class="gc-row">
-                {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">{% endif %}
-                <span class="team-name">{{ bottom_team.name }}</span>
-                <span class="gc-right"><span class="gc-sub tz-hora-label">HORA MX</span></span>
-            </div>
-            {% if game.odds %}
-            <div class="gc-bet-preview" onclick="event.stopPropagation();" style="padding:0.4rem 0.75rem;">
-                <div class="bet-odds-row" style="margin:0;">
-                    <div class="bet-odds-chips">
-                        <a href="/go/bet?s=feat-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
-                        {% if game.odds.draw_odds %}<a href="/go/bet?s=feat-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip draw">EMP <strong>{{ game.odds.draw_odds }}</strong></a>{% endif %}
-                        <a href="/go/bet?s=feat-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
-                    </div>
-                    <div class="bet-cta-col">
-                        <a href="/go/bet?s=feat-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">Ver cuotas</a>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-            {# ── Accordion ── #}
-            <div class="gc-accordion">
-                <div class="gc-channels">
-                    <span class="gc-channels-icon">&#128250;</span>
-                    {% if game.broadcasts %}
-                        {% set ns_reg = namespace(count=0) %}
-                        {% for b in game.broadcasts %}
-                        {% if b.get('is_us_regional') %}
-                            {% set ns_reg.count = ns_reg.count + 1 %}
-                        {% else %}
-                        {% set saff = streaming_aff.get(b.channel) %}
-                        {% if saff %}
-                        <a href="/go/{{ saff.key }}?s=channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-tag streaming" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};" onclick="event.stopPropagation();">
-                            {{ b.channel }} &#8599;
-                        </a>
-                        {% else %}
-                        <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="text-decoration:none;" onclick="event.stopPropagation();">
-                            {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
-                        </a>
-                        {% endif %}
-                        {% endif %}
-                        {% endfor %}
-                        {% if ns_reg.count > 0 %}
-                        <span class="channel-tag unknown" title="Canales regionales de EE.UU.">+{{ ns_reg.count }} US</span>
-                        {% endif %}
-                    {% else %}
-                        <span class="channel-tag unknown">Por confirmar</span>
-                    {% endif %}
-                </div>
-                {% set ns = namespace(has_streaming=false) %}
-                {% for b in game.broadcasts %}
-                    {% if streaming_aff.get(b.channel) %}{% set ns.has_streaming = true %}{% endif %}
-                {% endfor %}
-                {% if ns.has_streaming %}
-                <div class="gc-streaming-cta" onclick="event.stopPropagation();">
-                    {% for b in game.broadcasts %}
-                    {% set saff = streaming_aff.get(b.channel) %}
-                    {% if saff %}
-                    <a href="/go/{{ saff.key }}?s=feat-stream" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="stream-btn" style="background:{{ saff.bg }};">
-                        {{ saff.cta }} <span class="stream-label">&#8599;</span>
-                    </a>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-                {% endif %}
                 <div class="gc-actions">
                     <a href="{{ game|game_url }}" class="gc-act-detail" onclick="event.stopPropagation();">D&oacute;nde ver &rarr;</a>
                 </div>

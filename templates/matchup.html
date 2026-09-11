@@ -31,12 +31,13 @@
     {
       "@context": "https://schema.org",
       "@type": "SportsEvent",
-      "name": "{{ first_team }} vs {{ second_team }}",
+      "name": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}{{ game.name }}{% else %}{{ first_team }} vs {{ second_team }}{% endif %}",
       "startDate": "{{ game.date }}",
       "location": {
         "@type": "Place",
         "name": "{{ game.venue or 'Por confirmar' }}"
       },
+      {% if game.sport not in ('racing', 'golf', 'tennis') and game.home.name != 'TBD' and game.away.name != 'TBD' %}
       "homeTeam": {
         "@type": "SportsTeam",
         "name": "{{ game.home.name }}"
@@ -45,7 +46,8 @@
         "@type": "SportsTeam",
         "name": "{{ game.away.name }}"
       },
-      "description": "Donde ver {{ first_team }} vs {{ second_team }} de {{ game.league_name }} en vivo en Mexico, Estados Unidos y Latinoamerica",
+      {% endif %}
+      "description": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}Donde ver {{ game.name }} de {{ game.league_name }} en vivo en Mexico, Estados Unidos y Latinoamerica{% else %}Donde ver {{ first_team }} vs {{ second_team }} de {{ game.league_name }} en vivo en Mexico, Estados Unidos y Latinoamerica{% endif %}",
       "url": "{{ app_url }}/donde-ver/{{ matchup_slug }}",
       {% if game.broadcasts %}"broadcastEvent": {
         "@type": "BroadcastEvent",

@@ -79,11 +79,13 @@
           "position": {{ loop.index }},
           "item": {
             "@type": "SportsEvent",
-            "name": "{{ game.away.name }} vs {{ game.home.name }}",
+            "name": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}{{ game.name }}{% else %}{{ game.away.name }} vs {{ game.home.name }}{% endif %}",
             "startDate": "{{ game.date }}",
             "url": "{{ app_url }}{{ game|game_url }}",
+            {% if game.sport not in ('racing', 'golf', 'tennis') and game.home.name != 'TBD' and game.away.name != 'TBD' %}
             "homeTeam": {"@type": "SportsTeam", "name": "{{ game.home.name }}"},
             "awayTeam": {"@type": "SportsTeam", "name": "{{ game.away.name }}"},
+            {% endif %}
             "organizer": {"@type": "SportsOrganization", "name": "{{ league_name }}"}
             {% if game.broadcasts %},
             "broadcast": [{% for bc in game.broadcasts[:3] %}{% if not loop.first %},{% endif %}{"@type": "BroadcastEvent", "isLiveBroadcast": true, "publishedOn": {"@type": "BroadcastService", "name": "{{ bc.channel }}"}}{% endfor %}]

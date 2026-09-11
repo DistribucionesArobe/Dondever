@@ -625,43 +625,11 @@ async def home(
     for g in live_games:
         _priority_ids.add(g["id"])
 
-    # ── Featured games (DESTACADOS) — exclude already-shown ──
-    priority_leagues = ["liga-mx", "premier-league", "champions", "nfl", "nba",
-                        "la-liga", "mlb", "nhl", "mls", "liga-argentina",
-                        "copa-del-rey", "fa-cup", "leagues-cup", "euro"]
-    upcoming = [g for g in games if g["status"]["state"] == "pre" and g["id"] not in _priority_ids]
-    featured_games = []
-    # 1. Priority leagues with broadcasts first
-    for pl in priority_leagues:
-        for g in upcoming:
-            if g["league_slug"] == pl and g not in featured_games:
-                featured_games.append(g)
-                if len(featured_games) >= 8:
-                    break
-        if len(featured_games) >= 8:
-            break
-    # 2. Fill up to 8 with any upcoming game that has odds
-    if len(featured_games) < 8:
-        for g in upcoming:
-            if g not in featured_games and g.get("odds"):
-                featured_games.append(g)
-                if len(featured_games) >= 8:
-                    break
-    # 3. Still short? add any upcoming with broadcasts
-    if len(featured_games) < 5:
-        for g in upcoming:
-            if g not in featured_games and g["broadcasts"]:
-                featured_games.append(g)
-                if len(featured_games) >= 5:
-                    break
-
     # Pick del dia — best single game for the card
-    pick_game = featured_games[0] if featured_games else (must_watch[0] if must_watch else (live_games[0] if live_games else None))
+    pick_game = must_watch[0] if must_watch else (live_games[0] if live_games else None)
 
     # ── Dedup: collect IDs already shown in priority sections ──
     shown_ids = set(_priority_ids)
-    for g in featured_games:
-        shown_ids.add(g["id"])
 
     # Available sports for filter
     sport_types = sorted(set(v[0] for v in LEAGUES.values()))
@@ -729,7 +697,6 @@ async def home(
             "total_games": len(games),
             "pick_game": pick_game,
             "live_games": live_games,
-            "featured_games": featured_games,
             "must_watch": must_watch,
             "free_games": free_games,
             "sport_counts": sport_counts,

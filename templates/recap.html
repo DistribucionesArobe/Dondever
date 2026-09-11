@@ -27,14 +27,15 @@
     {
       "@context": "https://schema.org",
       "@type": "SportsEvent",
-      "name": "{{ first_team }} vs {{ second_team }}",
-      "description": "Resultado: {{ first_team }} {{ first_score }}-{{ second_score }} {{ second_team }}",
+      "name": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}{{ game.name }}{% else %}{{ first_team }} vs {{ second_team }}{% endif %}",
+      "description": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}{{ game.name }} — {{ game.league_name }}{% else %}Resultado: {{ first_team }} {{ first_score }}-{{ second_score }} {{ second_team }}{% endif %}",
       "startDate": "{{ game.date }}",
       "eventStatus": "https://schema.org/EventCompleted",
       "location": {
         "@type": "Place",
         "name": "{{ summary.venue.name if summary.venue else game.league_name }}"
       },
+      {% if game.sport not in ('racing', 'golf', 'tennis') and game.home.name != 'TBD' and game.away.name != 'TBD' %}
       "homeTeam": {
         "@type": "SportsTeam",
         "name": "{{ game.home.name }}"
@@ -43,6 +44,7 @@
         "@type": "SportsTeam",
         "name": "{{ game.away.name }}"
       },
+      {% endif %}
       "organizer": {
         "@type": "SportsOrganization",
         "name": "{{ game.league_name }}"
