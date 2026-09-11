@@ -130,6 +130,30 @@
             min-height: 100vh;
         }
 
+        /* ── Sticky brand bar (appears on scroll) ── */
+        .sticky-brand {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 150;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            padding: 0.4rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
+        .sticky-brand.visible { transform: translateY(0); }
+        .sticky-brand-logo {
+            height: 32px;
+            width: auto;
+        }
+        .sticky-brand-toggle {
+            background: none; border: none; cursor: pointer;
+            font-size: 1rem; line-height: 1; padding: 0.2rem;
+        }
         /* ── Header (minimal, just dark-mode toggle) ── */
         .header {
             background: transparent;
@@ -1410,6 +1434,12 @@
 <body>
 
 <!-- Header (dark mode toggle only) -->
+<!-- Sticky brand bar (visible on scroll) -->
+<div class="sticky-brand" id="sticky-brand">
+    <a href="/"><img src="/static/logo-dondever.png" alt="DondeVer.app" class="sticky-brand-logo"></a>
+    <button class="sticky-brand-toggle" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button>
+</div>
+
 <header class="header">
     <div class="header-right">
         <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button>
@@ -3918,6 +3948,25 @@ function emailSubscribe(e) {
         updateCount();
         document.getElementById('onboardOverlay').classList.add('show');
     };
+})();
+</script>
+<script>
+/* ── Sticky brand bar on scroll ── */
+(function(){
+    var sb = document.getElementById('sticky-brand');
+    var hero = document.querySelector('.hero');
+    if (!sb || !hero) return;
+    var shown = false;
+    window.addEventListener('scroll', function(){
+        var threshold = hero.offsetTop + hero.offsetHeight - 50;
+        if (window.scrollY > threshold && !shown) {
+            sb.classList.add('visible');
+            shown = true;
+        } else if (window.scrollY <= threshold && shown) {
+            sb.classList.remove('visible');
+            shown = false;
+        }
+    }, {passive: true});
 })();
 </script>
 </body>

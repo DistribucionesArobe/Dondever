@@ -24,18 +24,22 @@
     var next = current === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
     localStorage.setItem('dv-theme', next);
-    // Update toggle button icon
+    // Update toggle button icons (header + sticky bar)
+    var icon = next === 'dark' ? '☀️' : '🌙';
     var btn = document.getElementById('dm-btn');
-    if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
+    if (btn) btn.textContent = icon;
+    var stickyBtn = document.querySelector('.sticky-brand-toggle');
+    if (stickyBtn) stickyBtn.textContent = icon;
     updateThemeMeta();
   };
 
   // Set initial icon when DOM is ready
   document.addEventListener('DOMContentLoaded', function(){
+    var icon = html.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
     var btn = document.getElementById('dm-btn');
-    if (btn) {
-      btn.textContent = html.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
-    }
+    if (btn) btn.textContent = icon;
+    var stickyBtn = document.querySelector('.sticky-brand-toggle');
+    if (stickyBtn) stickyBtn.textContent = icon;
   });
 
   // ── Live Score Polling ──────────────────
