@@ -1418,6 +1418,15 @@
             max-height: 100px !important;
             overflow: hidden !important;
         }
+        /* ── Kill Google anchor/overlay ads ── */
+        ins.adsbygoogle[data-anchor-status],
+        ins.adsbygoogle[data-ad-format="auto"][data-anchor-status],
+        .google-revocation-link-placeholder,
+        div[id*="google_ads_iframe"][style*="fixed"],
+        div[id*="aswift_"][style*="fixed"],
+        div[id^="google_ads_iframe"]:not([id*="manual"]) {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -2417,38 +2426,59 @@
 </a>
 
 <script>
-    // ── Cap auto-placed ads on mobile: hide above games, limit height everywhere ──
-    if (window.innerWidth < 768) {
-        function capAds() {
-            document.querySelectorAll('.google-auto-placed').forEach(function(el) {
-                // Hide ads above the main content
-                var main = document.getElementById('gamesContainer');
-                if (main && !main.contains(el) && el.compareDocumentPosition(main) & Node.DOCUMENT_POSITION_FOLLOWING) {
-                    el.style.display = 'none';
-                    return;
+    // ── Kill ALL auto-placed & anchor/overlay Google ads ──
+    function killAutoAds() {
+        // Hide auto-placed ads
+        document.querySelectorAll('.google-auto-placed').forEach(function(el) {
+            el.style.display = 'none';
+        });
+        // Kill fixed/sticky anchor ads (bottom banners)
+        document.querySelectorAll('div[id*="google_ads_iframe"], div[id*="aswift_"], ins.adsbygoogle[data-anchor-status]').forEach(function(el) {
+            var s = window.getComputedStyle(el);
+            if (s.position === 'fixed' || s.position === 'sticky') {
+                el.style.display = 'none';
+            }
+            // Also check parent
+            if (el.parentElement) {
+                var ps = window.getComputedStyle(el.parentElement);
+                if (ps.position === 'fixed' || ps.position === 'sticky') {
+                    el.parentElement.style.display = 'none';
                 }
-                // Force cap height on all others
-                el.style.maxHeight = '100px';
-                el.style.overflow = 'hidden';
-            });
-        }
-        // Run immediately and after delays (ads load async)
-        capAds();
-        setTimeout(capAds, 1500);
-        setTimeout(capAds, 4000);
-        // MutationObserver: cap new ads as they appear
-        var obs = new MutationObserver(function(mutations) {
-            mutations.forEach(function(m) {
-                m.addedNodes.forEach(function(n) {
-                    if (n.classList && n.classList.contains('google-auto-placed')) {
-                        n.style.maxHeight = '100px';
-                        n.style.overflow = 'hidden';
+            }
+        });
+        // Kill any fixed divs that contain iframes from googleads
+        document.querySelectorAll('div').forEach(function(el) {
+            var s = window.getComputedStyle(el);
+            if (s.position === 'fixed' && el.id !== 'pwa-banner' && el.id !== 'pwa-ios-hint' && !el.classList.contains('wa-float') && !el.id.startsWith('stickyBet')) {
+                var iframes = el.querySelectorAll('iframe[src*="googleads"], iframe[src*="doubleclick"], iframe[id*="aswift"]');
+                if (iframes.length > 0) {
+                    el.style.display = 'none';
+                }
+            }
+        });
+    }
+    killAutoAds();
+    setTimeout(killAutoAds, 2000);
+    setTimeout(killAutoAds, 5000);
+    setTimeout(killAutoAds, 10000);
+    // MutationObserver: kill new auto/anchor ads as they appear
+    var obs = new MutationObserver(function(mutations) {
+        var dominated = false;
+        mutations.forEach(function(m) {
+            m.addedNodes.forEach(function(n) {
+                if (n.nodeType === 1) {
+                    if (n.classList && (n.classList.contains('google-auto-placed') || n.id && (n.id.indexOf('google_ads_iframe') !== -1 || n.id.indexOf('aswift_') !== -1))) {
+                        dominated = true;
                     }
-                });
+                    if (n.querySelector && n.querySelector('iframe[src*="googleads"], iframe[src*="doubleclick"]')) {
+                        dominated = true;
+                    }
+                }
             });
         });
-        obs.observe(document.body, { childList: true, subtree: true });
-    }
+        if (dominated) killAutoAds();
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
 
     // ── League scroller: hide arrow when scrolled to end ──
     (function() {
