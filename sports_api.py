@@ -885,8 +885,18 @@ async def parse_espn_events_enriched(
                 "info": info,
             })
 
-        # Sort: known channels first, US regional last
-        broadcasts.sort(key=lambda b: (1 if b.get("is_us_regional") else 0))
+        # Sort: free TV first (TV abierta), then cable, streaming, US regional last
+        def _channel_sort_key(b):
+            if b.get("is_us_regional"):
+                return 3
+            ch_type = (b.get("info") or {}).get("type", "cable")
+            if ch_type == "free":
+                return 0
+            elif ch_type == "cable":
+                return 1
+            else:  # streaming
+                return 2
+        broadcasts.sort(key=_channel_sort_key)
 
         # Status
         status_type = ev.get("status", {}).get("type", {})
@@ -989,7 +999,31 @@ async def parse_sportsdb_standalone_events(
         return []
 
     formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
-    events_raw = await fetch_sportsdb_schedule(sportsdb_id, formatted_date)
+
+    # TheSportsDB indexes by UTC date, but we query by MX date.
+    # A 9 PM MX game = 3 AM UTC next day, so we must also check the next
+    # UTC day and filter by the event's local dateEvent.
+    from datetime import date as _date_cls
+    target = _date_cls.fromisoformat(formatted_date)
+    next_day = (target + timedelta(days=1)).isoformat()
+
+    raw_today, raw_next = await asyncio.gather(
+        fetch_sportsdb_schedule(sportsdb_id, formatted_date),
+        fetch_sportsdb_schedule(sportsdb_id, next_day),
+    )
+    # Merge and filter: keep only events whose local dateEvent matches target
+    seen_ids = set()
+    events_raw = []
+    for ev in raw_today + raw_next:
+        eid = ev.get("idEvent", "")
+        ev_date = ev.get("dateEvent") or ""
+        if eid in seen_ids:
+            continue
+        seen_ids.add(eid)
+        # Keep events whose dateEvent matches the requested MX date
+        if ev_date and ev_date != formatted_date:
+            continue
+        events_raw.append(ev)
 
     events = []
     for ev in events_raw:
@@ -1094,6 +1128,12 @@ async def parse_sportsdb_standalone_events(
                         "market": "National",
                         "info": info,
                     })
+
+        # Sort: free TV first, cable, streaming last
+        def _ch_sort(b):
+            ct = (b.get("info") or {}).get("type", "cable")
+            return 0 if ct == "free" else (1 if ct == "cable" else 2)
+        broadcasts.sort(key=_ch_sort)
 
         # Recap for finished games
         recap = {}

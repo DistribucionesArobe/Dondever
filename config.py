@@ -750,12 +750,12 @@ LEAGUES = {
     "concacaf-nations":("soccer","concacaf.nations.league","CONCACAF Nations League","\u26bd"),
     "club-friendly": ("soccer", "fifa.friendly", "Amistosos",        "\u26bd"),
     # Futbol Americano
-    "nfl":           ("football", "nfl",         "NFL",              "NFL"),
+    "nfl":           ("football", "nfl",         "NFL",              "\U0001f3c8"),
     "college-football": ("college-football", "college-football", "Fútbol Americano Universitario", "🏈"),
     # Basquetbol
-    "nba":           ("basketball", "nba",       "NBA",              "NBA"),
-    "wnba":          ("basketball", "wnba",      "WNBA",            "NBA"),
-    "lnbp":          ("basketball", "sportsdb:5119", "LNBP",        "NBA"),
+    "nba":           ("basketball", "nba",       "NBA",              "\U0001f3c0"),
+    "wnba":          ("basketball", "wnba",      "WNBA",            "\U0001f3c0"),
+    "lnbp":          ("basketball", "sportsdb:5119", "LNBP",        "\U0001f3c0"),
     # Beisbol
     "mlb":           ("baseball", "mlb",         "MLB",              "\u26be"),
     "lmp":           ("baseball", "sportsdb:5109", "Liga Mexicana del Pac\u00edfico", "\u26be"),
@@ -763,7 +763,7 @@ LEAGUES = {
     "lvbp":          ("baseball", "sportsdb:5112", "LVBP",             "\u26be"),
     "lidom":         ("baseball", "sportsdb:lidom", "LIDOM",           "\u26be"),
     # Hockey
-    "nhl":           ("hockey", "nhl",           "NHL",              "NHL"),
+    "nhl":           ("hockey", "nhl",           "NHL",              "\U0001f3d2"),
     # Combate
     "ufc":           ("mma", "ufc",             "UFC",              "🥊"),
     # Motorsport

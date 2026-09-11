@@ -1027,9 +1027,9 @@
         }
         .my-teams-header {
             background: linear-gradient(135deg, #f59e0b, #eab308);
-            color: #fff; padding: 0.6rem 1rem; border-radius: 12px 12px 0 0;
+            color: #fff; padding: 0.45rem 1rem; border-radius: 12px 12px 0 0;
             display: flex; align-items: center; justify-content: space-between;
-            font-size: 0.85rem; font-weight: 700;
+            font-size: 0.8rem; font-weight: 700;
         }
         .my-teams-header .league-count {
             background: rgba(255,255,255,.25); color: #fff;
@@ -1037,19 +1037,12 @@
         .my-teams-body { background: #fffbeb; border: 1px solid #fde68a; border-top: none; border-radius: 0 0 12px 12px; overflow: hidden; margin-bottom: 1rem; }
         .my-teams-body .game-card { border-left: 3px solid #f59e0b; margin: 0; border-radius: 0; }
         .my-teams-empty {
-            padding: 0.8rem 1rem; font-size: 0.72rem; color: #92400e; text-align: center;
+            padding: 0.4rem 0.75rem; font-size: 0.72rem; color: #92400e; text-align: center;
         }
-        .my-teams-empty .quick-add-teams {
-            display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center; margin-top: 0.5rem;
-        }
-        .my-teams-empty .quick-add-btn {
-            display: inline-block; padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.65rem;
-            font-weight: 600; background: #fef3c7; border: 1px solid #fde68a; color: #92400e;
-            cursor: pointer; transition: all 0.15s; text-decoration: none;
-        }
-        .my-teams-empty .quick-add-btn:hover { background: #fde68a; }
+        .my-teams-empty .quick-add-teams { display: none; }
+        .my-teams-empty .quick-add-btn { display: none; }
         .my-teams-empty .quick-add-search {
-            display: inline-block; margin-top: 0.5rem; font-size: 0.68rem; color: #d97706;
+            display: inline; margin-left: 0.3rem; font-size: 0.72rem; color: #d97706;
             cursor: pointer; text-decoration: underline; font-weight: 600;
         }
         body.dark-mode .my-teams-empty .quick-add-btn { background: #451a03; border-color: #78350f; color: #fbbf24; }
@@ -1598,10 +1591,10 @@
         </div>
         <div class="my-teams-body" id="myTeamsBody">
             <div class="my-teams-empty" id="myTeamsEmpty">
-                <div id="myTeamsEmptyMsg">Toca &#9733; junto a un equipo o liga para personalizar tu experiencia</div>
-                <div id="myTeamsFollowedList" style="display:none;padding:0.5rem 0;"></div>
+                <span id="myTeamsEmptyMsg">Sigue equipos para ver sus partidos aqu&iacute;</span>
+                <span class="quick-add-search" onclick="if(typeof showOnboarding==='function')showOnboarding()">+ Agregar</span>
+                <div id="myTeamsFollowedList" style="display:none;padding:0.3rem 0;"></div>
                 <div class="quick-add-teams" id="quickAddTeams"></div>
-                <span class="quick-add-search" onclick="if(typeof showOnboarding==='function')showOnboarding()" style="display:inline-block;margin-top:0.5rem;font-size:0.72rem;color:#d97706;cursor:pointer;text-decoration:underline;font-weight:600;">+ Agregar equipos</span>
             </div>
             <div id="myTeamsUpcoming" style="display:none;"></div>
             <div id="myTeamsFooter" style="display:none; text-align:center; padding:0.6rem;">

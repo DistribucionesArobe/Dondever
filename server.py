@@ -4424,6 +4424,7 @@ def _quick_prediction_from_odds(game: dict) -> dict | None:
         return None
     h_str = odds.get("home_odds", "")
     a_str = odds.get("away_odds", "")
+    d_str = odds.get("draw_odds", "")
     if not h_str or not a_str:
         return None
     try:
@@ -4431,10 +4432,17 @@ def _quick_prediction_from_odds(game: dict) -> dict | None:
         a_num = int(str(a_str).replace("+", ""))
     except (ValueError, TypeError):
         return None
-    # Implied probability from American odds
+    # Implied probability from American odds (include draw when present)
     h_prob = abs(h_num) / (abs(h_num) + 100) if h_num < 0 else 100 / (h_num + 100)
     a_prob = abs(a_num) / (abs(a_num) + 100) if a_num < 0 else 100 / (a_num + 100)
-    total = h_prob + a_prob
+    d_prob = 0.0
+    if d_str:
+        try:
+            d_num = int(str(d_str).replace("+", ""))
+            d_prob = abs(d_num) / (abs(d_num) + 100) if d_num < 0 else 100 / (d_num + 100)
+        except (ValueError, TypeError):
+            pass
+    total = h_prob + a_prob + d_prob
     if total == 0:
         return None
     h_prob /= total
