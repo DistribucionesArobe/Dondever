@@ -49,7 +49,7 @@ AFFILIATES = {
     },
     "amazon": {
         "name": "Amazon Prime Video",
-        "url": os.getenv("AFFILIATE_AMAZON", "") or "https://www.amazon.com/gp/video/offers?tag=dondever2000-20",
+        "url": os.getenv("AFFILIATE_AMAZON", "") or "https://kdbov.com/g/6osk6x1ky49d38be8ce0ce4f0d0bb0/",
         "logo": "/static/affiliates/amazon.svg",
         "cta": "Ve deportes en Prime Video",
         "cta_short": "Ver en Prime Video",
@@ -568,11 +568,11 @@ STREAMING_AFFILIATES = {
         "key": "amazon",
         "name": "Prime Video",
         "aliases": ["prime video", "amazon prime", "amazon"],
-        "url": os.getenv("AFFILIATE_AMAZON", "") or "https://www.amazon.com/gp/video/offers?tag=dondever2000-20",
-        "affiliate_url": os.getenv("AFFILIATE_AMAZON", "") or None,
+        "url": os.getenv("AFFILIATE_AMAZON", "") or "https://kdbov.com/g/6osk6x1ky49d38be8ce0ce4f0d0bb0/",
+        "affiliate_url": os.getenv("AFFILIATE_AMAZON", "") or "https://kdbov.com/g/6osk6x1ky49d38be8ce0ce4f0d0bb0/",
         "cta": "Ver en Prime Video",
         "countries": ["MX", "US"],
-        "is_affiliate": True,  # Amazon Associates tag activo (dondever2000-20)
+        "is_affiliate": True,  # Admitad — Amazon Prime Video LATAM
         "bg": "#00a8e1", "color": "white",
     },
     "ViX": {
