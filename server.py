@@ -27,6 +27,7 @@ from sports_api import (
     fetch_meli_product_image, fetch_espn_event_summary,
     generate_nfl_power_rankings, generate_nfl_picks, get_nfl_team_advanced_stats,
     fetch_sportsdb_team_info, compute_sportsdb_standings,
+    fetch_league_leaders,
     DEFAULT_LEAGUE_CHANNELS,
 )
 from whatsapp_bot import handle_whatsapp_message
@@ -1672,14 +1673,15 @@ async def league_page(request: Request, league_slug: str):
 
     sport, league_id, display_name, emoji = ALL_LEAGUES[league_slug]
 
-    # Parallel fetch: games, standings, recent results, upcoming — all independent
+    # Parallel fetch: games, standings, recent results, upcoming, leaders — all independent
     games_task = get_todays_games(league_filter=league_slug)
     standings_task = get_league_standings(sport, league_id, limit=50)
     results_task = get_recent_league_results(sport, league_id, days=10, limit=10)
     upcoming_task = get_upcoming_league_games(sport, league_id, days=14, limit=10)
+    leaders_task = fetch_league_leaders(sport, league_id, top_n=5)
 
-    games, standings, recent_results, upcoming_games = await asyncio.gather(
-        games_task, standings_task, results_task, upcoming_task,
+    games, standings, recent_results, upcoming_games, league_leaders = await asyncio.gather(
+        games_task, standings_task, results_task, upcoming_task, leaders_task,
         return_exceptions=True,
     )
     # Graceful fallback on errors
@@ -1691,6 +1693,8 @@ async def league_page(request: Request, league_slug: str):
         recent_results = []
     if isinstance(upcoming_games, Exception):
         upcoming_games = []
+    if isinstance(league_leaders, Exception):
+        league_leaders = []
 
     # Related teams from POPULAR_TEAMS that play in this league
     league_teams = {
@@ -1768,6 +1772,7 @@ async def league_page(request: Request, league_slug: str):
             "upcoming_games": upcoming_games,
             "league_channels_today": league_channels_today[:8],
             "default_channels": default_channels,
+            "league_leaders": league_leaders,
             "league_seo_extra": LEAGUE_SEO_EXTRA.get(league_slug),
             "power_rankings": power_rankings,
             "nfl_picks": nfl_picks,

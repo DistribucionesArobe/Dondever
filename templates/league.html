@@ -543,6 +543,37 @@
 </div>
 {% endif %}
 
+<!-- League Leaders -->
+{% if league_leaders %}
+<div class="standings-section">
+    <h2>{{ emoji }} L&iacute;deres de {{ league_name }}</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0.75rem;">
+        {% for cat in league_leaders %}
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            <div style="background:#f9fafb;padding:0.5rem 0.75rem;font-size:0.78rem;font-weight:700;border-bottom:1px solid #e5e7eb;">
+                {{ cat.emoji }} {{ cat.label }}
+            </div>
+            {% for player in cat.leaders %}
+            <div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0.75rem;border-bottom:1px solid #f3f4f6;{% if loop.first %}background:#f0fdf4;{% endif %}">
+                <span style="font-weight:800;color:{% if loop.first %}#059669{% else %}#9ca3af{% endif %};font-size:0.75rem;min-width:18px;">{{ loop.index }}</span>
+                {% if player.headshot %}
+                <img src="{{ player.headshot }}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;background:#f3f4f6;">
+                {% elif player.flag_img %}
+                <img src="{{ player.flag_img }}" alt="{{ player.flag }}" style="width:20px;height:14px;border-radius:2px;object-fit:cover;" title="{{ player.flag }}">
+                {% endif %}
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:0.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ player.name }}</div>
+                    {% if player.position %}<div style="font-size:0.6rem;color:#9ca3af;">{{ player.position }}{% if player.flag %} · {{ player.flag }}{% endif %}</div>{% endif %}
+                </div>
+                <span style="font-weight:800;font-size:0.85rem;color:#1a1a2e;">{{ player.value }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- NFL Power Rankings -->
 {% if power_rankings %}
 <div class="standings-section">

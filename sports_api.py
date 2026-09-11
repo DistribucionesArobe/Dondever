@@ -1904,6 +1904,106 @@ async def get_league_standings(sport: str, league: str, limit: int = 10) -> list
     return standings[:limit]
 
 
+# ── League Leaders ──────────────────────────────────────
+
+# Categories to fetch per sport (name in ESPN API → display label in Spanish)
+_LEADER_CATEGORIES = {
+    "soccer": [
+        ("goals", "Goles", "⚽"),
+        ("assists", "Asistencias", "🅰️"),
+        ("yellowCards", "Tarjetas amarillas", "🟨"),
+    ],
+    "football": [
+        ("passingYards", "Yardas por pase", "🏈"),
+        ("rushingYards", "Yardas por tierra", "🏃"),
+        ("receivingYards", "Yardas recibidas", "🙌"),
+    ],
+    "basketball": [
+        ("avgPoints", "Puntos por juego", "🏀"),
+        ("avgRebounds", "Rebotes por juego", "📊"),
+        ("avgAssists", "Asistencias por juego", "🅰️"),
+    ],
+    "baseball": [
+        ("homeRuns", "Home runs", "💣"),
+        ("RBIs", "Carreras impulsadas", "🔥"),
+        ("ERA", "ERA", "⚾"),
+    ],
+    "hockey": [
+        ("points", "Puntos", "🏒"),
+        ("goals", "Goles", "🥅"),
+        ("assists", "Asistencias", "🅰️"),
+    ],
+}
+
+_leaders_cache: dict = TTLCache(maxsize=20, ttl=3600)  # 1 hour
+
+
+async def fetch_league_leaders(sport: str, league: str, top_n: int = 5) -> list[dict]:
+    """
+    Fetch league stat leaders from ESPN.
+    Returns list of category dicts: {name, label, emoji, leaders: [{name, value, flag, position, headshot}]}
+    Only for ESPN leagues (not TheSportsDB).
+    """
+    if league.startswith("sportsdb:"):
+        return []
+
+    cache_key = f"leaders:{sport}:{league}"
+    if cache_key in _leaders_cache:
+        return _leaders_cache[cache_key]
+
+    url = f"https://site.api.espn.com/apis/site/v3/sports/{sport}/{league}/leaders"
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        try:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.warning(f"Leaders error for {sport}/{league}: {e}")
+            return []
+
+    raw_categories = data.get("leaders", {}).get("categories", [])
+    if not raw_categories:
+        return []
+
+    # Map ESPN category names to our display config
+    wanted = _LEADER_CATEGORIES.get(sport, [])
+    if not wanted:
+        return []
+
+    result = []
+    for cat_name, label, emoji in wanted:
+        cat = next((c for c in raw_categories if c.get("name") == cat_name), None)
+        if not cat:
+            continue
+        leaders = []
+        for entry in cat.get("leaders", [])[:top_n]:
+            ath = entry.get("athlete", {})
+            flag_obj = ath.get("flag", {})
+            headshot_obj = ath.get("headshot", {})
+            leaders.append({
+                "name": ath.get("displayName", ""),
+                "value": entry.get("displayValue", str(entry.get("value", ""))),
+                "num_value": entry.get("value", 0),
+                "position": ath.get("position", {}).get("abbreviation", ""),
+                "jersey": ath.get("jersey", ""),
+                "flag": flag_obj.get("alt", ""),
+                "flag_img": flag_obj.get("href", ""),
+                "headshot": headshot_obj.get("href", ""),
+            })
+        if leaders:
+            result.append({
+                "name": cat_name,
+                "label": label,
+                "emoji": emoji,
+                "leaders": leaders,
+            })
+
+    _leaders_cache[cache_key] = result
+    logger.info(f"Fetched {len(result)} leader categories for {sport}/{league}")
+    return result
+
+
 async def generate_nfl_power_rankings() -> list[dict]:
     """
     Generate NFL Power Rankings based on standings data.
