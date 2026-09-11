@@ -539,6 +539,9 @@ async def home(
     league: Optional[str] = Query(None),
 ):
     """Main page — today's games."""
+    # Auto-trigger WhatsApp broadcast if server woke after 9 AM MX
+    asyncio.ensure_future(_maybe_catchup_broadcast())
+
     games = await get_todays_games(
         date_str=date, sport_filter=sport, league_filter=league
     )
@@ -3071,12 +3074,43 @@ async def whatsapp_test_send(to: str):
 _last_broadcast = {"ran_at": None, "result": None, "error": None, "date": None}
 # Keep strong reference to background tasks so GC doesn't collect them mid-execution
 _background_tasks: set = set()
+_catchup_checked = {"date": None}
 
 
 def _broadcast_already_ran_today() -> bool:
     """Check if broadcast already ran today (MX time) to prevent duplicates."""
     today = datetime.now(TZ_MX).strftime("%Y-%m-%d")
     return _last_broadcast.get("date") == today and _last_broadcast.get("result") is not None
+
+
+async def _maybe_catchup_broadcast():
+    """Auto-trigger broadcast if server woke up after 9 AM MX and hasn't sent today.
+    Called once per day on first request after 9 AM MX (15:00 UTC)."""
+    now = datetime.now(TZ_MX)
+    today = now.strftime("%Y-%m-%d")
+    if _catchup_checked.get("date") == today:
+        return  # Already checked today
+    _catchup_checked["date"] = today
+    if now.hour < 9:
+        return  # Too early
+    if _broadcast_already_ran_today():
+        return  # Already ran
+    logger.info("Catch-up broadcast: server woke after 9 AM MX, triggering broadcast")
+    try:
+        from send_whatsapp_daily import send_daily_broadcast
+        result = await send_daily_broadcast()
+        _last_broadcast["ran_at"] = now.isoformat()
+        _last_broadcast["date"] = today
+        _last_broadcast["result"] = result
+        _last_broadcast["error"] = None
+        _last_broadcast["source"] = "catchup"
+        logger.info(f"Catch-up broadcast completed: {result}")
+    except Exception as e:
+        _last_broadcast["ran_at"] = now.isoformat()
+        _last_broadcast["result"] = None
+        _last_broadcast["error"] = str(e)
+        _last_broadcast["source"] = "catchup"
+        logger.error(f"Catch-up broadcast FAILED: {e}")
 
 
 @app.api_route("/whatsapp/broadcast-now", methods=["GET", "POST"])
@@ -3137,7 +3171,7 @@ async def whatsapp_broadcast_now(
 @app.get("/whatsapp/test-send")
 async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "template"):
     """Enviar UN mensaje de prueba a un número específico.
-    mode=template (default): usa template dondever_picks_diarios
+    mode=template (default): usa template picks_diarios
     mode=freeform: usa mensaje de texto libre (solo funciona en ventana 24h)
     mode=both: prueba ambos y reporta cuál funcionó"""
     admin_token = os.getenv("ADMIN_TOKEN", "")
@@ -3153,8 +3187,8 @@ async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "templat
         if mode in ("template", "both"):
             results["template"] = send_template(
                 to,
-                template_name="dondever_picks_diarios",
-                language="en",
+                template_name="picks_diarios",
+                language="es_MX",
                 components=[{
                     "type": "body",
                     "parameters": [
@@ -3331,6 +3365,15 @@ try:
             logger.info("Database initialized")
         except Exception as e:
             logger.warning(f"DB init failed (non-fatal): {e}")
+
+        # Seed admin subscriber (ensure owner always gets broadcasts)
+        try:
+            from subscribers import subscribe
+            admin_phone = os.getenv("ADMIN_WHATSAPP", "528118001161")
+            subscribe(admin_phone)
+            logger.info(f"Admin subscriber seeded: {admin_phone}")
+        except Exception as e:
+            logger.warning(f"Failed to seed admin subscriber: {e}")
 
         # Twitter bot (only if credentials set)
         if os.getenv("TWITTER_API_KEY"):

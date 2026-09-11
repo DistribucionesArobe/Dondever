@@ -418,10 +418,8 @@ async def compose_template_variables() -> dict | None:
     Compose the single body variable for the approved WhatsApp template.
     Returns {"var1": str} or None if no games.
 
-    Template (dondever_picks_diarios / Utility / English):
-      Tu resumen diario de tu cuenta DondeVer esta listo.
-      {{1}}
-      Consulta mas detalles en tu cuenta.
+    Template (picks_diarios / Marketing / Spanish MEX):
+      Single body parameter {{1}} with full daily picks message.
     """
     games = await get_todays_games()
     now = datetime.now(TZ_MX)
@@ -550,7 +548,7 @@ async def compose_template_variables() -> dict | None:
     if remaining > 0:
         v3_games += f" · +{remaining} mas en dondever.app"
 
-    # Build single-param value for dondever_picks_diarios
+    # Build single-param value for picks_diarios
     # SHORT teaser with PICK DEL DIA — full details sent as freeform when user replies VER.
     # Meta WhatsApp API rejects newlines/tabs in template param values (error 132018).
     channels_str = _format_channels(pick["broadcasts"])
@@ -576,8 +574,8 @@ async def send_daily_broadcast(test_number: str | None = None):
     """
     Send daily WhatsApp broadcast via Meta Cloud API.
     Strategy: template first (works outside 24h window), freeform as last resort.
-    Templates: dondever_picks_diarios (1 param, UTILITY, en) → freeform.
-    WABA: Distribuciones Arobe (ID: 1224835083125902).
+    Templates: picks_diarios (1 param, Marketing, es_MX) → freeform.
+    WABA: Test WhatsApp Business Account (ID: 2498253880588976).
     """
     if not is_configured():
         logger.error("Meta WhatsApp not configured. Set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID.")
@@ -591,7 +589,7 @@ async def send_daily_broadcast(test_number: str | None = None):
         logger.info("No games today — skipping broadcast")
         return {"sent": 0, "failed": 0, "skipped": "no_games"}
 
-    # Build template components for dondever_picks_diarios (1 param, UTILITY, en)
+    # Build template components for picks_diarios (1 param, Marketing, es_MX)
     v1_components = None
     if template_vars:
         v1_components = [
@@ -660,12 +658,12 @@ async def send_daily_broadcast(test_number: str | None = None):
         # Strategy: picks_diarios (Utility, 1 param) → freeform (24h window).
         sent_ok = False
 
-        # Primary: dondever_picks_diarios (Utility, 1 param, en) — 88% delivery
+        # Primary: picks_diarios (Marketing, 1 param, es_MX)
         if not sent_ok and v1_components:
             result = send_template(
                 phone,
-                template_name="dondever_picks_diarios",
-                language="en",
+                template_name="picks_diarios",
+                language="es_MX",
                 components=v1_components,
             )
             if result["ok"]:
