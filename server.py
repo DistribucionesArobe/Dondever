@@ -1671,26 +1671,26 @@ async def league_page(request: Request, league_slug: str):
         )
 
     sport, league_id, display_name, emoji = ALL_LEAGUES[league_slug]
-    games = await get_todays_games(league_filter=league_slug)
 
-    # Fetch standings (top 10) — fail gracefully
-    standings = []
-    try:
-        standings = await get_league_standings(sport, league_id, limit=10)
-    except Exception:
-        pass
+    # Parallel fetch: games, standings, recent results, upcoming — all independent
+    games_task = get_todays_games(league_filter=league_slug)
+    standings_task = get_league_standings(sport, league_id, limit=50)
+    results_task = get_recent_league_results(sport, league_id, days=10, limit=10)
+    upcoming_task = get_upcoming_league_games(sport, league_id, days=14, limit=10)
 
-    # Fetch recent results and upcoming games (enriched content for SEO)
-    recent_results = []
-    upcoming_games = []
-    try:
-        recent_results = await get_recent_league_results(sport, league_id, days=5, limit=5)
-    except Exception:
-        pass
-    try:
-        upcoming_games = await get_upcoming_league_games(sport, league_id, days=7, limit=5)
-    except Exception:
-        pass
+    games, standings, recent_results, upcoming_games = await asyncio.gather(
+        games_task, standings_task, results_task, upcoming_task,
+        return_exceptions=True,
+    )
+    # Graceful fallback on errors
+    if isinstance(games, Exception):
+        games = []
+    if isinstance(standings, Exception):
+        standings = []
+    if isinstance(recent_results, Exception):
+        recent_results = []
+    if isinstance(upcoming_games, Exception):
+        upcoming_games = []
 
     # Related teams from POPULAR_TEAMS that play in this league
     league_teams = {
@@ -1709,16 +1709,47 @@ async def league_page(request: Request, league_slug: str):
     from sports_api import DEFAULT_LEAGUE_CHANNELS
     default_channels = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
 
+    # Derive league stats summary from standings
+    league_stats = {}
+    if standings:
+        leader = standings[0]
+        league_stats["leader"] = leader.get("team_name", "")
+        league_stats["leader_logo"] = leader.get("team_logo", "")
+        league_stats["total_teams"] = len(standings)
+        if sport == "soccer":
+            league_stats["leader_pts"] = leader.get("points", "")
+            league_stats["leader_record"] = f'{leader.get("wins","0")}G {leader.get("ties","0")}E {leader.get("losses","0")}P'
+        else:
+            league_stats["leader_record"] = f'{leader.get("wins","0")}-{leader.get("losses","0")}'
+        # Best streak
+        best_streak = ""
+        best_streak_team = ""
+        for t in standings:
+            s = str(t.get("streak", ""))
+            if s.startswith("W"):
+                try:
+                    n = int(s[1:])
+                    if not best_streak or n > int(best_streak[1:]):
+                        best_streak = s
+                        best_streak_team = t.get("team_short", t.get("team_name", ""))
+                except ValueError:
+                    pass
+        if best_streak:
+            league_stats["best_streak"] = best_streak
+            league_stats["best_streak_team"] = best_streak_team
+
     # NFL-specific: Power Rankings & Picks
     power_rankings = []
     nfl_picks = []
     if league_slug == "nfl":
         try:
-            power_rankings = await generate_nfl_power_rankings()
-        except Exception:
-            pass
-        try:
-            nfl_picks = await generate_nfl_picks(upcoming_games, standings)
+            pr_task = generate_nfl_power_rankings()
+            pk_task = generate_nfl_picks(upcoming_games, standings)
+            pr_res, pk_res = await asyncio.gather(pr_task, pk_task, return_exceptions=True)
+            if not isinstance(pr_res, Exception):
+                power_rankings = pr_res
+            if not isinstance(pk_res, Exception):
+                nfl_picks = pk_res
         except Exception:
             pass
 
@@ -1731,6 +1762,7 @@ async def league_page(request: Request, league_slug: str):
             "games": games,
             "total_games": len(games),
             "standings": standings,
+            "league_stats": league_stats,
             "league_teams": league_teams,
             "recent_results": recent_results,
             "upcoming_games": upcoming_games,

@@ -220,12 +220,30 @@
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             text-decoration: none; box-shadow: 0 3px 12px rgba(37,211,102,0.4); z-index: 1000;
         }
+        /* League stats strip */
+        .league-stats { max-width: 900px; margin: 0.75rem auto; padding: 0 1rem; }
+        .stats-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.5rem; }
+        .stat-card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.65rem 0.75rem; display: flex; align-items: center; gap: 0.6rem; }
+        .stat-card-icon { font-size: 1.4rem; }
+        .stat-card-label { font-size: 0.65rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+        .stat-card-value { font-size: 0.85rem; font-weight: 800; color: #1a1a2e; }
+        .stat-card-sub { font-size: 0.7rem; color: #6b7280; }
+        /* Standings zones */
+        .zone-qualify { border-left: 3px solid #10b981; }
+        .zone-playoff { border-left: 3px solid #3b82f6; }
+        .zone-relegate { border-left: 3px solid #ef4444; }
+        .standings-toggle { display: block; width: 100%; text-align: center; padding: 0.5rem; font-size: 0.78rem; font-weight: 700; color: #059669; background: #f0fdf4; border: 1px solid #d1fae5; border-top: none; border-radius: 0 0 10px 10px; cursor: pointer; transition: background 0.15s; }
+        .standings-toggle:hover { background: #d1fae5; }
+        .standings-hidden { display: none; }
+        /* Results date header */
+        .results-date { font-size: 0.68rem; color: #9ca3af; font-weight: 600; padding: 0.3rem 0.6rem; background: #f9fafb; }
         @media (max-width: 768px) {
             .hero h1 { font-size: 1.2rem; }
             .game-card { grid-template-columns: 1fr; gap: 0.3rem; text-align: center; padding: 0.6rem; }
             .team, .team.away { justify-content: center; text-align: center; }
             .game-channels { text-align: center; }
             .promo-banner-inner { flex-direction: column; text-align: center; gap: 0.75rem; }
+            .stats-strip { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -293,6 +311,48 @@
             </div>
         </div>
         <a href="/go/betsson?s=league" target="_blank" rel="sponsored nofollow noopener" class="promo-cta" data-affiliate="betsson">Apostar ahora &#8599;</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- League Stats Strip -->
+{% if league_stats %}
+<div class="league-stats">
+    <div class="stats-strip">
+        <div class="stat-card">
+            <div class="stat-card-icon">🏆</div>
+            <div>
+                <div class="stat-card-label">L&iacute;der</div>
+                <div class="stat-card-value">{{ league_stats.leader }}</div>
+                <div class="stat-card-sub">{{ league_stats.leader_record }}{% if league_stats.leader_pts %} · {{ league_stats.leader_pts }} pts{% endif %}</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon">📊</div>
+            <div>
+                <div class="stat-card-label">Equipos</div>
+                <div class="stat-card-value">{{ league_stats.total_teams }}</div>
+                <div class="stat-card-sub">en la tabla</div>
+            </div>
+        </div>
+        {% if league_stats.best_streak %}
+        <div class="stat-card">
+            <div class="stat-card-icon">🔥</div>
+            <div>
+                <div class="stat-card-label">Mejor racha</div>
+                <div class="stat-card-value">{{ league_stats.best_streak_team }}</div>
+                <div class="stat-card-sub">{{ league_stats.best_streak }} victorias al hilo</div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="stat-card">
+            <div class="stat-card-icon">📺</div>
+            <div>
+                <div class="stat-card-label">Hoy</div>
+                <div class="stat-card-value">{{ total_games }} juego{{ 's' if total_games != 1 else '' }}</div>
+                <div class="stat-card-sub">{{ league_channels_today|join(', ') if league_channels_today else 'Sin juegos' }}</div>
+            </div>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -411,13 +471,13 @@
 {% if standings %}
 <div class="standings-section">
     <h2>{{ emoji }} Tabla de posiciones — {{ league_name }}</h2>
-    <table class="standings-table">
+    <table class="standings-table" id="standings-table">
         <thead>
             <tr>
                 <th>#</th>
                 <th>Equipo</th>
                 {% if sport == 'soccer' %}
-                <th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>Pts</th>
+                <th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th>
                 {% else %}
                 <th>G</th><th>P</th><th>Pct</th><th>Racha</th>
                 {% endif %}
@@ -425,7 +485,11 @@
         </thead>
         <tbody>
             {% for team in standings %}
-            <tr>
+            {% set team_slug_match = '' %}
+            {% for ts, ti in league_teams.items() %}
+                {% if ti.name == team.team_name %}{% set team_slug_match = ts %}{% endif %}
+            {% endfor %}
+            <tr class="{% if loop.index > 12 %}standings-hidden{% endif %}{% if sport == 'soccer' %}{% if loop.index <= 4 %} zone-qualify{% elif loop.index >= (standings|length - 1) and standings|length > 10 %} zone-relegate{% endif %}{% elif sport == 'football' %}{% if loop.index <= 7 %} zone-playoff{% endif %}{% endif %}">
                 <td class="st-num">{{ loop.index }}</td>
                 <td>
                     <div class="st-team">
@@ -440,17 +504,42 @@
                 <td>{{ team.losses }}</td>
                 <td>{{ team.goals_for }}</td>
                 <td>{{ team.goals_against }}</td>
-                <td style="font-weight:700;color:#059669;">{{ team.points }}</td>
+                {% set gd = team.goal_diff|default('0')|string %}
+                <td style="font-weight:700;color:{% if gd.startswith('-') %}#ef4444{% elif gd != '0' and gd != '' and gd != '+0' %}#059669{% else %}#6b7280{% endif %};">{{ gd if gd.startswith('-') or gd.startswith('+') else ('+' ~ gd if gd != '0' and gd != '' else gd) }}</td>
+                <td style="font-weight:800;color:#059669;">{{ team.points }}</td>
                 {% else %}
                 <td>{{ team.wins }}</td>
                 <td>{{ team.losses }}</td>
                 <td>{{ team.win_pct }}</td>
-                <td>{{ team.streak }}</td>
+                <td>
+                    {% if team.streak and team.streak|string|first == 'W' %}
+                    <span style="color:#059669;font-weight:700;">{{ team.streak }}</span>
+                    {% elif team.streak and team.streak|string|first == 'L' %}
+                    <span style="color:#ef4444;font-weight:700;">{{ team.streak }}</span>
+                    {% else %}
+                    {{ team.streak }}
+                    {% endif %}
+                </td>
                 {% endif %}
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% if standings|length > 12 %}
+    <button class="standings-toggle" id="standings-toggle" onclick="toggleStandings()">
+        Mostrar tabla completa ({{ standings|length }} equipos) ▼
+    </button>
+    {% endif %}
+    {% if sport == 'soccer' %}
+    <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.65rem;color:#9ca3af;">
+        <span><span style="display:inline-block;width:10px;height:10px;background:#10b981;border-radius:2px;margin-right:3px;vertical-align:middle;"></span> Clasificaci&oacute;n</span>
+        {% if standings|length > 10 %}<span><span style="display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:2px;margin-right:3px;vertical-align:middle;"></span> Descenso</span>{% endif %}
+    </div>
+    {% elif sport == 'football' %}
+    <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.65rem;color:#9ca3af;">
+        <span><span style="display:inline-block;width:10px;height:10px;background:#3b82f6;border-radius:2px;margin-right:3px;vertical-align:middle;"></span> Playoffs</span>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
@@ -533,6 +622,7 @@
                 <th>Local</th>
                 <th style="text-align:center">Marcador</th>
                 <th style="text-align:right">Visitante</th>
+                <th style="text-align:right;font-size:0.6rem;">Fecha</th>
             </tr>
         </thead>
         <tbody>
@@ -542,11 +632,18 @@
                     {% if r.home_logo %}<img src="{{ r.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
                     {{ r.home }}
                 </td>
-                <td style="text-align:center;font-weight:800;color:#059669;">{{ r.home_score }} - {{ r.away_score }}</td>
+                <td style="text-align:center;font-weight:800;">
+                    {% set hs = r.home_score|int %}
+                    {% set as_ = r.away_score|int %}
+                    <span style="color:{% if hs > as_ %}#059669{% elif hs < as_ %}#ef4444{% else %}#6b7280{% endif %}">{{ r.home_score }}</span>
+                    <span style="color:#9ca3af;"> - </span>
+                    <span style="color:{% if as_ > hs %}#059669{% elif as_ < hs %}#ef4444{% else %}#6b7280{% endif %}">{{ r.away_score }}</span>
+                </td>
                 <td style="text-align:right;">
                     {{ r.away }}
                     {% if r.away_logo %}<img src="{{ r.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;margin-left:0.4rem;">{% endif %}
                 </td>
+                <td style="text-align:right;font-size:0.65rem;color:#9ca3af;white-space:nowrap;" data-utc="{{ r.date }}">{{ format_mx_day_time(r.date).split(',')[0] if r.date else '' }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -592,7 +689,10 @@
     <h2>Equipos de {{ league_name }} en DondeVer</h2>
     <div class="teams-list">
         {% for slug, team in league_teams.items() %}
-        <a href="/equipo/{{ slug }}" class="team-pill-link">{{ team.name }}</a>
+        <a href="/equipo/{{ slug }}" class="team-pill-link">
+            {% if team.logo %}<img src="{{ team.logo }}" alt="" style="width:16px;height:16px;border-radius:50%;object-fit:contain;">{% endif %}
+            {{ team.name }}
+        </a>
         {% endfor %}
     </div>
 </div>
@@ -650,6 +750,14 @@
 
 <script>
     if (document.querySelector('.live-badge')) { setTimeout(() => location.reload(), 60000); }
+    function toggleStandings() {
+        var rows = document.querySelectorAll('#standings-table .standings-hidden');
+        var btn = document.getElementById('standings-toggle');
+        if (!rows.length) return;
+        var hidden = rows[0].style.display === 'none' || getComputedStyle(rows[0]).display === 'none';
+        rows.forEach(function(r) { r.style.display = hidden ? 'table-row' : 'none'; });
+        btn.textContent = hidden ? 'Mostrar menos ▲' : 'Mostrar tabla completa ({{ standings|length }} equipos) ▼';
+    }
 </script>
 <script>window.DV_CTX = {league: "{{ league_slug }}"};</script>
 <script>
