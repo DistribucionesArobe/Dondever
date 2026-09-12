@@ -3215,6 +3215,25 @@ async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "templat
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
+@app.get("/whatsapp/list-templates")
+async def whatsapp_list_templates(token: str = ""):
+    """Debug: list all WABA templates with their language codes."""
+    admin_token = os.getenv("ADMIN_TOKEN", "")
+    if not admin_token or token != admin_token:
+        return {"ok": False, "error": "token invalido"}
+    import httpx as _httpx
+    wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    waba_id = "2498253880588976"
+    url = f"https://graph.facebook.com/v25.0/{waba_id}/message_templates"
+    params = {"fields": "name,language,status,category", "limit": "50", "access_token": wa_token}
+    try:
+        with _httpx.Client(timeout=15) as c:
+            resp = c.get(url, params=params)
+            return {"ok": True, "status": resp.status_code, "data": resp.json()}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @app.api_route("/whatsapp/broadcast-preview", methods=["GET"])
 async def whatsapp_broadcast_preview():
     """Preview del mensaje diario sin enviarlo."""
