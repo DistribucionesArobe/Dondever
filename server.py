@@ -3170,7 +3170,7 @@ async def whatsapp_broadcast_now(
 
 @app.get("/whatsapp/test-send")
 async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "template",
-                              tpl: str = "picks_diarios", lang: str = "es_MX"):
+                              tpl: str = "dondever_picks_diarios", lang: str = "en"):
     """Enviar UN mensaje de prueba a un número específico.
     mode=template (default): usa template (configurable via tpl= y lang=)
     mode=hello: usa hello_world template (no params, en_US)

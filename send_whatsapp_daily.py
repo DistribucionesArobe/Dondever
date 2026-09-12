@@ -655,23 +655,24 @@ async def send_daily_broadcast(test_number: str | None = None):
     errors = []
 
     for phone in recipients:
-        # Strategy: picks_diarios (Utility, 1 param) → freeform (24h window).
+        # Strategy: dondever_picks_diarios (Marketing, 1 param, en) → freeform (24h window).
+        # WABA: Distribuciones Arobe (ID: 1224835083125902)
         sent_ok = False
 
-        # Primary: picks_diarios (Marketing, 1 param, es_MX)
+        # Primary: dondever_picks_diarios (Marketing, 1 param, en)
         if not sent_ok and v1_components:
             result = send_template(
                 phone,
-                template_name="picks_diarios",
-                language="es_MX",
+                template_name="dondever_picks_diarios",
+                language="en",
                 components=v1_components,
             )
             if result["ok"]:
                 sent += 1
                 sent_ok = True
-                logger.info(f"Sent picks_diarios to {phone} — msg_id: {result['id']}")
+                logger.info(f"Sent dondever_picks_diarios to {phone} — msg_id: {result['id']}")
             else:
-                logger.info(f"picks_diarios failed for {phone}: {result.get('error')}, trying freeform")
+                logger.info(f"dondever_picks_diarios failed for {phone}: {result.get('error')}, trying freeform")
 
         # Fallback: freeform (only works if user messaged within 24h)
         if not sent_ok and freeform_message:
