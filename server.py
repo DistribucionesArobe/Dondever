@@ -3227,6 +3227,51 @@ async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "templat
         return {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
 
 
+@app.get("/whatsapp/debug-waba")
+async def whatsapp_debug_waba(token: str = ""):
+    """Debug: show phone number info, its WABA, and templates on that WABA."""
+    admin_token = os.getenv("ADMIN_TOKEN", "")
+    if not admin_token or token != admin_token:
+        return {"ok": False, "error": "token invalido"}
+    import httpx as _httpx
+    wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    business_id = "879031608444232"
+    results = {}
+    try:
+        with _httpx.Client(timeout=15) as c:
+            # 1. Phone number details
+            r = c.get(f"https://graph.facebook.com/v25.0/{phone_id}",
+                      params={"fields": "id,display_phone_number,verified_name,quality_rating,name_status",
+                              "access_token": wa_token})
+            results["phone_number"] = {"phone_id": phone_id, "data": r.json()}
+
+            # 2. List WABAs owned by business
+            r = c.get(f"https://graph.facebook.com/v25.0/{business_id}/owned_whatsapp_business_accounts",
+                      params={"fields": "id,name,currency,message_template_namespace",
+                              "access_token": wa_token})
+            wabas = r.json()
+            results["business_wabas"] = wabas
+
+            # 3. For each WABA, list phone numbers
+            for waba in (wabas.get("data") or []):
+                waba_id = waba["id"]
+                r = c.get(f"https://graph.facebook.com/v25.0/{waba_id}/phone_numbers",
+                          params={"fields": "id,display_phone_number,verified_name,quality_rating",
+                                  "access_token": wa_token})
+                waba[f"phone_numbers"] = r.json()
+                # Also list templates on this WABA
+                r = c.get(f"https://graph.facebook.com/v25.0/{waba_id}/message_templates",
+                          params={"fields": "name,language,status", "limit": "20",
+                                  "access_token": wa_token})
+                waba["templates"] = r.json()
+
+            return {"ok": True, "results": results}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": str(e), "traceback": traceback.format_exc(), "partial": results}
+
+
 @app.get("/whatsapp/list-templates")
 async def whatsapp_list_templates(token: str = ""):
     """Debug: list all WABA templates with their language codes."""
