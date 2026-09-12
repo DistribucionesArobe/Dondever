@@ -3280,9 +3280,9 @@ async def whatsapp_list_templates(token: str = ""):
         return {"ok": False, "error": "token invalido"}
     import httpx as _httpx
     wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-    waba_id = "2498253880588976"
+    waba_id = "1224835083125902"  # Distribuciones Arobe (real WABA)
     url = f"https://graph.facebook.com/v25.0/{waba_id}/message_templates"
-    params = {"fields": "name,language,status,category", "limit": "50", "access_token": wa_token}
+    params = {"fields": "name,language,status,category,components", "limit": "50", "access_token": wa_token}
     try:
         with _httpx.Client(timeout=15) as c:
             resp = c.get(url, params=params)
