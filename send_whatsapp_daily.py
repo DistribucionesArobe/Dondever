@@ -655,11 +655,25 @@ async def send_daily_broadcast(test_number: str | None = None):
     errors = []
 
     for phone in recipients:
-        # Strategy: dondever_picks_diarios (Marketing, 1 param, en) → freeform (24h window).
+        # Strategy: freeform FIRST (confirmed working), template as fallback.
+        # Marketing templates on this WABA are silently accepted by Meta API
+        # but never delivered (likely per-user marketing frequency cap).
+        # Freeform works reliably — requires 24h window but broadcast
+        # triggers daily interaction so window stays open.
         # WABA: Distribuciones Arobe (ID: 1224835083125902)
         sent_ok = False
 
-        # Primary: dondever_picks_diarios (Marketing, 1 param, en)
+        # Primary: freeform text (confirmed working, delivers instantly)
+        if not sent_ok and freeform_message:
+            result = send_text(phone, freeform_message)
+            if result["ok"]:
+                sent += 1
+                sent_ok = True
+                logger.info(f"Sent freeform to {phone} — msg_id: {result['id']}")
+            else:
+                logger.info(f"Freeform failed for {phone}: {result.get('error')}, trying template")
+
+        # Fallback: template (for users outside 24h window)
         if not sent_ok and v1_components:
             result = send_template(
                 phone,
@@ -671,15 +685,6 @@ async def send_daily_broadcast(test_number: str | None = None):
                 sent += 1
                 sent_ok = True
                 logger.info(f"Sent dondever_picks_diarios to {phone} — msg_id: {result['id']}")
-            else:
-                logger.info(f"dondever_picks_diarios failed for {phone}: {result.get('error')}, trying freeform")
-
-        # Fallback: freeform (only works if user messaged within 24h)
-        if not sent_ok and freeform_message:
-            result = send_text(phone, freeform_message)
-            if result["ok"]:
-                sent += 1
-                logger.info(f"Sent freeform to {phone} — msg_id: {result['id']}")
             else:
                 failed += 1
                 errors.append({"phone": phone, "error": result["error"]})
