@@ -3169,11 +3169,14 @@ async def whatsapp_broadcast_now(
 
 
 @app.get("/whatsapp/test-send")
-async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "template"):
+async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "template",
+                              tpl: str = "picks_diarios", lang: str = "es_MX"):
     """Enviar UN mensaje de prueba a un número específico.
-    mode=template (default): usa template picks_diarios
+    mode=template (default): usa template (configurable via tpl= y lang=)
+    mode=hello: usa hello_world template (no params, en_US)
     mode=freeform: usa mensaje de texto libre (solo funciona en ventana 24h)
-    mode=both: prueba ambos y reporta cuál funcionó"""
+    mode=both: prueba template + freeform
+    mode=all: prueba picks_diarios + hello_world + freeform"""
     admin_token = os.getenv("ADMIN_TOKEN", "")
     if not admin_token or token != admin_token:
         return {"ok": False, "error": "token invalido"}
@@ -3184,11 +3187,11 @@ async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "templat
         normalized = _normalize_to(to)
         results = {}
 
-        if mode in ("template", "both"):
+        if mode in ("template", "both", "all"):
             results["template"] = send_template(
                 to,
-                template_name="picks_diarios",
-                language="es",
+                template_name=tpl,
+                language=lang,
                 components=[{
                     "type": "body",
                     "parameters": [
@@ -3197,7 +3200,14 @@ async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "templat
                 }],
             )
 
-        if mode in ("freeform", "both"):
+        if mode in ("hello", "all"):
+            results["hello_world"] = send_template(
+                to,
+                template_name="hello_world",
+                language="en_US",
+            )
+
+        if mode in ("freeform", "both", "all"):
             results["freeform"] = send_text(
                 to,
                 "🏆 *Test DondeVer* — Este es un mensaje de prueba.\n\n📱 dondever.app",
@@ -3208,6 +3218,8 @@ async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "templat
             "original_number": to,
             "normalized": normalized,
             "mode": mode,
+            "tpl": tpl,
+            "lang": lang,
             "results": results,
         }
     except Exception as e:
