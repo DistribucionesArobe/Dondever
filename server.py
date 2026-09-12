@@ -3188,7 +3188,7 @@ async def whatsapp_test_send(token: str = "", to: str = "", mode: str = "templat
             results["template"] = send_template(
                 to,
                 template_name="picks_diarios",
-                language="es_MX",
+                language="es",
                 components=[{
                     "type": "body",
                     "parameters": [

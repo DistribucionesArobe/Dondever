@@ -663,7 +663,7 @@ async def send_daily_broadcast(test_number: str | None = None):
             result = send_template(
                 phone,
                 template_name="picks_diarios",
-                language="es_MX",
+                language="es",
                 components=v1_components,
             )
             if result["ok"]:

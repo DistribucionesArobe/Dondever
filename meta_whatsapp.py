@@ -91,7 +91,7 @@ def send_text(to: str, body: str) -> dict:
         return {"ok": False, "id": None, "error": str(e)}
 
 
-def send_template(to: str, template_name: str, language: str = "es_MX", components: Optional[list] = None) -> dict:
+def send_template(to: str, template_name: str, language: str = "es", components: Optional[list] = None) -> dict:
     """
     Send an approved template message via Meta Cloud API.
     Use this for pro-active messages outside the 24h window.
