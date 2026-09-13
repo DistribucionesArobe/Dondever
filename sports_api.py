@@ -1013,6 +1013,9 @@ async def parse_espn_events_enriched(
             "venue": venue,
             "recap": recap,
             "link": ev.get("links", [{}])[0].get("href", "") if ev.get("links") else "",
+            # Postseason metadata (ESPN: season.type 3 = playoffs; notes carry "ALDS - Game 2")
+            "season_type": (ev.get("season") or {}).get("type", 0),
+            "series_note": next((n.get("headline", "") for n in (comp.get("notes") or []) if n.get("headline")), ""),
         })
 
     return events

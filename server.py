@@ -408,6 +408,65 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
 app.add_middleware(GAInjectMiddleware)
 
 
+# ── Server-side HTML cache ────────────────────────────────
+# GSC crawl stats: 4,020 ms avg response to Googlebot. Team/league/game pages
+# do 8-12 upstream calls each. Cache the final rendered HTML (post-GA-inject)
+# for a few minutes. Stored zlib-compressed (~15 KB/page → ~12 MB for 800 pages).
+import zlib as _zlib
+from cachetools import TTLCache as _TTLCache
+
+_HTML_CACHE = _TTLCache(maxsize=800, ttl=300)
+_HTML_CACHE_PREFIXES = ("/equipo/", "/liga/", "/partido/", "/canal/", "/donde-ver/",
+                        "/guia/", "/resultado/", "/donde-ver-en-", "/equipos")
+_HTML_CACHE_HUBS = {"/playoffs-mlb", "/gratis-hoy", "/pronosticos-hoy", "/futbol-hoy",
+                    "/futbol-americano-hoy", "/basquetbol-hoy", "/beisbol-hoy", "/hockey-hoy",
+                    "/streaming", "/casinos"}
+
+
+class HTMLCacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        path = request.url.path
+        cacheable = (
+            request.method == "GET"
+            and (path.startswith(_HTML_CACHE_PREFIXES) or path in _HTML_CACHE_HUBS)
+            and "nocache" not in request.query_params
+            and "token" not in request.query_params
+        )
+        if not cacheable:
+            return await call_next(request)
+
+        key = path + ("?" + str(request.query_params) if request.query_params else "")
+        hit = _HTML_CACHE.get(key)
+        if hit is not None:
+            body, ctype = hit
+            return Response(
+                content=_zlib.decompress(body), status_code=200, media_type=ctype,
+                headers={"X-Cache": "HIT", "Cache-Control": "public, max-age=120, s-maxage=300",
+                         "Vary": "Accept-Encoding"},
+            )
+
+        response = await call_next(request)
+        ctype = response.headers.get("content-type", "")
+        if response.status_code != 200 or "text/html" not in ctype:
+            return response
+        try:
+            body = b""
+            async for chunk in response.body_iterator:
+                body += chunk
+            _HTML_CACHE[key] = (_zlib.compress(body, 6), ctype)
+            headers = dict(response.headers)
+            headers.pop("content-length", None)
+            headers["X-Cache"] = "MISS"
+            headers.setdefault("Cache-Control", "public, max-age=120, s-maxage=300")
+            return Response(content=body, status_code=200, headers=headers, media_type=ctype)
+        except Exception as e:
+            logging.getLogger("dondever").warning(f"HTML cache failed: {e}")
+            return response
+
+
+app.add_middleware(HTMLCacheMiddleware)  # outermost: caches the final (GA-injected) HTML
+
+
 # ── Template helpers ─────────────────────────────────────
 def format_mx_time(iso_date: str) -> str:
     """Convert ISO date to Mexico City time (DST-aware)."""
@@ -714,6 +773,71 @@ async def home(
     response.headers["Cache-Control"] = "public, max-age=90, s-maxage=90"
     response.headers["Vary"] = "Accept-Encoding"
     return response
+
+
+@app.get("/playoffs-mlb", response_class=HTMLResponse)
+async def playoffs_mlb(request: Request):
+    """Hub estacional: 'dónde ver playoffs MLB' — octubre es el pico de Dodgers/Yankees (GSC)."""
+    now = datetime.now(TZ_MX)
+    year = now.year
+    all_games = await get_todays_games()
+    games = [g for g in all_games if g.get("league_slug") == "mlb"
+             and g.get("home", {}).get("name") != "TBD" and g.get("away", {}).get("name") != "TBD"]
+    is_postseason = any(g.get("season_type") == 3 or g.get("series_note") for g in games) or now.month in (10, 11)
+    games.sort(key=lambda g: ({"in": 0, "pre": 1, "post": 2}.get(g["status"]["state"], 3), g.get("date", "")))
+
+    upcoming = []
+    try:
+        upcoming = await get_upcoming_league_games("baseball", "mlb", days=7, limit=16)
+    except Exception:
+        pass
+
+    mlb_ch = LEAGUE_CHANNELS_BY_COUNTRY.get("MLB", {})
+    countries = []
+    for cs in ("mexico", "venezuela", "panama", "republica-dominicana", "estados-unidos", "colombia"):
+        meta = TEAM_COUNTRY_SEO.get(cs, {})
+        chs = mlb_ch.get(cs) or _DEFAULT_LATAM_CHANNELS
+        countries.append({"slug": cs, "name": meta.get("name", cs), "flag": meta.get("flag", ""), "channels": chs})
+
+    live = [g for g in games if g["status"]["state"] == "in"]
+    pre = [g for g in games if g["status"]["state"] == "pre"]
+    if live:
+        g = live[0]
+        seo_title = f"Playoffs MLB {year} EN VIVO: {g['away']['name']} vs {g['home']['name']} | Dónde ver"
+    elif pre:
+        g = pre[0]
+        t = format_mx_time(g.get("date", "")).lstrip("0")
+        ch = (g.get("broadcasts") or [{}])[0].get("channel", "")
+        seo_title = f"Playoffs MLB {year} hoy: {g['away']['name']} vs {g['home']['name']} {t} MX{(' en ' + ch) if ch else ''}"
+    else:
+        seo_title = f"Dónde ver los playoffs MLB {year}: canales, horarios y calendario | DondeVer"
+    seo_h1 = f"Dónde ver los playoffs de MLB {year} en vivo"
+    seo_desc = (f"Postemporada MLB {year}: dónde ver cada juego en México (ESPN MX, Disney+, Fox Sports MX), "
+                f"Venezuela, Panamá y República Dominicana. Serie de Comodines, Series Divisionales, "
+                f"Series de Campeonato y Serie Mundial con horarios locales.")
+    hero_text = (f"Todos los juegos de la postemporada {year} con canal y horario de México. "
+                 f"Serie de Comodines, Divisionales, Series de Campeonato y Serie Mundial.")
+    top_teams = [("dodgers", "Dodgers"), ("yankees", "Yankees"), ("phillies", "Phillies"), ("padres", "Padres"),
+                 ("mets", "Mets"), ("red-sox", "Red Sox"), ("braves", "Braves"), ("astros", "Astros"),
+                 ("cubs", "Cubs"), ("orioles", "Orioles"), ("blue-jays", "Blue Jays"), ("brewers", "Brewers")]
+    faq = [
+        (f"¿Cuándo empiezan los playoffs de MLB {year}?",
+         "La postemporada arranca a inicios de octubre con la Serie de Comodines y termina con la Serie Mundial a finales de octubre. Aquí verás cada juego con su horario de México el mismo día."),
+        ("¿En qué canal pasan los playoffs de MLB en México?",
+         "ESPN MX y Disney+ transmiten la postemporada en México; Fox Sports MX tiene juegos selectos. MLB.TV ofrece todos los juegos en streaming."),
+        ("¿Dónde ver la Serie Mundial en Venezuela, Panamá o República Dominicana?",
+         "Por ESPN Latinoamérica y Disney+. En Panamá también TVMax cubre béisbol y en República Dominicana CDN Deportes."),
+        ("¿A qué hora juegan los Dodgers y los Yankees en playoffs?",
+         "Consulta la página de cada equipo: el título muestra la hora de México y el canal del juego de hoy, y puedes elegir tu país para ver la hora local."),
+    ]
+
+    return templates.TemplateResponse(request, "playoffs_mlb.html", {
+        "seo_title": seo_title, "seo_h1": seo_h1, "seo_desc": seo_desc, "hero_text": hero_text,
+        "year": year, "games": games, "upcoming": upcoming, "is_postseason": is_postseason,
+        "countries": countries, "top_teams": top_teams, "faq": faq,
+        "today_display": format_date_es(now),
+        "format_mx_time": format_mx_time, "format_mx_day_time": format_mx_day_time,
+    })
 
 
 @app.get("/gratis-hoy", response_class=HTMLResponse)
@@ -3909,14 +4033,9 @@ async def sitemap_core():
         # donde-ver-champions-league redirects 301 → donde-ver-champions-en-mexico
         ("guia/como-ver-tudn-en-usa", "weekly", "0.8"),
         ("pronosticos-hoy", "daily", "0.9"),
-        ("nfl-hoy", "daily", "0.9"),
-        ("lmp-hoy", "daily", "0.8"),
-        ("lmb-hoy", "daily", "0.8"),
-        ("liga-mx-femenil-hoy", "daily", "0.8"),
-        ("lnbp-hoy", "daily", "0.8"),
-        ("lvbp-hoy", "daily", "0.8"),
-        ("lidom-hoy", "daily", "0.8"),
+        # *-hoy hubs de ligas ahora son 301 → /liga/{slug} (ya listadas abajo); no van en sitemap
         ("gratis-hoy", "daily", "0.9"),
+        ("playoffs-mlb", "daily", "0.9"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
         ("guia/donde-ver-copa-america-en-mexico", "weekly", "0.8"),
@@ -4996,20 +5115,39 @@ POPULAR_TEAMS = {
     "ufc": {"name": "UFC", "sport": "MMA", "league": "UFC", "aka": "UFC, Ultimate Fighting"},
 }
 
-def _short_team_name(full_name: str) -> str:
-    """'San Francisco Giants' → 'Giants' using POPULAR_TEAMS; fallback last word."""
+_TWO_WORD_NICKS = {"red sox", "white sox", "blue jays", "maple leafs", "trail blazers", "golden knights",
+                   "red wings", "blue jackets", "diamondbacks", "rays", "sun", "sky", "fever", "dream",
+                   "sparks", "storm", "aces", "liberty", "lynx", "mercury", "mystics", "wings", "valkyries"}
+_US_STYLE_LEAGUES = {"MLB", "NBA", "NFL", "NHL", "WNBA", "MLS", "College Football", "NCAA"}
+
+
+def _short_team_name(full_name: str, league: str = "") -> str:
+    """'Los Angeles Dodgers' → 'Dodgers'; 'Boston Red Sox' → 'Red Sox'; 'Tigres UANL' → 'Tigres'.
+    Soccer clubs keep their name minus 'Club/FC/CF' noise. That's how people search."""
     if not full_name:
         return ""
-    fl = full_name.lower()
-    best = ""
-    for info in POPULAR_TEAMS.values():
-        n = info.get("name", "")
-        if n and n.lower() in fl and len(n) > len(best):
-            best = n
-    if best:
-        return best
-    parts = full_name.split()
-    return parts[-1] if len(parts) > 1 else full_name
+    name = full_name.strip()
+    low = name.lower()
+    # US-style "City Nickname" → nickname
+    us_style = league in _US_STYLE_LEAGUES or any(
+        low.endswith(" " + n) for n in _TWO_WORD_NICKS) or bool(re.search(
+        r"\b(dodgers|yankees|phillies|padres|mets|braves|astros|cubs|orioles|brewers|giants|rangers|"
+        r"cardinals|mariners|guardians|tigers|twins|royals|angels|athletics|marlins|nationals|pirates|"
+        r"reds|rockies|cowboys|chiefs|eagles|packers|49ers|steelers|patriots|ravens|bills|lions|raiders|"
+        r"broncos|rams|chargers|dolphins|jets|bears|vikings|saints|texans|bengals|browns|jaguars|titans|"
+        r"colts|falcons|panthers|buccaneers|seahawks|commanders|lakers|celtics|warriors|heat|knicks|"
+        r"bulls|nets|bucks|suns|mavericks|nuggets|clippers|rockets|spurs|thunder|kings|grizzlies|"
+        r"pelicans|timberwolves|hawks|hornets|magic|pistons|pacers|raptors|wizards|cavaliers|jazz)\b", low))
+    if us_style:
+        for n in _TWO_WORD_NICKS:
+            if low.endswith(" " + n):
+                return name[-len(n):]
+        parts = name.split()
+        return parts[-1] if len(parts) > 1 else name
+    # Soccer / LatAm: strip club noise
+    name = re.sub(r"^(club|cf|fc|cd|ca|deportivo)\s+", "", name, flags=re.I)
+    name = re.sub(r"\s+(uanl|unam|fc|cf|sc|ac|bc|de la uanl)$", "", name, flags=re.I)
+    return name.strip() or full_name
 
 
 def _build_team_seo(team_name: str, team_league: str, search_term: str, games: list,
@@ -5022,13 +5160,15 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
     st = search_term.lower()
     lg = team_league or ("NFL" if is_nfl else "")
     lg_sfx = f" {lg}" if lg else ""
+    full_name = team_name
+    team_name = _short_team_name(team_name, lg)  # "Los Angeles Dodgers" → "Dodgers" (como buscan)
 
     def _opp_and_channel(game):
         home = game.get("home", {}) or {}
         away = game.get("away", {}) or {}
         is_home = st in (home.get("name", "") or "").lower()
         opp_full = away.get("name", "") if is_home else home.get("name", "")
-        opp = _short_team_name(opp_full)
+        opp = _short_team_name(opp_full, lg)
         ch = ""
         for b in (game.get("broadcasts") or []):
             c = b.get("channel") if isinstance(b, dict) else str(b)
@@ -5077,7 +5217,7 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
     if upcoming_games:
         u = upcoming_games[0]
         is_home = st in (u.get("home", "") or "").lower()
-        opp = _short_team_name(u.get("away", "") if is_home else u.get("home", ""))
+        opp = _short_team_name(u.get("away", "") if is_home else u.get("home", ""), lg)
         when = format_mx_day_time(u.get("date_utc", "") or u.get("date", "") or "")
         chs = u.get("channels") or []
         ch = ""
@@ -5094,8 +5234,8 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
             "desc": f"{team_name} no juega hoy. Próximo partido vs {opp}{when_txt} (hora MX){ch_txt}. Calendario, programación, canal de TV y streaming{lg_sfx}.",
         }
     return {
-        "title": f"Dónde ver {team_name} hoy en vivo: horario, canal y TV | DondeVer",
-        "h1": f"Dónde ver {team_name} hoy en vivo",
+        "title": f"Dónde ver {full_name} hoy en vivo: horario, canal y TV | DondeVer",
+        "h1": f"Dónde ver {full_name} hoy en vivo",
         "desc": f"Dónde ver a {team_name} hoy en vivo. Horario, canal de TV, streaming, calendario y programación{lg_sfx} en México, USA y Latinoamérica.",
     }
 
@@ -5878,6 +6018,32 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
     },
 }
 
+# Timezones per country page (for local kickoff times in geo pages)
+_COUNTRY_TZ = {
+    "mexico": "America/Mexico_City",
+    "estados-unidos": "America/New_York",
+    "venezuela": "America/Caracas",
+    "panama": "America/Panama",
+    "republica-dominicana": "America/Santo_Domingo",
+    "argentina": "America/Argentina/Buenos_Aires",
+    "colombia": "America/Bogota",
+    "chile": "America/Santiago",
+    "peru": "America/Lima",
+    "ecuador": "America/Guayaquil",
+}
+_COUNTRY_TZ_LABEL = {
+    "mexico": "hora de México",
+    "estados-unidos": "hora del Este (ET)",
+    "venezuela": "hora de Venezuela",
+    "panama": "hora de Panamá",
+    "republica-dominicana": "hora de RD",
+    "argentina": "hora de Argentina",
+    "colombia": "hora de Colombia",
+    "chile": "hora de Chile",
+    "peru": "hora de Perú",
+    "ecuador": "hora de Ecuador",
+}
+
 # Default for leagues not mapped above
 _DEFAULT_LATAM_CHANNELS = [
     {"name": "ESPN Latinoamérica / Disney+", "type": "Cable/Streaming", "sports": "Deportes internacionales"},
@@ -5933,7 +6099,50 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
 
     all_countries = [(cs, cd["name"], cd["flag"]) for cs, cd in TEAM_COUNTRY_SEO.items()]
 
+    # ── Local time for the visitor's country (GSC: geo pages are our best CTR) ──
+    from zoneinfo import ZoneInfo as _ZI
+    tz_name = _COUNTRY_TZ.get(country_slug, "America/Mexico_City")
+    tz_local = _ZI(tz_name)
+    tz_label = _COUNTRY_TZ_LABEL.get(country_slug, "hora local")
+
+    def format_local_time(iso_date: str) -> str:
+        try:
+            dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00")).astimezone(tz_local)
+            return dt.strftime("%I:%M %p").lstrip("0")
+        except Exception:
+            return ""
+
+    # Dynamic SEO: "Dodgers en Venezuela hoy: 8:10 PM en ESPN vs Giants"
+    st = search_term.lower()
+    first_ch = (country_channels[0].get("name") if country_channels else "") or ""
+    first_ch = first_ch.split(" / ")[0]
+    cname = country["name"]
+    seo_title = f"Dónde ver {team_name} en {cname} hoy: canales y horario | DondeVer"
+    seo_h1 = f"Dónde ver {team_name} en {cname} {country['flag']}"
+    seo_desc = (f"¿Dónde ver a {team_name} en {cname} hoy? Canales de TV, cable y streaming "
+                f"({first_ch}) con horario de {cname}. {team_league} en vivo.")
+    today_g = next((g for g in games if (g.get("status") or {}).get("state") in ("pre", "in")), None)
+    if today_g:
+        home = today_g.get("home", {}) or {}
+        away = today_g.get("away", {}) or {}
+        is_home = st in (home.get("name", "") or "").lower()
+        opp = _short_team_name(away.get("name", "") if is_home else home.get("name", ""), team_league)
+        team_short = _short_team_name(team_name, team_league)
+        if today_g["status"]["state"] == "in":
+            seo_title = f"{team_short} vs {opp} EN VIVO en {cname}: canal {first_ch} | Dónde ver"
+            seo_h1 = f"{team_short} vs {opp} en vivo en {cname} {country['flag']}"
+        else:
+            t_local = format_local_time(today_g.get("date", ""))
+            seo_title = f"{team_short} en {cname} hoy: {t_local} en {first_ch} vs {opp} | Dónde ver"
+            seo_h1 = f"Dónde ver {team_short} vs {opp} en {cname}: {t_local} ({tz_label})"
+            seo_desc = (f"{team_short} vs {opp} hoy a las {t_local} {tz_label} en {cname}. "
+                        f"Canal: {first_ch}. Todos los canales de TV y streaming para ver {team_league} desde {cname}.")
+
     return templates.TemplateResponse(request, "team_country.html", {
+        "seo_title": seo_title,
+        "seo_h1": seo_h1,
+        "seo_desc": seo_desc,
+        "tz_label": tz_label,
         "team_name": team_name,
         "team_slug": team_slug,
         "team_logo": team_logo,
@@ -5946,6 +6155,7 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
         "games": games,
         "all_countries": all_countries,
         "format_mx_time": format_mx_time,
+        "format_local_time": format_local_time,
     })
 
 

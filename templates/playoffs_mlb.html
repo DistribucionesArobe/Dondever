@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo_title }}</title>
+    <meta name="description" content="{{ seo_desc }}">
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_desc }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ app_url }}/playoffs-mlb">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta property="og:locale" content="es_MX">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ seo_title }}">
+    <meta name="twitter:description" content="{{ seo_desc }}">
+    <link rel="canonical" href="{{ app_url }}/playoffs-mlb">
+    {{ hreflang_tags(request.url) }}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ app_url }}/"},
+        {"@type": "ListItem", "position": 2, "name": "MLB", "item": "{{ app_url }}/liga/mlb"},
+        {"@type": "ListItem", "position": 3, "name": "Playoffs MLB {{ year }}", "item": "{{ app_url }}/playoffs-mlb"}
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {% for q, a in faq %}
+        {"@type": "Question", "name": "{{ q }}", "acceptedAnswer": {"@type": "Answer", "text": "{{ a }}"}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]
+    }
+    </script>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script>
+    (function(){var t=localStorage.getItem('dv-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; min-height: 100vh; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .breadcrumbs { max-width: 900px; margin: 0 auto; padding: 0.5rem 1rem 0; }
+        .breadcrumbs a { color: #059669; text-decoration: none; font-size: 0.72rem; font-weight: 600; }
+        .breadcrumbs span { color: #9ca3af; font-size: 0.72rem; }
+        .hero { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 0.5rem; text-align: center; }
+        .hero h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .hero p { color: #6b7280; font-size: 0.9rem; max-width: 640px; margin: 0 auto; line-height: 1.6; }
+        .badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.7rem; border-radius: 2rem; margin-bottom: 0.5rem; }
+        .main { max-width: 900px; margin: 1rem auto; padding: 0 1rem 2rem; }
+        h2.sec { font-size: 1rem; font-weight: 800; margin: 1.2rem 0 0.6rem; color: #1a1a2e; }
+        .game-card { display: block; background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; text-decoration: none; color: inherit; border-left: 3px solid #f59e0b; }
+        .game-card.live { border-left: 4px solid #ef4444; background: #fef2f2; }
+        .gc-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+        .gc-teams { font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+        .gc-teams img { width: 22px; height: 22px; object-fit: contain; }
+        .gc-vs { color: #9ca3af; font-weight: 400; font-size: 0.8rem; }
+        .gc-time { font-size: 0.8rem; font-weight: 700; color: #f97316; white-space: nowrap; }
+        .gc-score { font-size: 1rem; font-weight: 800; color: #059669; }
+        .live-badge { display: inline-block; background: #ef4444; color: white; font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+        .final-badge { display: inline-block; background: #f3f4f6; color: #6b7280; font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+        .series { font-size: 0.7rem; color: #92400e; font-weight: 700; margin-bottom: 0.25rem; }
+        .gc-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+        .chip { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 600; background: #f3f4f6; color: #374151; margin-right: 0.2rem; }
+        .country-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.6rem; }
+        .country-card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.8rem 1rem; }
+        .country-card h3 { font-size: 0.9rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .country-card li { font-size: 0.78rem; color: #374151; line-height: 1.6; list-style: none; }
+        .country-card li b { color: #1a1a2e; }
+        .seo-card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem 1.5rem; margin-top: 1rem; }
+        .seo-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .seo-card h3 { font-size: 0.9rem; font-weight: 600; margin: 0.9rem 0 0.3rem; color: #374151; }
+        .seo-card p { font-size: 0.8rem; color: #6b7280; line-height: 1.7; margin-bottom: 0.5rem; }
+        .seo-card a, .teams a { color: #059669; text-decoration: none; font-weight: 600; }
+        .teams a { display: inline-block; padding: 0.3rem 0.7rem; background: #f3f4f6; border-radius: 8px; font-size: 0.75rem; margin: 0 0.3rem 0.3rem 0; }
+        .no-games { text-align: center; padding: 1.5rem 1rem; color: #6b7280; background: white; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 0.85rem; }
+        .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+        @media (max-width: 768px) { .hero h1 { font-size: 1.2rem; } }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+        <a href="/liga/mlb" class="back">&larr; MLB hoy</a>
+    </div>
+</header>
+<nav class="breadcrumbs">
+    <a href="/">Inicio</a> <span>&rsaquo;</span> <a href="/liga/mlb">MLB</a> <span>&rsaquo;</span> <span>Playoffs {{ year }}</span>
+</nav>
+
+<div class="hero">
+    <div class="badge">&#9918; Postemporada MLB {{ year }}</div>
+    <h1>{{ seo_h1 }}</h1>
+    <p>{{ hero_text }}</p>
+</div>
+
+<main class="main">
+    <h2 class="sec">{% if is_postseason %}Juegos de playoffs hoy{% else %}Juegos de MLB hoy{% endif %} &middot; {{ today_display }}</h2>
+    {% if games %}
+        {% for game in games %}
+        {% set t1 = game.away %}{% set t2 = game.home %}
+        <a href="{{ game|game_url }}" class="game-card {% if game.status.state == 'in' %}live{% endif %}">
+            {% if game.series_note %}<div class="series">{{ game.series_note }}</div>{% endif %}
+            <div class="gc-top">
+                <div class="gc-teams">
+                    {% if t1.logo %}<img src="{{ t1.logo }}" alt="" loading="lazy">{% endif %}<span>{{ t1.name }}</span>
+                    <span class="gc-vs">@</span>
+                    {% if t2.logo %}<img src="{{ t2.logo }}" alt="" loading="lazy">{% endif %}<span>{{ t2.name }}</span>
+                </div>
+                <div>
+                    {% if game.status.state == 'in' %}<span class="live-badge">EN VIVO</span> <span class="gc-score">{{ t1.score }} - {{ t2.score }}</span>
+                    {% elif game.status.state == 'post' %}<span class="final-badge">FINAL</span> <span class="gc-score">{{ t1.score }} - {{ t2.score }}</span>
+                    {% else %}<span class="gc-time">{{ format_mx_time(game.date) }} MX</span>{% endif %}
+                </div>
+            </div>
+            <div class="gc-bottom">
+                <div>{% for b in game.broadcasts[:4] %}<span class="chip">{{ b.channel }}</span>{% endfor %}{% if not game.broadcasts %}<span class="chip">Canal por confirmar</span>{% endif %}</div>
+                <span style="font-size:0.72rem;color:#059669;font-weight:600;">Ver d&oacute;nde &rarr;</span>
+            </div>
+        </a>
+        {% endfor %}
+    {% else %}
+        <div class="no-games">No hay juegos de MLB hoy. {% if upcoming %}Abajo tienes los pr&oacute;ximos juegos con horario de M&eacute;xico.{% endif %}</div>
+    {% endif %}
+
+    {% if upcoming %}
+    <h2 class="sec">Pr&oacute;ximos juegos (hora de M&eacute;xico)</h2>
+    {% for u in upcoming %}
+    <div class="game-card" style="border-left-color:#9ca3af;">
+        <div class="gc-top">
+            <div class="gc-teams">
+                {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" loading="lazy">{% endif %}<span>{{ u.away }}</span>
+                <span class="gc-vs">@</span>
+                {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" loading="lazy">{% endif %}<span>{{ u.home }}</span>
+            </div>
+            <span class="gc-time">{{ format_mx_day_time(u.date) }}</span>
+        </div>
+        {% if u.channels %}<div class="gc-bottom"><div>{% for c in u.channels[:4] %}<span class="chip">{{ c.name if c is mapping else c }}</span>{% endfor %}</div></div>{% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <h2 class="sec">D&oacute;nde ver los playoffs de MLB por pa&iacute;s</h2>
+    <div class="country-grid">
+        {% for c in countries %}
+        <div class="country-card">
+            <h3>{{ c.flag }} {{ c.name }}</h3>
+            <ul>
+                {% for ch in c.channels %}<li><b>{{ ch.name }}</b> <span style="color:#9ca3af;">&middot; {{ ch.type }}</span></li>{% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="seo-card">
+        <h2>Postemporada MLB {{ year }}: formato y calendario</h2>
+        <p>Los playoffs de las Grandes Ligas arrancan a inicios de octubre con la <b>Serie de Comodines</b> (al mejor de 3), siguen las <b>Series Divisionales</b> (al mejor de 5), las <b>Series de Campeonato</b> de la Liga Americana y la Liga Nacional (al mejor de 7) y cierran con la <b>Serie Mundial</b> a finales de octubre. Doce equipos clasifican: seis por liga, y los dos mejores sembrados de cada liga descansan la ronda de comodines.</p>
+        <h3>En qu&eacute; canal pasan los playoffs en M&eacute;xico</h3>
+        <p>En M&eacute;xico la postemporada se ve por <b>ESPN MX</b> y <b>Disney+</b>, con juegos selectos por <b>Fox Sports MX</b>. La transmisi&oacute;n completa de todos los juegos est&aacute; en <b>MLB.TV</b>. Los horarios que mostramos ya est&aacute;n convertidos a hora del centro de M&eacute;xico.</p>
+        <h3>Venezuela, Panam&aacute; y Rep&uacute;blica Dominicana</h3>
+        <p>En el Caribe los playoffs se transmiten por <b>ESPN Latinoam&eacute;rica</b> y <b>Disney+</b>. Cada juego tiene su p&aacute;gina con horario local: revisa la p&aacute;gina de tu equipo y elige tu pa&iacute;s.</p>
+        <h3>Equipos con m&aacute;s b&uacute;squedas</h3>
+        <div class="teams">
+            {% for slug, name in top_teams %}<a href="/equipo/{{ slug }}">{{ name }}</a>{% endfor %}
+        </div>
+        <p style="margin-top:0.6rem;"><a href="/liga/mlb">Ver toda la MLB hoy &rarr;</a></p>
+    </div>
+
+    <div class="seo-card">
+        <h2>Preguntas frecuentes</h2>
+        {% for q, a in faq %}
+        <h3>{{ q }}</h3>
+        <p>{{ a }}</p>
+        {% endfor %}
+    </div>
+</main>
+
+<footer class="footer">
+    <p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; Tu gu&iacute;a deportiva en M&eacute;xico y LATAM</p>
+    <p style="margin-top:0.3rem"><a href="/sobre-nosotros">Sobre nosotros</a> &middot; <a href="/canales">Canales</a> &middot; <a href="/equipos">Equipos</a></p>
+</footer>
+</body>
+</html>

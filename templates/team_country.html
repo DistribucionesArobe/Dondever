@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dónde ver {{ team_name }} en {{ country_name }} hoy — Canales y horarios | DondeVer</title>
-    <meta name="description" content="¿Dónde ver a {{ team_name }} en {{ country_name }} hoy? Canales de TV, cable y streaming disponibles. {{ team_league }} en vivo desde {{ country_name }}.">
-    <meta property="og:title" content="Dónde ver {{ team_name }} en {{ country_name }} hoy | DondeVer">
-    <meta property="og:description" content="Canales, horarios y streaming de {{ team_name }} disponibles en {{ country_name }}.">
+    <title>{{ seo_title }}</title>
+    <meta name="description" content="{{ seo_desc }}">
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_desc }}">
     <meta property="og:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
     <meta property="og:url" content="{{ app_url }}/equipo/{{ team_slug }}/en/{{ country_slug }}">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="es_MX">
     <meta property="og:site_name" content="DondeVer.app">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Dónde ver {{ team_name }} en {{ country_name }}">
+    <meta name="twitter:title" content="{{ seo_title }}">
     <meta name="twitter:description" content="Canales y streaming de {{ team_name }} en {{ country_name }}.">
     <meta name="twitter:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
     <link rel="canonical" href="{{ app_url }}/equipo/{{ team_slug }}/en/{{ country_slug }}">
@@ -127,7 +127,7 @@
 
 <div class="hero">
     {% if team_logo %}<img src="{{ team_logo }}" alt="{{ team_name }}" class="team-logo-hero" loading="lazy">{% endif %}
-    <h1>Dónde ver {{ team_name }} en {{ country_name }} {{ country_flag }}</h1>
+    <h1>{{ seo_h1 }}</h1>
     <p>Canales de TV, cable y streaming para ver los partidos de {{ team_name }} ({{ team_league }}) en vivo desde {{ country_name }}.</p>
 </div>
 
@@ -181,7 +181,7 @@
             {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
             <span class="team-name">{{ top_team.name }}</span>
             {% if state == 'pre' %}
-            <span class="gc-time">{{ format_mx_time(game.date) }}</span>
+            <span class="gc-time">{{ format_local_time(game.date) }} <small style="opacity:.7;font-weight:500;">{{ tz_label }}</small></span>
             {% else %}
             <span class="team-score">{{ top_team.score }}</span>
             {% endif %}
