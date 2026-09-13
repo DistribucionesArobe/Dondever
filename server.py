@@ -428,7 +428,8 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         cacheable = (
             request.method == "GET"
-            and (path.startswith(_HTML_CACHE_PREFIXES) or path in _HTML_CACHE_HUBS)
+            and (path.startswith(_HTML_CACHE_PREFIXES) or path in _HTML_CACHE_HUBS
+                 or path.startswith("/sitemap"))
             and "nocache" not in request.query_params
             and "token" not in request.query_params
         )
@@ -447,7 +448,7 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
         ctype = response.headers.get("content-type", "")
-        if response.status_code != 200 or "text/html" not in ctype:
+        if response.status_code != 200 or not ("text/html" in ctype or "xml" in ctype):
             return response
         try:
             body = b""
@@ -783,7 +784,7 @@ async def playoffs_mlb(request: Request):
     all_games = await get_todays_games()
     games = [g for g in all_games if g.get("league_slug") == "mlb"
              and g.get("home", {}).get("name") != "TBD" and g.get("away", {}).get("name") != "TBD"]
-    is_postseason = any(g.get("season_type") == 3 or g.get("series_note") for g in games) or now.month in (10, 11)
+    is_postseason = any(g.get("season_type") == 3 or g.get("series_note") for g in games)
     games.sort(key=lambda g: ({"in": 0, "pre": 1, "post": 2}.get(g["status"]["state"], 3), g.get("date", "")))
 
     upcoming = []
@@ -801,14 +802,15 @@ async def playoffs_mlb(request: Request):
 
     live = [g for g in games if g["status"]["state"] == "in"]
     pre = [g for g in games if g["status"]["state"] == "pre"]
-    if live:
+    _sn = lambda n: _short_team_name(n, "MLB")
+    if is_postseason and live:
         g = live[0]
-        seo_title = f"Playoffs MLB {year} EN VIVO: {g['away']['name']} vs {g['home']['name']} | Dónde ver"
-    elif pre:
+        seo_title = f"Playoffs MLB {year} EN VIVO: {_sn(g['away']['name'])} vs {_sn(g['home']['name'])} | Dónde ver"
+    elif is_postseason and pre:
         g = pre[0]
         t = format_mx_time(g.get("date", "")).lstrip("0")
         ch = (g.get("broadcasts") or [{}])[0].get("channel", "")
-        seo_title = f"Playoffs MLB {year} hoy: {g['away']['name']} vs {g['home']['name']} {t} MX{(' en ' + ch) if ch else ''}"
+        seo_title = f"Playoffs MLB {year} hoy: {_sn(g['away']['name'])} vs {_sn(g['home']['name'])} {t} MX{(' en ' + ch) if ch else ''}"
     else:
         seo_title = f"Dónde ver los playoffs MLB {year}: canales, horarios y calendario | DondeVer"
     seo_h1 = f"Dónde ver los playoffs de MLB {year} en vivo"
@@ -6117,7 +6119,8 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     first_ch = (country_channels[0].get("name") if country_channels else "") or ""
     first_ch = first_ch.split(" / ")[0]
     cname = country["name"]
-    seo_title = f"Dónde ver {team_name} en {cname} hoy: canales y horario | DondeVer"
+    _tshort = _short_team_name(team_name, team_league)
+    seo_title = f"Dónde ver {_tshort} en {cname} hoy: canales y horario | DondeVer"
     seo_h1 = f"Dónde ver {team_name} en {cname} {country['flag']}"
     seo_desc = (f"¿Dónde ver a {team_name} en {cname} hoy? Canales de TV, cable y streaming "
                 f"({first_ch}) con horario de {cname}. {team_league} en vivo.")
