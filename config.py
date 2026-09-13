@@ -1542,6 +1542,8 @@ CHANNEL_ALIASES = {
     "NFL+": {"name": "NFL+", "country": "US", "type": "streaming"},
     "NFL Network": {"name": "NFL Network", "country": "US", "type": "cable"},
     "NFLN": {"name": "NFL Network", "country": "US", "type": "cable"},
+    "NFL Game Pass": {"name": "NFL Game Pass (DAZN)", "country": "MX", "type": "streaming"},
+    "NFL Game Pass (DAZN)": {"name": "NFL Game Pass (DAZN)", "country": "MX", "type": "streaming"},
     "NBA TV": {"name": "NBA TV", "country": "US", "type": "cable"},
     "MLB Network": {"name": "MLB Network", "country": "US", "type": "cable"},
     "MLBN": {"name": "MLB Network", "country": "US", "type": "cable"},

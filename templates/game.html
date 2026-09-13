@@ -36,14 +36,17 @@
       "description": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}Dónde ver {{ game.name }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.{% else %}Dónde ver {{ first_team }} vs {{ second_team }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.{% endif %}{% if odds %} Momios y pronóstico actualizados.{% endif %}",
       "startDate": "{{ game.date }}",
       "eventStatus": "https://schema.org/{% if game.status.display in ('Pospuesto', 'Postponed') %}EventPostponed{% elif game.status.display in ('Cancelado', 'Cancelled') %}EventCancelled{% elif game.status.state == 'post' %}EventCompleted{% else %}EventScheduled{% endif %}",
-      "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
+      "eventAttendanceMode": "https://schema.org/{% if game.venue %}MixedEventAttendanceMode{% else %}OnlineEventAttendanceMode{% endif %}",
       "image": "{{ app_url }}/og/partido/{{ game|game_url|replace('/partido/', '') }}.png",
       "url": "{{ app_url }}{{ game|game_url }}",
       "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport in ('football', 'college-football') %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% elif game.sport == 'mma' %}Mixed Martial Arts{% elif game.sport == 'racing' %}Auto Racing{% elif game.sport == 'boxing' %}Boxing{% else %}{{ game.sport }}{% endif %}",
-      {% if game.venue %}"location": {
-        "@type": "Place",
-        "name": "{{ game.venue }}"
-      },{% endif %}
+      "location": {% if game.venue %}[
+        {"@type": "Place", "name": "{{ game.venue }}", "address": "{{ game.venue }}"},
+        {"@type": "VirtualLocation", "url": "{{ app_url }}{{ game|game_url }}"}
+      ]{% else %}{
+        "@type": "VirtualLocation",
+        "url": "{{ app_url }}{{ game|game_url }}"
+      }{% endif %},
       {% if game.sport not in ('racing', 'golf', 'tennis') and game.home.name != 'TBD' and game.away.name != 'TBD' %}
       "homeTeam": {
         "@type": "SportsTeam",
@@ -93,7 +96,7 @@
       "@type": "BreadcrumbList",
       "itemListElement": [
         {"@type": "ListItem", "position": 1, "name": "DondeVer", "item": "{{ app_url }}/"},
-        {"@type": "ListItem", "position": 2, "name": "{{ game.league_name }}", "item": "{{ app_url }}/liga/{{ game.league_slug }}"},
+        {"@type": "ListItem", "position": 2, "name": "{{ game.league_name or 'Partidos' }}", "item": "{{ app_url }}/liga/{{ game.league_slug or '' }}"},
         {"@type": "ListItem", "position": 3, "name": "{{ first_team }} vs {{ second_team }}"}
       ]
     }

@@ -82,6 +82,8 @@
             "name": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}{{ game.name }}{% else %}{{ game.away.name }} vs {{ game.home.name }}{% endif %}",
             "startDate": "{{ game.date }}",
             "url": "{{ app_url }}{{ game|game_url }}",
+            "eventAttendanceMode": "https://schema.org/{% if game.venue %}MixedEventAttendanceMode{% else %}OnlineEventAttendanceMode{% endif %}",
+            "location": {% if game.venue %}[{"@type": "Place", "name": "{{ game.venue }}", "address": "{{ game.venue }}"}, {"@type": "VirtualLocation", "url": "{{ app_url }}{{ game|game_url }}"}]{% else %}{"@type": "VirtualLocation", "url": "{{ app_url }}{{ game|game_url }}"}{% endif %},
             {% if game.sport not in ('racing', 'golf', 'tennis') and game.home.name != 'TBD' and game.away.name != 'TBD' %}
             "homeTeam": {"@type": "SportsTeam", "name": "{{ game.home.name }}"},
             "awayTeam": {"@type": "SportsTeam", "name": "{{ game.away.name }}"},

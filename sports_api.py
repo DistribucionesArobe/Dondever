@@ -56,6 +56,35 @@ def _translate_status(desc: str) -> str:
             return es
     return desc
 
+def nfl_mx_channels(us_channels: list[str]) -> list[str]:
+    """Infer Mexico channels for an NFL game from its US broadcasters.
+
+    Rights in Mexico (temporada 2026): ESPN MX / Disney+ tienen MNF y SNF;
+    Fox Sports MX tiene TNF y ventanas dominicales; NFL Game Pass (DAZN)
+    transmite todos los juegos. Netflix: juegos navideños.
+    """
+    out: list[str] = []
+
+    def add(*chs):
+        for c in chs:
+            if c not in out:
+                out.append(c)
+
+    joined = " ".join(c.lower() for c in us_channels)
+    if "netflix" in joined:
+        add("Netflix")
+    if "prime" in joined or "amazon" in joined:           # Thursday Night Football
+        add("Fox Sports MX")
+    if "espn" in joined or "abc" in joined:               # Monday Night Football
+        add("ESPN MX", "Disney+")
+    if "nbc" in joined or "peacock" in joined:            # Sunday Night Football
+        add("ESPN MX", "Disney+")
+    if "cbs" in joined or "fox" in joined:                # Sunday afternoon windows
+        add("Fox Sports MX")
+    add("NFL Game Pass")                                  # todos los juegos
+    return out
+
+
 def _normalize_channel(raw: str) -> str:
     """Normalize ESPN's truncated channel names to canonical form."""
     raw = raw.strip()
@@ -198,6 +227,9 @@ DEFAULT_LEAGUE_CHANNELS = {
     # ── Béisbol México ──
     "lmp": ["TUDN", "ESPN MX", "Canal 5"],
     "lmb": ["ESPN MX", "TUDN"],
+    # ── Béisbol invernal del Caribe (Oct–Ene) ──
+    "lvbp": ["Televen", "IVC", "ByM Sport", "SimpleTV"],
+    "lidom": ["CDN Deportes", "Teleantillas", "Coral 39", "Digital 15"],
     # ── Basquetbol México ──
     "lnbp": ["ESPN MX", "TUDN", "Claro Sports"],
     # ── NHL 2025-26 ──
@@ -804,6 +836,9 @@ async def parse_espn_events_enriched(
                         team_channels = channels
                         break
             mx_defaults = team_channels or ["TUDN", "ViX"]
+        elif league_slug == "nfl":
+            # NFL: rights-based mapping (TNF→Fox Sports MX, MNF/SNF→ESPN MX/Disney+, todos→Game Pass)
+            mx_defaults = nfl_mx_channels([b["channel"] for b in espn_broadcasts])
         elif not has_mx_channel:
             # Try TheSportsDB first — match this game in pre-fetched schedule
             for sdb_ev in sportsdb_events:
@@ -1747,9 +1782,24 @@ async def fetch_sportsdb_next_events(league_id: str) -> list[dict]:
             logger.warning(f"SportsDB next events error for league {league_id}: {e}")
             return []
 
+    # Default channels for this league (TheSportsDB rarely has TV data for LatAm leagues)
+    _slug = next((s for s, i in SPORTSDB_LEAGUE_MAP.items() if i == str(league_id)), "")
+    _default_chs = []
+    for ch in DEFAULT_LEAGUE_CHANNELS.get(_slug, []):
+        info = CHANNEL_ALIASES.get(ch, {})
+        _default_chs.append({"name": info.get("name", ch), "country": info.get("country", "MX")})
+
     events = data.get("events") or []
     results = []
     for ev in events:
+        chs = []
+        tv = (ev.get("strTVStation") or "").strip()
+        if tv:
+            for c in tv.split(","):
+                c = c.strip()
+                if c:
+                    info = CHANNEL_ALIASES.get(_normalize_channel(c), CHANNEL_ALIASES.get(c, {}))
+                    chs.append({"name": info.get("name", c), "country": info.get("country", "")})
         results.append({
             "id": ev.get("idEvent", ""),
             "home": ev.get("strHomeTeam", ""),
@@ -1757,7 +1807,8 @@ async def fetch_sportsdb_next_events(league_id: str) -> list[dict]:
             "home_logo": ev.get("strHomeTeamBadge", ""),
             "away_logo": ev.get("strAwayTeamBadge", ""),
             "date_utc": ev.get("strTimestamp") or ev.get("dateEvent", ""),
-            "channels": [],
+            "date": ev.get("strTimestamp") or ev.get("dateEvent", ""),
+            "channels": chs or list(_default_chs),
         })
     _sportsdb_events_cache[cache_key] = results
     return results
@@ -2403,6 +2454,15 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
                         "country": info.get("country", ""),
                     })
 
+            # NFL: add Mexico channels inferred from US broadcaster
+            if league == "nfl" and not any(c.get("country") == "MX" for c in channels):
+                for mx in nfl_mx_channels([c["name"] for c in channels]):
+                    info = CHANNEL_ALIASES.get(mx, {})
+                    display = info.get("name", mx)
+                    if display.lower() not in seen_ch:
+                        seen_ch.add(display.lower())
+                        channels.append({"name": display, "country": "MX"})
+
             upcoming.append({
                 "id": event.get("id", ""),
                 "home": home_c.get("team", {}).get("displayName", ""),
@@ -2410,7 +2470,7 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
                 "home_logo": home_c.get("team", {}).get("logo", ""),
                 "away_logo": away_c.get("team", {}).get("logo", ""),
                 "date": event.get("date", ""),
-                "channels": channels[:6],
+                "channels": channels[:8],
             })
 
     upcoming.sort(key=lambda x: x.get("date", ""))

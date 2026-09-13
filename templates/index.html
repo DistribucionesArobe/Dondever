@@ -88,6 +88,8 @@
                 "startDate": "{{ game.date }}",
                 "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.state == 'in' %}EventScheduled{% else %}EventScheduled{% endif %}",
                 "url": "{{ app_url }}{{ game|game_url }}",
+                "eventAttendanceMode": "https://schema.org/{% if game.venue %}MixedEventAttendanceMode{% else %}OnlineEventAttendanceMode{% endif %}",
+                "location": {% if game.venue %}[{"@type": "Place", "name": "{{ game.venue }}", "address": "{{ game.venue }}"}, {"@type": "VirtualLocation", "url": "{{ app_url }}{{ game|game_url }}"}]{% else %}{"@type": "VirtualLocation", "url": "{{ app_url }}{{ game|game_url }}"}{% endif %},
                 "sport": "{% if game.sport == 'soccer' %}Fútbol{% elif game.sport == 'basketball' %}Basketball{% elif game.sport in ('football', 'college-football') %}American Football{% elif game.sport == 'baseball' %}Baseball{% elif game.sport == 'hockey' %}Ice Hockey{% elif game.sport == 'racing' %}Automovilismo{% elif game.sport == 'mma' %}MMA{% elif game.sport == 'boxing' %}Boxeo{% else %}{{ game.sport }}{% endif %}",
                 {% if game.sport not in ('racing', 'golf', 'tennis') and game.home.name != 'TBD' and game.away.name != 'TBD' %}
                 "homeTeam": {"@type": "SportsTeam", "name": "{{ game.home.name }}"},

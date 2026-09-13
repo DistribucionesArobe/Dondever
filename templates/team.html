@@ -3,22 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo_title }}</title>
+    <meta name="description" content="{{ seo_desc }}">
     {% if nfl_team_extra %}
-    <title>D&oacute;nde ver {{ team_name }} hoy en vivo: canal en M&eacute;xico, horario NFL | DondeVer</title>
-    <meta name="description" content="D&oacute;nde ver a {{ team_name }} hoy en vivo en M&eacute;xico. Canal de TV (Canal 5, FOX, ESPN), horario, streaming, momios y resultados NFL actualizados. {{ nfl_team_extra.division }}.">
-    <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal mexico, {{ team_aka }}, NFL en vivo, {{ team_name }} horario mexico, {{ team_name }} canal 5, {{ team_name }} fox sports">
+    <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal mexico, {{ team_aka }}, NFL en vivo, {{ team_name }} horario mexico, {{ team_name }} programación, {{ team_name }} calendario">
     {% else %}
-    <title>D&oacute;nde ver {{ team_name }} hoy en vivo: horario, canal y TV | DondeVer</title>
-    <meta name="description" content="D&oacute;nde ver a {{ team_name }} hoy en vivo. Horario, canal de TV, streaming y cuotas de {{ team_league }} en M&eacute;xico, USA y Latinoam&eacute;rica. Toda la informaci&oacute;n actualizada.">
-    <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal, {{ team_aka }}, {{ team_league }} en vivo, {{ team_name }} horario">
+    <meta name="keywords" content="donde ver {{ team_name }}, {{ team_name }} en vivo, {{ team_name }} hoy, {{ team_name }} canal, {{ team_aka }}, {{ team_league }} en vivo, {{ team_name }} horario, {{ team_name }} programación, {{ team_name }} calendario">
     {% endif %}
-    {% if nfl_team_extra %}
-    <meta property="og:title" content="D&oacute;nde ver {{ team_name }} hoy en vivo: canal en M&eacute;xico, horario NFL | DondeVer">
-    <meta property="og:description" content="Canal de TV, horario y streaming de {{ team_name }} (NFL) en M&eacute;xico. {{ nfl_team_extra.division }}.">
-    {% else %}
-    <meta property="og:title" content="D&oacute;nde ver {{ team_name }} hoy en vivo: horario, canal y TV | DondeVer">
-    <meta property="og:description" content="Horario, canal de TV y streaming de {{ team_name }} ({{ team_league }}) en M&eacute;xico, USA y Latinoam&eacute;rica.">
-    {% endif %}
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_desc }}">
+    <meta name="robots" content="max-snippet:-1, max-image-preview:large">
+    {# Título dinámico: cambia con hora/canal del juego → Google debe recrawlear seguido #}
     <meta property="og:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -27,8 +22,8 @@
     <meta property="og:locale" content="es_MX">
     <meta property="og:site_name" content="DondeVer.app">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="D&oacute;nde ver {{ team_name }} hoy en vivo: horario, canal y TV">
-    <meta name="twitter:description" content="Canales, horarios y streaming de {{ team_league }} en México, USA y Latinoamérica.">
+    <meta name="twitter:title" content="{{ seo_title }}">
+    <meta name="twitter:description" content="{{ seo_desc }}">
     <meta name="twitter:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
     <link rel="canonical" href="https://dondever.app/equipo/{{ team_slug }}">
     {{ hreflang_tags(request.url) }}
@@ -61,7 +56,7 @@
       "@type": "BreadcrumbList",
       "itemListElement": [
         {"@type": "ListItem", "position": 1, "name": "DondeVer", "item": "https://dondever.app/"},
-        {"@type": "ListItem", "position": 2, "name": "{{ team_league }}", "item": "https://dondever.app/liga/{{ team_league|lower|replace(' ', '-') }}"},
+        {% if team_league %}{"@type": "ListItem", "position": 2, "name": "{{ team_league }}", "item": "https://dondever.app/liga/{{ team_league|lower|replace(' ', '-') }}"},{% else %}{"@type": "ListItem", "position": 2, "name": "Equipos", "item": "https://dondever.app/equipos"},{% endif %}
         {"@type": "ListItem", "position": 3, "name": "{{ team_name }}"}
       ]
     }
@@ -301,7 +296,7 @@
         <a href="/liga/{{ team_league|lower|replace(' ', '-') }}" style="color:#10b981;text-decoration:none;">{{ team_league }}</a> &rsaquo;
         <span>{{ team_name }}</span>
     </nav>
-    <h1 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:0.6rem;">D&oacute;nde ver {{ team_name }} hoy en vivo</h1>
+    <h1 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:0.6rem;">{{ seo_h1 }}</h1>
 
     <div class="team-hero">
         {% if team_logo %}
@@ -426,8 +421,14 @@
                 {% if nxt.channels[0] is mapping %}
                     {% set mx_ch = nxt.channels|selectattr('country','equalto','MX')|list %}
                     {% set us_ch = nxt.channels|selectattr('country','equalto','US')|list %}
-                    {% if mx_ch %}<span style="font-weight:600;">MX:</span> {% for c in mx_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% else %}<span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span>{% endif %}
+                    {% set ve_ch = nxt.channels|selectattr('country','equalto','VE')|list %}
+                    {% set do_ch = nxt.channels|selectattr('country','equalto','DO')|list %}
+                    {% set other_ch = nxt.channels|rejectattr('country','in',['MX','US','VE','DO'])|list %}
+                    {% if mx_ch %}<span style="font-weight:600;">MX:</span> {% for c in mx_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% elif not ve_ch and not do_ch %}<span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span>{% endif %}
+                    {% if ve_ch %}<span style="font-weight:600;">VE:</span> {% for c in ve_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% endif %}
+                    {% if do_ch %}<span style="font-weight:600;">RD:</span> {% for c in do_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% endif %}
                     {% if us_ch %}<span style="margin-left:0.3rem;font-weight:600;">USA:</span> {% for c in us_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% endif %}
+                    {% for c in other_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}
                 {% else %}
                     {% for ch in nxt.channels %}
                     <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ ch }}</span>
@@ -455,7 +456,7 @@
     {# ══ PROXIMOS PARTIDOS ══ #}
     {% if upcoming_games %}
     <div style="margin-top:1rem;">
-        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Pr&oacute;ximos partidos</h2>
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Calendario y programaci&oacute;n de {{ team_name }}: pr&oacute;ximos partidos</h2>
         <div style="font-size:0.65rem;color:#9ca3af;margin-bottom:0.3rem;">Hora centro de M&eacute;xico (CDMX)</div>
         <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
             {% for u in upcoming_games %}

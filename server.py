@@ -885,9 +885,27 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
                 if g not in channel_games:
                     channel_games.append(g)
 
+    # ── Soft-404 guard (GSC: kfmb-8.1-(cbs), kmsp-tv, kunp-16, wxix-fox19, fanduel-sn-west…)
+    # Regional US affiliates / RSNs are useless for our LATAM audience → real 404.
+    # Unknown channel with no games today (not curated, no affiliate) → 404 too.
+    _regional_ok = {"win-sports", "willow-tv", "wwe-network", "wapa-deportes", "mlb.tv", "nba.tv", "nfl.tv", "nhl.tv"}
+    _regional_us = channel_slug not in _regional_ok and (
+        re.match(r"^[kw][a-z]{2,3}(-|\d|$)", channel_slug) or re.search(
+            r"(fanduel-sn|bally|nbc-sports-(?!mx)|root-sports|marquee|yes-network|^sny$|^nesn$|^masn|"
+            r"^sportsnet|^[a-z]+\.tv$|fox\d{1,2}$|cbs\)|\(cbs|\(nbc|\(abc|\(fox)", channel_slug))
+    _is_curated = channel_slug in CHANNEL_PAGES or (channel_name and channel_name in STREAMING_AFFILIATES)
+    if _regional_us and not _is_curated:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404,
+            context={"message": "Canal regional no disponible en Latinoamérica."}
+        )
+    if not channel_name and not _is_curated:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404,
+            context={"message": "Canal no encontrado."}
+        )
     if not channel_name:
-        # Try to reconstruct name from slug for SEO even with no games today
-        channel_name = channel_slug.replace("-", " ").title()
+        channel_name = CHANNEL_PAGES.get(channel_slug, {}).get("name") or channel_slug.replace("-", " ").title()
 
     # Check if this is a streaming platform with affiliate
     saff = STREAMING_AFFILIATES.get(channel_name)
@@ -920,6 +938,8 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             "today_display": format_date_es(viewing_date),
             "prev_date": prev_date,
             "next_date": next_date,
+            # ?date= variants are thin duplicates → noindex (canonical already points to /canal/{slug})
+            "noindex": bool(date) or len(channel_games) == 0,
         },
     )
 
@@ -3769,35 +3789,113 @@ def _sitemap_hreflang(loc: str) -> str:
     return "\n".join(lines)
 
 
-@app.get("/sitemap.xml")
-async def sitemap_xml():
-    """Dynamic sitemap with today's game pages for Google indexing."""
+def _sm_url(loc: str, lastmod: str, freq: str, priority: str, hreflang: bool = False) -> str:
+    hl = f'\n{_sitemap_hreflang(loc)}' if hreflang else ""
+    return (f'  <url>\n    <loc>{loc}</loc>{hl}\n'
+            f'    <lastmod>{lastmod}</lastmod>\n'
+            f'    <changefreq>{freq}</changefreq>\n'
+            f'    <priority>{priority}</priority>\n  </url>')
+
+
+def _sm_wrap(urls: list) -> Response:
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+           ' xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
+           + "\n".join(urls) + '\n</urlset>')
+    return Response(content=xml, media_type="application/xml",
+                    headers={"Cache-Control": "public, max-age=1800"})
+
+
+# Honest lastmod helpers — Google ignores sitemaps where every lastmod == today.
+def _sm_dates():
     today = datetime.now(TZ_MX)
-    today_str = today.strftime("%Y-%m-%d")
+    week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
+    month_start = today.strftime("%Y-%m-01")
+    return today.strftime("%Y-%m-%d"), week_start, month_start
 
-    games = await get_todays_games()
 
-    home_loc = APP_URL
-    urls = [
-        f'  <url>\n    <loc>{home_loc}</loc>\n'
-        f'{_sitemap_hreflang(home_loc)}\n'
-        f'    <lastmod>{today_str}</lastmod>\n'
-        f'    <changefreq>hourly</changefreq>\n'
-        f'    <priority>1.0</priority>\n  </url>'
+_SM_STATIC_LASTMOD = "2026-09-12"  # bump when legal/guide copy changes
+
+
+@app.get("/sitemap.xml")
+async def sitemap_index():
+    """Sitemap index → 4 sub-sitemaps (core / partidos / equipos / equipos-paises)."""
+    today_str, week_start, month_start = _sm_dates()
+    parts = [
+        ("sitemap-core.xml", today_str),
+        ("sitemap-partidos.xml", today_str),
+        ("sitemap-equipos.xml", today_str),
+        ("sitemap-equipos-paises.xml", month_start),
     ]
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+           + "\n".join(f'  <sitemap>\n    <loc>{APP_URL}/{p}</loc>\n    <lastmod>{lm}</lastmod>\n  </sitemap>'
+                       for p, lm in parts)
+           + '\n</sitemapindex>')
+    return Response(content=xml, media_type="application/xml",
+                    headers={"Cache-Control": "public, max-age=1800"})
 
+
+@app.get("/sitemap-partidos.xml")
+async def sitemap_partidos():
+    """Today's games, matchups and recaps — changes hourly."""
+    today_str, _, _ = _sm_dates()
+    games = await get_todays_games()
+    urls = []
     for game in games:
-        # Skip TBD placeholder games — they have no real content
         if game.get("home", {}).get("name", "") == "TBD" or game.get("away", {}).get("name", "") == "TBD":
             continue
-        game_loc = f'{APP_URL}{_game_url(game)}'
-        urls.append(
-            f'  <url>\n    <loc>{game_loc}</loc>\n'
-            f'{_sitemap_hreflang(game_loc)}\n'
-            f'    <lastmod>{today_str}</lastmod>\n'
-            f'    <changefreq>hourly</changefreq>\n'
-            f'    <priority>0.8</priority>\n  </url>'
-        )
+        urls.append(_sm_url(f'{APP_URL}{_game_url(game)}', today_str, "hourly", "0.8", hreflang=True))
+        home_slug = _slugify_team(game["home"]["name"])
+        away_slug = _slugify_team(game["away"]["name"])
+        if home_slug and away_slug:
+            urls.append(_sm_url(f'{APP_URL}/donde-ver/{away_slug}-vs-{home_slug}', today_str, "daily", "0.7"))
+        if game.get("status", {}).get("state") == "post":
+            urls.append(_sm_url(f'{APP_URL}/resultado/{_make_game_slug(game)}', today_str, "never", "0.5"))
+    return _sm_wrap(urls)
+
+
+@app.get("/sitemap-equipos.xml")
+async def sitemap_equipos():
+    """Team pages. lastmod = today only if the team plays today, else start of week."""
+    today_str, week_start, _ = _sm_dates()
+    games = await get_todays_games()
+    playing_today = set()
+    for game in games:
+        for side in ("home", "away"):
+            playing_today.add(_slugify_team(game[side]["name"]))
+    playing_today.discard("")
+    urls = [_sm_url(f'{APP_URL}/equipos', today_str, "daily", "0.8")]
+    all_team_slugs = set(POPULAR_TEAMS.keys()) | playing_today
+    for team_slug in sorted(all_team_slugs):
+        plays = team_slug in playing_today
+        t_priority = "0.9" if plays else ("0.8" if team_slug in NFL_TEAM_EXTRA else "0.7")
+        urls.append(_sm_url(f'{APP_URL}/equipo/{team_slug}', today_str if plays else week_start,
+                            "daily", t_priority))
+    for team_slug in sorted(POPULAR_TEAMS.keys()):
+        plays = team_slug in playing_today
+        urls.append(_sm_url(f'{APP_URL}/equipo/{team_slug}/calendario',
+                            today_str if plays else week_start, "daily", "0.6"))
+    return _sm_wrap(urls)
+
+
+@app.get("/sitemap-equipos-paises.xml")
+async def sitemap_equipos_paises():
+    """Team × country pages — evergreen, monthly lastmod."""
+    _, _, month_start = _sm_dates()
+    urls = []
+    for team_slug in sorted(POPULAR_TEAMS.keys()):
+        for c_slug in TEAM_COUNTRY_SEO:
+            urls.append(_sm_url(f'{APP_URL}/equipo/{team_slug}/en/{c_slug}', month_start, "weekly", "0.6"))
+    return _sm_wrap(urls)
+
+
+@app.get("/sitemap-core.xml")
+async def sitemap_core():
+    """Home, leagues, sport hubs, channels, countries, guides, legal."""
+    today_str, week_start, month_start = _sm_dates()
+
+    urls = [_sm_url(APP_URL, today_str, "hourly", "1.0", hreflang=True)]
 
     # Static pages (legal + guides)
     static_pages = [
@@ -3847,143 +3945,30 @@ async def sitemap_xml():
         ("guia/guia-canales-deportivos-mexico", "weekly", "0.8"),
     ]
     for page, freq, priority in static_pages:
-        pg_loc = f'{APP_URL}/{page}'
-        urls.append(
-            f'  <url>\n    <loc>{pg_loc}</loc>\n'
-            f'{_sitemap_hreflang(pg_loc)}\n'
-            f'    <lastmod>{today_str}</lastmod>\n'
-            f'    <changefreq>{freq}</changefreq>\n'
-            f'    <priority>{priority}</priority>\n  </url>'
-        )
+        # "-hoy" hubs change daily; guides/legal only when edited
+        lm = today_str if page.endswith("-hoy") else _SM_STATIC_LASTMOD
+        urls.append(_sm_url(f'{APP_URL}/{page}', lm, freq, priority, hreflang=True))
 
-    # Permanent league landing pages (high priority — always have content)
+    # Permanent league landing pages (daily content)
     for slug in LEAGUES:
-        lg_loc = f'{APP_URL}/liga/{slug}'
-        urls.append(
-            f'  <url>\n    <loc>{lg_loc}</loc>\n'
-            f'{_sitemap_hreflang(lg_loc)}\n'
-            f'    <lastmod>{today_str}</lastmod>\n'
-            f'    <changefreq>daily</changefreq>\n'
-            f'    <priority>0.9</priority>\n  </url>'
-        )
+        urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.9", hreflang=True))
 
-    # Sport-today pages (high priority — always have SEO content)
+    # Sport-today hubs
     for sport_slug in SPORT_TODAY_PAGES:
-        urls.append(
-            f'  <url>\n    <loc>{APP_URL}/{sport_slug}</loc>\n'
-            f'    <lastmod>{today_str}</lastmod>\n'
-            f'    <changefreq>daily</changefreq>\n'
-            f'    <priority>0.9</priority>\n  </url>'
-        )
+        urls.append(_sm_url(f'{APP_URL}/{sport_slug}', today_str, "daily", "0.9"))
 
-    # Channel pages (SEO: "que pasan hoy en ESPN")
+    # Curated channel pages ("qué pasan hoy en ESPN")
     for ch_slug in CHANNEL_PAGES:
-        urls.append(
-            f'  <url>\n    <loc>{APP_URL}/canal/{ch_slug}</loc>\n'
-            f'    <lastmod>{today_str}</lastmod>\n'
-            f'    <changefreq>daily</changefreq>\n'
-            f'    <priority>0.8</priority>\n  </url>'
-        )
+        urls.append(_sm_url(f'{APP_URL}/canal/{ch_slug}', today_str, "daily", "0.8"))
 
-    # Matchup pages (SEO: "donde ver america vs chivas")
-    for game in games:
-        home_slug = _slugify_team(game["home"]["name"])
-        away_slug = _slugify_team(game["away"]["name"])
-        if home_slug and away_slug:
-            matchup = f"{away_slug}-vs-{home_slug}"
-            urls.append(
-                f'  <url>\n    <loc>{APP_URL}/donde-ver/{matchup}</loc>\n'
-                f'    <lastmod>{today_str}</lastmod>\n'
-                f'    <changefreq>daily</changefreq>\n'
-                f'    <priority>0.7</priority>\n  </url>'
-            )
-
-    # Country pages (SEO: "donde ver deportes en venezuela")
+    # Country pages (evergreen)
     for c_slug in COUNTRY_PAGES:
-        urls.append(
-            f'  <url>\n    <loc>{APP_URL}/donde-ver-en-{c_slug}</loc>\n'
-            f'    <lastmod>{today_str}</lastmod>\n'
-            f'    <changefreq>monthly</changefreq>\n'
-            f'    <priority>0.8</priority>\n  </url>'
-        )
+        urls.append(_sm_url(f'{APP_URL}/donde-ver-en-{c_slug}', month_start, "monthly", "0.8"))
 
-    # Streaming comparator
-    urls.append(
-        f'  <url>\n    <loc>{APP_URL}/streaming</loc>\n'
-        f'    <lastmod>{today_str}</lastmod>\n'
-        f'    <changefreq>monthly</changefreq>\n'
-        f'    <priority>0.8</priority>\n  </url>'
-    )
+    urls.append(_sm_url(f'{APP_URL}/streaming', month_start, "monthly", "0.8"))
+    urls.append(_sm_url(f'{APP_URL}/casinos', week_start, "weekly", "0.9"))
 
-    # Casinos comparator (high-value page for affiliate conversion)
-    urls.append(
-        f'  <url>\n    <loc>{APP_URL}/casinos</loc>\n'
-        f'    <lastmod>{today_str}</lastmod>\n'
-        f'    <changefreq>weekly</changefreq>\n'
-        f'    <priority>0.9</priority>\n  </url>'
-    )
-
-    # Team pages (SEO goldmine — all POPULAR_TEAMS + any discovered from today's games)
-    urls.append(
-        f'  <url>\n    <loc>{APP_URL}/equipos</loc>\n'
-        f'    <lastmod>{today_str}</lastmod>\n'
-        f'    <changefreq>daily</changefreq>\n'
-        f'    <priority>0.8</priority>\n  </url>'
-    )
-    all_team_slugs = set(POPULAR_TEAMS.keys())
-    for game in games:
-        for side in ("home", "away"):
-            all_team_slugs.add(_slugify_team(game[side]["name"]))
-    all_team_slugs.discard("")
-    for team_slug in sorted(all_team_slugs):
-        # NFL teams get higher priority (season starting Sept 2026)
-        t_priority = "0.8" if team_slug in NFL_TEAM_EXTRA else "0.7"
-        urls.append(
-            f'  <url>\n    <loc>{APP_URL}/equipo/{team_slug}</loc>\n'
-            f'    <lastmod>{today_str}</lastmod>\n'
-            f'    <changefreq>daily</changefreq>\n'
-            f'    <priority>{t_priority}</priority>\n  </url>'
-        )
-
-    # Team × Country pages (programmatic SEO: "donde ver america en colombia")
-    for team_slug in sorted(POPULAR_TEAMS.keys()):
-        for c_slug in TEAM_COUNTRY_SEO:
-            urls.append(
-                f'  <url>\n    <loc>{APP_URL}/equipo/{team_slug}/en/{c_slug}</loc>\n'
-                f'    <lastmod>{today_str}</lastmod>\n'
-                f'    <changefreq>weekly</changefreq>\n'
-                f'    <priority>0.6</priority>\n  </url>'
-            )
-
-    # Team calendar pages (programmatic SEO: "partidos de america esta semana")
-    for team_slug in sorted(POPULAR_TEAMS.keys()):
-        urls.append(
-            f'  <url>\n    <loc>{APP_URL}/equipo/{team_slug}/calendario</loc>\n'
-            f'    <lastmod>{today_str}</lastmod>\n'
-            f'    <changefreq>daily</changefreq>\n'
-            f'    <priority>0.6</priority>\n  </url>'
-        )
-
-    # Recap pages for finished games today
-    for game in games:
-        if game.get("status", {}).get("state") == "post":
-            recap_loc = f'{APP_URL}/resultado/{_make_game_slug(game)}'
-            urls.append(
-                f'  <url>\n    <loc>{recap_loc}</loc>\n'
-                f'    <lastmod>{today_str}</lastmod>\n'
-                f'    <changefreq>never</changefreq>\n'
-                f'    <priority>0.5</priority>\n  </url>'
-            )
-
-    xml = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
-        ' xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
-        + "\n".join(urls) +
-        '\n</urlset>'
-    )
-
-    return Response(content=xml, media_type="application/xml")
+    return _sm_wrap(urls)
 
 
 # ── Static Pages (Legal + Guides for AdSense) ───────────
@@ -5011,6 +4996,110 @@ POPULAR_TEAMS = {
     "ufc": {"name": "UFC", "sport": "MMA", "league": "UFC", "aka": "UFC, Ultimate Fighting"},
 }
 
+def _short_team_name(full_name: str) -> str:
+    """'San Francisco Giants' → 'Giants' using POPULAR_TEAMS; fallback last word."""
+    if not full_name:
+        return ""
+    fl = full_name.lower()
+    best = ""
+    for info in POPULAR_TEAMS.values():
+        n = info.get("name", "")
+        if n and n.lower() in fl and len(n) > len(best):
+            best = n
+    if best:
+        return best
+    parts = full_name.split()
+    return parts[-1] if len(parts) > 1 else full_name
+
+
+def _build_team_seo(team_name: str, team_league: str, search_term: str, games: list,
+                    upcoming_games: list, recent_results: list, is_nfl: bool = False) -> dict:
+    """Title/description/H1 that answer hora + canal for today's game.
+
+    Priority: live now → today (pre) → today finished → next game → default.
+    Titles kept ≤ ~65 chars.
+    """
+    st = search_term.lower()
+    lg = team_league or ("NFL" if is_nfl else "")
+    lg_sfx = f" {lg}" if lg else ""
+
+    def _opp_and_channel(game):
+        home = game.get("home", {}) or {}
+        away = game.get("away", {}) or {}
+        is_home = st in (home.get("name", "") or "").lower()
+        opp_full = away.get("name", "") if is_home else home.get("name", "")
+        opp = _short_team_name(opp_full)
+        ch = ""
+        for b in (game.get("broadcasts") or []):
+            c = b.get("channel") if isinstance(b, dict) else str(b)
+            if c:
+                ch = c
+                break
+        return opp, ch
+
+    today = [g for g in games if (g.get("status") or {}).get("state") in ("pre", "in", "post")]
+    live = [g for g in today if g["status"]["state"] == "in"]
+    pre = [g for g in today if g["status"]["state"] == "pre"]
+    post = [g for g in today if g["status"]["state"] == "post"]
+
+    if live:
+        g = live[0]
+        opp, ch = _opp_and_channel(g)
+        ch_txt = f" en {ch}" if ch else ""
+        return {
+            "title": f"{team_name} vs {opp} EN VIVO hoy{ch_txt} | Dónde ver",
+            "h1": f"{team_name} vs {opp} en vivo hoy{ch_txt}",
+            "desc": f"{team_name} vs {opp} EN VIVO ahora{ch_txt}. Marcador en tiempo real, canal de TV y streaming{lg_sfx} en México, Venezuela, Panamá y Latinoamérica.",
+        }
+    if pre:
+        g = pre[0]
+        opp, ch = _opp_and_channel(g)
+        t = format_mx_time(g.get("date", "")).lstrip("0")
+        ch_txt = f" en {ch}" if ch else ""
+        t_txt = f" {t} MX" if t else ""
+        return {
+            "title": f"{team_name} hoy:{t_txt}{ch_txt} vs {opp} | Dónde ver",
+            "h1": f"Dónde ver {team_name} hoy vs {opp}:{t_txt}{ch_txt}",
+            "desc": f"{team_name} vs {opp} hoy{t_txt} (hora de México){ch_txt}. Canal de TV, streaming y horario{lg_sfx} para México, USA, Venezuela, Panamá y Latinoamérica.",
+        }
+    if post:
+        g = post[0]
+        opp, _ = _opp_and_channel(g)
+        home = g.get("home", {}) or {}
+        away = g.get("away", {}) or {}
+        hs, as_ = home.get("score", ""), away.get("score", "")
+        score = f" {hs}-{as_}" if hs != "" and as_ != "" else ""
+        return {
+            "title": f"{team_name} hoy: resultado vs {opp}{score} y próximo juego | Dónde ver",
+            "h1": f"{team_name} hoy: resultado vs {opp} y próximo partido",
+            "desc": f"Resultado de {team_name} vs {opp}{score} y dónde ver el próximo juego: horario, canal de TV y streaming{lg_sfx}.",
+        }
+    if upcoming_games:
+        u = upcoming_games[0]
+        is_home = st in (u.get("home", "") or "").lower()
+        opp = _short_team_name(u.get("away", "") if is_home else u.get("home", ""))
+        when = format_mx_day_time(u.get("date_utc", "") or u.get("date", "") or "")
+        chs = u.get("channels") or []
+        ch = ""
+        if chs:
+            c0 = chs[0]
+            ch = c0.get("channel") if isinstance(c0, dict) else str(c0)
+        ch_txt = f" en {ch}" if ch else ""
+        when_txt = f" {when}" if when else ""
+        when_short = when.replace(" · ", " ")[:3].lower() + when.replace(" · ", " ")[3:] if when else ""
+        when_short_txt = f" {when_short}" if when_short else ""
+        return {
+            "title": f"Dónde ver {team_name}: próximo juego vs {opp}{when_short_txt} MX",
+            "h1": f"Dónde ver {team_name}: próximo partido vs {opp}{when_txt}",
+            "desc": f"{team_name} no juega hoy. Próximo partido vs {opp}{when_txt} (hora MX){ch_txt}. Calendario, programación, canal de TV y streaming{lg_sfx}.",
+        }
+    return {
+        "title": f"Dónde ver {team_name} hoy en vivo: horario, canal y TV | DondeVer",
+        "h1": f"Dónde ver {team_name} hoy en vivo",
+        "desc": f"Dónde ver a {team_name} hoy en vivo. Horario, canal de TV, streaming, calendario y programación{lg_sfx} en México, USA y Latinoamérica.",
+    }
+
+
 @app.get("/equipo/{team_slug}", response_class=HTMLResponse)
 async def team_page(request: Request, team_slug: str):
     """Dynamic team page with today's games for that team."""
@@ -5206,7 +5295,21 @@ async def team_page(request: Request, team_slug: str):
         today_date_str=today_date_str,
     )
 
+    # Dynamic SEO title/description answering "¿a qué hora y en qué canal?"
+    seo = _build_team_seo(
+        team_name=team_name,
+        team_league=team_league or team_league_seo,
+        search_term=search_term,
+        games=games,
+        upcoming_games=upcoming_games,
+        recent_results=recent_results,
+        is_nfl=(team_sport == "futbol americano"),
+    )
+
     return templates.TemplateResponse(request, "team.html", {
+        "seo_title": seo["title"],
+        "seo_desc": seo["desc"],
+        "seo_h1": seo["h1"],
         "team_name": team_name,
         "team_slug": team_slug,
         "team_logo": team_logo,
