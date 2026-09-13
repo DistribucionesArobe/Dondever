@@ -1523,8 +1523,30 @@ def get_click_stats(days: int = 7) -> dict:
     for day, clicks in data.items():
         if day >= cutoff:
             for k, v in clicks.items():
+                # Ignore junk written before hardening (sqlmap payloads, /go/styles.css…)
+                if not re.fullmatch(r"[a-z0-9_-]{1,32}:[a-z0-9_-]{1,40}", k):
+                    continue
                 result[k] = result.get(k, 0) + v
     return result
+
+
+def _purge_click_junk() -> int:
+    """One-time cleanup of affiliate_clicks.json: drop keys that aren't slug:slug."""
+    try:
+        with open(_CLICKS_FILE, "r") as f:
+            data = _json.load(f)
+    except (FileNotFoundError, _json.JSONDecodeError):
+        return 0
+    removed = 0
+    for day, clicks in list(data.items()):
+        for k in list(clicks.keys()):
+            if not re.fullmatch(r"[a-z0-9_-]{1,32}:[a-z0-9_-]{1,40}", k):
+                del clicks[k]
+                removed += 1
+    if removed:
+        with open(_CLICKS_FILE, "w") as f:
+            _json.dump(data, f, indent=2)
+    return removed
 
 
 # Branded affiliate redirect — "dondever.app/go/betsson" en vez de links largos
@@ -1539,8 +1561,23 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "", request:
     MX → Jubilee/Vivento, US → Betsson, LATAM → 1xBet.
     """
     from fastapi.responses import RedirectResponse
-    from config import get_affiliate_url
+    from config import get_affiliate_url, AFFILIATES, STREAMING_AFFILIATES
     import random as _random
+    # ── Hardening (admin dashboard showed sqlmap payloads in `s` and bots hitting
+    #    /go/styles.css, /go/flag-global.svg). Whitelist both params, skip bots. ──
+    key = (key or "").strip().lower()
+    if not re.fullmatch(r"[a-z0-9_-]{1,32}", key):
+        return Response(status_code=404)
+    _known = key in ("bet", "strendus") or key in AFFILIATES or any(v.get("key") == key for v in STREAMING_AFFILIATES.values())
+    if not _known:
+        return Response(status_code=404)
+    s = (s or "web").strip().lower()
+    if not re.fullmatch(r"[a-z0-9_-]{1,40}", s):
+        s = "other"
+    sport = sport if re.fullmatch(r"[a-z0-9_-]{0,30}", sport or "") else ""
+    _ua = (request.headers.get("user-agent", "") if request is not None else "").lower()
+    _is_bot = any(b in _ua for b in ("bot", "crawl", "spider", "whatsapp", "facebookexternalhit",
+                                     "preview", "curl", "python-requests", "sqlmap", "scanner", "headless"))
     # Legacy: strendus fue removido — redirigir links viejos a betsson
     if key == "strendus":
         key = "betsson"
@@ -1571,7 +1608,8 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "", request:
                 key = "betsson"
             else:
                 key = "1xbet"  # español genérico u otro → 1xBet
-    _track_click(key, s)  # track antes de redirigir
+    if not _is_bot:
+        _track_click(key, s)  # track antes de redirigir (humanos solamente)
     target = get_affiliate_url(key, source=s, sport=sport)
     if target == "#":
         return RedirectResponse(url="/", status_code=302)
@@ -3587,6 +3625,14 @@ try:
             logger.info("Database initialized")
         except Exception as e:
             logger.warning(f"DB init failed (non-fatal): {e}")
+
+        # One-time cleanup of junk in affiliate clicks (sqlmap payloads, bot keys)
+        try:
+            _n = _purge_click_junk()
+            if _n:
+                logger.info(f"Purged {_n} junk affiliate click keys")
+        except Exception as e:
+            logger.warning(f"Click junk purge failed: {e}")
 
         # Seed admin subscriber (ensure owner always gets broadcasts)
         try:
