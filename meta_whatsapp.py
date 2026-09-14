@@ -224,6 +224,41 @@ def mark_as_read(message_id: str) -> bool:
         return False
 
 
+# Últimos estados de entrega (sent/delivered/read/failed) que Meta manda por webhook.
+# Es la única forma de saber POR QUÉ una plantilla "aceptada" (ok:true) nunca llega:
+# el error viene aquí (p. ej. 130472 'parte de un experimento', 131049 'límite por usuario',
+# 131026 'no entregable', 131047 're-engagement').
+from collections import deque as _deque
+DELIVERY_LOG = _deque(maxlen=300)
+
+
+def parse_status_webhook(payload: dict) -> list[dict]:
+    out = []
+    try:
+        for entry in payload.get("entry", []):
+            for change in entry.get("changes", []):
+                value = change.get("value", {})
+                for st in value.get("statuses", []) or []:
+                    errs = []
+                    for e in st.get("errors", []) or []:
+                        errs.append({"code": e.get("code"), "title": e.get("title"),
+                                     "message": e.get("message"),
+                                     "details": (e.get("error_data") or {}).get("details", "")})
+                    rec = {
+                        "id": st.get("id"), "status": st.get("status"),
+                        "to": st.get("recipient_id"), "ts": st.get("timestamp"),
+                        "conversation": ((st.get("conversation") or {}).get("origin") or {}).get("type"),
+                        "billable": (st.get("pricing") or {}).get("billable"),
+                        "category": (st.get("pricing") or {}).get("category"),
+                        "errors": errs,
+                    }
+                    out.append(rec)
+                    DELIVERY_LOG.appendleft(rec)
+    except Exception as e:
+        logger.exception(f"Failed to parse status webhook: {e}")
+    return out
+
+
 def parse_inbound_webhook(payload: dict) -> list[dict]:
     """
     Parse inbound webhook from Meta. Returns list of normalized message dicts:

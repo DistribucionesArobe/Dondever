@@ -3259,6 +3259,14 @@ async def meta_whatsapp_webhook(request: Request):
     except Exception:
         return {"status": "ok"}
 
+    # Estados de entrega (sent/delivered/read/failed + código de error) → DELIVERY_LOG
+    try:
+        for st in meta_whatsapp.parse_status_webhook(payload):
+            if st.get("status") == "failed" or st.get("errors"):
+                logger.warning(f"Meta WA status {st.get('status')} → {st.get('to')}: {st.get('errors')}")
+    except Exception:
+        pass
+
     messages = meta_whatsapp.parse_inbound_webhook(payload)
     if not messages:
         return {"status": "ok"}
@@ -3975,6 +3983,27 @@ async def whatsapp_broadcast_status():
         "meta_whatsapp_configured": wa_configured(),
         "hint": "Usa Meta Cloud API. Set WHATSAPP_ACCESS_TOKEN y WHATSAPP_PHONE_NUMBER_ID en env vars."
     }
+
+
+@app.get("/whatsapp/delivery-log")
+async def whatsapp_delivery_log(token: str = "", to: str = ""):
+    """Estados de entrega que Meta reporta por webhook (sent → delivered → read, o failed + error).
+    Úsalo justo después de /whatsapp/test-send para ver por qué no llega una plantilla."""
+    if not token or token != os.getenv("ADMIN_TOKEN", ""):
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    rows = list(meta_whatsapp.DELIVERY_LOG)
+    if to:
+        rows = [r for r in rows if (r.get("to") or "").endswith(to[-10:])]
+    # Agrupar por message id: último estado + errores
+    by_id: dict = {}
+    for r in rows:
+        cur = by_id.setdefault(r["id"], {"id": r["id"], "to": r["to"], "states": [], "errors": [], "category": r.get("category")})
+        cur["states"].append(f"{r['status']}@{r['ts']}")
+        cur["errors"] += r.get("errors") or []
+    return {"ok": True, "n": len(rows), "messages": list(by_id.values())[:50],
+            "hint": "Si la plantilla queda en 'sent' sin 'delivered' o sale 'failed', el código de error dice la causa "
+                    "(130472 = Meta retiene marketing a ese usuario por experimento; 131049 = límite de marketing por usuario; "
+                    "131026 = no entregable; 131047 = fuera de ventana 24h sin plantilla)."}
 
 
 @app.get("/whatsapp/check-delivery")
