@@ -103,7 +103,7 @@ EVENT_CHANNELS = {
     },
 }
 
-_events_cache = TTLCache(maxsize=8, ttl=1800)  # 30 min
+_events_cache = TTLCache(maxsize=32, ttl=1800)  # 30 min; 6 kinds x varios rangos de fechas
 
 
 def slugify(text: str) -> str:
