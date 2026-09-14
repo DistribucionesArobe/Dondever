@@ -3416,6 +3416,31 @@ async def whatsapp_debug():
     return info
 
 
+@app.get("/api/internal/events-diag")
+async def events_diag(token: str = ""):
+    """Diagnóstico de fuentes de eventos (UFC/F1/MotoGP/NASCAR/IndyCar). Protegido por ADMIN_TOKEN."""
+    if not token or token != os.getenv("ADMIN_TOKEN", ""):
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    import events_api as _E
+    from config import SPORTSDB_KEY as _SK, SPORTSDB_BASE as _SB
+    out = {"sportsdb_key_len": len(_SK or ""), "sportsdb_key_prefix": (_SK or "")[:2], "kinds": {}}
+    for k in _E.ALL_KINDS:
+        try:
+            evs = await _E.fetch_events(k, days_back=30, days_ahead=200)
+            out["kinds"][k] = {"n": len(evs), "next": [e["slug"] for e in evs if e["status"] != "post"][:3]}
+        except Exception as e:
+            out["kinds"][k] = {"error": str(e)}
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.get(f"{_SB}/eventsseason.php", params={"id": _E.SPORTSDB_MOTOGP_ID, "s": str(datetime.now(TZ_MX).year)})
+            body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+            out["motogp_raw"] = {"status": r.status_code, "n": len(body.get("events") or []),
+                                 "sample": [(e.get("strEvent"), e.get("dateEvent")) for e in (body.get("events") or [])[-3:]]}
+    except Exception as e:
+        out["motogp_raw"] = {"error": str(e)}
+    return out
+
+
 @app.get("/api/internal/whatsapp-diag")
 async def whatsapp_diagnostics(key: str = ""):
     """Diagnostic endpoint: subscribe app to WABA + check templates."""
