@@ -3431,13 +3431,24 @@ async def events_diag(token: str = ""):
         except Exception as e:
             out["kinds"][k] = {"error": str(e)}
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
+        import httpx as _hx
+        async with _hx.AsyncClient(timeout=25) as client:
             r = await client.get(f"{_SB}/eventsseason.php", params={"id": _E.SPORTSDB_MOTOGP_ID, "s": str(datetime.now(TZ_MX).year)})
-            body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
-            out["motogp_raw"] = {"status": r.status_code, "n": len(body.get("events") or []),
-                                 "sample": [(e.get("strEvent"), e.get("dateEvent")) for e in (body.get("events") or [])[-3:]]}
+            try:
+                body = r.json()
+            except Exception:
+                body = {}
+            out["motogp_raw"] = {"status": r.status_code, "ctype": r.headers.get("content-type", ""),
+                                 "n": len((body or {}).get("events") or []), "text_head": r.text[:200],
+                                 "sample": [(e.get("strEvent"), e.get("dateEvent")) for e in ((body or {}).get("events") or [])[-3:]]}
     except Exception as e:
-        out["motogp_raw"] = {"error": str(e)}
+        out["motogp_raw"] = {"error": f"{type(e).__name__}: {e}"}
+    try:
+        _E._events_cache.pop(f"sportsdb:{_E.SPORTSDB_MOTOGP_ID}:{datetime.now(TZ_MX).year}", None)
+        raw = await _E._fetch_sportsdb_season(_E.SPORTSDB_MOTOGP_ID, str(datetime.now(TZ_MX).year))
+        out["motogp_fetch_fn"] = {"n": len(raw), "grouped": len(_E._group_motogp(raw, datetime.now(timezone.utc)))}
+    except Exception as e:
+        out["motogp_fetch_fn"] = {"error": f"{type(e).__name__}: {e}"}
     return out
 
 
