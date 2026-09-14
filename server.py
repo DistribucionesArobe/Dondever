@@ -420,7 +420,7 @@ from cachetools import TTLCache as _TTLCache
 
 _HTML_CACHE = _TTLCache(maxsize=800, ttl=300)
 _HTML_CACHE_PREFIXES = ("/equipo/", "/liga/", "/partido/", "/evento/", "/canal/", "/donde-ver/",
-                        "/guia/", "/resultado/", "/donde-ver-en-", "/equipos")
+                        "/guia/", "/resultado/", "/donde-ver-en-", "/equipos", "/widget/")
 _HTML_CACHE_HUBS = {"/playoffs-mlb", "/gratis-hoy", "/pronosticos-hoy", "/futbol-hoy",
                     "/futbol-americano-hoy", "/basquetbol-hoy", "/beisbol-hoy", "/hockey-hoy",
                     "/streaming", "/casinos"}
@@ -443,11 +443,10 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
         hit = _HTML_CACHE.get(key)
         if hit is not None:
             body, ctype = hit
-            return Response(
-                content=_zlib.decompress(body), status_code=200, media_type=ctype,
-                headers={"X-Cache": "HIT", "Cache-Control": "public, max-age=120, s-maxage=300",
-                         "Vary": "Accept-Encoding"},
-            )
+            _h = {"X-Cache": "HIT", "Cache-Control": "public, max-age=120, s-maxage=300", "Vary": "Accept-Encoding"}
+            if path.startswith("/widget/"):
+                _h["Content-Security-Policy"] = "frame-ancestors *"  # embebible en otros sitios
+            return Response(content=_zlib.decompress(body), status_code=200, media_type=ctype, headers=_h)
 
         response = await call_next(request)
         ctype = response.headers.get("content-type", "")
@@ -961,6 +960,91 @@ async def evento_page(request: Request, slug: str):
         "fmt_day": lambda iso: _fmt_local(iso, "America/Mexico_City", True).split(" · ")[0],
         "fmt_time": lambda iso: _fmt_local(iso, "America/Mexico_City"),
         "year": datetime.now(TZ_MX).year,
+    })
+
+
+# ── Widget embebible (backlinks): /widget/equipo/{slug}, /widget/hoy, generador /widget ──
+def _widget_row(g: dict) -> dict:
+    sport = g.get("sport", "")
+    home_left = sport in ("soccer", "boxing", "mma")
+    first = g["home"] if home_left else g["away"]
+    second = g["away"] if home_left else g["home"]
+    state = g["status"]["state"]
+    if state == "in":
+        when, sub, live = f"{first.get('score', '')}-{second.get('score', '')}", "EN VIVO", True
+    elif state == "post":
+        when, sub, live = f"{first.get('score', '')}-{second.get('score', '')}", "Final", False
+    else:
+        when, sub, live = format_mx_time(g["date"]).lstrip("0"), format_mx_day_time(g["date"]).split(" · ")[0], False
+    chans = [b.get("channel", "") for b in (g.get("broadcasts") or [])[:2]]
+    return {"title": f"{first['name']} vs {second['name']}", "league": g.get("league_name", ""),
+            "channels": ", ".join(c for c in chans if c), "when": when, "sub": sub, "live": live,
+            "logo": first.get("logo", ""), "url": f"/partido/{_make_game_slug(g)}"}
+
+
+@app.get("/widget/equipo/{team_slug}", response_class=HTMLResponse)
+async def widget_team(request: Request, team_slug: str):
+    """Widget para incrustar en blogs/foros: próximos partidos del equipo con hora MX y canal."""
+    info = POPULAR_TEAMS.get(team_slug)
+    if not info:
+        return HTMLResponse("<p style='font-family:sans-serif;font-size:13px'>Equipo no encontrado.</p>", status_code=404)
+    data = await api_mis_equipos(teams=team_slug)
+    payload = json.loads(data.body) if hasattr(data, "body") else data
+    rows = []
+    for g in payload.get("today", []):
+        soccer_like = g.get("emoji") in ("⚽", "🥊")
+        first, second = (g["home_name"], g["away_name"]) if soccer_like else (g["away_name"], g["home_name"])
+        sh, sa = g.get("score_home", ""), g.get("score_away", "")
+        score = f"{sh}-{sa}" if soccer_like else f"{sa}-{sh}"
+        rows.append({"title": f"{first} vs {second}", "league": g.get("league_name", ""), "channels": g.get("channels", ""),
+                     "when": score if g["state"] != "pre" else g.get("time_mx", "").lstrip("0"),
+                     "sub": {"in": "EN VIVO", "post": "Final"}.get(g["state"], "Hoy"), "live": g["state"] == "in",
+                     "logo": g.get("home_logo", ""), "url": g.get("url") or f"/equipo/{team_slug}"})
+    for g in payload.get("upcoming", []):
+        if len(rows) >= 4:
+            break
+        rows.append({"title": f"{g['home_name']} vs {g['away_name']}", "league": g.get("league_name", ""),
+                     "channels": g.get("channels", ""), "when": format_mx_time(g["date"]).lstrip("0") if g.get("date") else "",
+                     "sub": format_mx_day_time(g["date"]).split(" · ")[0] if g.get("date") else "", "live": False,
+                     "logo": g.get("home_logo", ""), "url": f"/equipo/{team_slug}"})
+    resp = templates.TemplateResponse(request, "widget.html", {
+        "title": f"Dónde ver {info['name']}", "rows": rows[:4], "more_url": f"/equipo/{team_slug}",
+    })
+    resp.headers["Cache-Control"] = "public, max-age=300"
+    resp.headers["Content-Security-Policy"] = "frame-ancestors *"
+    return resp
+
+
+@app.get("/widget/hoy", response_class=HTMLResponse)
+async def widget_hoy(request: Request, liga: str = ""):
+    """Widget 'Dónde ver hoy' (o de una liga): 5 partidos con hora MX y canal."""
+    if liga and liga not in ALL_LEAGUES:
+        liga = ""
+    games = await get_todays_games(league_filter=liga or None)
+    games = [g for g in games if g["home"]["name"] != "TBD"]
+    for g in games:
+        g["interest_score"] = score_game_interest(g)
+    live = [g for g in games if g["status"]["state"] == "in"]
+    pre = sorted([g for g in games if g["status"]["state"] == "pre"], key=lambda g: -g["interest_score"])
+    rows = [_widget_row(g) for g in (live[:2] + pre)[:5]]
+    lname = ALL_LEAGUES[liga][2] if liga else ""
+    resp = templates.TemplateResponse(request, "widget.html", {
+        "title": f"{lname} hoy" if lname else "Dónde ver hoy", "rows": rows,
+        "more_url": f"/liga/{liga}" if lname else "/",
+    })
+    resp.headers["Cache-Control"] = "public, max-age=120"
+    resp.headers["Content-Security-Policy"] = "frame-ancestors *"
+    return resp
+
+
+@app.get("/widget", response_class=HTMLResponse)
+async def widget_generator(request: Request):
+    """Página para blogs/foros/peñas: elige equipo o liga y copia el código del widget."""
+    teams = sorted(({"slug": s, "name": i["name"], "league": i.get("league", "")} for s, i in POPULAR_TEAMS.items()),
+                   key=lambda t: (t["league"], t["name"]))
+    leagues = [(slug, v[2]) for slug, v in LEAGUES.items()]
+    return templates.TemplateResponse(request, "widget_generator.html", {
+        "teams": teams, "leagues": leagues, "year": datetime.now(TZ_MX).year,
     })
 
 
@@ -4661,6 +4745,7 @@ async def sitemap_core():
     # Permanent league landing pages (daily content)
     for slug in LEAGUES:
         urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.9", hreflang=True))
+    urls.append(_sm_url(f'{APP_URL}/widget', _SM_STATIC_LASTMOD, "monthly", "0.5"))
     for slug in ("nascar", "indycar"):  # motor en LEAGUES_INDIVIDUAL (no en portada) pero con página propia
         urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.8", hreflang=True))
 

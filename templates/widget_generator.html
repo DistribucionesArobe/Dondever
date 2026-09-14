@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget gratis "Dónde ver" para tu sitio, blog o foro | DondeVer.app</title>
+    <meta name="description" content="Pon en tu página los próximos partidos de tu equipo con hora de México y canal. Widget gratis, se actualiza solo. Copia y pega una línea de código.">
+    <link rel="canonical" href="{{ app_url }}/widget">
+    <meta property="og:title" content="Widget gratis 'Dónde ver' para tu sitio">
+    <meta property="og:description" content="Próximos partidos de tu equipo con hora de México y canal, en tu blog o foro. Copia y pega.">
+    <meta property="og:url" content="{{ app_url }}/widget">
+    <meta property="og:image" content="{{ app_url }}/static/og-image.png">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .main { max-width: 900px; margin: 1rem auto 3rem; padding: 0 1rem; }
+        h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .lead { color: #4b5563; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; }
+        label { display: block; font-size: 0.78rem; font-weight: 700; color: #6b7280; margin: 0.6rem 0 0.25rem; }
+        select, input[type=text] { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.9rem; font-family: inherit; }
+        textarea { width: 100%; height: 150px; font-family: ui-monospace, Menlo, monospace; font-size: 0.75rem; padding: 0.6rem; border: 1px solid #d1d5db; border-radius: 8px; background: #f9fafb; }
+        .btn { display: inline-block; margin-top: 0.6rem; background: #10b981; color: #fff; border: none; padding: 0.55rem 1rem; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.85rem; }
+        .btn.ok { background: #059669; }
+        iframe { border: 0; width: 100%; max-width: 420px; height: 290px; }
+        h2 { font-size: 1.05rem; font-weight: 800; margin: 1.4rem 0 0.5rem; }
+        .faq p { font-size: 0.88rem; color: #374151; line-height: 1.6; margin-bottom: 0.6rem; }
+        .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+    </style>
+</head>
+<body>
+<header class="header"><div class="header-inner"><a href="/" class="logo">Donde<span>Ver</span></a><a href="/" style="color:#10b981;text-decoration:none;font-weight:600;font-size:0.85rem;">&larr; Inicio</a></div></header>
+<main class="main">
+    <h1>Widget gratis "Dónde ver" para tu sitio</h1>
+    <p class="lead">¿Tienes un blog, foro, página de peña o grupo de aficionados? Pon los próximos partidos de tu equipo (o lo mejor del día) con <b>hora de México y canal</b>. Se actualiza solo, no necesitas cuenta y es gratis. Solo copia y pega.</p>
+
+    <div class="grid">
+        <div class="card">
+            <label for="wType">Tipo de widget</label>
+            <select id="wType">
+                <option value="equipo">Próximos partidos de un equipo</option>
+                <option value="hoy">Lo mejor de hoy (todas las ligas)</option>
+                <option value="liga">Partidos de hoy de una liga</option>
+            </select>
+            <div id="rowTeam">
+                <label for="wTeam">Equipo</label>
+                <select id="wTeam">
+                    {% for t in teams %}<option value="{{ t.slug }}"{% if t.slug == 'america' %} selected{% endif %}>{{ t.name }} — {{ t.league }}</option>{% endfor %}
+                </select>
+            </div>
+            <div id="rowLeague" style="display:none;">
+                <label for="wLeague">Liga</label>
+                <select id="wLeague">
+                    {% for slug, name in leagues %}<option value="{{ slug }}">{{ name }}</option>{% endfor %}
+                </select>
+            </div>
+            <label for="wCode">Código para pegar (HTML)</label>
+            <textarea id="wCode" readonly></textarea>
+            <button class="btn" id="wCopy" type="button">Copiar código</button>
+        </div>
+        <div class="card">
+            <label>Vista previa</label>
+            <iframe id="wPreview" title="Vista previa del widget" loading="lazy"></iframe>
+        </div>
+    </div>
+
+    <h2>Preguntas frecuentes</h2>
+    <div class="card faq">
+        <p><b>¿Funciona en WordPress, Blogger, Wix o un foro?</b> Sí: en cualquier sitio que permita pegar HTML (bloque "HTML personalizado" en WordPress, gadget HTML en Blogger, "Embed" en Wix). En foros que solo aceptan BBCode puedes pegar el enlace de texto que viene debajo del widget.</p>
+        <p><b>¿Se actualiza solo?</b> Sí. Muestra los próximos partidos con la hora del centro de México y el canal confirmado; cuando hay partido en vivo aparece el marcador.</p>
+        <p><b>¿Cuánto cuesta?</b> Nada. Solo pedimos que dejes el enlace a DondeVer.app que viene incluido en el código.</p>
+        <p><b>¿Puedo cambiar el tamaño?</b> Sí, ajusta <code>width</code> y <code>height</code> del iframe. El widget se adapta hasta 420 px de ancho.</p>
+    </div>
+</main>
+<footer class="footer"><p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; Tu gu&iacute;a deportiva en M&eacute;xico y LATAM</p></footer>
+<script>
+(function(){
+    var base = '{{ app_url }}';
+    var type = document.getElementById('wType'), team = document.getElementById('wTeam'), league = document.getElementById('wLeague');
+    var code = document.getElementById('wCode'), prev = document.getElementById('wPreview'), copy = document.getElementById('wCopy');
+    function build() {
+        var t = type.value, src, link, text;
+        document.getElementById('rowTeam').style.display = t === 'equipo' ? '' : 'none';
+        document.getElementById('rowLeague').style.display = t === 'liga' ? '' : 'none';
+        if (t === 'equipo') {
+            var name = team.options[team.selectedIndex].text.split(' — ')[0];
+            src = base + '/widget/equipo/' + team.value; link = base + '/equipo/' + team.value; text = 'Dónde ver ' + name + ' hoy: horario y canal';
+        } else if (t === 'liga') {
+            var ln = league.options[league.selectedIndex].text;
+            src = base + '/widget/hoy?liga=' + league.value; link = base + '/liga/' + league.value; text = 'Dónde ver ' + ln + ' hoy: partidos, horarios y canales';
+        } else {
+            src = base + '/widget/hoy'; link = base + '/'; text = 'Dónde ver deportes hoy en México: horarios y canales';
+        }
+        var html = '<!-- Widget DondeVer.app -->\n<iframe src="' + src + '" width="420" height="290" style="border:0;max-width:100%;" loading="lazy" title="' + text + '"></iframe>\n<p style="font-size:12px;margin:4px 0 0;"><a href="' + link + '">' + text + '</a> — DondeVer.app</p>';
+        code.value = html;
+        if (prev.src !== src) prev.src = src;
+    }
+    type.addEventListener('change', build); team.addEventListener('change', build); league.addEventListener('change', build);
+    copy.addEventListener('click', function(){
+        code.select(); try { navigator.clipboard.writeText(code.value); } catch(e) { document.execCommand('copy'); }
+        copy.textContent = '¡Copiado!'; copy.classList.add('ok'); setTimeout(function(){ copy.textContent = 'Copiar código'; copy.classList.remove('ok'); }, 1800);
+    });
+    build();
+})();
+</script>
+</body>
+</html>
