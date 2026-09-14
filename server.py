@@ -2758,6 +2758,7 @@ async def api_live_scores():
     for g in games:
         state = g["status"]["state"]
         if state in ("in", "post"):
+            lv = g.get("live") or {}
             live.append({
                 "id": g["id"],
                 "home_score": g["home"]["score"],
@@ -2766,8 +2767,25 @@ async def api_live_scores():
                 "clock": g["status"].get("clock", ""),
                 "period": g["status"].get("period", 0),
                 "detail": g["status"].get("detail", ""),
+                "live": {k: lv.get(k) for k in ("situation_text", "possession", "period_label", "last_play") if lv.get(k) is not None},
             })
-    return JSONResponse({"games": live, "ts": datetime.now(TZ_MX).isoformat()})
+    return JSONResponse({"games": live, "ts": datetime.now(TZ_MX).isoformat()},
+                        headers={"Cache-Control": "public, max-age=15"})
+
+
+@app.get("/api/live/{game_id}")
+async def api_live_game(game_id: str):
+    """Situación completa de un partido (campo NFL, diamante MLB, goles, línea por periodo) para /partido/."""
+    games = await get_todays_games()
+    g = next((x for x in games if str(x.get("id")) == str(game_id)), None)
+    if not g:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    return JSONResponse({
+        "id": g["id"], "state": g["status"]["state"], "detail": g["status"].get("detail", ""),
+        "home": {"name": g["home"]["name"], "short": g["home"].get("short", ""), "score": g["home"]["score"]},
+        "away": {"name": g["away"]["name"], "short": g["away"].get("short", ""), "score": g["away"]["score"]},
+        "live": g.get("live") or {}, "ts": datetime.now(TZ_MX).isoformat(),
+    }, headers={"Cache-Control": "public, max-age=15"})
 
 
 @app.get("/api/instagram-image")

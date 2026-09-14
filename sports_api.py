@@ -723,6 +723,163 @@ async def get_sportsdb_tv_for_teams(
 
 # ── ESPN Event Parser (enriched with TheSportsDB) ────────
 
+# ── Situación en vivo por deporte (para /partido/ y cards de portada) ──
+_ORD_ES = {1: "1er", 2: "2do", 3: "3er", 4: "4to", 5: "5to", 6: "6to", 7: "7mo", 8: "8vo", 9: "9no"}
+_DOWN_ES = {1: "1ª", 2: "2ª", 3: "3ª", 4: "4ª"}
+
+
+def _period_label(sport_type: str, status_raw: dict, league_slug: str = "") -> str:
+    """'3er cuarto', 'Alta 5ª', '2º tiempo', 'OT'…"""
+    st = status_raw.get("type") or {}
+    period = status_raw.get("period", 0) or 0
+    detail = (st.get("shortDetail") or st.get("detail") or "")
+    if st.get("state") != "in":
+        return ""
+    if st.get("name") == "STATUS_HALFTIME":
+        return "Medio tiempo"
+    if st.get("name") == "STATUS_END_PERIOD" and sport_type != "baseball":
+        return f"Fin del {_ORD_ES.get(period, str(period) + '°')}"
+    if sport_type == "baseball":
+        d = detail.lower()
+        half = "Alta" if "top" in d else ("Baja" if "bot" in d else ("Media" if "mid" in d else ("Final" if "end" in d else "")))
+        return f"{half} {period}ª".strip() if period else detail
+    if sport_type == "soccer":
+        if period == 1:
+            return "1er tiempo"
+        if period == 2:
+            return "2do tiempo"
+        if period in (3, 4):
+            return "Tiempo extra"
+        if period >= 5:
+            return "Penales"
+        return "Descanso" if "half" in detail.lower() else detail
+    if sport_type in ("football", "college-football"):
+        return f"{_ORD_ES.get(period, str(period) + '°')} cuarto" if period <= 4 else "Tiempo extra"
+    if sport_type == "basketball":
+        if period <= 4:
+            return f"{_ORD_ES.get(period, str(period) + '°')} cuarto"
+        return f"OT{period - 4 if period > 5 else ''}"
+    if sport_type == "hockey":
+        return f"{_ORD_ES.get(period, str(period) + '°')} periodo" if period <= 3 else ("OT" if period == 4 else "Shootout")
+    if sport_type == "mma":
+        return f"Round {period}" if period else detail
+    return detail
+
+
+def build_live(comp: dict, ev: dict, sport_type: str, home: dict, away: dict,
+               home_id: str = "", away_id: str = "") -> dict:
+    """Extrae del scoreboard de ESPN lo que Apple Sports muestra en vivo:
+    NFL: down/distancia, posesión, yarda (0-100 → gráfico de campo), zona roja, timeouts, última jugada.
+    MLB: entrada, bolas-strikes-outs, corredores en base, pitcher/bateador.
+    Fútbol: minuto, goles (autor + minuto), tarjetas rojas.
+    NBA/NHL: reloj, última jugada. Todos: marcador por periodo (linescores).
+    Devuelve {} si el partido no está en curso y no hay linescores."""
+    status_raw = ev.get("status") or {}
+    st = status_raw.get("type") or {}
+    state = st.get("state", "pre")
+    if state == "pre":
+        return {}
+    live: dict = {
+        "state": state,
+        "clock": status_raw.get("displayClock", "") or "",
+        "period": status_raw.get("period", 0) or 0,
+        "period_label": _period_label(sport_type, status_raw),
+        "detail": st.get("shortDetail") or st.get("detail") or "",
+        "linescores": {},
+        "situation_text": "",
+    }
+    # Marcador por periodo
+    for c in comp.get("competitors") or []:
+        side = "home" if c.get("homeAway") == "home" else "away"
+        ls = c.get("linescores") or []
+        if ls:
+            live["linescores"][side] = [(x.get("displayValue") if x.get("displayValue") not in (None, "") else x.get("value", "")) for x in ls]
+        if c.get("timeouts") is not None:
+            live[f"{side}_timeouts"] = c.get("timeouts")
+    sit = comp.get("situation") or {}
+    last_play = (sit.get("lastPlay") or {}).get("text", "") if isinstance(sit.get("lastPlay"), dict) else ""
+    if last_play:
+        live["last_play"] = last_play[:160]
+
+    if sport_type in ("football", "college-football") and state == "in":
+        poss = str(sit.get("possession") or "")
+        poss_side = "home" if poss and poss == str(home_id) else ("away" if poss and poss == str(away_id) else "")
+        down = sit.get("down") or 0
+        dist = sit.get("distance")
+        poss_text = sit.get("possessionText") or ""
+        yard = sit.get("yardLine")
+        # yardLine de ESPN: 0 = zona de anotación del local… lo normalizamos a 0-100 de izquierda (visitante) a derecha (local)
+        # usando possessionText ("LAC 12" = 12 yardas de la zona de LAC).
+        x = None
+        try:
+            abbr, y = poss_text.split()
+            y = int(y)
+            x = (100 - y) if abbr == home.get("short") else y
+        except Exception:
+            if isinstance(yard, (int, float)):
+                x = int(yard)
+        live.update({
+            "possession": poss_side,
+            "down": down,
+            "distance": dist,
+            "down_text": (f"{_DOWN_ES.get(down, str(down))} y {'meta' if dist == 0 else dist}" if down else ""),
+            "yard_text": poss_text,
+            "ball_x": x,
+            "red_zone": bool(sit.get("isRedZone")),
+            "home_timeouts": sit.get("homeTimeouts", live.get("home_timeouts")),
+            "away_timeouts": sit.get("awayTimeouts", live.get("away_timeouts")),
+        })
+        parts = [p for p in (live["period_label"], live["clock"], live["down_text"], poss_text) if p]
+        live["situation_text"] = " · ".join(parts) + (" · 🔴 zona roja" if live["red_zone"] else "")
+
+    elif sport_type == "baseball" and state == "in":
+        pitcher = ((sit.get("pitcher") or {}).get("athlete") or {})
+        batter = ((sit.get("batter") or {}).get("athlete") or {})
+        live.update({
+            "balls": sit.get("balls", 0), "strikes": sit.get("strikes", 0), "outs": sit.get("outs", 0),
+            "on_first": bool(sit.get("onFirst")), "on_second": bool(sit.get("onSecond")), "on_third": bool(sit.get("onThird")),
+            "pitcher": pitcher.get("shortName") or pitcher.get("displayName", ""),
+            "batter": batter.get("shortName") or batter.get("displayName", ""),
+        })
+        bases = [b for b, on in (("1ª", live["on_first"]), ("2ª", live["on_second"]), ("3ª", live["on_third"])) if on]
+        outs = live["outs"]
+        parts = [live["period_label"], f"{outs} out{'s' if outs != 1 else ''}",
+                 f"{live['balls']}-{live['strikes']}"]
+        if bases:
+            parts.append("corredor en " + " y ".join(bases) if len(bases) == 1 else "corredores en " + " y ".join(bases))
+        live["situation_text"] = " · ".join(p for p in parts if p)
+
+    elif sport_type == "soccer":
+        goals, reds = [], []
+        for d in comp.get("details") or []:
+            t = d.get("team") or {}
+            side = "home" if str(t.get("id")) == str(home_id) else "away"
+            who = ", ".join(a.get("shortName") or a.get("displayName", "") for a in d.get("athletesInvolved") or [])
+            minute = (d.get("clock") or {}).get("displayValue", "")
+            if d.get("scoringPlay"):
+                tag = " (pen.)" if d.get("penaltyKick") else (" (a.g.)" if d.get("ownGoal") else "")
+                goals.append({"side": side, "who": who, "minute": minute, "tag": tag})
+            elif d.get("redCard"):
+                reds.append({"side": side, "who": who, "minute": minute})
+        live["goals"] = goals
+        live["red_cards"] = reds
+        if state == "in":
+            last = goals[-1] if goals else None
+            _pl = live["period_label"]
+            parts = [_pl if _pl in ("Medio tiempo", "Penales", "Descanso") else (live["clock"] or _pl)]
+            if _pl == "Tiempo extra" and live["clock"]:
+                parts = [f"{live['clock']} (T.E.)"]
+            if last:
+                parts.append(f"⚽ {last['minute']} {last['who']}{last['tag']}")
+            live["situation_text"] = " · ".join(p for p in parts if p)
+
+    elif state == "in":  # basketball / hockey / otros
+        parts = [live["period_label"], live["clock"]]
+        live["situation_text"] = " · ".join(p for p in parts if p)
+
+    return live
+
+
 async def parse_espn_events_enriched(
     raw: dict, league_slug: str, date_str: str
 ) -> list[dict]:
@@ -783,6 +940,7 @@ async def parse_espn_events_enriched(
             team_info = {
                 "name": team_data.get("team", {}).get("displayName", "TBD"),
                 "short": team_data.get("team", {}).get("abbreviation", ""),
+                "team_id": str(team_data.get("team", {}).get("id", "")),
                 "logo": team_data.get("team", {}).get("logo", ""),
                 "score": team_data.get("score", ""),
                 "record": record_str,
@@ -992,6 +1150,13 @@ async def parse_espn_events_enriched(
 
         sport_type = league_info[0] if isinstance(league_info, tuple) else ""
 
+        # Situación en vivo (down/yarda, bases/outs, goles, línea por periodo)
+        try:
+            live = build_live(comp, ev, sport_type, home, away, home.get("team_id", ""), away.get("team_id", ""))
+        except Exception as _le:
+            logger.debug(f"build_live failed: {_le}")
+            live = {}
+
         # ── Post-game recap data ──────────────────
         recap = {}
         if status.get("state") == "post":
@@ -1049,6 +1214,7 @@ async def parse_espn_events_enriched(
             "home": home,
             "away": away,
             "status": status,
+            "live": live,
             "broadcasts": broadcasts,
             "venue": venue,
             "recap": recap,

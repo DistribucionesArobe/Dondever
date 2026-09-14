@@ -598,6 +598,8 @@
             letter-spacing: 0.03em; border: 1px solid #fed7aa;
         }
         .gc-clock { font-size: 0.8rem; font-weight: 800; color: #ef4444; }
+        .gc-live-line { font-size: 0.72rem; font-weight: 600; color: #b91c1c; padding: 0.15rem 0.75rem 0.4rem; letter-spacing: 0.01em; }
+        .gc-poss { font-size: 0.7rem; margin-left: 0.3rem; }
         .gc-toggle {
             background: none; border: none; cursor: pointer;
             font-size: 0.7rem; color: #9ca3af; padding: 2px 6px;
@@ -1717,16 +1719,18 @@
                 </div>
                 <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
             </div>
+            {% set top_side = 'home' if home_left else 'away' %}
             <div class="gc-row">
                 {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
-                <span class="team-name">{{ top_team.name }}</span>
+                <span class="team-name">{{ top_team.name }}<span class="gc-poss" data-side="{{ top_side }}"{% if not (game.live and game.live.possession == top_side) %} hidden{% endif %}>&#127944;</span></span>
                 <span class="gc-right"><span class="team-score">{{ top_team.score }}</span></span>
             </div>
             <div class="gc-row">
                 {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">{% endif %}
-                <span class="team-name">{{ bottom_team.name }}</span>
+                <span class="team-name">{{ bottom_team.name }}<span class="gc-poss" data-side="{{ 'away' if home_left else 'home' }}"{% if not (game.live and game.live.possession == ('away' if home_left else 'home')) %} hidden{% endif %}>&#127944;</span></span>
                 <span class="gc-right"><span class="team-score">{{ bottom_team.score }}</span></span>
             </div>
+            <div class="gc-live-line"{% if not (game.live and game.live.situation_text) %} hidden{% endif %}>{{ game.live.situation_text if game.live else '' }}</div>
             {% if game.odds %}
             <div class="gc-bet-preview" onclick="event.stopPropagation();" style="padding:0.4rem 0.75rem;">
                 <div class="bet-odds-row" style="margin:0;">
@@ -1902,7 +1906,7 @@
                 {% if top_team.logo %}
                 <img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">
                 {% endif %}
-                <span class="team-name">{{ top_team.name }}{% if top_team.record %} <span style="font-size:0.6rem;font-weight:600;color:#9ca3af;margin-left:0.2rem;">({{ top_team.record }})</span>{% endif %}</span>
+                <span class="team-name">{{ top_team.name }}{% if top_team.record %} <span style="font-size:0.6rem;font-weight:600;color:#9ca3af;margin-left:0.2rem;">({{ top_team.record }})</span>{% endif %}{% if state == 'in' %}<span class="gc-poss" data-side="{{ 'home' if home_left else 'away' }}"{% if not (game.live and game.live.possession == ('home' if home_left else 'away')) %} hidden{% endif %}>&#127944;</span>{% endif %}</span>
                 <span class="gc-right">
                     {% if state == 'pre' %}
                         <span class="gc-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</span>
@@ -1916,7 +1920,7 @@
                 {% if bottom_team.logo %}
                 <img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">
                 {% endif %}
-                <span class="team-name">{{ bottom_team.name }}{% if bottom_team.record %} <span style="font-size:0.6rem;font-weight:600;color:#9ca3af;margin-left:0.2rem;">({{ bottom_team.record }})</span>{% endif %}</span>
+                <span class="team-name">{{ bottom_team.name }}{% if bottom_team.record %} <span style="font-size:0.6rem;font-weight:600;color:#9ca3af;margin-left:0.2rem;">({{ bottom_team.record }})</span>{% endif %}{% if state == 'in' %}<span class="gc-poss" data-side="{{ 'away' if home_left else 'home' }}"{% if not (game.live and game.live.possession == ('away' if home_left else 'home')) %} hidden{% endif %}>&#127944;</span>{% endif %}</span>
                 <span class="gc-right">
                     {% if state == 'pre' %}
                         <span class="gc-sub tz-hora-label">HORA MX</span>
@@ -1925,6 +1929,7 @@
                     {% endif %}
                 </span>
             </div>
+            {% if state == 'in' %}<div class="gc-live-line"{% if not (game.live and game.live.situation_text) %} hidden{% endif %}>{{ game.live.situation_text if game.live else '' }}</div>{% endif %}
 
             {# ── POST-GAME RECAP — visible on closed card for finished games ── #}
             {% if state == 'post' and game.recap %}
@@ -3282,12 +3287,23 @@
                         if (detail && g.detail) {
                             detail.textContent = g.detail;
                         }
+
+                        // Situación en vivo (down/yarda, outs/bases, último gol) + posesión
+                        var line = card.querySelector('.gc-live-line');
+                        var lv = g.live || {};
+                        if (line) {
+                            if (lv.situation_text && g.state === 'in') { line.textContent = lv.situation_text; line.hidden = false; }
+                            else { line.hidden = true; }
+                        }
+                        card.querySelectorAll('.gc-poss').forEach(function(p) {
+                            p.hidden = !(g.state === 'in' && lv.possession && p.getAttribute('data-side') === lv.possession);
+                        });
                     });
 
                     // Check if any games still live — stop polling if none
                     var stillLive = document.querySelector('.game-card.live');
                     if (stillLive) {
-                        setTimeout(updateLiveScores, 30000);
+                        setTimeout(updateLiveScores, 20000);
                     }
                 })
                 .catch(function() {
@@ -3296,8 +3312,8 @@
                 });
         }
 
-        // Start polling after 30s
-        setTimeout(updateLiveScores, 30000);
+        // Start polling after 20s
+        setTimeout(updateLiveScores, 20000);
     })();
 
     // ── Smart search with autocomplete + team panel ─────────────────

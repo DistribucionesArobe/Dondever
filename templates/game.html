@@ -155,6 +155,37 @@
         .time-block .time { font-size: 2.5rem; font-weight: 800; color: #f97316; }
         .time-block .tz { font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem; }
         .live-big { display: inline-block; background: #ef4444; color: white; padding: 6px 20px; border-radius: 6px; font-weight: 700; font-size: 1.1rem; animation: pulse 2s infinite; }
+        .live-panel { margin: 0.6rem auto 0.2rem; max-width: 560px; }
+        .live-panel:empty { display: none; }
+        .lp-head { text-align: center; font-weight: 800; color: #b91c1c; font-size: 0.95rem; margin-bottom: 0.4rem; }
+        .lp-head small { display: block; color: #6b7280; font-weight: 600; font-size: 0.72rem; margin-top: 0.15rem; }
+        .lp-field { position: relative; height: 54px; border-radius: 6px; background: repeating-linear-gradient(90deg, #15803d 0, #15803d 10%, #166534 10%, #166534 20%); overflow: hidden; margin: 0.3rem 0; border: 2px solid #14532d; }
+        .lp-field .ez { position: absolute; top: 0; bottom: 0; width: 8%; background: #1e3a8a; color: #fff; font-size: 0.55rem; font-weight: 800; display: flex; align-items: center; justify-content: center; letter-spacing: 0.05em; }
+        .lp-field .ez.r { right: 0; background: #7f1d1d; }
+        .lp-field .yl { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.35); }
+        .lp-field .yn { position: absolute; bottom: 2px; font-size: 0.5rem; color: rgba(255,255,255,0.75); transform: translateX(-50%); }
+        .lp-field .ball { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 1.1rem; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6)); transition: left 0.6s ease; }
+        .lp-field .ball.rz { animation: pulse 1.2s infinite; }
+        .lp-field .fd { position: absolute; top: 0; bottom: 0; width: 2px; background: #facc15; }
+        .lp-row { display: flex; justify-content: center; gap: 1rem; font-size: 0.78rem; color: #374151; margin-top: 0.3rem; flex-wrap: wrap; }
+        .lp-row b { color: #1a1a2e; }
+        .lp-play { text-align: center; font-size: 0.75rem; color: #6b7280; margin-top: 0.35rem; font-style: italic; }
+        .lp-diamond { position: relative; width: 84px; height: 84px; margin: 0.3rem auto; }
+        .lp-diamond .b { position: absolute; width: 22px; height: 22px; background: #e5e7eb; border: 2px solid #9ca3af; transform: rotate(45deg); }
+        .lp-diamond .b.on { background: #f59e0b; border-color: #b45309; }
+        .lp-diamond .b1 { right: 4px; top: 31px; } .lp-diamond .b2 { left: 31px; top: 4px; } .lp-diamond .b3 { left: 4px; top: 31px; }
+        .lp-outs { display: inline-flex; gap: 4px; vertical-align: middle; margin-left: 4px; }
+        .lp-outs i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #9ca3af; display: inline-block; }
+        .lp-outs i.on { background: #ef4444; border-color: #b91c1c; }
+        .lp-ls { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.78rem; }
+        .lp-ls th, .lp-ls td { text-align: center; padding: 0.25rem 0.35rem; border-bottom: 1px solid #f3f4f6; }
+        .lp-ls th { color: #9ca3af; font-weight: 600; font-size: 0.68rem; }
+        .lp-ls td:first-child, .lp-ls th:first-child { text-align: left; font-weight: 700; }
+        .lp-ls td.t { font-weight: 800; color: #1a1a2e; }
+        .lp-goals { margin-top: 0.4rem; font-size: 0.8rem; }
+        .lp-goals div { display: flex; justify-content: space-between; padding: 0.2rem 0.4rem; border-bottom: 1px solid #f3f4f6; }
+        .lp-goals .red { color: #b91c1c; }
+        [data-theme="dark"] .lp-row, [data-theme="dark"] .lp-ls td { color: #e5e7eb; } [data-theme="dark"] .lp-row b, [data-theme="dark"] .lp-ls td.t { color: #fff; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
         .channels-section { margin: 1.5rem 0; }
         .channels-section h3 { font-size: 0.9rem; margin-bottom: 0.75rem; color: #059669; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -389,6 +420,12 @@
                 <div class="tz" id="tz-label">Hora centro de M&eacute;xico | {{ format_us_time(game.date) }}</div>
             {% endif %}
         </div>
+        {% if game.status.state != 'pre' %}
+        {# ── Panel en vivo: campo NFL / diamante MLB / goles / línea por periodo (se refresca cada 20 s) ── #}
+        <div id="livePanel" class="live-panel" data-game-id="{{ game.id }}" data-sport="{{ game.sport }}" data-state="{{ game.status.state }}"
+             data-home-short="{{ game.home.short }}" data-away-short="{{ game.away.short }}" data-home-left="{{ '1' if home_left else '0' }}"></div>
+        <script id="liveInit" type="application/json">{{ (game.live or {})|tojson }}</script>
+        {% endif %}
         <div class="channels-section">
             <h3>DONDE VERLO</h3>
             {% if game.broadcasts %}
@@ -1591,5 +1628,78 @@ function dvCopy() {
 </script>
 <script src="/static/dark-mode.js" defer></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
+
+<script>
+(function() {
+    var panel = document.getElementById('livePanel');
+    if (!panel) return;
+    var sport = panel.dataset.sport, gid = panel.dataset.gameId;
+    var HS = panel.dataset.homeShort || 'LOC', AS = panel.dataset.awayShort || 'VIS';
+    var homeLeft = panel.dataset.homeLeft === '1';
+    var state = panel.dataset.state;
+    function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    function lsTable(lv) {
+        var h = lv.linescores && lv.linescores.home || [], a = lv.linescores && lv.linescores.away || [];
+        var n = Math.max(h.length, a.length); if (!n) return '';
+        var lab = function(i) { if (sport === 'baseball') return i + 1; if (sport === 'hockey') return i < 3 ? i + 1 : 'OT'; return i < 4 ? i + 1 : 'OT' + (n > 5 ? i - 3 : ''); };
+        var sum = function(arr) { return arr.reduce(function(s, v) { return s + (parseInt(v, 10) || 0); }, 0); };
+        var row = function(name, arr) { var t = '<tr><td>' + esc(name) + '</td>'; for (var i = 0; i < n; i++) t += '<td>' + esc(arr[i] != null ? arr[i] : '-') + '</td>'; return t + '<td class="t">' + sum(arr) + '</td></tr>'; };
+        var head = '<tr><th></th>'; for (var i = 0; i < n; i++) head += '<th>' + lab(i) + '</th>'; head += '<th>' + (sport === 'baseball' ? 'C' : 'T') + '</th></tr>';
+        var first = homeLeft ? row(HS, h) + row(AS, a) : row(AS, a) + row(HS, h);
+        return '<table class="lp-ls">' + head + first + '</table>';
+    }
+    function render(lv) {
+        if (!lv || !lv.state) { panel.innerHTML = ''; return; }
+        var html = '';
+        if (lv.state === 'in') {
+            html += '<div class="lp-head">' + esc([lv.period_label, lv.clock].filter(Boolean).join(' · ')) + '</div>';
+        }
+        if ((sport === 'football' || sport === 'college-football') && lv.state === 'in') {
+            var x = (typeof lv.ball_x === 'number') ? Math.max(0, Math.min(100, lv.ball_x)) : null;
+            var f = '<div class="lp-field"><div class="ez">' + esc(AS) + '</div><div class="ez r">' + esc(HS) + '</div>';
+            for (var y = 10; y < 100; y += 10) { var px = 8 + y * 0.84; f += '<div class="yl" style="left:' + px + '%"></div><div class="yn" style="left:' + px + '%">' + (y <= 50 ? y : 100 - y) + '</div>'; }
+            if (x !== null) {
+                var bx = 8 + x * 0.84;
+                if (lv.distance && lv.possession) { var dir = lv.possession === 'away' ? 1 : -1; var fx = 8 + Math.max(0, Math.min(100, x + dir * lv.distance)) * 0.84; f += '<div class="fd" style="left:' + fx + '%"></div>'; }
+                f += '<div class="ball' + (lv.red_zone ? ' rz' : '') + '" style="left:' + bx + '%">' + (lv.possession === 'away' ? '&#127944;&#8594;' : '&#8592;&#127944;') + '</div>';
+            }
+            f += '</div>';
+            html += f;
+            var poss = lv.possession === 'home' ? HS : (lv.possession === 'away' ? AS : '');
+            html += '<div class="lp-row">' + (lv.down_text ? '<span><b>' + esc(lv.down_text) + '</b> en ' + esc(lv.yard_text) + '</span>' : '') + (poss ? '<span>Posesi&oacute;n: <b>' + esc(poss) + '</b></span>' : '') +
+                (lv.red_zone ? '<span style="color:#b91c1c;font-weight:700;">Zona roja</span>' : '') +
+                '<span>T.O. ' + esc(AS) + ' <b>' + esc(lv.away_timeouts != null ? lv.away_timeouts : '-') + '</b> &middot; ' + esc(HS) + ' <b>' + esc(lv.home_timeouts != null ? lv.home_timeouts : '-') + '</b></span></div>';
+        } else if (sport === 'baseball' && lv.state === 'in') {
+            html += '<div class="lp-diamond"><div class="b b2' + (lv.on_second ? ' on' : '') + '"></div><div class="b b3' + (lv.on_third ? ' on' : '') + '"></div><div class="b b1' + (lv.on_first ? ' on' : '') + '"></div></div>';
+            var outs = ''; for (var o = 0; o < 3; o++) outs += '<i class="' + (o < (lv.outs || 0) ? 'on' : '') + '"></i>';
+            html += '<div class="lp-row"><span>Cuenta <b>' + esc(lv.balls) + '-' + esc(lv.strikes) + '</b></span><span>Outs <span class="lp-outs">' + outs + '</span></span>' +
+                (lv.pitcher ? '<span>Lanza: <b>' + esc(lv.pitcher) + '</b></span>' : '') + (lv.batter ? '<span>Batea: <b>' + esc(lv.batter) + '</b></span>' : '') + '</div>';
+        } else if (sport === 'soccer') {
+            var ev = [];
+            (lv.goals || []).forEach(function(g) { ev.push({m: g.minute, t: '&#9917; ' + esc(g.who) + esc(g.tag || ''), side: g.side, red: false}); });
+            (lv.red_cards || []).forEach(function(r) { ev.push({m: r.minute, t: '&#128997; ' + esc(r.who), side: r.side, red: true}); });
+            if (ev.length) {
+                ev.sort(function(a, b) { return parseInt(a.m, 10) - parseInt(b.m, 10); });
+                html += '<div class="lp-goals">' + ev.map(function(e) { var nm = e.side === 'home' ? HS : AS; return '<div class="' + (e.red ? 'red' : '') + '"><span>' + esc(e.m) + ' ' + e.t + '</span><span>' + esc(nm) + '</span></div>'; }).join('') + '</div>';
+            }
+        }
+        if (lv.last_play && lv.state === 'in' && sport !== 'soccer') html += '<div class="lp-play">' + esc(lv.last_play) + '</div>';
+        html += lsTable(lv);
+        panel.innerHTML = html;
+    }
+    try { render(JSON.parse(document.getElementById('liveInit').textContent || '{}')); } catch (e) {}
+    function tick() {
+        fetch('/api/live/' + encodeURIComponent(gid)).then(function(r) { return r.json(); }).then(function(d) {
+            if (!d || !d.live) return;
+            render(d.live);
+            var scores = document.querySelectorAll('.matchup .score');
+            if (scores.length === 2) { scores[0].textContent = homeLeft ? d.home.score : d.away.score; scores[1].textContent = homeLeft ? d.away.score : d.home.score; }
+            if (d.state === 'post') { var lb = document.querySelector('.live-big'); if (lb) lb.outerHTML = '<div style="font-size:1.5rem;font-weight:700;color:#6b7280">FINAL</div>'; return; }
+            setTimeout(tick, 20000);
+        }).catch(function() { setTimeout(tick, 45000); });
+    }
+    if (state === 'in') setTimeout(tick, 20000);
+})();
+</script>
 </body>
 </html>
