@@ -8,6 +8,7 @@
     <meta property="og:title" content="{{ seo_title }}">
     <meta property="og:description" content="{{ seo_desc }}">
     <meta property="og:type" content="website">
+    <meta property="og:image" content="{{ app_url }}/static/og-image.png">
     <meta property="og:url" content="{{ app_url }}/evento/{{ ev.slug }}">
     <meta property="og:site_name" content="DondeVer.app">
     <meta property="og:locale" content="es_MX">
@@ -33,6 +34,8 @@
         {"@type": "VirtualLocation", "url": "{{ app_url }}/evento/{{ ev.slug }}"}
       ],
       {% if competitor_names %}"competitor": [{% for n in competitor_names %}{"@type": "Person", "name": "{{ n }}"}{% if not loop.last %},{% endif %}{% endfor %}],{% endif %}
+      {% if ev.sessions|length > 1 %}"subEvent": [{% for s in ev.sessions %}{"@type": "SportsEvent", "name": {{ (s.name ~ " — " ~ ev.short_name)|tojson }}, "startDate": "{{ s.date }}", "eventStatus": "https://schema.org/{% if s.status == 'post' %}EventCompleted{% else %}EventScheduled{% endif %}", "location": {"@type": "Place", "name": "{{ ev.venue or ev.city }}"}}{% if not loop.last %},{% endif %}{% endfor %}],{% endif %}
+      "image": "{{ app_url }}/static/og-image.png",
       "broadcastOfEvent": [{% for c in ev.channels.MX %}{"@type": "BroadcastEvent", "isLiveBroadcast": true, "publishedOn": {"@type": "BroadcastService", "name": "{{ c }}", "areaServed": "MX"}}{% if not loop.last %},{% endif %}{% endfor %}],
       "organizer": {"@type": "SportsOrganization", "name": "{{ org_name }}"},
       "inLanguage": "es"
@@ -209,8 +212,15 @@
         {% for q, a in faq %}<h3>{{ q }}</h3><p>{{ a }}</p>{% endfor %}
     </div>
 
+    {% if is_race and motor_links %}
+    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;margin:1rem 0 0;font-size:0.78rem;">
+        <span style="color:#6b7280;font-weight:600;">M&aacute;s automovilismo:</span>
+        {% for k, org, slug in motor_links %}<a href="/liga/{{ slug }}" style="padding:0.3rem 0.7rem;background:#f0fdf4;border:1px solid #d1fae5;border-radius:16px;color:#065f46;font-weight:700;text-decoration:none;">{{ org }}</a>{% endfor %}
+    </div>
+    {% endif %}
+
     {% if related %}
-    <h2 class="sec">Pr&oacute;ximos eventos de {{ org_name }}</h2>
+    <h2 class="sec">{% if is_race %}Pr&oacute;ximas carreras{% else %}Pr&oacute;ximos eventos{% endif %} de {{ org_name }}</h2>
     <div class="card more">
         {% for r in related %}<a href="/evento/{{ r.slug }}"><span>{{ fmt_day(r.date) }}</span>{{ r.name }}</a>{% endfor %}
         <a href="/liga/{{ league_slug }}" style="color:#059669;">Ver todo {{ org_name }} &rarr;</a>

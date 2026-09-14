@@ -809,6 +809,7 @@ _EVENT_META = {
     "indycar": {"org": "IndyCar", "league_slug": "indycar", "sport": "Motorsport", "kicker": "IndyCar"},
 }
 _RACE_KINDS = ("f1", "motogp", "nascar", "indycar")
+from events_api import EVENT_CHANNELS as EVENT_CHANNELS_BY_KIND
 # Texto de "dónde ver gratis" por categoría de motor (FAQ)
 _RACE_FREE_FAQ = {
     "f1": ("¿Se puede ver la F1 gratis en México?",
@@ -956,6 +957,7 @@ async def evento_page(request: Request, slug: str):
         "date_long_mx": _fmt_local(ev["date"], "America/Mexico_City", True),
         "tz_rows": tz_rows, "countries": countries, "faq": _event_faq(ev), "related": related,
         "competitor_names": competitor_names, "is_race": ev["kind"] in _RACE_KINDS,
+        "motor_links": [(k, _EVENT_META[k]["org"], _EVENT_META[k]["league_slug"]) for k in _RACE_KINDS if k != ev["kind"]],
         "fmt_day": lambda iso: _fmt_local(iso, "America/Mexico_City", True).split(" · ")[0],
         "fmt_time": lambda iso: _fmt_local(iso, "America/Mexico_City"),
         "year": datetime.now(TZ_MX).year,
@@ -2090,12 +2092,20 @@ async def league_page(request: Request, league_slug: str):
 
     # UFC / F1 / Boxeo: eventos con página propia (/evento/{slug})
     upcoming_events = []
+    recent_events = []
+    event_faq = []
     _EVENT_KIND = {"ufc": "ufc", "f1": "f1", "boxeo": "boxing", "motogp": "motogp", "nascar": "nascar", "indycar": "indycar"}
-    if league_slug in _EVENT_KIND:
+    _ev_kind = _EVENT_KIND.get(league_slug)
+    if _ev_kind:
         try:
             from events_api import fetch_events
-            upcoming_events = [e for e in await fetch_events(_EVENT_KIND[league_slug], days_back=1, days_ahead=90)
-                               if not e.get("is_minor")][:10]
+            _is_race = _ev_kind in _RACE_KINDS
+            # Carreras: calendario completo de lo que queda de temporada ("calendario motogp 2026");
+            # combate: próximos 90 días. Recientes: últimos 30 días (resultados / "quién ganó").
+            _all = [e for e in await fetch_events(_ev_kind, days_back=30, days_ahead=200 if _is_race else 90)
+                    if not e.get("is_minor")]
+            upcoming_events = [e for e in _all if e["status"] != "post"][: 30 if _is_race else 10]
+            recent_events = [e for e in _all if e["status"] == "post"][-5:][::-1]
         except Exception as _e:
             logger.warning(f"events for {league_slug} failed: {_e}")
 
@@ -2143,6 +2153,30 @@ async def league_page(request: Request, league_slug: str):
             desc = (f"Próxima pelea: {nxt['name']}, {_t} hora de México por {_ch}. Calendario de boxeo con Canelo, "
                     f"Pitbull Cruz y más: horarios por país, canales y cartelera.")
         event_seo = {"title": title, "h1": h1, "desc": desc}
+
+    # FAQ (visible + JSON-LD) para ligas de eventos: responde "a qué hora / en qué canal / próxima"
+    if _ev_kind:
+        _org = _EVENT_META[_ev_kind]["org"]
+        _mx_ch = ", ".join(EVENT_CHANNELS_BY_KIND.get(_ev_kind, {}).get("MX", [])) or "canal por confirmar"
+        _what = "carrera" if _ev_kind in _RACE_KINDS else ("pelea" if _ev_kind == "boxing" else "evento")
+        if nxt:
+            event_faq.append((f"¿Cuándo es la próxima {_what} de {_org}?",
+                              f"{nxt['name']}: {_fmt_local(nxt['date'], 'America/Mexico_City', True)} hora del centro de México"
+                              f"{' (hora estimada)' if not nxt.get('time_confirmed', True) else ''}."))
+            event_faq.append((f"¿En qué canal pasan {nxt['short_name']} en México?",
+                              f"En México se transmite por {', '.join(nxt['channels'].get('MX') or []) or _mx_ch}. "
+                              f"En Venezuela, Colombia y Argentina por {', '.join(nxt['channels'].get('CO') or []) or 'ESPN Latinoamérica'}; en España por {', '.join(nxt['channels'].get('ES') or []) or 'DAZN'}."))
+        event_faq.append((f"¿Dónde ver {_org} en México?",
+                          f"{_org} se ve en México por {_mx_ch}. En DondeVer.app publicamos cada {_what} con hora de México, canal por país y "
+                          f"{'todas las sesiones del fin de semana' if _ev_kind in _RACE_KINDS else 'la cartelera completa'}."))
+        if _ev_kind in _RACE_KINDS and len(upcoming_events) > 1:
+            _rest = "; ".join(f"{e['short_name']} ({_fmt_local(e['date'], 'America/Mexico_City', True).split(' · ')[0]})" for e in upcoming_events[:8])
+            event_faq.append((f"¿Cuál es el calendario de {_org} {datetime.now(TZ_MX).year}?",
+                              f"Próximas carreras: {_rest}{'…' if len(upcoming_events) > 8 else ''}. Fechas en hora de México."))
+        if recent_events:
+            _last = recent_events[0]
+            event_faq.append((f"¿Cuál fue la última {_what} de {_org}?",
+                              f"{_last['name']}, el {_fmt_local(_last['date'], 'America/Mexico_City', True).split(' · ')[0]} en {_last['venue'] or _last['city'] or 'sede por confirmar'}."))
 
     # Parallel fetch: games, standings, recent results, upcoming, leaders — all independent
     games_task = get_todays_games(league_filter=league_slug)
@@ -2248,6 +2282,11 @@ async def league_page(request: Request, league_slug: str):
             "power_rankings": power_rankings,
             "nfl_picks": nfl_picks,
             "upcoming_events": upcoming_events,
+            "recent_events": recent_events,
+            "event_faq": event_faq,
+            "event_kind": _ev_kind,
+            "is_race": bool(_ev_kind) and _ev_kind in _RACE_KINDS,
+            "motor_links": [(k, _EVENT_META[k]["org"], _EVENT_META[k]["league_slug"]) for k in _RACE_KINDS if k != _ev_kind],
             "event_seo": event_seo,
         }
     )
@@ -2550,6 +2589,40 @@ async def formula_1_hoy_redirect():
 @app.get("/donde-ver-formula-1")
 async def donde_ver_formula_1_redirect():
     return RedirectResponse(url="/liga/f1", status_code=301)
+
+# ── MotoGP / NASCAR / IndyCar SEO redirects ──
+@app.get("/motogp-hoy")
+async def motogp_hoy_redirect():
+    return RedirectResponse(url="/liga/motogp", status_code=301)
+
+@app.get("/donde-ver-motogp")
+async def donde_ver_motogp_redirect():
+    return RedirectResponse(url="/liga/motogp", status_code=301)
+
+@app.get("/nascar-hoy")
+async def nascar_hoy_redirect():
+    return RedirectResponse(url="/liga/nascar", status_code=301)
+
+@app.get("/donde-ver-nascar")
+async def donde_ver_nascar_redirect():
+    return RedirectResponse(url="/liga/nascar", status_code=301)
+
+@app.get("/indycar-hoy")
+async def indycar_hoy_redirect():
+    return RedirectResponse(url="/liga/indycar", status_code=301)
+
+@app.get("/donde-ver-indycar")
+async def donde_ver_indycar_redirect():
+    return RedirectResponse(url="/liga/indycar", status_code=301)
+
+@app.get("/indy-500")
+async def indy_500_redirect():
+    """'Indy 500' sin año → la edición vigente (o /liga/indycar fuera de temporada)."""
+    return await _next_event_redirect("indycar", "/liga/indycar", match="indy-500")
+
+@app.get("/daytona-500")
+async def daytona_500_redirect():
+    return await _next_event_redirect("nascar", "/liga/nascar", match="daytona")
 
 # ── UFC SEO redirects ──
 @app.get("/ufc-hoy")

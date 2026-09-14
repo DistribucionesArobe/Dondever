@@ -51,6 +51,25 @@
       ]
     }
     </script>
+    {% if event_faq %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{% for q, a in event_faq %}{"@type": "Question", "name": {{ q|tojson }}, "acceptedAnswer": {"@type": "Answer", "text": {{ a|tojson }}}}{% if not loop.last %},{% endif %}{% endfor %}]
+    }
+    </script>
+    {% endif %}
+    {% if upcoming_events %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": {{ ("Calendario " ~ league_name)|tojson }},
+      "itemListElement": [{% for e in upcoming_events[:20] %}{"@type": "ListItem", "position": {{ loop.index }}, "url": "{{ app_url }}/evento/{{ e.slug }}", "name": {{ e.name|tojson }}}{% if not loop.last %},{% endif %}{% endfor %}]
+    }
+    </script>
+    {% endif %}
     <!-- JSON-LD: CollectionPage + SportsOrganization -->
     <script type="application/ld+json">
     {
@@ -372,8 +391,8 @@
     {% if upcoming_events %}
     {# UFC / F1 / Boxeo: eventos con página propia (cartelera, sesiones, hora por país) #}
     <div class="standings-section" style="margin-bottom:1rem;">
-        <h2 style="margin-bottom:0.5rem;">Pr&oacute;ximos eventos de {{ league_name }}</h2>
-        <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.4rem;">Hora del centro de M&eacute;xico &middot; toca un evento para ver cartelera, horarios por pa&iacute;s y canal</div>
+        <h2 style="margin-bottom:0.5rem;">{% if is_race %}Calendario y programaci&oacute;n {{ league_name }} {{ now().year }}{% else %}Pr&oacute;ximos eventos de {{ league_name }}{% endif %}</h2>
+        <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.4rem;">Hora del centro de M&eacute;xico &middot; toca {% if is_race %}una carrera para ver todas las sesiones, hora por pa&iacute;s y canal{% else %}un evento para ver cartelera, horarios por pa&iacute;s y canal{% endif %}</div>
         {% for e in upcoming_events %}
         <a href="/evento/{{ e.slug }}" style="display:flex;justify-content:space-between;align-items:center;gap:0.6rem;padding:0.6rem 0.2rem;border-top:1px solid #f3f4f6;text-decoration:none;color:#1a1a2e;{% if e.status == 'in' %}background:#fef2f2;{% endif %}">
             <div style="min-width:0;">
@@ -383,6 +402,23 @@
             <div style="text-align:right;white-space:nowrap;font-weight:800;color:#f97316;font-size:0.82rem;">{{ format_mx_day_time(e.date) }}</div>
         </a>
         {% endfor %}
+    </div>
+    {% endif %}
+    {% if recent_events %}
+    <div class="standings-section" style="margin-bottom:1rem;">
+        <h2 style="margin-bottom:0.5rem;">{% if is_race %}&Uacute;ltimas carreras{% else %}&Uacute;ltimos eventos{% endif %} de {{ league_name }}</h2>
+        {% for e in recent_events %}
+        <a href="/evento/{{ e.slug }}" style="display:flex;justify-content:space-between;align-items:center;gap:0.6rem;padding:0.5rem 0.2rem;border-top:1px solid #f3f4f6;text-decoration:none;color:#1a1a2e;">
+            <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;">{{ e.name }}</div><div style="font-size:0.7rem;color:#6b7280;">{{ e.venue }}{% if e.city %}, {{ e.city }}{% endif %}</div></div>
+            <div style="white-space:nowrap;color:#9ca3af;font-size:0.78rem;font-weight:700;">{{ format_mx_day_time(e.date).split(' · ')[0] }} &middot; Finalizado</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% if is_race and motor_links %}
+    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;margin:0 0 1rem;font-size:0.78rem;">
+        <span style="color:#6b7280;font-weight:600;">M&aacute;s automovilismo:</span>
+        {% for k, org, slug in motor_links %}<a href="/liga/{{ slug }}" style="padding:0.3rem 0.7rem;background:#f0fdf4;border:1px solid #d1fae5;border-radius:16px;color:#065f46;font-weight:700;text-decoration:none;">{{ org }}</a>{% endfor %}
     </div>
     {% endif %}
     {% if games %}
@@ -777,6 +813,15 @@
         {% endif %}
     </div>
 
+    {% if event_faq %}
+    <div class="seo-card" style="margin-top:1rem;">
+        <h2>Preguntas frecuentes sobre {{ league_name }}</h2>
+        {% for q, a in event_faq %}
+        <h3 style="font-size:0.9rem;margin:0.7rem 0 0.2rem;">{{ q }}</h3>
+        <p>{{ a }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% if league_seo_extra %}
     <div class="seo-card" style="margin-top:1rem;">
         <h2>{{ league_seo_extra.h2 }}</h2>
