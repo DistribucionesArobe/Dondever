@@ -180,9 +180,9 @@
             <div class="seg-h"><span>{{ seg.name }}</span><span class="t">{{ fmt_day(seg.date) }} &middot; {{ fmt_time(seg.date) }} MX</span></div>
             {% for f in seg_fights %}
             <div class="fight {% if f.is_main %}main{% endif %}">
-                <div class="f">{% if f.fighters[0].headshot %}<img class="hs" src="{{ f.fighters[0].headshot }}" alt="" loading="lazy">{% endif %}<div>{{ f.fighters[0].name }}<small>{% if f.fighters[0].flag %}{{ f.fighters[0].flag }}{% endif %}{% if f.fighters[0].record %} &middot; {{ f.fighters[0].record }}{% endif %}</small></div></div>
+                <div class="f">{% if f.fighters[0].headshot %}<img class="hs" src="{{ f.fighters[0].headshot }}" alt="" loading="lazy">{% endif %}<div>{% if f.fighters[0].winner %}<span style="color:#059669;">&#10003;</span> {% endif %}{{ f.fighters[0].name }}<small>{% if f.fighters[0].flag %}{{ f.fighters[0].flag }}{% endif %}{% if f.fighters[0].record %} &middot; {{ f.fighters[0].record }}{% endif %}</small></div></div>
                 <div class="vs">{% if f.is_main %}<span class="tag">Estelar</span>{% elif f.is_comain %}<span class="tag" style="color:#6b7280;">Coestelar</span>{% endif %}<b>vs</b>{{ f.weight }}{% if f.rounds %} &middot; {{ f.rounds }}R{% endif %}</div>
-                <div class="f r"><div>{{ f.fighters[1].name if f.fighters|length > 1 else '' }}<small>{% if f.fighters|length > 1 %}{{ f.fighters[1].flag }}{% if f.fighters[1].record %} &middot; {{ f.fighters[1].record }}{% endif %}{% endif %}</small></div>{% if f.fighters|length > 1 and f.fighters[1].headshot %}<img class="hs" src="{{ f.fighters[1].headshot }}" alt="" loading="lazy">{% endif %}</div>
+                <div class="f r"><div>{{ f.fighters[1].name if f.fighters|length > 1 else '' }}{% if f.fighters|length > 1 and f.fighters[1].winner %} <span style="color:#059669;">&#10003;</span>{% endif %}<small>{% if f.fighters|length > 1 %}{{ f.fighters[1].flag }}{% if f.fighters[1].record %} &middot; {{ f.fighters[1].record }}{% endif %}{% endif %}</small></div>{% if f.fighters|length > 1 and f.fighters[1].headshot %}<img class="hs" src="{{ f.fighters[1].headshot }}" alt="" loading="lazy">{% endif %}</div>
             </div>
             {% endfor %}
         </div>

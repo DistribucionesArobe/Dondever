@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo_title }}</title>
+    <meta name="description" content="{{ seo_desc }}">
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_desc }}">
+    <meta property="og:type" content="profile">
+    <meta property="og:url" content="{{ app_url }}/equipo/{{ slug }}">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta property="og:locale" content="es_MX">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ seo_title }}">
+    <link rel="canonical" href="{{ app_url }}/equipo/{{ slug }}">
+    {{ hreflang_tags(request.url) }}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "{{ name }}",
+      "url": "{{ app_url }}/equipo/{{ slug }}",
+      "jobTitle": "{{ 'Piloto de Fórmula 1' if kind == 'f1' else ('Peleador de UFC' if kind == 'ufc' else 'Boxeador') }}",
+      "memberOf": {"@type": "SportsOrganization", "name": "{{ org_name }}"}
+      {% if nxt %},"subjectOf": {"@type": "SportsEvent", "name": "{{ nxt.name }}", "startDate": "{{ nxt.date }}", "url": "{{ app_url }}/evento/{{ nxt.slug }}"}{% endif %}
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ app_url }}/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ org_name }}", "item": "{{ app_url }}/liga/{{ league_slug }}"},
+        {"@type": "ListItem", "position": 3, "name": "{{ name }}", "item": "{{ app_url }}/equipo/{{ slug }}"}
+      ]
+    }
+    </script>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script>
+    (function(){var t=localStorage.getItem('dv-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; min-height: 100vh; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .breadcrumbs { max-width: 900px; margin: 0 auto; padding: 0.5rem 1rem 0; font-size: 0.72rem; }
+        .breadcrumbs a { color: #059669; text-decoration: none; font-weight: 600; }
+        .breadcrumbs span { color: #9ca3af; }
+        .main { max-width: 900px; margin: 0.5rem auto 2rem; padding: 0 1rem; }
+        .hero { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1.1rem 1.2rem; margin-top: 0.6rem; }
+        h1 { font-size: 1.4rem; font-weight: 800; line-height: 1.2; }
+        .answer { margin-top: 0.8rem; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 0.8rem 1rem; font-size: 0.95rem; line-height: 1.6; }
+        .answer b { color: #065f46; }
+        .cta { display: inline-block; margin-top: 0.7rem; background: #10b981; color: white; text-decoration: none; font-weight: 800; padding: 0.5rem 0.9rem; border-radius: 8px; font-size: 0.85rem; }
+        h2.sec { font-size: 1rem; font-weight: 800; margin: 1.3rem 0 0.6rem; }
+        .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 0.4rem 1rem; }
+        .row { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-top: 1px solid #f3f4f6; text-decoration: none; color: #1a1a2e; }
+        .row:first-child { border-top: none; }
+        .row b { font-size: 0.9rem; }
+        .row small { display: block; color: #6b7280; font-size: 0.72rem; }
+        .row .t { white-space: nowrap; color: #f97316; font-weight: 800; font-size: 0.82rem; }
+        .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+        <a href="/liga/{{ league_slug }}" class="back">&larr; {{ org_name }}</a>
+    </div>
+</header>
+<nav class="breadcrumbs"><a href="/">Inicio</a> <span>&rsaquo;</span> <a href="/liga/{{ league_slug }}">{{ org_name }}</a> <span>&rsaquo;</span> <span>{{ name }}</span></nav>
+<main class="main">
+    <section class="hero">
+        <h1>{{ seo_h1 }}</h1>
+        <div class="answer">{{ answer|safe }}</div>
+        {% if nxt %}<a class="cta" href="/evento/{{ nxt.slug }}">Ver {{ 'sesiones' if kind == 'f1' else 'cartelera' }}, horarios por pa&iacute;s y canales &rarr;</a>{% endif %}
+    </section>
+
+    {% if upcoming %}
+    <h2 class="sec">{{ 'Próximas carreras' if kind == 'f1' else 'Próximos eventos' }}{% if nxt %} de {{ short }}{% endif %}</h2>
+    <div class="card">
+        {% for e in upcoming %}
+        <a class="row" href="/evento/{{ e.slug }}"><span><b>{{ e.name }}</b><small>{{ e.venue }}{% if e.city %}, {{ e.city }}{% endif %} &middot; {{ (e.channels.MX or [])|join(', ') }}</small></span><span class="t">{{ fmt_day_time(e.date) }}</span></a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if past %}
+    <h2 class="sec">{{ 'Carreras recientes' if kind == 'f1' else 'Peleas recientes' }}</h2>
+    <div class="card">
+        {% for e in past|reverse %}
+        <a class="row" href="/evento/{{ e.slug }}"><span><b>{{ e.name }}</b><small>{{ e.venue }}</small></span><span class="t" style="color:#9ca3af;">{{ fmt_day_time(e.date).split(' · ')[0] }}</span></a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2 class="sec">D&oacute;nde ver a {{ short }} en M&eacute;xico</h2>
+    <div class="card" style="padding:0.9rem 1rem;font-size:0.85rem;color:#374151;line-height:1.7;">
+        {% if kind == 'f1' %}
+        La F1 en M&eacute;xico se ve por <b>Fox Sports MX</b> (todas las sesiones), <b>Canal 5</b> (carreras selectas en TV abierta) y <b>F1 TV Pro</b> (streaming oficial). En el resto de Latinoam&eacute;rica por Disney+ y ESPN.
+        {% elif kind == 'ufc' %}
+        Las peleas de UFC en M&eacute;xico y Latinoam&eacute;rica se transmiten completas por <b>Paramount+</b> (preliminares y estelar). Fox Sports MX pasa eventos selectos.
+        {% else %}
+        Las peleas grandes de boxeo van por <b>DAZN</b>; cuando pelea un mexicano suele haber se&ntilde;al en TV abierta por <b>TV Azteca</b> o <b>Canal 5</b>. Netflix transmite eventos especiales. Cada pelea tiene su p&aacute;gina con el canal confirmado.
+        {% endif %}
+        <div style="margin-top:0.5rem;"><a href="/liga/{{ league_slug }}" style="color:#059669;font-weight:700;text-decoration:none;">Calendario completo de {{ org_name }} &rarr;</a></div>
+    </div>
+</main>
+<footer class="footer">
+    <p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; <a href="/liga/ufc">UFC</a> &middot; <a href="/liga/boxeo">Boxeo</a> &middot; <a href="/liga/f1">F1</a></p>
+</footer>
+</body>
+</html>

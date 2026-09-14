@@ -746,6 +746,30 @@ async def parse_espn_events_enriched(
         competitors = comp.get("competitors", [])
 
         home = away = None
+        _sport_kind = league_info[0] if isinstance(league_info, tuple) else ""
+        if _sport_kind == "mma" and competitions:
+            # UFC: cada competition es una pelea; la estelar es la ÚLTIMA. Los
+            # competidores son athletes (no teams) → sin esto salía "TBD vs TBD".
+            main = competitions[-1]
+            fighters = sorted(main.get("competitors") or [], key=lambda x: x.get("order", 0))
+            side = []
+            for f in fighters[:2]:
+                ath = f.get("athlete") or {}
+                side.append({
+                    "name": ath.get("displayName") or ath.get("fullName") or "TBD",
+                    "short": (ath.get("displayName") or "").split()[-1] if ath.get("displayName") else "",
+                    "logo": (ath.get("headshot") or {}).get("href", ""),
+                    "score": "",
+                    "record": f.get("record", "") or "",
+                    "winner": bool(f.get("winner")),
+                })
+            if len(side) == 2:
+                home, away = side[0], side[1]
+            comp = main  # broadcasts/venue de la estelar
+            competitors = []
+            _date_override = main.get("date", "")
+        else:
+            _date_override = ""
         for team_data in competitors:
             # Extract team record from ESPN (W-L or W-D-L)
             records = team_data.get("records", [])
@@ -997,13 +1021,26 @@ async def parse_espn_events_enriched(
                     recap["winner"] = winner_name
                     break
 
+        # Slug de /evento/ para UFC y F1 (misma regla que events_api → sin duplicados)
+        _event_slug = ""
+        try:
+            if sport_type == "mma":
+                from events_api import slugify as _ev_slugify, mx_date as _ev_mx_date
+                _event_slug = f"{_ev_slugify(ev.get('name', ''))}-{_ev_mx_date(_date_override or ev.get('date', ''))}"
+            elif sport_type == "racing" and league_slug == "f1":
+                from events_api import _gp_spanish as _ev_gp
+                _event_slug = _ev_gp(ev.get("name", ""), int((ev.get("date") or "2026")[:4]))[1]
+        except Exception:
+            _event_slug = ""
+
         events.append({
             "id": ev.get("id", ""),
             "league_slug": league_slug,
             "league_name": league_info[2] if isinstance(league_info, tuple) else league_slug,
             "emoji": league_info[3] if isinstance(league_info, tuple) and len(league_info) > 3 else "",
             "sport": sport_type,
-            "date": ev.get("date", ""),
+            "event_slug": _event_slug,
+            "date": _date_override or ev.get("date", ""),
             "name": ev.get("name", f"{away['name']} vs {home['name']}"),
             "short_name": ev.get("shortName", ""),
             "home": home,

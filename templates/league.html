@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {% if league_seo_extra and league_seo_extra.title %}
+    {% if event_seo %}
+    <title>{{ event_seo.title }}</title>
+    <meta name="description" content="{{ event_seo.desc }}">
+    {% elif league_seo_extra and league_seo_extra.title %}
     <title>{{ league_seo_extra.title }}</title>
     <meta name="description" content="{{ league_seo_extra.meta_desc }}">
     {% elif league_slug == 'nfl' %}
@@ -14,7 +17,7 @@
     <meta name="description" content="{{ league_name }} en vivo hoy: partidos, horarios, resultados y tabla de posiciones. Consulta que juegos hay ahora y donde verlos en Mexico, USA y Latinoamerica.">
     {% endif %}
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ league_seo_extra.title if league_seo_extra and league_seo_extra.title else league_name + ' en vivo hoy — Partidos y resultados | DondeVer' }}">
+    <meta property="og:title" content="{{ event_seo.title if event_seo else (league_seo_extra.title if league_seo_extra and league_seo_extra.title else league_name + ' en vivo hoy — Partidos y resultados | DondeVer') }}">
     <meta property="og:description" content="{{ league_seo_extra.meta_desc if league_seo_extra and league_seo_extra.meta_desc else league_name + ' hoy: partidos en vivo, horarios, resultados y tabla de posiciones actualizada.' }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ app_url }}/liga/{{ league_slug }}">
@@ -263,6 +266,9 @@
     {% if league_slug == 'nfl' %}
     <h1>{{ emoji }} NFL hoy en vivo: D&oacute;nde ver, horarios y resultados</h1>
     <p>Todos los partidos de la NFL con canales confirmados para M&eacute;xico (Canal 5, FOX, ESPN), horarios y resultados en tiempo real.</p>
+    {% elif event_seo %}
+    <h1>{{ emoji }} {{ event_seo.h1 }}</h1>
+    <p>{{ event_seo.desc }}</p>
     {% else %}
     <h1>{{ emoji }} {{ league_name }} en vivo hoy — Partidos y resultados</h1>
     <p>Todos los juegos de {{ league_name }} con horarios, canales de TV y opciones de streaming para Mexico, Estados Unidos y Latinoamerica.</p>

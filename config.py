@@ -1245,6 +1245,13 @@ POPULAR_TEAMS = {
     "alex-pereira": {"name": "Alex Pereira", "league": "UFC"},
     "jon-jones": {"name": "Jon Jones", "league": "UFC"},
     "ilia-topuria": {"name": "Ilia Topuria", "league": "UFC"},
+    "joshua-van": {"name": "Joshua Van", "league": "UFC"},
+    "alexandre-pantoja": {"name": "Alexandre Pantoja", "league": "UFC"},
+    # ── Boxeo (peleadores) ──
+    "canelo-alvarez": {"name": "Saúl 'Canelo' Álvarez", "league": "Boxeo", "aka": "Canelo"},
+    "pitbull-cruz": {"name": "Isaac 'Pitbull' Cruz", "league": "Boxeo", "aka": "Pitbull Cruz"},
+    "ryan-garcia": {"name": "Ryan García", "league": "Boxeo"},
+    "christian-mbilli": {"name": "Christian Mbilli", "league": "Boxeo"},
 }
 
 
@@ -1452,7 +1459,11 @@ TEAM_ALIASES = {
     "alonso": "fernando alonso",
     "boxeo": "boxeo",
     "box": "boxeo",
-    "canelo": "boxeo",
+    "canelo": "canelo alvarez",
+    "canelo alvarez": "canelo alvarez",
+    "saul alvarez": "canelo alvarez",
+    "pitbull cruz": "pitbull cruz",
+    "isaac cruz": "pitbull cruz",
     "peleas de box": "boxeo",
     "formula 1": "f1",
     "formula uno": "f1",

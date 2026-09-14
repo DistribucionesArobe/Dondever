@@ -84,7 +84,10 @@ def _make_game_slug(game: dict) -> str:
 
 
 def _game_url(game: dict) -> str:
-    """Full path for a game: /partido/america-vs-cruz-azul-2026-08-11."""
+    """Full path for a game: /partido/america-vs-cruz-azul-2026-08-11.
+    UFC y F1 tienen página de evento propia (cartelera/sesiones): /evento/{slug}."""
+    if game.get("event_slug") and game.get("sport") in ("mma", "racing"):
+        return f"/evento/{game['event_slug']}"
     return f"/partido/{_make_game_slug(game)}"
 
 
@@ -744,6 +747,22 @@ async def home(
     # Is this a non-today date page? (noindex for historical pages)
     is_historical = bool(date) and date != today.strftime("%Y%m%d")
 
+    # Próximos eventos grandes (UFC PPV / GP / boxeo) en los próximos 10 días → strip en portada
+    big_events = []
+    if not is_historical:
+        try:
+            from events_api import fetch_all_events
+            _cut = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
+            for e in await fetch_all_events(days_ahead=10):
+                if e["status"] == "post" or e.get("is_minor"):
+                    continue
+                if e["kind"] == "ufc" and "fight night" in e["name"].lower():
+                    continue  # solo PPV / Noche UFC en portada
+                big_events.append(e)
+            big_events = big_events[:3]
+        except Exception as _e:
+            logger.warning(f"big_events failed: {_e}")
+
     response = templates.TemplateResponse(
         request,
         "index.html",
@@ -762,6 +781,8 @@ async def home(
             "pick_game": pick_game,
             "live_games": live_games,
             "must_watch": must_watch,
+            "big_events": big_events,
+            "fmt_event_when": lambda iso: _fmt_local(iso, "America/Mexico_City", True),
             "free_games": free_games,
             "sport_counts": sport_counts,
             "home_standings": home_standings,
@@ -834,8 +855,13 @@ def _event_seo(ev: dict) -> dict:
         title = f"Dónde ver {ev['short_name']}: {day_mx} {t_mx}{approx} MX en {ch1} | Cartelera" if ev["status"] != "post" \
             else f"{ev['short_name']}: resultados y cartelera completa | DondeVer"
         h1 = f"Dónde ver {ev['name']}: hora en México, canal y cartelera"
-        answer = (f"La <b>pelea estelar {fighters}</b> es el <b>{day_mx}</b> a las <b>{t_mx}{approx} hora de México</b>."
-                  f"{pre} En México se ve por <b>{ch_txt}</b>.")
+        if ev["status"] == "post":
+            winner = next((x["name"] for x in (main["fighters"] if main else []) if x.get("winner")), "")
+            answer = (f"<b>{fighters}</b> se realizó el <b>{day_mx}</b> en {ev['venue'] or ev['city']}."
+                      f"{(' Ganó <b>' + winner + '</b>.') if winner else ''} Cartelera y resultados abajo.")
+        else:
+            answer = (f"La <b>pelea estelar {fighters}</b> es el <b>{day_mx}</b> a las <b>{t_mx}{approx} hora de México</b>."
+                      f"{pre} En México se ve por <b>{ch_txt}</b>.")
         desc = (f"{ev['name']} — {day_mx} {t_mx} hora de México por {ch_txt}. Cartelera completa, hora por país "
                 f"(Venezuela, Colombia, Argentina, España) y dónde ver en vivo.")
     return {"title": title, "h1": h1, "answer": answer, "desc": desc}
@@ -2005,6 +2031,31 @@ async def league_page(request: Request, league_slug: str):
         except Exception as _e:
             logger.warning(f"events for {league_slug} failed: {_e}")
 
+    # Title/H1 dinámicos con el próximo evento ("UFC 331 (19 sep): dónde ver…")
+    event_seo = None
+    nxt = next((e for e in upcoming_events if e["status"] != "post"), None)
+    if nxt:
+        _t = _fmt_local(nxt["date"], "America/Mexico_City", True)
+        _ch = (nxt["channels"].get("MX") or [""])[0].replace(" (por confirmar)", "")
+        _today = _fmt_local(nxt["date"], "America/Mexico_City", True).split(" · ")[0] == \
+            _fmt_local(datetime.now(timezone.utc).isoformat(), "America/Mexico_City", True).split(" · ")[0]
+        if league_slug == "f1":
+            title = f"F1 hoy: {nxt['short_name']} — horarios en México, dónde ver y próximas carreras"
+            h1 = f"Fórmula 1: {nxt['short_name']} — dónde ver y horarios en México"
+            desc = (f"Próxima carrera de F1: {nxt['name']}, carrera {_t} hora de México por {_ch}. "
+                    f"Calendario completo con prácticas, clasificación y carrera, canales en México y Latinoamérica.")
+        elif league_slug == "ufc":
+            title = f"UFC {'hoy' if _today else 'próximo evento'}: {nxt['short_name']} {_t} MX en {_ch} — cartelera y dónde ver"
+            h1 = f"UFC: {nxt['name']} — dónde ver, hora en México y cartelera"
+            desc = (f"{nxt['name']}: {_t} hora de México por {_ch}. Cartelera completa, preliminares y estelar, "
+                    f"horarios por país y próximos eventos de UFC.")
+        else:
+            title = f"Boxeo{' hoy' if _today else ''}: {nxt['short_name']} {_t} MX en {_ch} — próximas peleas y dónde ver"
+            h1 = f"Boxeo: {nxt['name']} — dónde ver, hora en México y próximas peleas"
+            desc = (f"Próxima pelea: {nxt['name']}, {_t} hora de México por {_ch}. Calendario de boxeo con Canelo, "
+                    f"Pitbull Cruz y más: horarios por país, canales y cartelera.")
+        event_seo = {"title": title, "h1": h1, "desc": desc}
+
     # Parallel fetch: games, standings, recent results, upcoming, leaders — all independent
     games_task = get_todays_games(league_filter=league_slug)
     standings_task = get_league_standings(sport, league_id, limit=50)
@@ -2109,6 +2160,7 @@ async def league_page(request: Request, league_slug: str):
             "power_rankings": power_rankings,
             "nfl_picks": nfl_picks,
             "upcoming_events": upcoming_events,
+            "event_seo": event_seo,
         }
     )
 
@@ -2436,6 +2488,38 @@ async def boxeo_hoy_redirect():
 @app.get("/donde-ver-boxeo")
 async def donde_ver_boxeo_redirect():
     return RedirectResponse(url="/liga/boxeo", status_code=301)
+
+async def _next_event_redirect(kind: str, fallback: str, match: str = ""):
+    """Redirige a la página del próximo evento (evergreen: /f1/proxima-carrera, /ufc/proximo-evento…)."""
+    from events_api import fetch_events
+    try:
+        for e in await fetch_events(kind, days_back=0, days_ahead=200):
+            if e["status"] == "post" or e.get("is_minor"):
+                continue
+            if match and match not in e["slug"]:
+                continue
+            return RedirectResponse(url=f"/evento/{e['slug']}", status_code=302)
+    except Exception:
+        pass
+    return RedirectResponse(url=fallback, status_code=302)
+
+
+@app.get("/f1/proxima-carrera")
+async def f1_proxima_carrera():
+    return await _next_event_redirect("f1", "/liga/f1")
+
+@app.get("/gp-de-mexico")
+async def gp_de_mexico():
+    """'GP de México' sin año → la edición vigente (o /liga/f1 fuera de temporada)."""
+    return await _next_event_redirect("f1", "/liga/f1", match="gp-de-mexico")
+
+@app.get("/ufc/proximo-evento")
+async def ufc_proximo_evento():
+    return await _next_event_redirect("ufc", "/liga/ufc")
+
+@app.get("/boxeo/proxima-pelea")
+async def boxeo_proxima_pelea():
+    return await _next_event_redirect("boxing", "/liga/boxeo")
 
 @app.get("/pelea-de-canelo")
 async def pelea_canelo_redirect():
@@ -4203,7 +4287,9 @@ async def sitemap_equipos():
             playing_today.add(_slugify_team(game[side]["name"]))
     playing_today.discard("")
     urls = [_sm_url(f'{APP_URL}/equipos', today_str, "daily", "0.8")]
-    all_team_slugs = set(POPULAR_TEAMS.keys()) | playing_today
+    from config import POPULAR_TEAMS as _CFG_TEAMS
+    _athletes = {k for k, v in _CFG_TEAMS.items() if v.get("league") in _ATHLETE_LEAGUES}
+    all_team_slugs = set(POPULAR_TEAMS.keys()) | playing_today | _athletes
     for team_slug in sorted(all_team_slugs):
         plays = team_slug in playing_today
         t_priority = "0.9" if plays else ("0.8" if team_slug in NFL_TEAM_EXTRA else "0.7")
@@ -5477,11 +5563,80 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
     }
 
 
+_ATHLETE_LEAGUES = {"Formula 1": "f1", "UFC": "ufc", "Boxeo": "boxing"}
+
+
+def _athlete_matches(name: str, ev: dict) -> bool:
+    """¿Aparece este peleador en la cartelera? Compara por apellido normalizado."""
+    from events_api import slugify as _sl
+    key = _sl(name).split("-")
+    key = [k for k in key if len(k) > 3 and k not in ("checo", "canelo", "pitbull")] or key
+    surname = key[-1]
+    for f in ev.get("fights", []):
+        for x in f.get("fighters", []):
+            if surname in _sl(x.get("name", "")).split("-"):
+                return True
+    return False
+
+
+async def _athlete_page(request: Request, slug: str, info: dict):
+    """Página de piloto/peleador: su próximo evento y los siguientes. 'próxima pelea de canelo'."""
+    from events_api import fetch_events
+    kind = _ATHLETE_LEAGUES[info["league"]]
+    name = info["name"]
+    short = info.get("aka") or _short_team_name(name, "")
+    evs = await fetch_events(kind, days_back=60, days_ahead=200)
+    if kind == "f1":
+        mine = [e for e in evs if not e.get("is_minor")]
+    else:
+        mine = [e for e in evs if _athlete_matches(name, e)]
+    upcoming = [e for e in mine if e["status"] != "post"]
+    past = [e for e in mine if e["status"] == "post"][-5:]
+    nxt = upcoming[0] if upcoming else None
+    meta = _EVENT_META[kind]
+    if nxt:
+        t = _fmt_local(nxt["date"], "America/Mexico_City", True)
+        ch = (nxt["channels"].get("MX") or [""])[0].replace(" (por confirmar)", "")
+        if kind == "f1":
+            title = f"Próxima carrera de {short}: {nxt['short_name']} {t} MX — dónde ver | DondeVer"
+            h1 = f"{name}: próxima carrera, horarios en México y dónde ver"
+            answer = f"La próxima carrera de <b>{short}</b> es el <b>{nxt['name']}</b>: <b>{t} hora de México</b> por <b>{ch}</b>."
+        else:
+            main = next((f for f in nxt["fights"] if _athlete_matches(name, {"fights": [f]})), None)
+            opp = ""
+            if main:
+                others = [x["name"] for x in main["fighters"] if _short_team_name(x["name"], "").split()[-1].lower() not in name.lower()]
+                opp = others[0] if others else ""
+            title = f"Próxima pelea de {short}: {t} MX{(' vs ' + _short_team_name(opp, '')) if opp else ''} en {ch} | Dónde ver"
+            h1 = f"{name}: próxima pelea, hora en México y dónde ver"
+            answer = (f"La próxima pelea de <b>{short}</b>{(' contra <b>' + opp + '</b>') if opp else ''} es el "
+                      f"<b>{t} hora de México</b> ({nxt['name']}) por <b>{ch}</b>.")
+        desc = re.sub("<[^>]+>", "", answer) + f" Cartelera, horarios por país y canales en DondeVer."
+    else:
+        title = f"{name}: próxima pelea, fecha y dónde ver | DondeVer" if kind != "f1" else f"{name}: próxima carrera y dónde ver F1 | DondeVer"
+        h1 = f"{name}: próximo evento y dónde ver"
+        answer = f"<b>{short}</b> no tiene {'carrera' if kind == 'f1' else 'pelea'} programada por ahora. Abajo están los próximos eventos de {meta['org']}."
+        desc = re.sub("<[^>]+>", "", answer)
+        upcoming = [e for e in evs if e["status"] != "post" and not e.get("is_minor")][:6]
+    return templates.TemplateResponse(request, "atleta.html", {
+        "name": name, "short": short, "slug": slug, "kind": kind, "org_name": meta["org"], "league_slug": meta["league_slug"],
+        "seo_title": title, "seo_h1": h1, "seo_desc": desc, "answer": answer,
+        "nxt": nxt, "upcoming": upcoming[:8], "past": past,
+        "fmt_day_time": lambda iso: _fmt_local(iso, "America/Mexico_City", True),
+        "year": datetime.now(TZ_MX).year,
+    })
+
+
 @app.get("/equipo/{team_slug}", response_class=HTMLResponse)
 async def team_page(request: Request, team_slug: str):
     """Dynamic team page with today's games for that team."""
     # Resolve team info from slug
     team_info = POPULAR_TEAMS.get(team_slug)
+    # Pilotos / peleadores viven en config.POPULAR_TEAMS (server.POPULAR_TEAMS es solo equipos)
+    from config import POPULAR_TEAMS as _CFG_TEAMS
+    _ath = _CFG_TEAMS.get(team_slug)
+    if _ath and _ath.get("league") in _ATHLETE_LEAGUES:
+        return await _athlete_page(request, team_slug, _ath)
     if team_info:
         team_name = team_info["name"]
         team_sport = team_info.get("sport", "")
