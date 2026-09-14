@@ -4149,12 +4149,23 @@ try:
         # Web Push notifications (only if OneSignal configured)
         if os.getenv("ONESIGNAL_APP_ID") and os.getenv("ONESIGNAL_API_KEY"):
             async def _push_pregame_check():
-                """Check for games starting soon and send push notifications."""
+                """Check for games starting soon and send push notifications (solo a seguidores)."""
                 try:
                     games = await get_todays_games()
-                    await check_and_send_pregame_pushes(games)
+                    await check_and_send_pregame_pushes(games, _push_targets_for, _push_url_for)
                 except Exception as e:
                     logger.error(f"Push pre-game check failed: {e}")
+
+            # Alertas en vivo (inicio / anotación / final) cada 60 s
+            scheduler.add_job(
+                _push_live_check,
+                IntervalTrigger(seconds=60),
+                id="push_live_alerts",
+                name="Live push notifications",
+                replace_existing=True,
+                max_instances=1,
+                coalesce=True,
+            )
 
             async def _push_daily_summary():
                 """Send daily summary push at 8:00 AM MX."""
@@ -7159,6 +7170,84 @@ async def push_test(token: str = ""):
         url=APP_URL,
     )
     return JSONResponse(result)
+
+
+# ── Push por equipo / partido (OneSignal subscription ids en push_store) ──
+def _push_targets_for(game: dict) -> list[str]:
+    """Suscripciones que siguen al local, al visitante o pusieron 🔔 al partido."""
+    import push_store
+    slugs = [x for x in (_team_name_to_slug(game.get("home", {}).get("name", "")),
+                         _team_name_to_slug(game.get("away", {}).get("name", ""))) if x]
+    return push_store.subs_for(slugs, str(game.get("id", "")))
+
+
+def _push_url_for(game: dict) -> str:
+    try:
+        return f"{APP_URL}/partido/{_make_game_slug(game)}"
+    except Exception:
+        return APP_URL
+
+
+async def _push_live_check():
+    """Watcher (cada 60 s): inicio, gol/anotación, final → push a seguidores."""
+    from push_notifications import check_live_pushes
+    try:
+        games = await get_todays_games()
+        return await check_live_pushes(games, _push_targets_for, _push_url_for)
+    except Exception as e:
+        logger.error(f"Push live check failed: {e}")
+        return []
+
+
+@app.post("/api/push/subscribe")
+async def api_push_subscribe(request: Request):
+    """El navegador manda su OneSignal subscription id + equipos seguidos (dv_my_teams) + partidos con 🔔."""
+    import push_store
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "json"}, status_code=400)
+    sub_id = str(body.get("sub_id") or "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{8,80}", sub_id):
+        return JSONResponse({"error": "sub_id"}, status_code=400)
+    teams = body.get("teams") if isinstance(body.get("teams"), list) else None
+    games = body.get("games") if isinstance(body.get("games"), list) else None
+    add_games = body.get("add_games") if isinstance(body.get("add_games"), list) else None
+    try:
+        cur = push_store.upsert(sub_id, teams=teams, games=games, add_games=add_games,
+                                ua=request.headers.get("user-agent", ""))
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    return {"ok": True, "teams": cur.get("teams", []), "games": cur.get("games", [])}
+
+
+@app.post("/api/push/unsubscribe")
+async def api_push_unsubscribe(request: Request):
+    import push_store
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "json"}, status_code=400)
+    return {"ok": push_store.remove(str(body.get("sub_id") or ""))}
+
+
+@app.get("/api/internal/push-tick")
+async def api_push_tick(token: str = ""):
+    """Corre el watcher en vivo una vez (para cron externo). Protegido por ADMIN_TOKEN."""
+    if not token or token != os.getenv("ADMIN_TOKEN", ""):
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    import push_store
+    sent = await _push_live_check()
+    return {"ok": True, "sent": sent, "store": push_store.stats()}
+
+
+@app.get("/api/internal/push-stats")
+async def api_push_stats(token: str = ""):
+    if not token or token != os.getenv("ADMIN_TOKEN", ""):
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    import push_store
+    from push_notifications import _live_state, _live_sent
+    return {"store": push_store.stats(), "watching": len(_live_state), "sent_keys": len(_live_sent)}
 
 
 @app.get("/admin/push-summary")

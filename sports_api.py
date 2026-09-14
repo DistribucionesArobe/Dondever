@@ -280,13 +280,30 @@ LIGA_MX_TEAM_CHANNELS = {
 
 # ── ESPN API ─────────────────────────────────────────────
 
+_cache_ts: dict = {}      # cache_key → epoch del último fetch (para el TTL corto en vivo)
+_LIVE_TTL = 25            # segundos entre refrescos cuando hay partidos en curso
+
+
+def _has_live_event(data: dict) -> bool:
+    try:
+        return any((((e.get("status") or {}).get("type") or {}).get("state") == "in") for e in (data.get("events") or []))
+    except Exception:
+        return False
+
+
 async def fetch_espn_scoreboard(
     sport: str, league: str, date_str: Optional[str] = None
 ) -> dict:
-    """Fetch scoreboard for a sport/league from ESPN API."""
+    """Fetch scoreboard for a sport/league from ESPN API.
+    Cache 5 min, pero si la liga tiene partidos EN VIVO se refresca cada 25 s
+    (marcador, down/yarda, outs… en tiempo real para /partido/, portada y push)."""
+    import time as _time
     cache_key = f"espn:{sport}:{league}:{date_str}"
     if cache_key in _cache:
-        return _cache[cache_key]
+        cached = _cache[cache_key]
+        age = _time.time() - _cache_ts.get(cache_key, 0)
+        if age < _LIVE_TTL or not _has_live_event(cached):
+            return cached
 
     url = f"{ESPN_BASE}/{sport}/{league}/scoreboard"
     params = {}
@@ -299,10 +316,11 @@ async def fetch_espn_scoreboard(
             resp.raise_for_status()
             data = resp.json()
             _cache[cache_key] = data
+            _cache_ts[cache_key] = _time.time()
             return data
         except httpx.HTTPError as e:
             logger.warning(f"ESPN API error for {sport}/{league}: {e}")
-            return {"events": [], "leagues": []}
+            return _cache.get(cache_key) or {"events": [], "leagues": []}
 
 
 # ── ESPN Event Summary (lineups, H2H, standings, leaders) ──

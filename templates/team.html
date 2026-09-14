@@ -1269,6 +1269,8 @@ function emailSubscribe(e) {
     saveMyTeams(teams);
     saveLegacyFavs(favs);
     render();
+    // Alertas push del equipo (inicio, goles/anotaciones, final)
+    if (window.dvPush) { if (idx === -1) window.dvPush.enable(); else window.dvPush.sync(true); }
     if (typeof gtag === 'function') {
       gtag('event', idx === -1 ? 'team_follow' : 'team_unfollow', {
         event_category: 'mis_equipos', event_label: slug

@@ -135,8 +135,65 @@
     };
     saveNotifyGames(games);
     btn.classList.add('active');
-    btn.innerHTML = '&#128276; <span class="notify-label">15 min</span>';
+    btn.innerHTML = '&#128276; <span class="notify-label">Alertas</span>';
+    // Push real (OneSignal): inicio, anotaciones y final aunque la pestaña esté cerrada
+    if (window.dvPush) window.dvPush.enable({ add_games: [gid] });
   }
+
+  // ── Push por equipo / partido (OneSignal v16 + /api/push/subscribe) ──
+  // El id de suscripción de OneSignal se manda al servidor junto con dv_my_teams
+  // (equipos seguidos) y los partidos con 🔔; el servidor manda el push solo a quien sigue.
+  var PUSH_SYNC_KEY = 'dv-push-sync';
+  function onOneSignal(cb) {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(function(OS) { try { cb(OS); } catch (e) {} });
+  }
+  function myTeams() { try { return JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch (e) { return []; } }
+  function postSub(id, extra) {
+    var body = { sub_id: id, teams: myTeams(), games: Object.keys(getNotifyGames()) };
+    if (extra) for (var k in extra) body[k] = extra[k];
+    return fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function() { localStorage.setItem(PUSH_SYNC_KEY, JSON.stringify({ t: Date.now(), teams: body.teams.join(','), games: body.games.length })); })
+      .catch(function() {});
+  }
+  window.dvPush = {
+    // Sincroniza equipos/partidos con el servidor si ya hay suscripción (barato: solo si cambió algo o pasó 1 día)
+    sync: function(force) {
+      onOneSignal(function(OS) {
+        var ps = OS.User && OS.User.PushSubscription;
+        if (!ps || !ps.id || ps.optedIn === false) return;
+        var last = {}; try { last = JSON.parse(localStorage.getItem(PUSH_SYNC_KEY) || '{}'); } catch (e) {}
+        var teams = myTeams().join(','), games = Object.keys(getNotifyGames()).length;
+        if (!force && last.teams === teams && last.games === games && (Date.now() - (last.t || 0)) < 86400000) return;
+        postSub(ps.id);
+      });
+    },
+    // Pide permiso (si hace falta) y registra la suscripción con los equipos seguidos
+    enable: function(extra) {
+      onOneSignal(async function(OS) {
+        try {
+          if (!(OS.Notifications && OS.Notifications.permission)) await OS.Notifications.requestPermission();
+          var ps = OS.User && OS.User.PushSubscription;
+          if (ps && ps.optedIn === false) await ps.optIn();
+          var tries = 0;
+          (function waitId() {
+            var id = OS.User && OS.User.PushSubscription && OS.User.PushSubscription.id;
+            if (id) { postSub(id, extra); return; }
+            if (tries++ < 10) setTimeout(waitId, 800);
+          })();
+        } catch (e) {}
+      });
+    }
+  };
+  // Al cargar: si ya está suscrito, mantener el servidor al día con los equipos seguidos
+  setTimeout(function() { window.dvPush.sync(false); }, 4000);
+  onOneSignal(function(OS) {
+    try {
+      OS.User.PushSubscription.addEventListener('change', function(ev) {
+        if (ev && ev.current && ev.current.id && ev.current.optedIn !== false) postSub(ev.current.id);
+      });
+    } catch (e) {}
+  });
 
   // Mark already-set notifications on page load
   document.addEventListener('DOMContentLoaded', function() {

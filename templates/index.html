@@ -2859,6 +2859,7 @@
                 else if (idx < 0 && mi === -1) { mt.push(slug); }
                 localStorage.setItem('dv_my_teams', JSON.stringify(mt));
                 myTeamSlugs = mt;
+                if (window.dvPush) { if (idx < 0) window.dvPush.enable(); else window.dvPush.sync(true); }
             }
         }
         updateFavPill();
@@ -3397,6 +3398,7 @@
                     else if (idx < 0 && mi === -1) { mt.push(slug); }
                     localStorage.setItem('dv_my_teams', JSON.stringify(mt));
                     myTeamSlugs = mt;
+                    if (window.dvPush) { if (idx < 0) window.dvPush.enable(); else window.dvPush.sync(true); }
                 } else {
                     var li = favLeaguesList.indexOf(slug);
                     if (li >= 0) { favLeaguesList.splice(li, 1); star.classList.remove('active'); }
@@ -3950,6 +3952,7 @@ function emailSubscribe(e) {
         try { existing = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e) {}
         selected.forEach(function(s) { if (existing.indexOf(s) === -1) existing.push(s); });
         localStorage.setItem('dv_my_teams', JSON.stringify(existing));
+        if (window.dvPush && existing.length) window.dvPush.enable();
         // Also sync to dv_favs for backward compat
         var names = [];
         var teamMap = {};
