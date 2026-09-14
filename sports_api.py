@@ -102,7 +102,7 @@ def _normalize_channel(raw: str) -> str:
 # Cache: 5 min TTL — reduced from 500 to 80 to fit in 512MB Render free tier
 _cache = TTLCache(maxsize=64, ttl=300)  # 47 leagues need 64 slots to avoid eviction
 # TV cache: 4 hour TTL — reduced from 1000 to 100
-_tv_cache = TTLCache(maxsize=30, ttl=14400)  # 30 events max
+_tv_cache = TTLCache(maxsize=96, ttl=14400)  # ~47 ligas x fecha: con 30 slots se desalojaba y repetía llamadas (429 en TheSportsDB)
 # Track when TheSportsDB is rate-limiting us to avoid flooding with 429s
 _sportsdb_blocked_until = 0  # timestamp when we can retry
 # Odds cache: 6h TTL — reduced from 200 to 50

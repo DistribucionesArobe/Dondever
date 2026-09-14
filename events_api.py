@@ -452,21 +452,38 @@ _MOTOGP_SESSIONS_ES = {
 }
 
 
+_season_cache = TTLCache(maxsize=4, ttl=6 * 3600)   # calendario de temporada: cambia poco
+_season_stale: dict[str, list] = {}                  # último resultado bueno (fallback ante 429)
+
+
 async def _fetch_sportsdb_season(league_id: str, season: str) -> list[dict]:
+    """eventsseason con reintento ante 429 (TheSportsDB: 100 req/min compartidos con
+    el resto del sitio) y fallback al último resultado bueno. Nunca cachea vacío."""
+    import asyncio
     key = f"sportsdb:{league_id}:{season}"
-    if key in _events_cache:
-        return _events_cache[key]
+    if key in _season_cache:
+        return _season_cache[key]
     from config import SPORTSDB_BASE
-    try:
-        async with httpx.AsyncClient(timeout=20) as client:
-            r = await client.get(f"{SPORTSDB_BASE}/eventsseason.php", params={"id": league_id, "s": season})
+    events: list = []
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=25) as client:
+                r = await client.get(f"{SPORTSDB_BASE}/eventsseason.php", params={"id": league_id, "s": season})
+            if r.status_code == 429:
+                logger.warning(f"TheSportsDB 429 season {league_id}/{season} (intento {attempt + 1})")
+                await asyncio.sleep(2.5 * (attempt + 1))
+                continue
             r.raise_for_status()
             events = r.json().get("events") or []
-    except Exception as e:
-        logger.warning(f"TheSportsDB season fetch failed {league_id}/{season}: {e}")
-        events = []
-    _events_cache[key] = events
-    return events
+            break
+        except Exception as e:
+            logger.warning(f"TheSportsDB season fetch failed {league_id}/{season}: {e}")
+            await asyncio.sleep(1.5)
+    if events:
+        _season_cache[key] = events
+        _season_stale[key] = events
+        return events
+    return _season_stale.get(key, [])
 
 
 def _sdb_iso(e: dict) -> str:
