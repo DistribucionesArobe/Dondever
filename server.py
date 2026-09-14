@@ -416,7 +416,7 @@ import zlib as _zlib
 from cachetools import TTLCache as _TTLCache
 
 _HTML_CACHE = _TTLCache(maxsize=800, ttl=300)
-_HTML_CACHE_PREFIXES = ("/equipo/", "/liga/", "/partido/", "/canal/", "/donde-ver/",
+_HTML_CACHE_PREFIXES = ("/equipo/", "/liga/", "/partido/", "/evento/", "/canal/", "/donde-ver/",
                         "/guia/", "/resultado/", "/donde-ver-en-", "/equipos")
 _HTML_CACHE_HUBS = {"/playoffs-mlb", "/gratis-hoy", "/pronosticos-hoy", "/futbol-hoy",
                     "/futbol-americano-hoy", "/basquetbol-hoy", "/beisbol-hoy", "/hockey-hoy",
@@ -774,6 +774,128 @@ async def home(
     response.headers["Cache-Control"] = "public, max-age=90, s-maxage=90"
     response.headers["Vary"] = "Accept-Encoding"
     return response
+
+
+# ── Eventos: UFC / F1 / Boxeo (/evento/{slug}) ────────────
+_EVENT_META = {
+    "ufc": {"org": "UFC", "league_slug": "ufc", "sport": "Mixed Martial Arts", "kicker": "UFC"},
+    "f1": {"org": "Fórmula 1", "league_slug": "f1", "sport": "Motorsport", "kicker": "Fórmula 1"},
+    "boxing": {"org": "Boxeo", "league_slug": "boxeo", "sport": "Boxing", "kicker": "Boxeo"},
+}
+_EVENT_COUNTRIES = [
+    ("MX", "México", "🇲🇽", "America/Mexico_City"),
+    ("US", "EE.UU. (Este)", "🇺🇸", "America/New_York"),
+    ("VE", "Venezuela", "🇻🇪", "America/Caracas"),
+    ("CO", "Colombia", "🇨🇴", "America/Bogota"),
+    ("AR", "Argentina", "🇦🇷", "America/Argentina/Buenos_Aires"),
+    ("ES", "España", "🇪🇸", "Europe/Madrid"),
+]
+_DAYS_ES_SHORT = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
+_MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def _fmt_local(iso: str, tz_name: str, with_day: bool = False) -> str:
+    from zoneinfo import ZoneInfo as _ZI
+    try:
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(_ZI(tz_name))
+        t = dt.strftime("%I:%M %p").lstrip("0").replace(":00 ", " ")
+        return f"{_DAYS_ES_SHORT[dt.weekday()]} {dt.day} {_MONTHS_ES_SHORT[dt.month - 1]} · {t}" if with_day else t
+    except Exception:
+        return ""
+
+
+def _event_seo(ev: dict) -> dict:
+    """Title/H1/answer that resolve the query: dónde ver + a qué hora."""
+    meta = _EVENT_META[ev["kind"]]
+    t_mx = _fmt_local(ev["date"], "America/Mexico_City")
+    day_mx = _fmt_local(ev["date"], "America/Mexico_City", with_day=True).split(" · ")[0]
+    ch = ev["channels"].get("MX") or []
+    ch1 = ch[0].replace(" (por confirmar)", "") if ch else ""
+    ch_txt = " y ".join(ch[:2]) if ch else "canal por confirmar"
+    approx = "" if ev.get("time_confirmed", True) else " (aprox.)"
+    if ev["kind"] == "f1":
+        race = next((s for s in ev["sessions"] if s["key"].lower() == "race"), None)
+        qual = next((s for s in ev["sessions"] if s["key"].lower().startswith("qual")), None)
+        r_t = _fmt_local(race["date"], "America/Mexico_City", True) if race else ""
+        q_t = _fmt_local(qual["date"], "America/Mexico_City", True) if qual else ""
+        title = f"{ev['short_name']}: hora de carrera y qualy en México, dónde ver | DondeVer"
+        h1 = f"Dónde ver el {ev['name']}: horarios en México y canal"
+        answer = (f"La <b>carrera</b> del {ev['short_name']} es el <b>{r_t} hora de México</b>"
+                  f"{' y la <b>clasificación</b> el <b>' + q_t + '</b>' if q_t else ''}. "
+                  f"En México se ve por <b>{ch_txt}</b>.")
+        desc = (f"{ev['name']}: carrera {r_t} MX, clasificación {q_t} MX. Dónde ver en México ({ch_txt}), "
+                f"Venezuela, Colombia, Argentina y España. Horarios de todas las sesiones en {ev['venue'] or ev['city']}.")
+    else:
+        main = next((f for f in ev["fights"] if f["is_main"]), None)
+        fighters = " vs ".join(x["name"] for x in main["fighters"]) if main else ev["name"]
+        pre = ""
+        if ev["kind"] == "ufc" and len(ev["segments"]) > 1:
+            pre = f" Las preliminares empiezan a las <b>{_fmt_local(ev['segments'][0]['date'], 'America/Mexico_City')}</b>."
+        title = f"Dónde ver {ev['short_name']}: {day_mx} {t_mx}{approx} MX en {ch1} | Cartelera" if ev["status"] != "post" \
+            else f"{ev['short_name']}: resultados y cartelera completa | DondeVer"
+        h1 = f"Dónde ver {ev['name']}: hora en México, canal y cartelera"
+        answer = (f"La <b>pelea estelar {fighters}</b> es el <b>{day_mx}</b> a las <b>{t_mx}{approx} hora de México</b>."
+                  f"{pre} En México se ve por <b>{ch_txt}</b>.")
+        desc = (f"{ev['name']} — {day_mx} {t_mx} hora de México por {ch_txt}. Cartelera completa, hora por país "
+                f"(Venezuela, Colombia, Argentina, España) y dónde ver en vivo.")
+    return {"title": title, "h1": h1, "answer": answer, "desc": desc}
+
+
+def _event_faq(ev: dict) -> list:
+    meta = _EVENT_META[ev["kind"]]
+    ch = ev["channels"].get("MX") or []
+    t_mx = _fmt_local(ev["date"], "America/Mexico_City", True)
+    t_ve = _fmt_local(ev["date"], "America/Caracas", True)
+    t_es = _fmt_local(ev["date"], "Europe/Madrid", True)
+    faq = [(f"¿A qué hora es {ev['short_name']} en México?",
+            f"{'La carrera' if ev['kind']=='f1' else 'La pelea estelar'} es el {t_mx} hora del centro de México."
+            + ("" if ev.get("time_confirmed", True) else " El horario es estimado y se confirma la semana del evento.")),
+           (f"¿En qué canal pasan {ev['short_name']} en México?",
+            f"En México se transmite por {', '.join(ch) if ch else 'canal por confirmar'}."),
+           (f"¿A qué hora es en Venezuela y España?",
+            f"En Venezuela: {t_ve}. En España: {t_es}.")]
+    if ev["kind"] == "ufc":
+        faq.append(("¿Dónde ver las preliminares de UFC?",
+                    "Las preliminares y la cartelera estelar se transmiten completas por Paramount+ en México y Latinoamérica."))
+    if ev["kind"] == "f1":
+        faq.append(("¿Se puede ver la F1 gratis en México?",
+                    "Canal 5 transmite en TV abierta carreras selectas los domingos. El resto de sesiones van por Fox Sports MX y F1 TV Pro."))
+    if ev["kind"] == "boxing":
+        faq.append(("¿La pelea es gratis en TV abierta?",
+                    "Depende del evento: TV Azteca y Canal 5 transmiten peleas selectas de boxeadores mexicanos. Si no está confirmado, la opción segura es DAZN."))
+    return faq
+
+
+@app.get("/evento/{slug}", response_class=HTMLResponse)
+async def evento_page(request: Request, slug: str):
+    """Página de evento: UFC (cartelera), F1 (sesiones del GP), Boxeo (curado)."""
+    from events_api import get_event_by_slug, fetch_events
+    ev = await get_event_by_slug(slug)
+    if not ev:
+        return templates.TemplateResponse(request, "404.html", status_code=404,
+                                          context={"message": "Evento no encontrado."})
+    meta = _EVENT_META[ev["kind"]]
+    seo = _event_seo(ev)
+    tz_rows = [{"code": c, "name": n, "flag": f, "time": _fmt_local(ev["date"], tz),
+                "day": _fmt_local(ev["date"], tz, True).split(" · ")[0]} for c, n, f, tz in _EVENT_COUNTRIES]
+    countries = [{"code": c, "name": n, "flag": f, "time": _fmt_local(ev["date"], tz, True),
+                  "channels": ev["channels"].get(c) or ev["channels"].get("MX", [])}
+                 for c, n, f, tz in _EVENT_COUNTRIES]
+    related = [e for e in await fetch_events(ev["kind"], days_back=0, days_ahead=90)
+               if e["slug"] != ev["slug"] and not e.get("is_minor")][:6]
+    competitor_names = []
+    for f in ev["fights"][:2]:
+        competitor_names += [x["name"] for x in f["fighters"] if x.get("name")]
+    return templates.TemplateResponse(request, "evento.html", {
+        "ev": ev, "seo_title": seo["title"], "seo_h1": seo["h1"], "seo_desc": seo["desc"], "answer": seo["answer"],
+        "org_name": meta["org"], "league_slug": meta["league_slug"], "sport_name": meta["sport"], "kicker": meta["kicker"],
+        "date_long_mx": _fmt_local(ev["date"], "America/Mexico_City", True),
+        "tz_rows": tz_rows, "countries": countries, "faq": _event_faq(ev), "related": related,
+        "competitor_names": competitor_names,
+        "fmt_day": lambda iso: _fmt_local(iso, "America/Mexico_City", True).split(" · ")[0],
+        "fmt_time": lambda iso: _fmt_local(iso, "America/Mexico_City"),
+        "year": datetime.now(TZ_MX).year,
+    })
 
 
 @app.get("/playoffs-mlb", response_class=HTMLResponse)
@@ -1704,6 +1826,16 @@ LEAGUE_SEO_EXTRA = {
         ],
         "links": [],
     },
+    "boxeo": {
+        "title": "Dónde ver boxeo hoy: próximas peleas, Canelo, horarios y canales | DondeVer",
+        "meta_desc": "Calendario de boxeo 2026: próximas peleas con hora de México y canal (DAZN, TV Azteca, Netflix, Paramount+). Canelo Álvarez, Pitbull Cruz, Mayweather vs Pacquiao y más. Cartelera y horarios por país.",
+        "h2": "Dónde ver boxeo en vivo: próximas peleas",
+        "paragraphs": [
+            "El boxeo en México se vive en TV abierta y streaming. TV Azteca y Canal 5 transmiten peleas selectas de boxeadores mexicanos, mientras que DAZN concentra la mayoría de las carteleras internacionales y Paramount+ transmite los eventos de Zuffa Boxing. Netflix ha entrado con eventos especiales como Mayweather vs Pacquiao.",
+            "En DondeVer.app publicamos cada pelea importante con su hora en México, Venezuela, Colombia, Argentina y España, el canal por país y la cartelera completa. Toca un evento para ver los detalles. Las horas se confirman la semana de la pelea.",
+        ],
+        "links": [],
+    },
     "ufc": {
         "title": "Donde ver UFC hoy en vivo — Peleas MMA en Mexico | DondeVer",
         "meta_desc": "Donde ver la UFC en vivo hoy en Mexico: horarios, cartelera y canales. Peleas de MMA, UFC Fight Night y PPV. Paramount+, Fox Sports MX.",
@@ -1853,12 +1985,25 @@ async def league_page(request: Request, league_slug: str):
     Permanent league landing page — always has content for Google to index.
     e.g. /liga/liga-mx, /liga/nfl, /liga/nba
     """
+    if league_slug in ("boxing",):
+        return RedirectResponse(url="/liga/boxeo", status_code=301)
     if league_slug not in ALL_LEAGUES:
         return templates.TemplateResponse(
             request, "404.html", status_code=404
         )
 
     sport, league_id, display_name, emoji = ALL_LEAGUES[league_slug]
+
+    # UFC / F1 / Boxeo: eventos con página propia (/evento/{slug})
+    upcoming_events = []
+    _EVENT_KIND = {"ufc": "ufc", "f1": "f1", "boxeo": "boxing"}
+    if league_slug in _EVENT_KIND:
+        try:
+            from events_api import fetch_events
+            upcoming_events = [e for e in await fetch_events(_EVENT_KIND[league_slug], days_back=1, days_ahead=90)
+                               if not e.get("is_minor")][:10]
+        except Exception as _e:
+            logger.warning(f"events for {league_slug} failed: {_e}")
 
     # Parallel fetch: games, standings, recent results, upcoming, leaders — all independent
     games_task = get_todays_games(league_filter=league_slug)
@@ -1963,6 +2108,7 @@ async def league_page(request: Request, league_slug: str):
             "league_seo_extra": LEAGUE_SEO_EXTRA.get(league_slug),
             "power_rankings": power_rankings,
             "nfl_picks": nfl_picks,
+            "upcoming_events": upcoming_events,
         }
     )
 
@@ -2281,6 +2427,24 @@ async def donde_ver_ufc_redirect():
 @app.get("/pelea-ufc-hoy")
 async def pelea_ufc_hoy_redirect():
     return RedirectResponse(url="/liga/ufc", status_code=301)
+
+# ── Boxeo SEO redirects ──
+@app.get("/boxeo-hoy")
+async def boxeo_hoy_redirect():
+    return RedirectResponse(url="/liga/boxeo", status_code=301)
+
+@app.get("/donde-ver-boxeo")
+async def donde_ver_boxeo_redirect():
+    return RedirectResponse(url="/liga/boxeo", status_code=301)
+
+@app.get("/pelea-de-canelo")
+async def pelea_canelo_redirect():
+    """Canelo es la búsqueda #1 de box en México → su próxima pelea."""
+    from events_api import load_boxing_events
+    for e in load_boxing_events(days_back=1, days_ahead=200):
+        if "canelo" in e["slug"]:
+            return RedirectResponse(url=f"/evento/{e['slug']}", status_code=302)
+    return RedirectResponse(url="/liga/boxeo", status_code=302)
 
 # ── Copa America SEO redirects ──
 @app.get("/copa-america-hoy")
@@ -3998,6 +4162,7 @@ async def sitemap_index():
         ("sitemap-partidos.xml", today_str),
         ("sitemap-equipos.xml", today_str),
         ("sitemap-equipos-paises.xml", month_start),
+        ("sitemap-eventos.xml", today_str),
     ]
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
            '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -4049,6 +4214,30 @@ async def sitemap_equipos():
         urls.append(_sm_url(f'{APP_URL}/equipo/{team_slug}/calendario',
                             today_str if plays else week_start, "daily", "0.6"))
     return _sm_wrap(urls)
+
+
+@app.get("/sitemap-eventos.xml")
+async def sitemap_eventos():
+    """UFC / F1 / Boxeo event pages (próximos 120 días + recientes)."""
+    today_str, _, _ = _sm_dates()
+    from events_api import fetch_all_events
+    urls = []
+    try:
+        for e in await fetch_all_events(days_ahead=120):
+            if e.get("is_minor"):
+                continue
+            lm = today_str if e["status"] != "post" else mx_date_str(e["date"])
+            urls.append(_sm_url(f'{APP_URL}/evento/{e["slug"]}', lm, "daily", "0.8", hreflang=True))
+    except Exception as e:
+        logger.warning(f"sitemap-eventos failed: {e}")
+    return _sm_wrap(urls)
+
+
+def mx_date_str(iso: str) -> str:
+    try:
+        return datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(TZ_MX).strftime("%Y-%m-%d")
+    except Exception:
+        return (iso or "")[:10]
 
 
 @app.get("/sitemap-equipos-paises.xml")

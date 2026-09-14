@@ -766,6 +766,7 @@ LEAGUES = {
     "nhl":           ("hockey", "nhl",           "NHL",              "\U0001f3d2"),
     # Combate
     "ufc":           ("mma", "ufc",             "UFC",              "🥊"),
+    "boxeo":         ("boxing", "boxing",       "Boxeo",            "🥊"),  # sin API: boxing_events.json
     # Motorsport
     "f1":            ("racing", "f1",            "Formula 1",        "🏎️"),
 }
@@ -1449,6 +1450,10 @@ TEAM_ALIASES = {
     "norris": "lando norris",
     "leclerc": "charles leclerc",
     "alonso": "fernando alonso",
+    "boxeo": "boxeo",
+    "box": "boxeo",
+    "canelo": "boxeo",
+    "peleas de box": "boxeo",
     "formula 1": "f1",
     "formula uno": "f1",
     "gran premio": "f1",

@@ -361,6 +361,22 @@
 
 <!-- Games -->
 <main class="main">
+    {% if upcoming_events %}
+    {# UFC / F1 / Boxeo: eventos con página propia (cartelera, sesiones, hora por país) #}
+    <div class="standings-section" style="margin-bottom:1rem;">
+        <h2 style="margin-bottom:0.5rem;">Pr&oacute;ximos eventos de {{ league_name }}</h2>
+        <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.4rem;">Hora del centro de M&eacute;xico &middot; toca un evento para ver cartelera, horarios por pa&iacute;s y canal</div>
+        {% for e in upcoming_events %}
+        <a href="/evento/{{ e.slug }}" style="display:flex;justify-content:space-between;align-items:center;gap:0.6rem;padding:0.6rem 0.2rem;border-top:1px solid #f3f4f6;text-decoration:none;color:#1a1a2e;{% if e.status == 'in' %}background:#fef2f2;{% endif %}">
+            <div style="min-width:0;">
+                <div style="font-weight:800;font-size:0.9rem;">{% if e.status == 'in' %}<span style="color:#ef4444;">&#9679; EN VIVO</span> {% endif %}{{ e.name }}</div>
+                <div style="font-size:0.72rem;color:#6b7280;">{% if e.venue %}{{ e.venue }}{% if e.city %}, {{ e.city }}{% endif %} &middot; {% endif %}{{ (e.channels.MX or [])|join(', ') }}</div>
+            </div>
+            <div style="text-align:right;white-space:nowrap;font-weight:800;color:#f97316;font-size:0.82rem;">{{ format_mx_day_time(e.date) }}</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% if games %}
         <h2 style="font-size:0.9rem;font-weight:700;color:#374151;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:2px solid #e5e7eb;">
             {{ emoji }} {{ league_name }} — {{ total_games }} juego{{ 's' if total_games != 1 else '' }} hoy
@@ -406,10 +422,12 @@
         </a>
         {% endfor %}
     {% else %}
+        {% if not upcoming_events %}
         <div class="no-games">
             <h2>No hay juegos de {{ league_name }} hoy</h2>
             <p>Regresa cuando haya jornada o revisa <a href="/" style="color:#059669;">todos los juegos de hoy</a>.</p>
         </div>
+        {% endif %}
 
         {# When no games today, show upcoming schedule immediately #}
         {% if upcoming_games %}

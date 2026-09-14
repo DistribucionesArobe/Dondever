@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ seo_title }}</title>
+    <meta name="description" content="{{ seo_desc }}">
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_desc }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ app_url }}/evento/{{ ev.slug }}">
+    <meta property="og:site_name" content="DondeVer.app">
+    <meta property="og:locale" content="es_MX">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ seo_title }}">
+    <meta name="twitter:description" content="{{ seo_desc }}">
+    <link rel="canonical" href="{{ app_url }}/evento/{{ ev.slug }}">
+    {{ hreflang_tags(request.url) }}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SportsEvent",
+      "name": "{{ ev.name }}",
+      "description": "{{ seo_desc }}",
+      "startDate": "{{ ev.start_date }}",
+      "endDate": "{{ ev.date }}",
+      "eventStatus": "https://schema.org/{% if ev.status == 'post' %}EventCompleted{% else %}EventScheduled{% endif %}",
+      "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
+      "url": "{{ app_url }}/evento/{{ ev.slug }}",
+      "sport": "{{ sport_name }}",
+      "location": [
+        {"@type": "Place", "name": "{{ ev.venue or ev.city }}", "address": "{{ ev.city }}{% if ev.country %}, {{ ev.country }}{% endif %}"},
+        {"@type": "VirtualLocation", "url": "{{ app_url }}/evento/{{ ev.slug }}"}
+      ],
+      {% if competitor_names %}"competitor": [{% for n in competitor_names %}{"@type": "Person", "name": "{{ n }}"}{% if not loop.last %},{% endif %}{% endfor %}],{% endif %}
+      "broadcastOfEvent": [{% for c in ev.channels.MX %}{"@type": "BroadcastEvent", "isLiveBroadcast": true, "publishedOn": {"@type": "BroadcastService", "name": "{{ c }}", "areaServed": "MX"}}{% if not loop.last %},{% endif %}{% endfor %}],
+      "organizer": {"@type": "SportsOrganization", "name": "{{ org_name }}"},
+      "inLanguage": "es"
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ app_url }}/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ org_name }}", "item": "{{ app_url }}/liga/{{ league_slug }}"},
+        {"@type": "ListItem", "position": 3, "name": "{{ ev.short_name }}", "item": "{{ app_url }}/evento/{{ ev.slug }}"}
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{% for q, a in faq %}{"@type": "Question", "name": "{{ q }}", "acceptedAnswer": {"@type": "Answer", "text": "{{ a }}"}}{% if not loop.last %},{% endif %}{% endfor %}]
+    }
+    </script>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#10b981">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script>
+    (function(){var t=localStorage.getItem('dv-theme');if(t)document.documentElement.setAttribute('data-theme',t);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.setAttribute('data-theme','dark');})();
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; min-height: 100vh; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
+        .breadcrumbs { max-width: 900px; margin: 0 auto; padding: 0.5rem 1rem 0; font-size: 0.72rem; }
+        .breadcrumbs a { color: #059669; text-decoration: none; font-weight: 600; }
+        .breadcrumbs span { color: #9ca3af; }
+        .main { max-width: 900px; margin: 0.5rem auto 2rem; padding: 0 1rem; }
+        .hero { background: white; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1.1rem 1.2rem; margin-top: 0.6rem; }
+        .kicker { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #92400e; background: #fef3c7; display: inline-block; padding: 0.2rem 0.6rem; border-radius: 2rem; }
+        .kicker.live { background: #fee2e2; color: #991b1b; }
+        .kicker.post { background: #f3f4f6; color: #6b7280; }
+        h1 { font-size: 1.45rem; font-weight: 800; margin: 0.5rem 0 0.3rem; line-height: 1.2; }
+        .sub { color: #6b7280; font-size: 0.9rem; }
+        .answer { margin-top: 0.9rem; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 0.8rem 1rem; font-size: 0.95rem; line-height: 1.6; }
+        .answer b { color: #065f46; }
+        .chips { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+        .chip { display: inline-block; padding: 0.25rem 0.65rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; background: #f3f4f6; color: #374151; text-decoration: none; }
+        .chip.aff { background: #10b981; color: white; }
+        h2.sec { font-size: 1rem; font-weight: 800; margin: 1.3rem 0 0.6rem; }
+        .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 0.9rem 1rem; }
+        table.tz { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        table.tz th, table.tz td { text-align: left; padding: 0.45rem 0.4rem; border-bottom: 1px solid #f3f4f6; }
+        table.tz th { font-size: 0.7rem; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.04em; }
+        table.tz td.t { font-weight: 800; color: #f97316; white-space: nowrap; }
+        .seg { margin-bottom: 0.9rem; }
+        .seg-h { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.8rem; font-weight: 800; color: #374151; margin-bottom: 0.35rem; }
+        .seg-h .t { color: #f97316; }
+        .fight { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.5rem; padding: 0.55rem 0; border-top: 1px solid #f3f4f6; font-size: 0.85rem; }
+        .fight.main { background: #fffbeb; border-radius: 8px; padding: 0.6rem 0.5rem; border-top: none; }
+        .fight .f { display: flex; align-items: center; gap: 0.4rem; font-weight: 700; }
+        .fight .f.r { justify-content: flex-end; text-align: right; }
+        .fight .f img.hs { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: #f3f4f6; }
+        .fight .f img.fl { width: 16px; height: 11px; object-fit: cover; border-radius: 2px; }
+        .fight .f small { display: block; font-weight: 500; color: #9ca3af; font-size: 0.7rem; }
+        .fight .vs { text-align: center; font-size: 0.65rem; color: #9ca3af; line-height: 1.2; }
+        .fight .vs b { display: block; color: #6b7280; font-size: 0.7rem; }
+        .tag { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: #92400e; }
+        .country-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; }
+        .country-card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.7rem 0.9rem; font-size: 0.8rem; }
+        .country-card h3 { font-size: 0.85rem; font-weight: 800; margin-bottom: 0.3rem; }
+        .country-card .t { color: #f97316; font-weight: 800; }
+        .faq h3 { font-size: 0.9rem; font-weight: 700; margin: 0.9rem 0 0.3rem; }
+        .faq p { font-size: 0.82rem; color: #6b7280; line-height: 1.7; }
+        .more a { display: block; padding: 0.6rem 0; border-top: 1px solid #f3f4f6; text-decoration: none; color: #1a1a2e; font-size: 0.85rem; font-weight: 600; }
+        .more a span { color: #f97316; font-weight: 800; margin-right: 0.5rem; }
+        .footer { max-width: 900px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+        @media (max-width: 600px) { h1 { font-size: 1.2rem; } .fight { font-size: 0.78rem; } .fight .f img.hs { display: none; } }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">Donde<span>Ver</span></a>
+        <a href="/liga/{{ league_slug }}" class="back">&larr; {{ org_name }}</a>
+    </div>
+</header>
+<nav class="breadcrumbs">
+    <a href="/">Inicio</a> <span>&rsaquo;</span> <a href="/liga/{{ league_slug }}">{{ org_name }}</a> <span>&rsaquo;</span> <span>{{ ev.short_name }}</span>
+</nav>
+
+<main class="main">
+    <section class="hero">
+        <span class="kicker {{ ev.status }}">{% if ev.status == 'in' %}&#9679; EN VIVO{% elif ev.status == 'post' %}Finalizado{% else %}{{ kicker }}{% endif %}</span>
+        <h1>{{ seo_h1 }}</h1>
+        <div class="sub">{{ date_long_mx }}{% if ev.venue %} &middot; {{ ev.venue }}{% endif %}{% if ev.city %}, {{ ev.city }}{% endif %}{% if ev.country %} ({{ ev.country }}){% endif %}</div>
+        <div class="answer">{{ answer|safe }}</div>
+        <div class="chips">
+            {% for c in ev.channels.MX %}{% set saff = streaming_aff.get(c) %}{% if saff %}<a class="chip aff" href="/go/{{ saff.key }}?s=evento-{{ ev.kind }}" target="_blank" rel="sponsored nofollow noopener">{{ c }} &#8599;</a>{% else %}<span class="chip">{{ c }}</span>{% endif %}{% endfor %}
+        </div>
+        {% if ev.kind != 'f1' %}
+        <div class="chips" style="margin-top:0.5rem;">
+            <a class="chip" style="background:#1a1a2e;color:#fff;" href="/go/bet?s=evento-{{ ev.kind }}&sport={{ 'mma' if ev.kind == 'ufc' else 'boxing' }}" target="_blank" rel="sponsored nofollow noopener">Momios y apuestas &rarr;</a>
+        </div>
+        {% endif %}
+    </section>
+
+    {% if tz_rows %}
+    <h2 class="sec">Horario por pa&iacute;s{% if ev.kind == 'f1' %} (carrera){% elif ev.kind == 'ufc' %} (cartelera estelar){% endif %}</h2>
+    <div class="card">
+        <table class="tz">
+            <tr><th>Pa&iacute;s</th><th>Hora</th><th>D&iacute;a</th></tr>
+            {% for r in tz_rows %}<tr><td>{{ r.flag }} {{ r.name }}</td><td class="t">{{ r.time }}</td><td>{{ r.day }}</td></tr>{% endfor %}
+        </table>
+        {% if not ev.time_confirmed %}<p style="margin-top:0.5rem;font-size:0.72rem;color:#9ca3af;">Hora estimada &middot; se confirma la semana del evento.</p>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if ev.sessions %}
+    <h2 class="sec">Sesiones del {{ ev.short_name }} (hora de M&eacute;xico)</h2>
+    <div class="card">
+        <table class="tz">
+            <tr><th>Sesi&oacute;n</th><th>D&iacute;a</th><th>Hora MX</th></tr>
+            {% for s in ev.sessions %}<tr><td><b>{{ s.name }}</b></td><td>{{ fmt_day(s.date) }}</td><td class="t">{{ fmt_time(s.date) }}</td></tr>{% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    {% if ev.fights %}
+    <h2 class="sec">Cartelera{% if ev.kind == 'ufc' %} completa{% endif %}</h2>
+    <div class="card">
+        {% for seg in ev.segments|reverse %}
+        {% set sidx = ev.segments|length - loop.index %}
+        {% set seg_fights = ev.fights|selectattr('segment','equalto', sidx)|list %}
+        {% if seg_fights %}
+        <div class="seg">
+            <div class="seg-h"><span>{{ seg.name }}</span><span class="t">{{ fmt_day(seg.date) }} &middot; {{ fmt_time(seg.date) }} MX</span></div>
+            {% for f in seg_fights %}
+            <div class="fight {% if f.is_main %}main{% endif %}">
+                <div class="f">{% if f.fighters[0].headshot %}<img class="hs" src="{{ f.fighters[0].headshot }}" alt="" loading="lazy">{% endif %}<div>{{ f.fighters[0].name }}<small>{% if f.fighters[0].flag %}{{ f.fighters[0].flag }}{% endif %}{% if f.fighters[0].record %} &middot; {{ f.fighters[0].record }}{% endif %}</small></div></div>
+                <div class="vs">{% if f.is_main %}<span class="tag">Estelar</span>{% elif f.is_comain %}<span class="tag" style="color:#6b7280;">Coestelar</span>{% endif %}<b>vs</b>{{ f.weight }}{% if f.rounds %} &middot; {{ f.rounds }}R{% endif %}</div>
+                <div class="f r"><div>{{ f.fighters[1].name if f.fighters|length > 1 else '' }}<small>{% if f.fighters|length > 1 %}{{ f.fighters[1].flag }}{% if f.fighters[1].record %} &middot; {{ f.fighters[1].record }}{% endif %}{% endif %}</small></div>{% if f.fighters|length > 1 and f.fighters[1].headshot %}<img class="hs" src="{{ f.fighters[1].headshot }}" alt="" loading="lazy">{% endif %}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2 class="sec">D&oacute;nde ver {{ ev.short_name }} por pa&iacute;s</h2>
+    <div class="country-grid">
+        {% for c in countries %}
+        <div class="country-card">
+            <h3>{{ c.flag }} {{ c.name }}</h3>
+            <div class="t">{{ c.time }}</div>
+            <div>{{ c.channels|join(', ') }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if ev.notes %}<div class="card" style="margin-top:0.9rem;font-size:0.85rem;color:#374151;line-height:1.6;">{{ ev.notes }}</div>{% endif %}
+
+    <h2 class="sec">Preguntas frecuentes</h2>
+    <div class="card faq">
+        {% for q, a in faq %}<h3>{{ q }}</h3><p>{{ a }}</p>{% endfor %}
+    </div>
+
+    {% if related %}
+    <h2 class="sec">Pr&oacute;ximos eventos de {{ org_name }}</h2>
+    <div class="card more">
+        {% for r in related %}<a href="/evento/{{ r.slug }}"><span>{{ fmt_day(r.date) }}</span>{{ r.name }}</a>{% endfor %}
+        <a href="/liga/{{ league_slug }}" style="color:#059669;">Ver todo {{ org_name }} &rarr;</a>
+    </div>
+    {% endif %}
+</main>
+
+<footer class="footer">
+    <p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; Tu gu&iacute;a deportiva en M&eacute;xico y LATAM</p>
+    <p style="margin-top:0.3rem"><a href="/liga/ufc">UFC</a> &middot; <a href="/liga/boxeo">Boxeo</a> &middot; <a href="/liga/f1">F1</a> &middot; <a href="/canales">Canales</a></p>
+</footer>
+</body>
+</html>

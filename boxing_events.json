@@ -1,0 +1,113 @@
+{
+  "_readme": "Boxeo curado a mano (no hay API gratuita). Fuentes: CBS Sports schedule (1 sep 2026), ESPN Deportes. Fechas en UTC = hora aproximada de la pelea estelar; si time_confirmed=false la página muestra 'hora por confirmar'. Para agregar una pelea copia un bloque. El primer fight de la lista es la estelar.",
+  "updated": "2026-09-14",
+  "events": [
+    {
+      "slug": "ryan-garcia-vs-conor-benn-2026-09-12",
+      "name": "Ryan García vs Conor Benn",
+      "short_name": "García vs Benn",
+      "date": "2026-09-13T04:00:00Z",
+      "time_confirmed": false,
+      "venue": "T-Mobile Arena",
+      "city": "Las Vegas",
+      "country": "Estados Unidos",
+      "channels": {"MX": ["Paramount+"], "US": ["Paramount+"]},
+      "notes": "Cartelera Zuffa Boxing. Título welter del CMB. En la coestelar Jai Opetaia vs Noel Mikaelian (crucero).",
+      "fights": [
+        {"weight": "Welter · Título CMB", "rounds": 12, "fighters": [{"name": "Ryan García", "flag": "Estados Unidos"}, {"name": "Conor Benn", "flag": "Reino Unido"}]},
+        {"weight": "Crucero · Título", "rounds": 12, "fighters": [{"name": "Jai Opetaia", "flag": "Australia"}, {"name": "Noel Mikaelian", "flag": "Armenia"}]}
+      ]
+    },
+    {
+      "slug": "pitbull-cruz-vs-nestor-bravo-2026-09-19",
+      "name": "Isaac 'Pitbull' Cruz vs Néstor Bravo",
+      "short_name": "Pitbull Cruz vs Bravo",
+      "date": "2026-09-20T03:00:00Z",
+      "time_confirmed": false,
+      "venue": "Pechanga Arena",
+      "city": "San Diego",
+      "country": "Estados Unidos",
+      "channels": {"MX": ["DAZN"], "US": ["DAZN"]},
+      "notes": "Título interino superligero del CMB. En la misma cartelera: Jesús Ramos Jr. vs Meiirim Nursultanov (título interino mediano CMB).",
+      "fights": [
+        {"weight": "Superligero · Título interino CMB", "rounds": 12, "fighters": [{"name": "Isaac 'Pitbull' Cruz", "flag": "México"}, {"name": "Néstor Bravo", "flag": "Puerto Rico"}]},
+        {"weight": "Mediano · Título interino CMB", "rounds": 12, "fighters": [{"name": "Jesús Ramos Jr.", "flag": "Estados Unidos"}, {"name": "Meiirim Nursultanov", "flag": "Kazajistán"}]}
+      ]
+    },
+    {
+      "slug": "mayweather-vs-pacquiao-2026-09-25",
+      "name": "Floyd Mayweather vs Manny Pacquiao (exhibición)",
+      "short_name": "Mayweather vs Pacquiao",
+      "date": "2026-09-26T03:00:00Z",
+      "time_confirmed": false,
+      "venue": "T-Mobile Arena",
+      "city": "Las Vegas",
+      "country": "Estados Unidos",
+      "channels": {"MX": ["Netflix"], "US": ["Netflix"], "VE": ["Netflix"], "CO": ["Netflix"], "AR": ["Netflix"], "ES": ["Netflix"]},
+      "notes": "Pelea de exhibición, transmitida por Netflix a nivel mundial sin costo adicional para suscriptores.",
+      "fights": [
+        {"weight": "Exhibición", "rounds": 8, "fighters": [{"name": "Floyd Mayweather Jr.", "flag": "Estados Unidos"}, {"name": "Manny Pacquiao", "flag": "Filipinas"}]}
+      ]
+    },
+    {
+      "slug": "zuffa-boxing-11-fisher-vs-pirotton-2026-09-26",
+      "name": "Zuffa Boxing 11: Johnny Fisher vs Michael Pirotton",
+      "short_name": "Fisher vs Pirotton",
+      "date": "2026-09-26T21:00:00Z",
+      "time_confirmed": false,
+      "venue": "Londres",
+      "city": "Londres",
+      "country": "Reino Unido",
+      "channels": {"MX": ["Paramount+"], "US": ["Paramount+"]},
+      "notes": "Cartelera Zuffa Boxing, peso completo.",
+      "fights": [
+        {"weight": "Peso completo", "rounds": 10, "fighters": [{"name": "Johnny Fisher", "flag": "Reino Unido"}, {"name": "Michael Pirotton", "flag": "Bélgica"}]}
+      ]
+    },
+    {
+      "slug": "ben-whittaker-vs-conor-wallace-2026-10-03",
+      "name": "Ben Whittaker vs Conor Wallace",
+      "short_name": "Whittaker vs Wallace",
+      "date": "2026-10-03T21:00:00Z",
+      "time_confirmed": false,
+      "venue": "Utilita Arena",
+      "city": "Birmingham",
+      "country": "Reino Unido",
+      "channels": {"MX": ["DAZN"], "US": ["DAZN"]},
+      "notes": "Semicompleto.",
+      "fights": [
+        {"weight": "Semicompleto", "rounds": 12, "fighters": [{"name": "Ben Whittaker", "flag": "Reino Unido"}, {"name": "Conor Wallace", "flag": "Australia"}]}
+      ]
+    },
+    {
+      "slug": "dalton-smith-vs-alberto-puello-2026-10-24",
+      "name": "Dalton Smith vs Alberto Puello",
+      "short_name": "Smith vs Puello",
+      "date": "2026-10-24T21:00:00Z",
+      "time_confirmed": false,
+      "venue": "Sheffield Arena",
+      "city": "Sheffield",
+      "country": "Reino Unido",
+      "channels": {"MX": ["DAZN"], "US": ["DAZN"], "DO": ["DAZN", "CDN Deportes"]},
+      "notes": "Título superligero del CMB. Alberto Puello es dominicano.",
+      "fights": [
+        {"weight": "Superligero · Título CMB", "rounds": 12, "fighters": [{"name": "Dalton Smith", "flag": "Reino Unido"}, {"name": "Alberto Puello", "flag": "República Dominicana"}]}
+      ]
+    },
+    {
+      "slug": "canelo-alvarez-vs-christian-mbilli-2026-10-31",
+      "name": "Canelo Álvarez vs Christian Mbilli",
+      "short_name": "Canelo vs Mbilli",
+      "date": "2026-10-31T21:00:00Z",
+      "time_confirmed": false,
+      "venue": "Riad",
+      "city": "Riad",
+      "country": "Arabia Saudita",
+      "channels": {"MX": ["DAZN", "TV Azteca (por confirmar)"], "US": ["DAZN"], "VE": ["DAZN"], "CO": ["DAZN"], "AR": ["DAZN"], "ES": ["DAZN"]},
+      "notes": "Regreso de Canelo tras más de un año fuera del ring. Mbilli defiende el título supermediano del CMB; Canelo llega como retador. Los horarios de Riad suelen dejar la estelar por la tarde en México.",
+      "fights": [
+        {"weight": "Supermediano · Título CMB", "rounds": 12, "fighters": [{"name": "Saúl 'Canelo' Álvarez", "flag": "México"}, {"name": "Christian Mbilli", "flag": "Francia"}]}
+      ]
+    }
+  ]
+}
