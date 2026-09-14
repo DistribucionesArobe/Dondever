@@ -1618,7 +1618,7 @@
     <section class="priority-section" id="secBigEvents" style="margin-bottom:0.9rem;">
         {% for e in big_events %}
         <a href="/evento/{{ e.slug }}" style="display:flex;justify-content:space-between;align-items:center;gap:0.6rem;background:linear-gradient(135deg,#1a1a2e,#312e81);color:#fff;border-radius:12px;padding:0.7rem 0.9rem;margin-bottom:0.4rem;text-decoration:none;">
-            <span style="min-width:0;"><span style="font-size:0.62rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;opacity:0.8;">{{ '🥊 UFC' if e.kind == 'ufc' else ('🏎️ Fórmula 1' if e.kind == 'f1' else '🥊 Boxeo') }}</span><br><b style="font-size:0.92rem;">{{ e.name }}</b><br><span style="font-size:0.72rem;opacity:0.85;">{{ (e.channels.MX or [])|join(', ') }}</span></span>
+            <span style="min-width:0;"><span style="font-size:0.62rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;opacity:0.8;">{{ {'ufc': '🥊 UFC', 'f1': '🏎️ Fórmula 1', 'motogp': '🏍️ MotoGP', 'nascar': '🏁 NASCAR', 'indycar': '🏎️ IndyCar'}.get(e.kind, '🥊 Boxeo') }}</span><br><b style="font-size:0.92rem;">{{ e.name }}</b><br><span style="font-size:0.72rem;opacity:0.85;">{{ (e.channels.MX or [])|join(', ') }}</span></span>
             <span style="text-align:right;white-space:nowrap;font-weight:800;color:#fbbf24;font-size:0.85rem;">{{ fmt_event_when(e.date) }}<br><span style="font-size:0.65rem;font-weight:600;opacity:0.85;">hora MX &middot; ver d&oacute;nde &rarr;</span></span>
         </a>
         {% endfor %}

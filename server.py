@@ -758,6 +758,8 @@ async def home(
                     continue
                 if e["kind"] == "ufc" and "fight night" in e["name"].lower():
                     continue  # solo PPV / Noche UFC en portada
+                if e["kind"] in ("nascar", "indycar") and not e.get("playoffs"):
+                    continue  # carreras semanales: solo en /liga/nascar
                 big_events.append(e)
             big_events = big_events[:3]
         except Exception as _e:
@@ -802,6 +804,21 @@ _EVENT_META = {
     "ufc": {"org": "UFC", "league_slug": "ufc", "sport": "Mixed Martial Arts", "kicker": "UFC"},
     "f1": {"org": "Fórmula 1", "league_slug": "f1", "sport": "Motorsport", "kicker": "Fórmula 1"},
     "boxing": {"org": "Boxeo", "league_slug": "boxeo", "sport": "Boxing", "kicker": "Boxeo"},
+    "motogp": {"org": "MotoGP", "league_slug": "motogp", "sport": "Motorcycle Racing", "kicker": "MotoGP"},
+    "nascar": {"org": "NASCAR", "league_slug": "nascar", "sport": "Motorsport", "kicker": "NASCAR Cup Series"},
+    "indycar": {"org": "IndyCar", "league_slug": "indycar", "sport": "Motorsport", "kicker": "IndyCar"},
+}
+_RACE_KINDS = ("f1", "motogp", "nascar", "indycar")
+# Texto de "dónde ver gratis" por categoría de motor (FAQ)
+_RACE_FREE_FAQ = {
+    "f1": ("¿Se puede ver la F1 gratis en México?",
+           "Canal 5 transmite en TV abierta carreras selectas los domingos. El resto de sesiones van por Fox Sports MX y F1 TV Pro."),
+    "motogp": ("¿Dónde ver MotoGP en México?",
+               "MotoGP se transmite en México y Latinoamérica por ESPN y Disney+ (todas las sesiones: prácticas, clasificación, sprint y carrera). En España por DAZN."),
+    "nascar": ("¿Dónde ver NASCAR en México?",
+               "La NASCAR Cup Series se ve en México y Latinoamérica por Fox Sports. En Estados Unidos la temporada se reparte entre FOX, Prime Video, TNT/HBO Max y NBC/USA Network."),
+    "indycar": ("¿Dónde ver IndyCar y a Pato O'Ward en México?",
+                "IndyCar se transmite en México y Latinoamérica por ESPN y Disney+. En Estados Unidos por FOX."),
 }
 _EVENT_COUNTRIES = [
     ("MX", "México", "🇲🇽", "America/Mexico_City"),
@@ -834,18 +851,40 @@ def _event_seo(ev: dict) -> dict:
     ch1 = ch[0].replace(" (por confirmar)", "") if ch else ""
     ch_txt = " y ".join(ch[:2]) if ch else "canal por confirmar"
     approx = "" if ev.get("time_confirmed", True) else " (aprox.)"
-    if ev["kind"] == "f1":
+    if ev["kind"] in _RACE_KINDS:
         race = next((s for s in ev["sessions"] if s["key"].lower() == "race"), None)
-        qual = next((s for s in ev["sessions"] if s["key"].lower().startswith("qual")), None)
-        r_t = _fmt_local(race["date"], "America/Mexico_City", True) if race else ""
+        qual = next((s for s in ev["sessions"] if s["key"].lower().startswith("qual") or s["key"] == "Q2"), None)
+        sprint = next((s for s in ev["sessions"] if s["key"].lower() == "sprint"), None)
+        r_t = _fmt_local(race["date"], "America/Mexico_City", True) if race else _fmt_local(ev["date"], "America/Mexico_City", True)
         q_t = _fmt_local(qual["date"], "America/Mexico_City", True) if qual else ""
-        title = f"{ev['short_name']}: hora de carrera y qualy en México, dónde ver | DondeVer"
-        h1 = f"Dónde ver el {ev['name']}: horarios en México y canal"
-        answer = (f"La <b>carrera</b> del {ev['short_name']} es el <b>{r_t} hora de México</b>"
-                  f"{' y la <b>clasificación</b> el <b>' + q_t + '</b>' if q_t else ''}. "
-                  f"En México se ve por <b>{ch_txt}</b>.")
-        desc = (f"{ev['name']}: carrera {r_t} MX, clasificación {q_t} MX. Dónde ver en México ({ch_txt}), "
-                f"Venezuela, Colombia, Argentina y España. Horarios de todas las sesiones en {ev['venue'] or ev['city']}.")
+        s_t = _fmt_local(sprint["date"], "America/Mexico_City", True) if sprint else ""
+        if ev["kind"] == "f1":
+            title = f"{ev['short_name']}: hora de carrera y qualy en México, dónde ver | DondeVer"
+            h1 = f"Dónde ver el {ev['name']}: horarios en México y canal"
+        elif ev["kind"] == "motogp":
+            title = f"{ev['short_name']}: hora de carrera y sprint en México, dónde ver | DondeVer"
+            h1 = f"Dónde ver el {ev['name']}: horarios en México y canal"
+        elif ev["kind"] == "nascar":
+            title = f"{ev['short_name']} {day_mx}: hora en México y dónde ver{' (Playoffs)' if ev.get('playoffs') else ''} | DondeVer"
+            h1 = f"Dónde ver {ev['name']}: hora en México y canal"
+        else:
+            title = f"{ev['short_name']} {day_mx}: hora en México y dónde ver IndyCar | DondeVer"
+            h1 = f"Dónde ver {ev['name']}: hora en México y canal"
+        if ev["status"] == "post":
+            title = f"{ev['short_name']}: resultados y próxima carrera | DondeVer"
+            answer = (f"El <b>{ev['name']}</b> se corrió el <b>{r_t.split(' · ')[0]}</b> en {ev['venue'] or ev['city']}. "
+                      f"Abajo están las próximas carreras de {_EVENT_META[ev['kind']]['org']}.")
+        else:
+            extra = ""
+            if s_t:
+                extra += f", la <b>sprint</b> el <b>{s_t}</b>"
+            if q_t:
+                extra += f" y la <b>clasificación</b> el <b>{q_t}</b>"
+            answer = (f"La <b>carrera</b> del {ev['short_name']} es el <b>{r_t} hora de México</b>{extra}. "
+                      f"En México se ve por <b>{ch_txt}</b>.")
+        desc = (f"{ev['name']}: carrera {r_t} MX{(', sprint ' + s_t + ' MX') if s_t else ''}{(', clasificación ' + q_t + ' MX') if q_t else ''}. "
+                f"Dónde ver en México ({ch_txt}), Venezuela, Colombia, Argentina y España. "
+                f"{'Horarios de todas las sesiones en ' + (ev['venue'] or ev['city']) + '.' if len(ev['sessions']) > 1 else ''}").strip()
     else:
         main = next((f for f in ev["fights"] if f["is_main"]), None)
         fighters = " vs ".join(x["name"] for x in main["fighters"]) if main else ev["name"]
@@ -874,7 +913,7 @@ def _event_faq(ev: dict) -> list:
     t_ve = _fmt_local(ev["date"], "America/Caracas", True)
     t_es = _fmt_local(ev["date"], "Europe/Madrid", True)
     faq = [(f"¿A qué hora es {ev['short_name']} en México?",
-            f"{'La carrera' if ev['kind']=='f1' else 'La pelea estelar'} es el {t_mx} hora del centro de México."
+            f"{'La carrera' if ev['kind'] in _RACE_KINDS else 'La pelea estelar'} es el {t_mx} hora del centro de México."
             + ("" if ev.get("time_confirmed", True) else " El horario es estimado y se confirma la semana del evento.")),
            (f"¿En qué canal pasan {ev['short_name']} en México?",
             f"En México se transmite por {', '.join(ch) if ch else 'canal por confirmar'}."),
@@ -883,9 +922,8 @@ def _event_faq(ev: dict) -> list:
     if ev["kind"] == "ufc":
         faq.append(("¿Dónde ver las preliminares de UFC?",
                     "Las preliminares y la cartelera estelar se transmiten completas por Paramount+ en México y Latinoamérica."))
-    if ev["kind"] == "f1":
-        faq.append(("¿Se puede ver la F1 gratis en México?",
-                    "Canal 5 transmite en TV abierta carreras selectas los domingos. El resto de sesiones van por Fox Sports MX y F1 TV Pro."))
+    if ev["kind"] in _RACE_FREE_FAQ:
+        faq.append(_RACE_FREE_FAQ[ev["kind"]])
     if ev["kind"] == "boxing":
         faq.append(("¿La pelea es gratis en TV abierta?",
                     "Depende del evento: TV Azteca y Canal 5 transmiten peleas selectas de boxeadores mexicanos. Si no está confirmado, la opción segura es DAZN."))
@@ -917,7 +955,7 @@ async def evento_page(request: Request, slug: str):
         "org_name": meta["org"], "league_slug": meta["league_slug"], "sport_name": meta["sport"], "kicker": meta["kicker"],
         "date_long_mx": _fmt_local(ev["date"], "America/Mexico_City", True),
         "tz_rows": tz_rows, "countries": countries, "faq": _event_faq(ev), "related": related,
-        "competitor_names": competitor_names,
+        "competitor_names": competitor_names, "is_race": ev["kind"] in _RACE_KINDS,
         "fmt_day": lambda iso: _fmt_local(iso, "America/Mexico_City", True).split(" · ")[0],
         "fmt_time": lambda iso: _fmt_local(iso, "America/Mexico_City"),
         "year": datetime.now(TZ_MX).year,
@@ -1852,6 +1890,36 @@ LEAGUE_SEO_EXTRA = {
         ],
         "links": [],
     },
+    "motogp": {
+        "title": "Dónde ver MotoGP hoy: horarios en México, calendario y canales | DondeVer",
+        "meta_desc": "Calendario MotoGP 2026 con hora de México: prácticas, clasificación, sprint y carrera de cada Gran Premio. Dónde ver en ESPN y Disney+ en México y Latinoamérica.",
+        "h2": "Dónde ver MotoGP en vivo: próximas carreras",
+        "paragraphs": [
+            "MotoGP es el campeonato mundial de motociclismo. Cada fin de semana de Gran Premio tiene prácticas (viernes), clasificación y carrera sprint (sábado) y la carrera principal (domingo). Marc Márquez, Pecco Bagnaia, Jorge Martín y Pedro Acosta encabezan la parrilla.",
+            "En México y Latinoamérica MotoGP se transmite por ESPN y Disney+; en España por DAZN. En DondeVer.app publicamos cada Gran Premio con la hora de México de todas las sesiones, el canal por país y la próxima carrera del calendario.",
+        ],
+        "links": [],
+    },
+    "nascar": {
+        "title": "Dónde ver NASCAR hoy: próxima carrera, hora en México y canal | DondeVer",
+        "meta_desc": "Calendario NASCAR Cup Series 2026 con hora de México: próxima carrera, playoffs y canales (Fox Sports MX; FOX, Prime Video, TNT y NBC en EE.UU.). Daniel Suárez y más.",
+        "h2": "Dónde ver la NASCAR Cup Series en vivo",
+        "paragraphs": [
+            "La NASCAR Cup Series es la máxima categoría del automovilismo de stock cars en Estados Unidos, con 36 carreras entre febrero y noviembre y playoffs de 10 carreras que definen al campeón en Phoenix. El regiomontano Daniel Suárez es el piloto mexicano de la categoría.",
+            "En México y Latinoamérica las carreras se ven por Fox Sports. En Estados Unidos la temporada se reparte entre FOX y FS1, Prime Video, TNT/HBO Max y NBC/USA Network. Aquí encuentras cada carrera con su hora de México y el canal confirmado.",
+        ],
+        "links": [],
+    },
+    "indycar": {
+        "title": "Dónde ver IndyCar hoy: Pato O'Ward, hora en México y canal | DondeVer",
+        "meta_desc": "Calendario IndyCar 2026 con hora de México: próxima carrera, Indy 500 y canales (ESPN y Disney+ en México; FOX en EE.UU.). Sigue a Pato O'Ward en cada carrera.",
+        "h2": "Dónde ver IndyCar en vivo: próximas carreras",
+        "paragraphs": [
+            "IndyCar es la principal categoría de monoplazas de Estados Unidos y la casa de las 500 Millas de Indianápolis. El mexicano Pato O'Ward (Arrow McLaren) pelea el campeonato cada temporada, que corre de marzo a septiembre.",
+            "En México y Latinoamérica IndyCar se transmite por ESPN y Disney+; en Estados Unidos por FOX. En DondeVer.app publicamos cada carrera con su hora de México y canal, incluyendo la Indy 500 en mayo.",
+        ],
+        "links": [],
+    },
     "boxeo": {
         "title": "Dónde ver boxeo hoy: próximas peleas, Canelo, horarios y canales | DondeVer",
         "meta_desc": "Calendario de boxeo 2026: próximas peleas con hora de México y canal (DAZN, TV Azteca, Netflix, Paramount+). Canelo Álvarez, Pitbull Cruz, Mayweather vs Pacquiao y más. Cartelera y horarios por país.",
@@ -2022,7 +2090,7 @@ async def league_page(request: Request, league_slug: str):
 
     # UFC / F1 / Boxeo: eventos con página propia (/evento/{slug})
     upcoming_events = []
-    _EVENT_KIND = {"ufc": "ufc", "f1": "f1", "boxeo": "boxing"}
+    _EVENT_KIND = {"ufc": "ufc", "f1": "f1", "boxeo": "boxing", "motogp": "motogp", "nascar": "nascar", "indycar": "indycar"}
     if league_slug in _EVENT_KIND:
         try:
             from events_api import fetch_events
@@ -2040,10 +2108,30 @@ async def league_page(request: Request, league_slug: str):
         _today = _fmt_local(nxt["date"], "America/Mexico_City", True).split(" · ")[0] == \
             _fmt_local(datetime.now(timezone.utc).isoformat(), "America/Mexico_City", True).split(" · ")[0]
         if league_slug == "f1":
-            title = f"F1 hoy: {nxt['short_name']} — horarios en México, dónde ver y próximas carreras"
+            title = (f"F1 hoy: {nxt['short_name']} {_t.split(' · ')[-1]} MX en {_ch} — dónde ver la carrera" if _today
+                     else f"Próxima carrera de F1: {nxt['short_name']} {_t} MX — horarios y dónde ver")
             h1 = f"Fórmula 1: {nxt['short_name']} — dónde ver y horarios en México"
             desc = (f"Próxima carrera de F1: {nxt['name']}, carrera {_t} hora de México por {_ch}. "
                     f"Calendario completo con prácticas, clasificación y carrera, canales en México y Latinoamérica.")
+        elif league_slug == "motogp":
+            _gp = nxt['short_name'].replace("MotoGP ", "GP de ")
+            title = (f"MotoGP hoy: {_gp} {_t.split(' · ')[-1]} MX en {_ch} — dónde ver la carrera" if _today
+                     else f"Próxima carrera de MotoGP: {_gp} {_t} MX — horarios y dónde ver")
+            h1 = f"MotoGP: {_gp} — dónde ver y horarios en México"
+            desc = (f"Próxima carrera de MotoGP: {nxt['name']}, carrera {_t} hora de México por {_ch}. "
+                    f"Calendario 2026 con prácticas, clasificación, sprint y carrera; canales en México y Latinoamérica.")
+        elif league_slug == "nascar":
+            title = (f"NASCAR hoy: {nxt['short_name']} {_t.split(' · ')[-1]} MX en {_ch} — dónde ver" if _today
+                     else f"Próxima carrera de NASCAR: {nxt['short_name']} {_t} MX — dónde ver y calendario")
+            h1 = f"NASCAR Cup Series: {nxt['short_name']} — dónde ver y hora en México"
+            desc = (f"Próxima carrera de la NASCAR Cup Series: {nxt['name']}, {_t} hora de México por {_ch}. "
+                    f"Calendario, playoffs y canales en México, Latinoamérica y Estados Unidos.")
+        elif league_slug == "indycar":
+            title = (f"IndyCar hoy: {nxt['short_name']} {_t.split(' · ')[-1]} MX en {_ch} — dónde ver" if _today
+                     else f"Próxima carrera de IndyCar: {nxt['short_name']} {_t} MX — dónde ver a Pato O'Ward")
+            h1 = f"IndyCar: {nxt['short_name']} — dónde ver y hora en México"
+            desc = (f"Próxima carrera de IndyCar: {nxt['name']}, {_t} hora de México por {_ch}. "
+                    f"Calendario completo, Pato O'Ward y canales en México y Latinoamérica.")
         elif league_slug == "ufc":
             title = f"UFC {'hoy' if _today else 'próximo evento'}: {nxt['short_name']} {_t} MX en {_ch} — cartelera y dónde ver"
             h1 = f"UFC: {nxt['name']} — dónde ver, hora en México y cartelera"
@@ -2512,6 +2600,18 @@ async def f1_proxima_carrera():
 async def gp_de_mexico():
     """'GP de México' sin año → la edición vigente (o /liga/f1 fuera de temporada)."""
     return await _next_event_redirect("f1", "/liga/f1", match="gp-de-mexico")
+
+@app.get("/motogp/proxima-carrera")
+async def motogp_proxima_carrera():
+    return await _next_event_redirect("motogp", "/liga/motogp")
+
+@app.get("/nascar/proxima-carrera")
+async def nascar_proxima_carrera():
+    return await _next_event_redirect("nascar", "/liga/nascar")
+
+@app.get("/indycar/proxima-carrera")
+async def indycar_proxima_carrera():
+    return await _next_event_redirect("indycar", "/liga/indycar")
 
 @app.get("/ufc/proximo-evento")
 async def ufc_proximo_evento():
@@ -4394,6 +4494,8 @@ async def sitemap_core():
     # Permanent league landing pages (daily content)
     for slug in LEAGUES:
         urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.9", hreflang=True))
+    for slug in ("nascar", "indycar"):  # motor en LEAGUES_INDIVIDUAL (no en portada) pero con página propia
+        urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.8", hreflang=True))
 
     # Sport-today hubs
     for sport_slug in SPORT_TODAY_PAGES:
@@ -5563,7 +5665,7 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
     }
 
 
-_ATHLETE_LEAGUES = {"Formula 1": "f1", "UFC": "ufc", "Boxeo": "boxing"}
+_ATHLETE_LEAGUES = {"Formula 1": "f1", "UFC": "ufc", "Boxeo": "boxing", "MotoGP": "motogp", "IndyCar": "indycar", "NASCAR": "nascar"}
 
 
 def _athlete_matches(name: str, ev: dict) -> bool:
@@ -5586,7 +5688,7 @@ async def _athlete_page(request: Request, slug: str, info: dict):
     name = info["name"]
     short = info.get("aka") or _short_team_name(name, "")
     evs = await fetch_events(kind, days_back=60, days_ahead=200)
-    if kind == "f1":
+    if kind in _RACE_KINDS:
         mine = [e for e in evs if not e.get("is_minor")]
     else:
         mine = [e for e in evs if _athlete_matches(name, e)]
@@ -5597,7 +5699,7 @@ async def _athlete_page(request: Request, slug: str, info: dict):
     if nxt:
         t = _fmt_local(nxt["date"], "America/Mexico_City", True)
         ch = (nxt["channels"].get("MX") or [""])[0].replace(" (por confirmar)", "")
-        if kind == "f1":
+        if kind in _RACE_KINDS:
             title = f"Próxima carrera de {short}: {nxt['short_name']} {t} MX — dónde ver | DondeVer"
             h1 = f"{name}: próxima carrera, horarios en México y dónde ver"
             answer = f"La próxima carrera de <b>{short}</b> es el <b>{nxt['name']}</b>: <b>{t} hora de México</b> por <b>{ch}</b>."
@@ -5613,13 +5715,14 @@ async def _athlete_page(request: Request, slug: str, info: dict):
                       f"<b>{t} hora de México</b> ({nxt['name']}) por <b>{ch}</b>.")
         desc = re.sub("<[^>]+>", "", answer) + f" Cartelera, horarios por país y canales en DondeVer."
     else:
-        title = f"{name}: próxima pelea, fecha y dónde ver | DondeVer" if kind != "f1" else f"{name}: próxima carrera y dónde ver F1 | DondeVer"
+        title = f"{name}: próxima pelea, fecha y dónde ver | DondeVer" if kind not in _RACE_KINDS else f"{name}: próxima carrera y dónde ver {meta['org']} | DondeVer"
         h1 = f"{name}: próximo evento y dónde ver"
-        answer = f"<b>{short}</b> no tiene {'carrera' if kind == 'f1' else 'pelea'} programada por ahora. Abajo están los próximos eventos de {meta['org']}."
+        answer = f"<b>{short}</b> no tiene {'carrera' if kind in _RACE_KINDS else 'pelea'} programada por ahora. Abajo están los próximos eventos de {meta['org']}."
         desc = re.sub("<[^>]+>", "", answer)
         upcoming = [e for e in evs if e["status"] != "post" and not e.get("is_minor")][:6]
     return templates.TemplateResponse(request, "atleta.html", {
-        "name": name, "short": short, "slug": slug, "kind": kind, "org_name": meta["org"], "league_slug": meta["league_slug"],
+        "name": name, "short": short, "slug": slug, "kind": kind, "is_race": kind in _RACE_KINDS,
+        "org_name": meta["org"], "league_slug": meta["league_slug"],
         "seo_title": title, "seo_h1": h1, "seo_desc": desc, "answer": answer,
         "nxt": nxt, "upcoming": upcoming[:8], "past": past,
         "fmt_day_time": lambda iso: _fmt_local(iso, "America/Mexico_City", True),

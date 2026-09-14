@@ -1030,6 +1030,9 @@ async def parse_espn_events_enriched(
             elif sport_type == "racing" and league_slug == "f1":
                 from events_api import _gp_spanish as _ev_gp
                 _event_slug = _ev_gp(ev.get("name", ""), int((ev.get("date") or "2026")[:4]))[1]
+            elif sport_type == "racing" and league_slug in ("nascar", "indycar"):
+                from events_api import _parse_race as _ev_race
+                _event_slug = _ev_race(league_slug, ev)["slug"]
         except Exception:
             _event_slug = ""
 
@@ -1277,6 +1280,8 @@ async def get_todays_games(
             continue
         if sport_filter and sport != sport_filter:
             continue
+        if slug in ("boxeo", "motogp"):
+            continue  # sin scoreboard ESPN: viven en events_api (/evento/)
         if slug in SPORTSDB_ONLY_LEAGUES:
             # TheSportsDB-only league — skip ESPN entirely
             sportsdb_tasks.append(parse_sportsdb_standalone_events(slug, date_str))

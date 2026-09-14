@@ -43,7 +43,13 @@ ESPN_BASE = "https://site.api.espn.com/apis/site/v2/sports"
 EVENT_SOURCES = {
     "ufc": ("mma", "ufc"),
     "f1": ("racing", "f1"),
+    "nascar": ("racing", "nascar-premier"),   # NASCAR Cup Series
+    "indycar": ("racing", "irl"),             # IndyCar Series
 }
+# MotoGP no está en ESPN → TheSportsDB (key premium) eventsseason, agrupado por GP.
+SPORTSDB_MOTOGP_ID = "4407"
+RACE_KINDS = ("f1", "motogp", "nascar", "indycar")
+ALL_KINDS = ("ufc", "f1", "boxing", "motogp", "nascar", "indycar")
 
 # Canales por país (rights 2026). Se muestran en la página de evento.
 EVENT_CHANNELS = {
@@ -69,6 +75,30 @@ EVENT_CHANNELS = {
         "VE": ["DAZN", "ESPN Latinoamérica"],
         "CO": ["DAZN", "ESPN Latinoamérica"],
         "AR": ["DAZN", "ESPN Latinoamérica"],
+        "ES": ["DAZN"],
+    },
+    "motogp": {
+        "MX": ["ESPN MX", "Disney+"],
+        "US": ["TNT Sports", "HBO Max"],
+        "VE": ["ESPN Latinoamérica", "Disney+"],
+        "CO": ["ESPN Latinoamérica", "Disney+"],
+        "AR": ["ESPN Latinoamérica", "Disney+"],
+        "ES": ["DAZN"],
+    },
+    "nascar": {
+        "MX": ["Fox Sports MX"],
+        "US": ["NBC", "USA Network", "HBO Max"],   # se sobreescribe con broadcasts de ESPN por carrera
+        "VE": ["Fox Sports Latinoamérica"],
+        "CO": ["Fox Sports Latinoamérica"],
+        "AR": ["Fox Sports Latinoamérica"],
+        "ES": ["DAZN"],
+    },
+    "indycar": {
+        "MX": ["ESPN MX", "Disney+"],
+        "US": ["FOX", "FS1"],
+        "VE": ["ESPN Latinoamérica", "Disney+"],
+        "CO": ["ESPN Latinoamérica", "Disney+"],
+        "AR": ["ESPN Latinoamérica", "Disney+"],
         "ES": ["DAZN"],
     },
 }
@@ -315,14 +345,226 @@ def _parse_f1(ev: dict) -> dict:
     }
 
 
+# ── NASCAR Cup / IndyCar (ESPN): una carrera por evento ──
+
+_NASCAR_TRACK_ES = {
+    "world wide technology raceway": "Gateway", "charlotte roval": "Charlotte (Roval)",
+    "las vegas": "Las Vegas", "talladega": "Talladega", "martinsville": "Martinsville",
+    "phoenix": "Phoenix", "homestead": "Homestead-Miami", "daytona": "Daytona",
+}
+
+
+def _race_name_es(kind: str, name: str) -> tuple[str, str]:
+    """'NASCAR Cup Series at Bristol' → ('NASCAR Cup Series en Bristol', 'NASCAR en Bristol')
+       'Grand Prix of Monterey' → ('Gran Premio de Monterey (IndyCar)', 'IndyCar en Monterey')"""
+    n = name or ""
+    if kind == "nascar":
+        track = re.sub(r"^.*?\bat\b\s*", "", n, flags=re.I).strip() if re.search(r"\bat\b", n, re.I) else n
+        track = _NASCAR_TRACK_ES.get(track.lower(), track)
+        return f"NASCAR Cup Series en {track}", f"NASCAR en {track}"
+    # IndyCar
+    m = re.search(r"grand prix of (.+)", n, re.I)
+    place = m.group(1).strip() if m else re.sub(r"\b(grand prix|gp)\b", "", n, flags=re.I).strip()
+    if "indianapolis 500" in n.lower() or "indy 500" in n.lower():
+        return "Indy 500", "Indy 500"
+    return f"Gran Premio de {place} (IndyCar)", f"IndyCar en {place}"
+
+
+def _parse_race(kind: str, ev: dict) -> dict:
+    comps = ev.get("competitions") or []
+    name = ev.get("name", "")
+    date = ev.get("date", "")
+    name_es, short = _race_name_es(kind, name)
+    circuit = (comps[0].get("venue") if comps else None) or {}
+    addr = circuit.get("address") or {}
+    for c in comps:
+        if ((c.get("type") or {}).get("abbreviation") or "").lower() == "race":
+            date = c.get("date", date)
+    us_bc = []
+    for c in comps:
+        for b in c.get("broadcasts") or []:
+            for n in b.get("names") or []:
+                if n and n not in us_bc:
+                    us_bc.append(n)
+        for g in c.get("geoBroadcasts") or []:
+            n = (g.get("media") or {}).get("shortName")
+            if n and n not in us_bc:
+                us_bc.append(n)
+    season = ev.get("season") or {}
+    playoffs = season.get("type") == 3 or "playoff" in (season.get("slug") or "")
+    chans = dict(EVENT_CHANNELS[kind])
+    if us_bc:
+        chans["US"] = us_bc[:3]
+    track_slug = slugify(short.split(" en ", 1)[-1] if " en " in short else short)
+    return {
+        "kind": kind,
+        "id": ev.get("id", ""),
+        "slug": f"{kind}-{track_slug}-{mx_date(date)}",
+        "name": name_es + (" — Playoffs" if playoffs and kind == "nascar" else ""),
+        "short_name": short,
+        "name_en": name,
+        "date": date,
+        "start_date": date,
+        "status": _state(ev),
+        "venue": circuit.get("fullName", ""),
+        "city": addr.get("city", ""),
+        "country": addr.get("country", "") or ("Estados Unidos" if addr.get("state") else ""),
+        "segments": [],
+        "fights": [],
+        "sessions": [{"key": "Race", "name": "Carrera", "date": date, "status": _state(ev)}],
+        "broadcasts_us": us_bc,
+        "channels": chans,
+        "is_minor": False,
+        "playoffs": playoffs,
+        "espn_link": ((ev.get("links") or [{}])[0]).get("href", ""),
+    }
+
+
+# ── MotoGP (TheSportsDB eventsseason, agrupado por GP) ──
+
+_MOTOGP_GP_ES = {
+    "thailand": ("Tailandia", "gp-de-tailandia"), "brazil": ("Brasil", "gp-de-brasil"),
+    "americas": ("las Américas", "gp-de-las-americas"), "usa": ("las Américas", "gp-de-las-americas"),
+    "qatar": ("Catar", "gp-de-catar"), "spain": ("España", "gp-de-espana"), "jerez": ("España", "gp-de-espana"),
+    "france": ("Francia", "gp-de-francia"), "catalunya": ("Cataluña", "gp-de-cataluna"),
+    "catalonia": ("Cataluña", "gp-de-cataluna"), "italy": ("Italia", "gp-de-italia"),
+    "hungary": ("Hungría", "gp-de-hungria"), "czech": ("República Checa", "gp-de-republica-checa"),
+    "czechia": ("República Checa", "gp-de-republica-checa"),
+    "netherlands": ("Países Bajos", "gp-de-paises-bajos"), "dutch": ("Países Bajos", "gp-de-paises-bajos"),
+    "germany": ("Alemania", "gp-de-alemania"), "britain": ("Gran Bretaña", "gp-de-gran-bretana"),
+    "british": ("Gran Bretaña", "gp-de-gran-bretana"), "aragon": ("Aragón", "gp-de-aragon"),
+    "san marino": ("San Marino", "gp-de-san-marino"), "austria": ("Austria", "gp-de-austria"),
+    "japan": ("Japón", "gp-de-japon"), "indonesia": ("Indonesia", "gp-de-indonesia"),
+    "australia": ("Australia", "gp-de-australia"), "malaysia": ("Malasia", "gp-de-malasia"),
+    "portugal": ("Portugal", "gp-de-portugal"), "valencia": ("Valencia", "gp-de-valencia"),
+    "argentina": ("Argentina", "gp-de-argentina"), "india": ("India", "gp-de-india"),
+    "kazakhstan": ("Kazajistán", "gp-de-kazajistan"),
+}
+_MOTOGP_SESSION_RE = re.compile(
+    r"\s+(Free Practice 1|Free Practice 2|Practice|Qualifying 1|Qualifying 2|Qualifying|Sprint Race|Sprint|Warm Up|GP|Race)$",
+    re.I)
+_MOTOGP_SESSIONS_ES = {
+    "free practice 1": ("FP1", "Práctica Libre 1"), "practice": ("PR", "Práctica"),
+    "free practice 2": ("FP2", "Práctica Libre 2"), "qualifying 1": ("Q1", "Clasificación Q1"),
+    "qualifying 2": ("Q2", "Clasificación Q2"), "qualifying": ("Qual", "Clasificación"),
+    "sprint race": ("Sprint", "Carrera Sprint"), "sprint": ("Sprint", "Carrera Sprint"),
+    "warm up": ("WU", "Warm Up"), "gp": ("Race", "Carrera"), "race": ("Race", "Carrera"),
+}
+
+
+async def _fetch_sportsdb_season(league_id: str, season: str) -> list[dict]:
+    key = f"sportsdb:{league_id}:{season}"
+    if key in _events_cache:
+        return _events_cache[key]
+    from config import SPORTSDB_BASE
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.get(f"{SPORTSDB_BASE}/eventsseason.php", params={"id": league_id, "s": season})
+            r.raise_for_status()
+            events = r.json().get("events") or []
+    except Exception as e:
+        logger.warning(f"TheSportsDB season fetch failed {league_id}/{season}: {e}")
+        events = []
+    _events_cache[key] = events
+    return events
+
+
+def _sdb_iso(e: dict) -> str:
+    ts = e.get("strTimestamp") or ""
+    if ts:
+        return ts if ts.endswith("Z") else ts + "Z"
+    return f"{e.get('dateEvent', '')}T{e.get('strTime') or '00:00:00'}Z"
+
+
+def _group_motogp(raw: list[dict], now: datetime) -> list[dict]:
+    """Sesiones sueltas ('Austria Sprint Race', 'Austria GP') → un evento por Gran Premio."""
+    groups: dict[str, dict] = {}
+    for e in raw:
+        title = (e.get("strEvent") or "").strip()
+        m = _MOTOGP_SESSION_RE.search(title)
+        if not m:
+            continue  # tests, shakedowns
+        gp_key = title[: m.start()].strip()
+        sess_raw = m.group(1).lower()
+        if gp_key.lower() in ("valencia test", "sepang test", "shakedown test", "buriram test"):
+            continue
+        code, sname = _MOTOGP_SESSIONS_ES.get(sess_raw, (sess_raw, sess_raw.title()))
+        iso = _sdb_iso(e)
+        try:
+            dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        except Exception:
+            continue
+        g = groups.setdefault(gp_key, {"sessions": [], "venue": "", "country": "", "year": dt.year, "status_raw": []})
+        g["sessions"].append({"key": code, "name": sname, "date": iso,
+                              "status": "post" if (e.get("strStatus") or "") in ("FT", "Match Finished") or dt < now - timedelta(hours=2) else ("in" if dt <= now else "pre")})
+        g["venue"] = g["venue"] or (e.get("strVenue") or "")
+        g["country"] = g["country"] or (e.get("strCountry") or "")
+    out = []
+    for gp_key, g in groups.items():
+        sessions = sorted(g["sessions"], key=lambda s: s["date"])
+        race = next((s for s in sessions if s["key"] == "Race"), None)
+        if not race:
+            continue
+        low = gp_key.lower()
+        es, slug_base = next(((es, sl) for k, (es, sl) in _MOTOGP_GP_ES.items() if k in low), (gp_key, f"gp-de-{slugify(gp_key)}"))
+        year = g["year"]
+        race_dt = datetime.fromisoformat(race["date"].replace("Z", "+00:00"))
+        status = "post" if race_dt < now - timedelta(hours=2) else ("in" if race_dt <= now else "pre")
+        out.append({
+            "kind": "motogp",
+            "id": f"motogp-{slug_base}-{year}",
+            "slug": f"motogp-{slug_base}-{year}",
+            "name": f"Gran Premio de {es} de MotoGP {year}",
+            "short_name": f"MotoGP {es}",
+            "name_en": gp_key,
+            "date": race["date"],
+            "start_date": sessions[0]["date"],
+            "status": status,
+            "venue": g["venue"],
+            "city": "",
+            "country": g["country"],
+            "segments": [],
+            "fights": [],
+            "sessions": sessions,
+            "broadcasts_us": EVENT_CHANNELS["motogp"]["US"],
+            "channels": EVENT_CHANNELS["motogp"],
+            "is_minor": False,
+            "espn_link": "",
+        })
+    out.sort(key=lambda e: e["date"])
+    return out
+
+
+async def fetch_motogp(days_back: int = 3, days_ahead: int = 90) -> list[dict]:
+    now = datetime.now(timezone.utc)
+    seasons = [str(now.year)] + ([str(now.year + 1)] if now.month >= 11 else [])
+    raw = []
+    for s in seasons:
+        raw += await _fetch_sportsdb_season(SPORTSDB_MOTOGP_ID, s)
+    lo, hi = now - timedelta(days=days_back), now + timedelta(days=days_ahead)
+    out = []
+    for ev in _group_motogp(raw, now):
+        dt = datetime.fromisoformat(ev["date"].replace("Z", "+00:00"))
+        if lo <= dt <= hi:
+            out.append(ev)
+    return out
+
+
 async def fetch_events(kind: str, days_back: int = 3, days_ahead: int = 90) -> list[dict]:
     """Upcoming (and very recent) events for a kind, parsed and sorted by date."""
     if kind == "boxing":
         return load_boxing_events(days_back=days_back, days_ahead=days_ahead)
+    if kind == "motogp":
+        return await fetch_motogp(days_back=days_back, days_ahead=days_ahead)
     sport, league = EVENT_SOURCES[kind]
     now = datetime.now(timezone.utc)
     raw = await _fetch_range(sport, league, now - timedelta(days=days_back), now + timedelta(days=days_ahead))
-    parser = _parse_ufc if kind == "ufc" else _parse_f1
+    if kind == "ufc":
+        parser = _parse_ufc
+    elif kind == "f1":
+        parser = _parse_f1
+    else:
+        parser = lambda ev: _parse_race(kind, ev)
     out = []
     for ev in raw:
         try:
@@ -333,25 +575,33 @@ async def fetch_events(kind: str, days_back: int = 3, days_ahead: int = 90) -> l
     return out
 
 
-async def fetch_all_events(days_ahead: int = 90) -> list[dict]:
+async def fetch_all_events(days_ahead: int = 90, kinds: tuple = ALL_KINDS) -> list[dict]:
     import asyncio
-    ufc, f1 = await asyncio.gather(fetch_events("ufc", days_ahead=days_ahead),
-                                   fetch_events("f1", days_ahead=days_ahead))
-    box = load_boxing_events(days_ahead=days_ahead)
-    allev = ufc + f1 + box
+    results = await asyncio.gather(*[fetch_events(k, days_ahead=days_ahead) for k in kinds], return_exceptions=True)
+    allev = []
+    for k, r in zip(kinds, results):
+        if isinstance(r, Exception):
+            logger.warning(f"fetch_all_events {k} failed: {r}")
+            continue
+        allev += r
     allev.sort(key=lambda e: e.get("date", ""))
     return allev
 
 
 async def get_event_by_slug(slug: str) -> Optional[dict]:
-    """Find an event by slug across UFC/F1 (last 30 days + next 120) and boxing."""
-    for kind in ("ufc", "f1"):
+    """Find an event by slug across all kinds (last 30 days + next 120; boxing ±365)."""
+    for ev in load_boxing_events(days_back=365, days_ahead=365):  # local, sin red
+        if ev["slug"] == slug:
+            return ev
+    # El prefijo del slug dice el kind → una sola llamada en la mayoría de los casos
+    order = [k for k in ("motogp", "nascar", "indycar", "ufc") if slug.startswith(k + "-")]
+    if slug.startswith("gp-de-"):
+        order.append("f1")
+    order += [k for k in ("ufc", "f1", "motogp", "nascar", "indycar") if k not in order]
+    for kind in order:
         for ev in await fetch_events(kind, days_back=30, days_ahead=120):
             if ev["slug"] == slug:
                 return ev
-    for ev in load_boxing_events(days_back=365, days_ahead=365):
-        if ev["slug"] == slug:
-            return ev
     return None
 
 

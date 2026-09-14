@@ -769,12 +769,14 @@ LEAGUES = {
     "boxeo":         ("boxing", "boxing",       "Boxeo",            "🥊"),  # sin API: boxing_events.json
     # Motorsport
     "f1":            ("racing", "f1",            "Formula 1",        "🏎️"),
+    "motogp":        ("racing", "motogp",        "MotoGP",           "🏍️"),  # sin ESPN: TheSportsDB via events_api
 }
 
 # Leagues that don't show team names well (individual sports)
 # Only loaded when explicitly filtered, not on homepage
 LEAGUES_INDIVIDUAL = {
-    "nascar":        ("racing", "nascar",        "NASCAR",           "🏁"),
+    "nascar":        ("racing", "nascar-premier", "NASCAR",          "🏁"),
+    "indycar":       ("racing", "irl",           "IndyCar",          "🏎️"),
     "atp":           ("tennis", "atp",           "ATP Tennis",       "TEN"),
     "wta":           ("tennis", "wta",           "WTA Tennis",       "TEN"),
     "pga":           ("golf", "pga",             "PGA Tour",         "\u26f3"),
@@ -1233,6 +1235,8 @@ POPULAR_TEAMS = {
     # ── F1 (pilotos) ──
     "checo-perez": {"name": "Sergio 'Checo' Pérez", "league": "Formula 1"},
     "verstappen": {"name": "Max Verstappen", "league": "Formula 1"},
+    "pato-oward": {"name": "Pato O'Ward", "league": "IndyCar", "aka": "Pato O'Ward"},
+    "marc-marquez": {"name": "Marc Márquez", "league": "MotoGP", "aka": "Marc Márquez"},
     "hamilton": {"name": "Lewis Hamilton", "league": "Formula 1"},
     "sainz": {"name": "Carlos Sainz", "league": "Formula 1"},
     "norris": {"name": "Lando Norris", "league": "Formula 1"},
@@ -1469,6 +1473,17 @@ TEAM_ALIASES = {
     "formula uno": "f1",
     "gran premio": "f1",
     "gp mexico": "f1",
+    "motogp": "motogp",
+    "moto gp": "motogp",
+    "moto": "motogp",
+    "nascar": "nascar",
+    "indycar": "indycar",
+    "indy": "indycar",
+    "pato oward": "pato oward",
+    "pato o'ward": "pato oward",
+    "oward": "pato oward",
+    "marc marquez": "marc marquez",
+    "marquez": "marc marquez",
     # UFC / MMA
     "moreno": "brandon moreno",
     "brandon moreno": "brandon moreno",

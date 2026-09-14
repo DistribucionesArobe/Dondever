@@ -141,7 +141,7 @@
         <div class="chips">
             {% for c in ev.channels.MX %}{% set saff = streaming_aff.get(c) %}{% if saff %}<a class="chip aff" href="/go/{{ saff.key }}?s=evento-{{ ev.kind }}" target="_blank" rel="sponsored nofollow noopener">{{ c }} &#8599;</a>{% else %}<span class="chip">{{ c }}</span>{% endif %}{% endfor %}
         </div>
-        {% if ev.kind != 'f1' %}
+        {% if not is_race %}
         <div class="chips" style="margin-top:0.5rem;">
             <a class="chip" style="background:#1a1a2e;color:#fff;" href="/go/bet?s=evento-{{ ev.kind }}&sport={{ 'mma' if ev.kind == 'ufc' else 'boxing' }}" target="_blank" rel="sponsored nofollow noopener">Momios y apuestas &rarr;</a>
         </div>
@@ -149,7 +149,7 @@
     </section>
 
     {% if tz_rows %}
-    <h2 class="sec">Horario por pa&iacute;s{% if ev.kind == 'f1' %} (carrera){% elif ev.kind == 'ufc' %} (cartelera estelar){% endif %}</h2>
+    <h2 class="sec">Horario por pa&iacute;s{% if is_race %} (carrera){% elif ev.kind == 'ufc' %} (cartelera estelar){% endif %}</h2>
     <div class="card">
         <table class="tz">
             <tr><th>Pa&iacute;s</th><th>Hora</th><th>D&iacute;a</th></tr>
@@ -220,7 +220,7 @@
 
 <footer class="footer">
     <p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; Tu gu&iacute;a deportiva en M&eacute;xico y LATAM</p>
-    <p style="margin-top:0.3rem"><a href="/liga/ufc">UFC</a> &middot; <a href="/liga/boxeo">Boxeo</a> &middot; <a href="/liga/f1">F1</a> &middot; <a href="/canales">Canales</a></p>
+    <p style="margin-top:0.3rem"><a href="/liga/ufc">UFC</a> &middot; <a href="/liga/boxeo">Boxeo</a> &middot; <a href="/liga/f1">F1</a> &middot; <a href="/liga/motogp">MotoGP</a> &middot; <a href="/liga/nascar">NASCAR</a> &middot; <a href="/canales">Canales</a></p>
 </footer>
 </body>
 </html>
