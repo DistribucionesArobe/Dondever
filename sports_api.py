@@ -8,6 +8,7 @@ import httpx
 import asyncio
 import logging
 import os
+import re
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from cachetools import TTLCache
@@ -108,6 +109,9 @@ _sportsdb_blocked_until = 0  # timestamp when we can retry
 # Odds cache: 6h TTL — reduced from 200 to 50
 _odds_cache = TTLCache(maxsize=50, ttl=21600)  # 6 hours, 47 leagues
 _odds_request_count = 0  # track requests this process lifetime
+_odds_fail_cache = TTLCache(maxsize=50, ttl=600)
+ODDS_DIAG: dict = {"key_configured": bool(os.getenv("ODDS_API_KEY", "")), "last_status": None, "remaining": None,
+                   "used": None, "last_error": "", "errors": 0, "events_by_sport": {}}
 _ODDS_MONTHLY_BUDGET = 6000  # ~6,666 effective requests with 3-market calls
 
 # ── Odds API (the-odds-api.com) ────────────────────────
@@ -327,6 +331,41 @@ async def fetch_espn_scoreboard(
 
 _summary_cache = TTLCache(maxsize=10, ttl=300)  # 5 min
 
+_SERIES_TITLE_ES = {
+    "season series": "Serie de temporada",
+    "regular season series": "Serie de temporada regular",
+    "playoff series": "Serie de playoffs",
+    "postseason series": "Serie de postemporada",
+    "head to head": "Enfrentamientos directos",
+    "head-to-head": "Enfrentamientos directos",
+}
+
+
+def _series_title_es(title: str) -> str:
+    t = (title or "").strip()
+    return _SERIES_TITLE_ES.get(t.lower(), t)
+
+
+def _series_summary_es(summary: str) -> str:
+    """ESPN: 'FIO leads series 2-1' / 'Series tied 1-1' / 'LAD wins series 3-1' → español."""
+    t = (summary or "").strip()
+    if not t:
+        return t
+    m = re.match(r"^(.+?)\s+leads?\s+(?:the\s+)?series\s+([\d-]+)$", t, re.I)
+    if m:
+        return f"{m.group(1)} lidera la serie {m.group(2)}"
+    m = re.match(r"^(.+?)\s+(?:wins?|won)\s+(?:the\s+)?series\s+([\d-]+)$", t, re.I)
+    if m:
+        return f"{m.group(1)} gana la serie {m.group(2)}"
+    m = re.match(r"^series\s+tied\s+([\d-]+)$", t, re.I)
+    if m:
+        return f"Serie empatada {m.group(1)}"
+    m = re.match(r"^(.+?)\s+leads?\s+([\d-]+)$", t, re.I)
+    if m:
+        return f"{m.group(1)} lidera {m.group(2)}"
+    return t.replace("leads series", "lidera la serie").replace("Series tied", "Serie empatada").replace("wins series", "gana la serie")
+
+
 async def fetch_espn_event_summary(
     sport: str, league: str, event_id: str
 ) -> dict:
@@ -416,8 +455,8 @@ async def fetch_espn_event_summary(
                 })
             parsed_series.append({
                 "type": s.get("type", ""),
-                "title": s.get("title", ""),
-                "summary": s.get("summary", ""),
+                "title": _series_title_es(s.get("title", "")),
+                "summary": _series_summary_es(s.get("summary", "")),
                 "events": events,
             })
         if parsed_series:
@@ -1239,7 +1278,7 @@ async def parse_espn_events_enriched(
             "link": ev.get("links", [{}])[0].get("href", "") if ev.get("links") else "",
             # Postseason metadata (ESPN: season.type 3 = playoffs; notes carry "ALDS - Game 2")
             "season_type": (ev.get("season") or {}).get("type", 0),
-            "series_note": next((n.get("headline", "") for n in (comp.get("notes") or []) if n.get("headline")), ""),
+            "series_note": _series_summary_es(next((n.get("headline", "") for n in (comp.get("notes") or []) if n.get("headline")), "")),
         })
 
     return events
@@ -2729,6 +2768,8 @@ async def fetch_odds(league_slug: str, markets: str = "h2h,spreads,totals") -> l
     cache_key = f"odds:{odds_sport}"
     if cache_key in _odds_cache:
         return _odds_cache[cache_key]
+    if cache_key in _odds_fail_cache:
+        return []
 
     # Budget guard — stop fetching if we're burning too many requests
     if _odds_request_count >= _ODDS_MONTHLY_BUDGET:
@@ -2753,13 +2794,22 @@ async def fetch_odds(league_slug: str, markets: str = "h2h,spreads,totals") -> l
             remaining = resp.headers.get("x-requests-remaining", "?")
             used = resp.headers.get("x-requests-used", "?")
             logger.info(f"Odds API: {odds_sport} — used={used}, remaining={remaining}")
+            ODDS_DIAG.update({"last_status": resp.status_code, "remaining": remaining, "used": used,
+                              "last_sport": odds_sport, "last_at": datetime.now().isoformat(timespec="seconds"),
+                              "requests_this_process": _odds_request_count})
 
             resp.raise_for_status()
             data = resp.json()
             _odds_cache[cache_key] = data
+            ODDS_DIAG["last_error"] = ""
+            ODDS_DIAG["events_by_sport"][odds_sport] = len(data)
             return data
     except Exception as e:
         logger.warning(f"Odds API error for {odds_sport}: {e}")
+        ODDS_DIAG["last_error"] = f"{odds_sport}: {e}"[:300]
+        ODDS_DIAG["errors"] = ODDS_DIAG.get("errors", 0) + 1
+        # No martillar la API si falla (cuota agotada, key inválida): reintenta en 10 min
+        _odds_fail_cache[cache_key] = True
         return []
 
 

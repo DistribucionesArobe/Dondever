@@ -20,6 +20,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 
 from config import AFFILIATES, STREAMING_AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES, TEAM_SHOP, MELI_AFF_PARAM, TEAM_SHOP_MELI, POPULAR_TEAMS
 from db import init_db, persist_games, get_team_history, get_team_upcoming, get_team_channels
+import sports_api as _sports_api_mod
 from sports_api import (
     get_todays_games, search_games, get_team_stats, get_league_standings,
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
@@ -2575,6 +2576,16 @@ async def hockey_hoy(request: Request):
 
 # ── Pronósticos / Apuestas Landing ────────────────────────
 
+_DIAS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+_MESES_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
+             "septiembre", "octubre", "noviembre", "diciembre"]
+
+
+def _fecha_es_larga(d) -> str:
+    """'martes 15 de septiembre de 2026' (sin depender del locale del servidor)."""
+    return f"{_DIAS_ES[d.weekday()]} {d.day} de {_MESES_ES[d.month - 1]} de {d.year}"
+
+
 @app.get("/pronosticos-hoy", response_class=HTMLResponse)
 async def pronosticos_hoy(request: Request):
     """SEO landing page for betting queries: pronósticos, momios, picks del día."""
@@ -2598,11 +2609,37 @@ async def pronosticos_hoy(request: Request):
         except Exception:
             pass
 
+    upcoming = sum(1 for g in all_games if g.get("status", {}).get("state") in ("pre", "in"))
     return templates.TemplateResponse(request, "pronosticos.html", context={
         "games": games_with_odds,
         "today": today,
+        "today_es": _fecha_es_larga(today),
         "total_games": len(all_games),
+        "upcoming_games": upcoming,
+        "odds_configured": bool(_sports_api_mod.ODDS_API_KEY),
     })
+
+
+@app.get("/api/internal/odds-diag")
+async def odds_diag(request: Request):
+    """Diagnóstico del feed de cuotas (the-odds-api): key, cuota restante, último error."""
+    token = request.query_params.get("token", "")
+    if not token or token != os.getenv("ADMIN_TOKEN", ""):
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    all_games = await get_todays_games()
+    leagues_today = sorted({g.get("league_slug", "") for g in all_games if g.get("status", {}).get("state") in ("pre", "in")})
+    mapped = [l for l in leagues_today if l in _sports_api_mod.ODDS_SPORT_MAP]
+    sample = {}
+    for slug in mapped[:6]:
+        odds_list = await fetch_odds(slug)
+        matched = 0
+        for g in all_games:
+            if g.get("league_slug") == slug and g.get("status", {}).get("state") in ("pre", "in"):
+                if match_odds_to_game(g, odds_list):
+                    matched += 1
+        sample[slug] = {"events_from_api": len(odds_list), "matched_games": matched}
+    return {"diag": _sports_api_mod.ODDS_DIAG, "leagues_today": leagues_today, "leagues_with_odds_map": mapped,
+            "sample": sample, "cache_keys": [k for k in _sports_api_mod._odds_cache.keys()]}
 
 
 @app.get("/momios-hoy", response_class=HTMLResponse)

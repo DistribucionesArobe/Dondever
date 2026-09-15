@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pron&oacute;sticos Deportivos Hoy: Momios, Picks y Apuestas — {{ today.strftime('%d/%m/%Y') }} | DondeVer</title>
-    <meta name="description" content="Pronósticos deportivos de hoy {{ today.strftime('%d de %B %Y') }}. Momios actualizados, picks del día y cuotas de {{ games|length }} partidos. Apuestas en Liga MX, MLB, NBA, NFL y más.">
+    <meta name="description" content="Pronósticos deportivos de hoy, {{ today_es }}. Momios actualizados, picks del día{% if games %} y cuotas de {{ games|length }} partidos{% endif %}. Apuestas en Liga MX, MLB, NBA, NFL y más.">
     <meta property="og:title" content="Pronósticos y Momios de Hoy — {{ today.strftime('%d/%m/%Y') }}">
-    <meta property="og:description" content="Momios, picks y pronósticos de {{ games|length }} partidos de hoy. Cuotas actualizadas para apostar.">
+    <meta property="og:description" content="Momios, picks y pronósticos de los partidos de hoy. Cuotas actualizadas para apostar.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://dondever.app/pronosticos-hoy">
     <meta property="og:site_name" content="DondeVer.app">
     <meta property="og:locale" content="es_MX">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Pronósticos y Momios Hoy | DondeVer">
-    <meta name="twitter:description" content="Momios actualizados y picks del día. {{ games|length }} partidos con cuotas.">
+    <meta name="twitter:description" content="Momios actualizados y picks del día en Liga MX, MLB, NBA, NFL y más.">
     <link rel="canonical" href="https://dondever.app/pronosticos-hoy">
     {{ hreflang_tags(request.url) }}
     <script type="application/ld+json">
@@ -86,12 +86,12 @@
     <div class="header">
         <div class="badge">Actualizado hoy</div>
         <h1>Pron&oacute;sticos Deportivos Hoy: Momios y Picks del D&iacute;a</h1>
-        <div class="subtitle">{{ today.strftime('%A %d de %B, %Y') }} &mdash; {{ games|length }} partidos con cuotas</div>
+        <div class="subtitle">{{ today_es|capitalize }} &mdash; {% if games %}{{ games|length }} partidos con cuotas{% elif upcoming_games %}{{ upcoming_games }} partidos hoy, sin cuotas por ahora{% else %}sin partidos programados{% endif %}</div>
     </div>
 
     <p class="intro">
-        Momios actualizados y pron&oacute;sticos para los {{ games|length }} partidos de hoy.
-        Cuotas de las mejores casas de apuestas para que tomes la mejor decisi&oacute;n.
+        {% if games %}Momios actualizados y pron&oacute;sticos para los {{ games|length }} partidos de hoy.
+        Cuotas de las mejores casas de apuestas para que tomes la mejor decisi&oacute;n.{% else %}Cuando las casas de apuestas publican las cuotas del d&iacute;a, aqu&iacute; aparecen los momios y picks de cada partido.{% endif %}
     </p>
 
     {% if games %}
@@ -150,9 +150,14 @@
     {% endfor %}
     {% else %}
     <div class="empty-state">
-        <h2>No hay partidos con momios disponibles ahora</h2>
-        <p>Los pron&oacute;sticos se actualizan cuando hay partidos programados. Vuelve m&aacute;s tarde.</p>
-        <a href="/" class="btn-ver btn-partido" style="display:inline-block;margin-top:1rem;">Ver todos los partidos</a>
+        {% if upcoming_games %}
+        <h2>Hay {{ upcoming_games }} partidos hoy, pero las casas a&uacute;n no publican cuotas</h2>
+        <p>Los momios suelen aparecer unas horas antes de cada partido. Mientras tanto, revisa d&oacute;nde verlos y vuelve m&aacute;s tarde.</p>
+        {% else %}
+        <h2>Hoy no hay partidos programados</h2>
+        <p>Los pron&oacute;sticos se publican los d&iacute;as con partidos de Liga MX, MLB, NBA, NFL o Champions.</p>
+        {% endif %}
+        <a href="/" class="btn-ver btn-partido" style="display:inline-block;margin-top:1rem;">Ver {% if upcoming_games %}los partidos de hoy{% else %}el calendario{% endif %}</a>
     </div>
     {% endif %}
 
