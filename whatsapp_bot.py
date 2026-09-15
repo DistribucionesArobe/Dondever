@@ -413,17 +413,24 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             MAX_GAMES = 6
             top = sorted_games[:MAX_GAMES]
 
-            lines = ["*Juegos de hoy:*\n"]
+            # Links arriba: la página (canales/horarios completos) y el afiliado de casino.
+            # En WhatsApp lo primero es lo que se ve sin abrir el mensaje.
+            bet_url = f"{APP_URL}/go/bet?s=wa-hoy"
+            lines = [
+                "*Juegos de hoy* 📺",
+                f"Todos los partidos, canales y horarios: {APP_URL}/?utm_source=whatsapp&utm_medium=bot",
+                f"🎰 Bono de bienvenida para apostar hoy: {bet_url}",
+                "",
+            ]
             for game in top:
                 lines.append(format_game_for_whatsapp(game))
                 lines.append("")
 
             remaining = len(games) - len(top)
             if remaining > 0:
-                lines.append(f"_...y {remaining} juegos mas_")
+                lines.append(f"_...y {remaining} juegos mas en {APP_URL.replace('https://', '')}_")
             lines.append("")
-            lines.append("Ver todos los juegos, canales y horarios:")
-            lines.append("dondever.app")
+            lines.append("_+18 · Apuesta responsable · Responde HOY cada dia para seguir recibiendo el resumen_")
 
             return "\n".join(lines)
 

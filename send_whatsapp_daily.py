@@ -372,6 +372,9 @@ async def compose_daily_message() -> str | None:
     # Build message — compact, one game per block
     lines = []
     lines.append(f"*🏆 TOP 10 PICKS — {weekday} {date_display}*")
+    # Links arriba (lo primero que se ve): página + casino afiliado
+    lines.append(f"📺 Canales y horarios de todo: {APP_URL}/?utm_source=whatsapp&utm_medium=daily")
+    lines.append(f"🎰 Bono para apostar hoy: {APP_URL}/go/bet?s=wa-daily")
     lines.append("")
 
     for i, g in enumerate(top_games, 1):
@@ -406,7 +409,7 @@ async def compose_daily_message() -> str | None:
     lines.append("📱 Todos los juegos y canales:")
     lines.append("dondever.app")
     lines.append("")
-    lines.append("_+18 · Apuesta responsable · Escribe SALIR para cancelar_")
+    lines.append("_+18 · Apuesta responsable · Responde HOY para recibirlo mañana · Escribe SALIR para cancelar_")
 
     return "\n".join(lines)
 
@@ -557,7 +560,7 @@ async def compose_template_variables() -> dict | None:
         f"{pick_emoji} {first} vs {second} · {time_str} MX · "
         f"{pick_tip['pick']} ({pick_tip['confidence']}). "
         f"Responde VER para los 10 picks de hoy. "
-        f"https://dondever.app/"
+        f"https://dondever.app/?utm_source=whatsapp&utm_medium=template"
     )
 
     return {
