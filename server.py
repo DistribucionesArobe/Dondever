@@ -3362,6 +3362,9 @@ async def meta_whatsapp_verify(request: Request):
     return PlainTextResponse(content="Forbidden", status_code=403)
 
 
+_seen_wamids = TTLCache(maxsize=4000, ttl=900)  # dedupe de webhooks entrantes de Meta
+
+
 @app.post("/webhook/meta-whatsapp")
 async def meta_whatsapp_webhook(request: Request):
     """Meta WhatsApp Cloud API webhook — receives messages and replies.
@@ -3431,8 +3434,15 @@ async def meta_whatsapp_webhook(request: Request):
             result = meta_whatsapp.send_text(from_number, response_text)
             logger.info(f"Meta WA reply to {from_number}: ok={result.get('ok')}")
 
-    # Fire-and-forget: process all messages in background, respond to Meta immediately
+    # Fire-and-forget: process all messages in background, respond to Meta immediately.
+    # Dedupe: Meta entrega el mismo webhook 2 veces (reintento o doble suscripción del WABA)
+    # → el usuario recibía la respuesta duplicada. Ignoramos wamid ya vistos (15 min).
     for msg in messages:
+        mid = msg.get("message_id") or f"{msg.get('from')}:{msg.get('timestamp')}:{msg.get('body')}"
+        if mid in _seen_wamids:
+            logger.info(f"Meta WA duplicado ignorado: {mid[:40]}")
+            continue
+        _seen_wamids[mid] = True
         task = asyncio.create_task(_process_message(msg))
         _background_tasks.add(task)
         task.add_done_callback(_background_tasks.discard)
