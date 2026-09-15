@@ -199,8 +199,31 @@
     </a>
     {% endfor %}
     {% else %}
-    <div class="no-games">
-        <p>No hay partidos de {{ team_name }} programados hoy. Vuelve el día del juego para ver canales y horarios.</p>
+    <div class="no-games" style="text-align:left;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1.1rem 1.2rem;">
+        <p style="font-weight:700;color:#1a1a2e;">Hoy no juega {{ team_name }}.</p>
+        {% if next_game %}
+        <div style="margin-top:0.8rem;padding:0.9rem 1rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;font-weight:700;margin-bottom:0.4rem;">Pr&oacute;ximo partido</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                {% if next_game.home_logo %}<img src="{{ next_game.home_logo }}" alt="" style="width:24px;height:24px;object-fit:contain;">{% endif %}
+                <span style="font-weight:800;color:#1a1a2e;">{{ next_game.home }}</span>
+                <span style="color:#9ca3af;font-weight:600;">vs</span>
+                <span style="font-weight:800;color:#1a1a2e;">{{ next_game.away }}</span>
+                {% if next_game.away_logo %}<img src="{{ next_game.away_logo }}" alt="" style="width:24px;height:24px;object-fit:contain;">{% endif %}
+            </div>
+            <div style="margin-top:0.4rem;font-weight:700;color:#f97316;font-size:0.9rem;">{{ next_game.day_local }} &middot; {{ next_game.time_local }} <span style="color:#9ca3af;font-weight:500;font-size:0.75rem;">({{ tz_label }})</span></div>
+            <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;font-size:0.75rem;color:#6b7280;">
+                <span>&#128250;</span>
+                {% if next_game.local_channels %}<span style="font-weight:600;">{{ country_flag }} {{ country_name }}:</span>{% for c in next_game.local_channels %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c }}</span>{% endfor %}
+                {% elif country_channels %}<span style="font-weight:600;">{{ country_flag }} {{ country_name }}:</span><span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ country_channels[0].name }}</span><span style="opacity:0.7;">(canal habitual, por confirmar)</span>
+                {% else %}<span style="opacity:0.7;">Canal por confirmar</span>{% endif %}
+                {% if next_game.other_channels %}<span style="margin-left:0.3rem;opacity:0.75;">Otros: {{ next_game.other_channels|join(', ') }}</span>{% endif %}
+            </div>
+            <a href="/equipo/{{ team_slug }}" style="display:inline-block;margin-top:0.7rem;font-size:0.8rem;font-weight:700;color:#059669;text-decoration:none;">Calendario completo de {{ team_name }} &rarr;</a>
+        </div>
+        {% else %}
+        <p style="margin-top:0.4rem;font-size:0.85rem;">Vuelve el d&iacute;a del juego para ver canales y horarios, o revisa el <a href="/equipo/{{ team_slug }}" style="color:#059669;font-weight:700;">calendario de {{ team_name }}</a>.</p>
+        {% endif %}
     </div>
     {% endif %}
 

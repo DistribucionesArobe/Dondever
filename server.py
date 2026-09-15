@@ -7118,6 +7118,50 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     seo_desc = (f"¿Dónde ver a {team_name} en {cname} hoy? Canales de TV, cable y streaming "
                 f"({first_ch}) con horario de {cname}. {team_league} en vivo.")
     today_g = next((g for g in games if (g.get("status") or {}).get("state") in ("pre", "in")), None)
+
+    # ── Próximo partido (cuando hoy no juega): mismo dato que /equipo/{slug} ──
+    next_game = None
+    if not today_g:
+        try:
+            from sports_api import TEAM_LEAGUE_MAP as _TLM
+            _lm = _TLM.get(team_slug)
+            if _lm:
+                _all_up = await get_upcoming_league_games(_lm[0], _lm[1], days=14, limit=40)
+                for u in _all_up:
+                    if st in (u.get("home") or "").lower() or st in (u.get("away") or "").lower():
+                        next_game = dict(u)
+                        break
+            if not next_game:
+                _db_up = await get_team_upcoming(team_name, limit=1)
+                if _db_up:
+                    u = _db_up[0]
+                    import json as _json_mod
+                    next_game = {"home": u["home_name"], "away": u["away_name"], "date": str(u.get("date_utc", "")),
+                                 "channels": _json_mod.loads(u.get("channels_json") or "[]"), "league": u.get("league_name", "")}
+        except Exception:
+            next_game = None
+        if next_game:
+            ccode = country.get("code", "")
+            chs = next_game.get("channels") or []
+            if chs and isinstance(chs[0], dict):
+                local_chs = [c["name"] for c in chs if c.get("country") == ccode]
+                other_chs = [c["name"] for c in chs if c.get("country") != ccode]
+            else:
+                local_chs, other_chs = [], [str(c) for c in chs]
+            next_game["local_channels"] = local_chs
+            next_game["other_channels"] = other_chs[:4]
+            next_game["time_local"] = format_local_time(next_game.get("date", ""))
+            try:
+                _dt = datetime.fromisoformat(str(next_game.get("date", "")).replace("Z", "+00:00")).astimezone(tz_local)
+                next_game["day_local"] = f"{_DIAS_ES[_dt.weekday()].capitalize()} {_dt.day} de {_MESES_ES[_dt.month - 1]}"
+            except Exception:
+                next_game["day_local"] = ""
+            _nh, _na = next_game.get("home", ""), next_game.get("away", "")
+            _opp = _short_team_name(_na if st in _nh.lower() else _nh, team_league)
+            _ch_txt = local_chs[0] if local_chs else first_ch
+            seo_title = f"{_tshort} vs {_opp} en {cname}: {next_game['day_local']} {next_game['time_local']} en {_ch_txt} | Dónde ver"
+            seo_desc = (f"Próximo partido de {team_name} en {cname}: {_tshort} vs {_opp} el {next_game['day_local']} a las "
+                        f"{next_game['time_local']} {tz_label}. Canal: {_ch_txt}. Todos los canales para ver {team_league} desde {cname}.")
     if today_g:
         home = today_g.get("home", {}) or {}
         away = today_g.get("away", {}) or {}
@@ -7149,6 +7193,7 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
         "country_channels": country_channels,
         "country_tip": country_tip,
         "games": games,
+        "next_game": next_game,
         "all_countries": all_countries,
         "format_mx_time": format_mx_time,
         "format_local_time": format_local_time,
