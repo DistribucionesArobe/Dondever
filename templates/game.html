@@ -151,6 +151,12 @@
         .team-block .name { font-size: 1.1rem; font-weight: 700; }
         .team-block .score { font-size: 2rem; font-weight: 800; color: #059669; margin-top: 0.25rem; }
         .vs { font-size: 1.2rem; font-weight: 800; color: #9ca3af; }
+        .gd-follow { text-align:center; margin: 0.6rem auto 0.2rem; max-width: 420px; }
+        .gd-follow-btn { width:100%; background:#fff; color:#1a1a2e; border:2px solid #10b981; border-radius:12px; padding:0.7rem 1rem; font-weight:800; font-size:0.95rem; cursor:pointer; font-family:inherit; transition: background .15s, color .15s; }
+        .gd-follow-btn.active { background:#10b981; color:#fff; }
+        .gd-follow-sub { font-size:0.7rem; color:#6b7280; margin-top:0.35rem; }
+        body.dark-mode .gd-follow-btn { background:#0f172a; color:#f1f5f9; }
+        body.dark-mode .gd-follow-btn.active { background:#10b981; color:#fff; }
         .time-block { margin: 1.5rem 0; }
         .time-block .time { font-size: 2.5rem; font-weight: 800; color: #f97316; }
         .time-block .tz { font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem; }
@@ -420,6 +426,18 @@
                 <div class="tz" id="tz-label">Hora centro de M&eacute;xico | {{ format_us_time(game.date) }}</div>
             {% endif %}
         </div>
+        {% if game.status.state in ('pre', 'in') %}
+        {# ── Seguir este partido: push de inicio, anotaciones y final (OneSignal + /api/push/subscribe) ── #}
+        <div class="gd-follow">
+            <button type="button" class="gd-follow-btn" onclick="dvNotify(this)"
+                    data-game-id="{{ game.id }}" data-kickoff="{{ game.date }}"
+                    data-title="{{ left_team.name }} vs {{ right_team.name }}" data-league="{{ game.league_name }}"
+                    data-channels="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}"
+                    data-label-off="&#128276; Avisarme de este partido"
+                    data-label-on="&#10003; Siguiendo este partido &middot; toca para quitar">&#128276; Avisarme de este partido</button>
+            <div class="gd-follow-sub">{% if game.status.state == 'in' %}Te avisamos cada {{ 'gol' if game.sport == 'soccer' else 'anotaci&oacute;n' }} y el resultado final{% else %}Aviso al inicio, en cada {{ 'gol' if game.sport == 'soccer' else 'anotaci&oacute;n' }} y al final{% endif %}, aunque cierres la app.</div>
+        </div>
+        {% endif %}
         {% if game.status.state != 'pre' %}
         {# ── Panel en vivo: campo NFL / diamante MLB / goles / línea por periodo (se refresca cada 20 s) ── #}
         <div id="livePanel" class="live-panel" data-game-id="{{ game.id }}" data-sport="{{ game.sport }}" data-state="{{ game.status.state }}"

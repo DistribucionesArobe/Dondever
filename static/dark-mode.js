@@ -108,7 +108,8 @@
       delete games[gid];
       saveNotifyGames(games);
       btn.classList.remove('active');
-      btn.innerHTML = '&#128276;';
+      btn.innerHTML = btn.getAttribute('data-label-off') || '&#128276;';
+      if (window.dvPush) window.dvPush.sync(true);
       return;
     }
 
@@ -135,7 +136,7 @@
     };
     saveNotifyGames(games);
     btn.classList.add('active');
-    btn.innerHTML = '&#128276; <span class="notify-label">Alertas</span>';
+    btn.innerHTML = btn.getAttribute('data-label-on') || '&#128276; <span class="notify-label">Alertas</span>';
     // Push real (OneSignal): inicio, anotaciones y final aunque la pestaña esté cerrada
     if (window.dvPush) window.dvPush.enable({ add_games: [gid] });
   }
@@ -203,19 +204,20 @@
     // Clean up past games
     for (var gid in games) {
       var ko = new Date(games[gid].kickoff);
-      if (ko < now) {
+      // Se conserva mientras el partido puede seguir en juego (hasta 5 h después del inicio)
+      if (isNaN(ko.getTime()) || (now - ko) > 5 * 3600 * 1000) {
         delete games[gid];
         changed = true;
       }
     }
     if (changed) saveNotifyGames(games);
     // Highlight active bells
-    var btns = document.querySelectorAll('.gc-notify-btn');
+    var btns = document.querySelectorAll('.gc-notify-btn, .gd-follow-btn');
     for (var i = 0; i < btns.length; i++) {
       var id = btns[i].getAttribute('data-game-id');
       if (games[id]) {
         btns[i].classList.add('active');
-        btns[i].innerHTML = '&#128276; <span class="notify-label">15 min</span>';
+        btns[i].innerHTML = btns[i].getAttribute('data-label-on') || '&#128276; <span class="notify-label">Alertas</span>';
       }
     }
   });
