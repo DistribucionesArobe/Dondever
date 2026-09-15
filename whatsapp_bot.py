@@ -191,6 +191,23 @@ def _compute_extra_market(game: dict) -> str:
     return rng.choice(opciones)
 
 
+# Botones según el contexto de la respuesta (WhatsApp permite máximo 3).
+_BTN_HOY = {"id": "btn_hoy", "title": "📺 Juegos de hoy"}
+_BTN_PICK = {"id": "btn_picks", "title": "🎯 Pick del día"}
+_BTN_PARLAY = {"id": "btn_parlay", "title": "🔥 Parlay del día"}
+_BTN_EQUIPOS = {"id": "btn_equipos", "title": "⭐ Mis equipos"}
+
+
+def buttons_for(body: str) -> list[dict]:
+    """Después del pick ofrece el parlay; después del parlay, el pick; si no, el trío base."""
+    b = (body or "").strip().lower()
+    if b in ("picks", "pick", "pick del dia", "sugerencia", "tip", "btn_picks", "ver", "ver picks", "ver resumen", "ver juegos"):
+        return [_BTN_PARLAY, _BTN_HOY, _BTN_EQUIPOS]
+    if b in ("combinada", "parlay", "combo", "acumulada", "multiple", "btn_parlay"):
+        return [_BTN_PICK, _BTN_HOY, _BTN_EQUIPOS]
+    return [_BTN_HOY, _BTN_PICK, _BTN_EQUIPOS]
+
+
 async def handle_whatsapp_message(body: str, from_number: str) -> str:
     """
     Process incoming WhatsApp message and return response text.
@@ -204,7 +221,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     try:
         body_clean = body.strip().lower()
         # Botones de respuesta rápida → comando equivalente
-        body_clean = {"btn_hoy": "hoy", "btn_picks": "picks", "btn_equipos": "mis equipos",
+        body_clean = {"btn_hoy": "hoy", "btn_picks": "picks", "btn_equipos": "mis equipos", "btn_parlay": "combinada",
                       "btn_ayuda": "ayuda", "btn_suscribir": "btn_suscribir"}.get(body_clean, body_clean)
         # Strip common prefixes like "donde ver chivas" -> "chivas"
         for prefix in ("donde ver ", "donde puedo ver ", "como ver ", "en donde ver "):
@@ -302,7 +319,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
                 import meta_whatsapp
                 picks_msg = await compose_daily_message()
                 if picks_msg and meta_whatsapp.is_configured():
-                    result = meta_whatsapp.send_text_with_buttons(from_number, picks_msg)
+                    result = meta_whatsapp.send_text_with_buttons(from_number, picks_msg, buttons=buttons_for("ver"))
                     logger.info(f"VER picks sent via Meta to {from_number}: {result.get('ok')}")
             except Exception as e:
                 logger.exception(f"Failed to send VER picks: {e}")
@@ -350,18 +367,18 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             f"✅ *Ganador sugerido:* {pick_team}\n"
             f"_{pick_reason}_\n\n"
             f"💡 *Mercado extra:* {extra_market}\n\n"
-            f"Escribe *combinada* para un parlay de 3 picks 🔥\n\n"
+            f"Toca *🔥 Parlay del día* para una combinada de 3 picks\n\n"
             f"{aff['cta']}: {aff['url']}\n\n"
             f"_Sugerencias de entretenimiento. Apuesta responsable. +18_"
         )
 
     # Combinada / parlay: 2-3 picks de distintos juegos
-    if body_clean in ("combinada", "parlay", "combo", "acumulada", "multiple"):
+    if body_clean in ("combinada", "parlay", "combo", "acumulada", "multiple", "btn_parlay"):
         subscribe(from_number)
         games = await get_todays_games()
         upcoming = [g for g in games if g["status"]["state"] == "pre" and g["broadcasts"]]
         if len(upcoming) < 2:
-            return f"No hay suficientes juegos hoy para una combinada. Checa {APP_URL}"
+            return f"No hay suficientes juegos hoy para un parlay. Checa {APP_URL}"
 
         # Priorizar ligas top
         priority = ["liga-mx", "champions", "premier-league", "la-liga", "nfl", "nba", "mlb"]
@@ -372,7 +389,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
         combo_games = upcoming[:3] if len(upcoming) >= 3 else upcoming[:2]
 
         aff = get_random_affiliate(betting_only=True)
-        lines = ["🔥 *COMBINADA DEL DIA*\n"]
+        lines = ["🔥 *PARLAY DEL DÍA* (combinada de 3)\n"]
         for i, g in enumerate(combo_games, 1):
             team, reason = _compute_pick(g)
             sport = g.get("sport", "")

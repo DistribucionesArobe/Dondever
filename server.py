@@ -3433,7 +3433,8 @@ async def meta_whatsapp_webhook(request: Request):
         else:
             # Toda respuesta lleva botones (Juegos de hoy / Pick del día / Mis equipos):
             # el usuario ve qué hace el bot sin escribir y cada toque mantiene la ventana de 24 h.
-            result = meta_whatsapp.send_text_with_buttons(from_number, response_text)
+            from whatsapp_bot import buttons_for as _wa_buttons_for
+            result = meta_whatsapp.send_text_with_buttons(from_number, response_text, buttons=_wa_buttons_for(body))
             logger.info(f"Meta WA reply to {from_number}: ok={result.get('ok')}")
 
     # Fire-and-forget: process all messages in background, respond to Meta immediately.
