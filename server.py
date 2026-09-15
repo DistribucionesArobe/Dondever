@@ -4833,6 +4833,7 @@ async def about_page(request: Request):
 # ── Contacto: publicidad, ideas, opiniones, correcciones ──
 _CONTACT_FILE = os.path.join(os.path.dirname(os.getenv("SUBSCRIBERS_FILE", ".")), "contact_messages.json")
 _contact_rate: dict = {}   # ip → [timestamps]
+_contact_last_email: dict = {}   # diagnóstico del último intento de envío por Resend
 
 
 def _contact_ctx(**kw) -> dict:
@@ -4891,8 +4892,10 @@ async def contacto_submit(request: Request, motivo: str = Form("otro"), nombre: 
         r = send_email(to, f"[DondeVer contacto] {labels.get(motivo, motivo)}: {ctx['nombre']}", body)
         if not r.get("ok"):
             logger.warning(f"contact email not sent: {r}")
+        _contact_last_email.update({"ts": rec["ts"], "to": to, "result": r})
     except Exception as e:
         logger.warning(f"contact email failed: {e}")
+        _contact_last_email.update({"ts": rec["ts"], "error": str(e)})
     return templates.TemplateResponse(request, "contacto.html", _contact_ctx(sent=True, email=ctx["email"]))
 
 
@@ -4900,11 +4903,13 @@ async def contacto_submit(request: Request, motivo: str = Form("otro"), nombre: 
 async def contact_messages(token: str = ""):
     if not token or token != os.getenv("ADMIN_TOKEN", ""):
         return JSONResponse(status_code=403, content={"error": "forbidden"})
+    diag = {"resend_key_configured": bool(os.getenv("RESEND_API_KEY")), "from": os.getenv("RESEND_FROM_EMAIL", "DondeVer Picks <picks@dondever.app>"),
+            "to": os.getenv("CONTACT_EMAIL", "ealejandro.robledo@gmail.com"), "last_email": _contact_last_email}
     try:
         with open(_CONTACT_FILE, "r", encoding="utf-8") as f:
-            return {"ok": True, "messages": list(reversed(json.load(f)))[:100]}
+            return {"ok": True, "email": diag, "messages": list(reversed(json.load(f)))[:100]}
     except Exception:
-        return {"ok": True, "messages": []}
+        return {"ok": True, "email": diag, "messages": []}
 
 @app.get("/privacidad", response_class=HTMLResponse)
 async def privacy_page(request: Request):
