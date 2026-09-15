@@ -376,6 +376,15 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
             if b"</head>" in body:
                 body = body.replace(b"</head>", snippet + b"</head>", 1)
 
+            # Botón de contacto en el pie de TODAS las páginas (publicidad, ideas, opiniones)
+            if b"</footer>" in body and not request.url.path.startswith(("/widget", "/contacto")):
+                contact_btn = (
+                    '<p style="margin:0.6rem 0 0.2rem;"><a href="/contacto" style="display:inline-block;padding:0.45rem 0.95rem;'
+                    'background:#10b981;color:#fff;border-radius:999px;font-weight:800;font-size:0.78rem;text-decoration:none;">'
+                    '&#128172; Cont&aacute;ctanos &middot; publicidad, ideas y opiniones</a></p>'
+                ).encode("utf-8")
+                body = body.replace(b"</footer>", contact_btn + b"</footer>", 1)
+
             # GTM also needs a <noscript> iframe right after <body>
             if gtm_id:
                 gtm_noscript = (
@@ -4792,6 +4801,7 @@ async def sitemap_core():
     for slug in LEAGUES:
         urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.9", hreflang=True))
     urls.append(_sm_url(f'{APP_URL}/widget', _SM_STATIC_LASTMOD, "monthly", "0.5"))
+    urls.append(_sm_url(f'{APP_URL}/contacto', _SM_STATIC_LASTMOD, "monthly", "0.4"))
     for slug in ("nascar", "indycar"):  # motor en LEAGUES_INDIVIDUAL (no en portada) pero con página propia
         urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.8", hreflang=True))
 
@@ -4818,6 +4828,83 @@ async def sitemap_core():
 @app.get("/sobre-nosotros", response_class=HTMLResponse)
 async def about_page(request: Request):
     return templates.TemplateResponse(request, "about.html")
+
+
+# ── Contacto: publicidad, ideas, opiniones, correcciones ──
+_CONTACT_FILE = os.path.join(os.path.dirname(os.getenv("SUBSCRIBERS_FILE", ".")), "contact_messages.json")
+_contact_rate: dict = {}   # ip → [timestamps]
+
+
+def _contact_ctx(**kw) -> dict:
+    base = {"year": datetime.now(TZ_MX).year, "ts": str(int(datetime.now(timezone.utc).timestamp())),
+            "sent": False, "error": "", "motivo": "", "nombre": "", "email": "", "mensaje": ""}
+    base.update(kw)
+    return base
+
+
+@app.get("/contacto", response_class=HTMLResponse)
+async def contacto_page(request: Request, motivo: str = ""):
+    return templates.TemplateResponse(request, "contacto.html", _contact_ctx(motivo=motivo))
+
+
+@app.post("/contacto", response_class=HTMLResponse)
+async def contacto_submit(request: Request, motivo: str = Form("otro"), nombre: str = Form(""), email: str = Form(""),
+                          mensaje: str = Form(""), website: str = Form(""), ts: str = Form("")):
+    """Guarda el mensaje en contact_messages.json y lo manda por email (Resend) a CONTACT_EMAIL."""
+    ip = (request.headers.get("x-forwarded-for", "") or (request.client.host if request.client else "")).split(",")[0].strip()
+    now = datetime.now(timezone.utc).timestamp()
+    ctx = dict(motivo=motivo, nombre=nombre.strip()[:80], email=email.strip()[:120], mensaje=mensaje.strip()[:3000])
+    # Anti-spam: honeypot, formulario llenado en <3 s, más de 3 envíos por hora por IP
+    if website:
+        return templates.TemplateResponse(request, "contacto.html", _contact_ctx(sent=True, email=ctx["email"]))
+    try:
+        if now - float(ts or 0) < 3:
+            return templates.TemplateResponse(request, "contacto.html", _contact_ctx(error="Espera un momento y vuelve a enviar.", **ctx))
+    except ValueError:
+        pass
+    hits = [t for t in _contact_rate.get(ip, []) if now - t < 3600]
+    if len(hits) >= 3:
+        return templates.TemplateResponse(request, "contacto.html", _contact_ctx(error="Ya recibimos varios mensajes desde tu conexión. Inténtalo más tarde o escribe a contacto@dondever.app.", **ctx))
+    if not ctx["nombre"] or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", ctx["email"]) or len(ctx["mensaje"]) < 10:
+        return templates.TemplateResponse(request, "contacto.html", _contact_ctx(error="Revisa nombre, email y mensaje (mínimo 10 caracteres).", **ctx))
+    _contact_rate[ip] = hits + [now]
+
+    rec = {"ts": datetime.now(TZ_MX).isoformat(timespec="seconds"), "ip": ip, "ua": request.headers.get("user-agent", "")[:160], **ctx}
+    try:
+        data = []
+        if os.path.exists(_CONTACT_FILE):
+            with open(_CONTACT_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        data.append(rec)
+        with open(_CONTACT_FILE, "w", encoding="utf-8") as f:
+            json.dump(data[-500:], f, ensure_ascii=False, indent=1)
+    except Exception as e:
+        logger.warning(f"contact save failed: {e}")
+    try:
+        from send_email_daily import send_email
+        import html as _html
+        to = os.getenv("CONTACT_EMAIL", "ealejandro.robledo@gmail.com")
+        labels = {"publicidad": "📣 Publicidad", "idea": "💡 Idea", "opinion": "💬 Opinión", "correccion": "🛠️ Corrección",
+                  "widget": "🔗 Widget/colaboración", "otro": "Otro"}
+        body = (f"<p><b>{labels.get(motivo, motivo)}</b> — {_html.escape(ctx['nombre'])} &lt;{_html.escape(ctx['email'])}&gt;</p>"
+                f"<p style='white-space:pre-wrap'>{_html.escape(ctx['mensaje'])}</p><hr><p style='color:#888;font-size:12px'>{rec['ts']} · {ip}</p>")
+        r = send_email(to, f"[DondeVer contacto] {labels.get(motivo, motivo)}: {ctx['nombre']}", body)
+        if not r.get("ok"):
+            logger.warning(f"contact email not sent: {r}")
+    except Exception as e:
+        logger.warning(f"contact email failed: {e}")
+    return templates.TemplateResponse(request, "contacto.html", _contact_ctx(sent=True, email=ctx["email"]))
+
+
+@app.get("/api/internal/contact-messages")
+async def contact_messages(token: str = ""):
+    if not token or token != os.getenv("ADMIN_TOKEN", ""):
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    try:
+        with open(_CONTACT_FILE, "r", encoding="utf-8") as f:
+            return {"ok": True, "messages": list(reversed(json.load(f)))[:100]}
+    except Exception:
+        return {"ok": True, "messages": []}
 
 @app.get("/privacidad", response_class=HTMLResponse)
 async def privacy_page(request: Request):

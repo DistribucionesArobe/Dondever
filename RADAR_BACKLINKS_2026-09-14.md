@@ -1,231 +1,273 @@
 # Radar de backlinks — DondeVer.app
-**Semana del 15 al 21 de septiembre de 2026** · generado el lunes 14 de septiembre
 
----
-
-## ⚠️ Antes de mandar nada: dos cosas que revisar
-
-**1. Hay datos inconsistentes en las páginas de Liga MX de DondeVer.** Hoy, `dondever.app/liga/liga-mx` muestra una tabla de posiciones con 1–2 partidos jugados (Cruz Azul líder con 6 pts) y un bloque "Próximos partidos" con **Atlante vs América, Tijuana vs León y Guadalajara vs FC Juárez** — que no son los partidos de la Jornada 9. En cambio, `dondever.app/equipo/america` sí muestra la tabla correcta (Chivas 17, Toluca 16, América 16, 7–8 JJ). Las dos páginas se contradicen entre sí.
-
-Esto es un bloqueador: si mandas a alguien a la página de liga esta semana y ve un calendario equivocado, quemas el contacto. **Recomendación: arregla la página de liga antes de ejecutar las oportunidades 3 y 8** (las de Liga MX). Las de NFL, MotoGP y boxeo no dependen de ese dato.
-
-**2. Reddit quedó fuera de este radar.** Las herramientas de búsqueda de esta sesión no pueden acceder a reddit.com (bloqueado a nivel de crawler y de navegador). La categoría 1 del radar —hilos recientes sin buena respuesta— no se pudo cubrir esta semana. Si quieres esa parte, hay que hacerla a mano o con otra herramienta. Lo que sigue son oportunidades reales de las categorías 2, 3 y 4.
-
----
+**Semana del lunes 14 al domingo 20 de septiembre de 2026**
 
 ## Eventos ancla de la semana
 
-| Evento | Cuándo (hora centro MX) | Canal | Verificado |
-|---|---|---|---|
-| **Clásico Nacional: América vs Chivas** (J9) | sáb 19 sep · 9:00 PM · Estadio Banorte | TUDN, ViX | Prensa ✓ / DondeVer ✗ (ver arriba) |
-| **Monterrey vs Cruz Azul** (J9) | sáb 19 sep · 7:00 PM · Estadio BBVA | TUDN, ViX | Prensa ✓ / DondeVer ✗ |
-| **NFL Semana 2** | jue 17 (6:20 PM) · dom 20 (11:00 AM en adelante) · lun 21 (6:15 PM) | ESPN/Disney+, FOX, Prime Video, Canal 5/ViX, NFL Game Pass (DAZN) | Horarios ✓ · canal por partido ✗ |
-| **Boxeo: Isaac "Pitbull" Cruz vs Néstor Bravo** | sáb 19 sep · función desde ~6 PM, estelar ~9 PM | DAZN | ✓ |
-| **MotoGP — GP de Austria** | carrera dom 20 sep · **6:00 AM** · sprint sáb 19 · 7:00 AM | ESPN MX, Disney+ | ✓ (comprobado contra hora España 14:00 CEST) |
+| Evento | Cuándo (hora CDMX) | Dónde (según DondeVer) |
+|---|---|---|
+| **Clásico Nacional: América vs Chivas** (J9 Liga MX) | Sáb 19 sep, 9:00–9:15 PM ⚠️ | TUDN y ViX (Canal 5 según algunos medios) — *DondeVer todavía marca "canales por confirmar"* |
+| **Monterrey vs Cruz Azul** (J9 Liga MX) | Sáb 19 sep, 7:00 PM | TUDN, ViX |
+| **UFC 331: Van vs. Pantoja 2** | Sáb 19 sep, 7:00 PM | Paramount+, Fox Sports MX |
+| **Isaac "Pitbull" Cruz vs Néstor Bravo** (boxeo) | Sáb 19 sep, 9:00 PM | DAZN |
+| **GP de Austria de MotoGP** | Dom 20 sep, 6:00 AM | ESPN MX, Disney+ |
+| **NFL Semana 2** | Jue 17 – Lun 21 sep | ESPN/ESPN MX, Fox, Azteca 7, Disney+ |
 
-> Nota: DondeVer lista el UFC 331 del sáb 19 como "Van vs. Pantoja 2" (Paramount+ / Fox Sports MX). La prensa que encontré le pone otro estelar a esa función. **No uses el nombre del combate en ningún texto hasta confirmarlo**; el resto de los eventos sí están verificados.
+> ⚠️ **Pendiente interno antes de usar cualquiera de estos textos:** DondeVer marca el Clásico Nacional a las **9:15 PM** y con **"canales por confirmar"**, mientras que la prensa (Tus Buenas Noticias, América Y Ya, Récord) lo pone a las **9:00 PM por TUDN y ViX**. Es el partido más buscado de la semana. Vale la pena corregir/confirmar la ficha antes de mandar tráfico a `dondever.app/equipo/america` o citarla en un hilo. Si la ficha dice "por confirmar", la respuesta en un hilo pierde toda la fuerza.
 
 ---
 
 ## Tabla resumen
 
-| # | Sitio | Tipo | Acción | Prioridad |
+| # | Sitio / hilo | Tipo | Acción | Prioridad |
 |---|---|---|---|---|
-| 1 | primeroydiez.com | Blog NFL en español (MX) | Correo al autor — ofrecer widget de canal | **Alta** |
-| 2 | ikalmarket.com.mx/blog | Blog con sección "Fuentes y recursos" | Correo al autor — pedir inclusión como recurso | **Alta** |
-| 3 | tusbuenasnoticias.com | Medio regional (Sinaloa) | Correo a redacción — ofrecer widget Liga MX | **Alta** |
-| 4 | revistatumoto.com | Revista de moto (ES) con guía MotoGP | Correo — aportar horas LATAM/MX que les faltan | Media |
-| 5 | playersoflife.com (Monterrey) | Revista regional NL | Correo — ofrecer widget de Rayados | Media |
-| 6 | filmora.wondershare.es | Listicle "mejores apps/páginas" | Pedir inclusión | Baja |
-| 7 | internetpasoapaso.com | Listicle "+10 apps deportes" | Pedir inclusión | Baja |
-| 8 | rayados-de-monterrey.com.mx | Fan site con /partidos vacío | Ofrecer widget (con reservas) | Baja |
+| 1 | americayya.net | Blog de afición (América) | Correo: ofrecer widget + señalar hora | **Alta** |
+| 2 | primeroydiez.com | Sitio NFL en español | Correo: ofrecer widget NFL | **Alta** |
+| 3 | mexicogp.mx | Sitio F1/motor MX independiente | Correo: ofrecer widget F1/MotoGP | **Alta** |
+| 4 | boxeoplus.com | Blog de boxeo | Correo: aportar el dato de transmisión | Media |
+| 5 | goluchitas.com | Blog MMA en español | Correo: aportar canales MX/LATAM de UFC 331 | Media |
+| 6 | futbolmx.vercel.app | Proyecto indie Liga MX | Correo: ofrecer widget | Media |
+| 7 | soyreferee.com | Medio MX pequeño | Correo: fuente de horarios/canales | Media |
+| 8 | tusbuenasnoticias.com | Medio regional (Sonora) | Correo: fuente citable de canales | Media |
+| 9 | reddit.com/r/AskArgentina — "donde ver futbol, rugby y f1" | Hilo | Responder (verificar antes) | Media |
+| 10 | reddit.com/r/fulbo — "donde ver el partido" | Hilo | Responder (verificar antes) | Media |
+| 11 | eleconomista.com.mx — guía "Dónde ver tus deportes favoritos" | Directorio / guía | Correo: pedir inclusión | Baja |
+| 12 | mma.es | Medio MMA (España) | Correo: aportar datos LATAM | Baja |
 
 ---
 
 ## Detalle por oportunidad
 
-### 1. Primero y Diez — calendario NFL sin canales · **Alta**
+### 1. América Y Ya — blog de afición americanista · **Alta**
 
-**URL:** https://www.primeroydiez.com/2026/09/14/calendario-de-la-semana-2-temporada-nfl-2026-fechas-horarios-y-donde-ver-los-partidos/
+**URL:** https://americayya.net/2026/09/america-vs-chivas-cuando-y-por-donde-ver-el-partido-en-vivo
+**Por qué vale la pena:** escriben a mano una nota "¿Cuándo y por dónde ver?" por cada jornada (hay una de la J4, otra del América vs Santos, etc.) — exactamente el trabajo que el widget les ahorraría, y son afición real, no granja de contenido.
+**Acción recomendada:** correo al autor ofreciendo el widget de Club América. Nota: ellos ponen 09:00 PM y listan "Layvtime" entre las opciones (no es un canal oficial — no lo menciones ni lo valides en tu correo).
 
-**Por qué vale la pena:** el título promete "dónde ver los partidos", pero la tabla solo trae fecha, hora, equipos, estadio y línea de apuestas — **no hay columna de canal**. Es exactamente el hueco que llena el widget, y lo publican cada semana durante 18 semanas.
-
-**Acción:** correo al autor (Luis Núñez Ibarra, publica su correo al pie del artículo) o al editor. Es un sitio de NFL en español, monetizado con AdSense y afiliados de DAZN — no compite contigo.
-
-> **Asunto:** El canal de cada juego para tu tabla de la Semana 2
+> **Asunto:** El widget de próximos partidos del América, gratis para tu blog
 >
-> Hola Luis,
+> Hola, soy Alejandro, de Monterrey. Hice DondeVer.app, una página donde junto horarios y canales de los partidos en hora de México.
 >
-> Soy Alejandro, hice DondeVer.app desde Monterrey — es una guía de en qué canal y a qué hora se ve cada partido en México.
+> Vi que cada jornada publican la nota de "cuándo y por dónde ver" del América. Tengo un widget gratis que muestra los próximos partidos del equipo con hora de CDMX y el canal confirmado, y se actualiza solo: https://dondever.app/widget — eliges "Club América", copias una línea de HTML y ya. No hay cuenta ni costo; el código trae un enlace a DondeVer y eso es todo lo que pido.
 >
-> Vi tu calendario de la Semana 2 de hoy. Trae hora del centro y línea, pero no el canal de cada juego, que es lo que más pregunta la gente cuando llega ahí desde Google.
+> Si les sirve lo dejan, y si no, sin problema.
 >
-> Tengo un widget gratis que pones con una línea de HTML y se actualiza solo con el canal confirmado de cada juego de la NFL: https://dondever.app/widget
->
-> No cuesta nada ni pido nada a cambio más que el enlace que ya viene en el código. Si prefieres, te paso la lista de canales por correo cada jueves y tú la metes a mano.
->
-> Saludos,
-> Alejandro — DondeVer.app
+> Alejandro — dondever.app
 
 ---
 
-### 2. Ikal Market — artículo con sección de fuentes · **Alta**
+### 2. Primero y Diez — NFL en español · **Alta**
 
-**URL:** https://www.ikalmarket.com.mx/blog/posts/dnde-ver-ftbol-en-vivo-gratis-y-legal-en-mxico-b29d70912345/
+**URL:** https://www.primeroydiez.com/2026/09/14/calendario-de-la-semana-2-temporada-nfl-2026-fechas-horarios-y-donde-ver-los-partidos
+**Por qué vale la pena:** publican el calendario semanal completo de la NFL con horarios y canales; es un sitio independiente de aficionados que repite ese trabajo cada semana durante 18 semanas.
+**Acción recomendada:** correo ofreciendo el widget de liga (NFL) o de equipo, más el enlace a la guía como fuente.
 
-**Por qué vale la pena:** es el mejor encaje del radar. El artículo tiene un apartado literal **"Cómo saber quién transmite un partido en México"** y otro de **"Fuentes y recursos consultados"** donde ya enlazan a ViX, Tubi, FIFA+, Concacaf y Profeco. Además es explícitamente anti-piratería, que es la misma postura de DondeVer.
-
-**Acción:** correo al autor, Jaime Olvera (su LinkedIn está en el pie del artículo). Pedir que agreguen DondeVer en "Fuentes y recursos consultados" o dentro del paso a paso de "cómo saber quién transmite".
-
-> **Asunto:** Un recurso para tu artículo de fútbol gratis y legal
+> **Asunto:** Widget gratis de horarios NFL (hora de México) para Primero y Diez
 >
-> Hola Jaime,
+> Hola, soy Alejandro, creador de DondeVer.app. Vivo en Monterrey y llevo la página donde publico horarios y canales de deportes en hora de México.
 >
-> Soy Alejandro, de Monterrey. Leí tu artículo de dónde ver fútbol gratis y legal en México — es de los pocos que explican bien el tema sin mandar a la gente a sitios raros.
+> Vi su calendario de la Semana 2. Armé un widget gratuito que muestra los partidos de la NFL del día con hora del centro y el canal, y se actualiza solo: https://dondever.app/widget — se elige "NFL" en liga, se copia el HTML y funciona en WordPress o Blogger. Sin cuenta ni costo; solo va incluido un enlace a DondeVer en el código.
 >
-> Hice DondeVer.app: muestra partido por partido el canal y la hora del centro, con TV abierta, cable y streaming, y sin enlaces de transmisión pirata. Es justo el paso que describes en "cómo saber quién transmite un partido en México", pero ya resuelto.
+> Si les ahorra trabajo cada semana, adelante. Cualquier duda me escriben.
 >
-> ¿Lo considerarías para tu sección de fuentes y recursos? Si te sirve, también hay un widget gratis para incrustar los partidos del día.
->
-> Gracias por el artículo, de verdad.
->
-> Alejandro — DondeVer.app
+> Alejandro — dondever.app
 
 ---
 
-### 3. Tus Buenas Noticias — "dónde ver" semanal de Liga MX · **Alta**
+### 3. MexicoGP — F1 y motor en México · **Alta**
+
+**URL:** https://www.mexicogp.mx/noticia/formula-1-cuando-y-donde-ver-el-arranque-de-la-temporada-2026
+**Por qué vale la pena:** sitio mexicano dedicado al automovilismo que ya hace notas de "cuándo y dónde ver", y esta semana hay GP de Austria de MotoGP (dom 20, 6 AM MX, ESPN MX y Disney+), un dato que casi ningún medio mexicano publica.
+**Acción recomendada:** correo con el dato de MotoGP como gancho + widget de F1/MotoGP.
+
+> **Asunto:** Horario en México del GP de Austria de MotoGP (y un widget)
+>
+> Hola, soy Alejandro, de Monterrey, creador de DondeVer.app.
+>
+> Por si les sirve para la agenda del fin: el GP de Austria de MotoGP va el domingo 20 a las 6:00 AM hora del centro, por ESPN MX y Disney+. Casi nadie publica el horario mexicano de MotoGP y es algo que la gente busca.
+>
+> También tengo un widget gratis con los próximos eventos de F1 o MotoGP en hora de México: https://dondever.app/widget. Se copia y pega, se actualiza solo, sin cuenta ni costo; solo lleva un enlace a DondeVer en el código.
+>
+> Alejandro — dondever.app
+
+---
+
+### 4. Boxeo Plus · Media
+
+**URL:** https://boxeoplus.com/2026/08/30/pitbull-cruz-y-nestor-bravo-listos-para-el-19-de-septiembre
+**Por qué vale la pena:** cubren la pelea desde agosto pero la nota es previa y no trae dónde verla; el dato de transmisión (DAZN, 9:00 PM hora de México) es justo lo que va a buscar el lector esta semana.
+**Acción recomendada:** correo aportando el dato y ofreciendo la ficha como fuente enlazable.
+
+> **Asunto:** Dato de transmisión de Pitbull Cruz vs Bravo, por si actualizan la nota
+>
+> Hola, soy Alejandro, de Monterrey. Llevo DondeVer.app, donde publico horarios y canales de deportes en hora de México.
+>
+> Vi su nota de la pelea del 19. Por si la actualizan: Isaac "Pitbull" Cruz vs Néstor Bravo va ese sábado a las 9:00 PM hora del centro, por DAZN. La ficha con los datos está en https://dondever.app/evento/pitbull-cruz-vs-nestor-bravo-2026-09-19, por si quieren citarla.
+>
+> También tengo un widget gratis de próximos eventos de boxeo, por si les acomoda: https://dondever.app/widget.
+>
+> Alejandro — dondever.app
+
+---
+
+### 5. Go Luchitas — MMA en español · Media
+
+**URL:** https://goluchitas.com/ufc-331/ufc-331-van-vs-pantoja-2-cartelera-horarios-en-vivo
+**Por qué vale la pena:** tienen la cartelera de UFC 331 con "cómo ver en vivo", pero desde una óptica general en español; el detalle mexicano (Fox Sports MX además de Paramount+) no suele aparecer.
+**Acción recomendada:** correo con el dato de México y el enlace a la ficha del evento.
+
+> **Asunto:** UFC 331 en México: Fox Sports MX además de Paramount+
+>
+> Hola, soy Alejandro, de Monterrey, creador de DondeVer.app.
+>
+> Vi su nota de UFC 331. Por si suman el dato de México: la cartelera principal va el sábado 19 a las 7:00 PM hora del centro, por Paramount+ y también por Fox Sports MX. La ficha está en https://dondever.app/evento/ufc-331-van-vs-pantoja-2-2026-09-19 si quieren citarla.
+>
+> Si les acomoda tener esto automático, hay un widget gratis de próximos eventos de UFC: https://dondever.app/widget.
+>
+> Alejandro — dondever.app
+
+---
+
+### 6. FutbolMX (proyecto indie) · Media
+
+**URL:** https://futbolmx.vercel.app/jornada-9-liga-mx-2026.html
+**Por qué vale la pena:** es un proyecto personal que publica jornada por jornada con horarios; alguien que construye algo así suele estar abierto a un embed que le resuelva los datos.
+**Acción recomendada:** correo ofreciendo el widget de liga (Liga MX).
+
+> **Asunto:** Widget de Liga MX con canal y hora, por si te sirve
+>
+> Hola, soy Alejandro, de Monterrey. Hice DondeVer.app, donde publico horarios y canales de partidos en hora de México.
+>
+> Vi tu página de la Jornada 9. Por si te ahorra mantenimiento: tengo un widget gratis que muestra los partidos de Liga MX del día con hora del centro y canal, y se actualiza solo. Se copia una línea de HTML: https://dondever.app/widget.
+>
+> Sin cuenta ni costo; el código incluye un enlace a DondeVer y con eso basta. Si no te acomoda, nada perdido.
+>
+> Alejandro — dondever.app
+
+---
+
+### 7. Soy Referee · Media
+
+**URL:** https://soyreferee.com/futbolmx/2026/09/12/horario-y-donde-ver-en-vivo-el-clasico-regio-monterrey-vs-tigres-59112.html
+**Por qué vale la pena:** medio mexicano chico que publica "horario y dónde ver" partido por partido; candidato a citar DondeVer como fuente de canales cuando el dato no está confirmado por la liga.
+**Acción recomendada:** correo presentándote como fuente + widget.
+
+> **Asunto:** Fuente de horarios y canales en hora de México
+>
+> Hola, soy Alejandro, de Monterrey. Llevo DondeVer.app, una página donde junto horario y canal de cada partido (Liga MX, NFL, MLB, UFC, F1, boxeo) en hora del centro.
+>
+> Veo que publican seguido notas de "horario y dónde ver". Si en alguna les sirve verificar o citar un canal, la página está abierta y se actualiza sola: https://dondever.app.
+>
+> También hay un widget gratis por equipo o por liga, por si quieren dejarlo fijo en las notas: https://dondever.app/widget.
+>
+> Alejandro — dondever.app
+
+---
+
+### 8. Tus Buenas Noticias · Media
 
 **URL:** https://www.tusbuenasnoticias.com/noticias/deportes/2026/09/14/64408-liga-mx-apertura-2026-cuando-y-donde-ver-la-jornada-9
+**Por qué vale la pena:** medio regional que publicó hoy la J9 completa con canales; escriben esta nota cada jornada y son el tipo de redacción chica que sí contesta correos.
+**Acción recomendada:** correo al autor (Juan Méndez) ofreciéndote como fuente.
 
-**Por qué vale la pena:** medio regional de Sinaloa que publica un "dónde ver" de Liga MX **cada jornada** (tienen tag propio: `/tags/donde-ver`). Escriben a mano los 9 partidos con canal y hora cada semana — el widget les ahorra ese trabajo.
-
-**Acción:** correo a redacción o al autor (Juan Méndez). ⚠️ **Espera a arreglar la página de liga de DondeVer** antes de mandarlo.
-
-> **Asunto:** Widget gratis para su "dónde ver" de cada jornada
+> **Asunto:** Fuente de canales por jornada, para la nota de "dónde ver"
 >
-> Hola,
+> Hola Juan, soy Alejandro, de Monterrey. Hice DondeVer.app, donde publico el horario y el canal de cada partido en hora del centro de México.
 >
-> Soy Alejandro, creador de DondeVer.app, desde Monterrey. Veo que arman el "cuándo y dónde ver" de cada jornada de Liga MX a mano — el de la Jornada 9 salió hoy.
+> Vi su nota de la Jornada 9. Si en alguna les ayuda verificar el canal de un juego, o citar una fuente para el lector que quiere el dato del día del partido, la página está aquí: https://dondever.app/liga/liga-mx. Se actualiza sola y no vendemos nada.
 >
-> Tengo un widget gratis que muestra los partidos de la jornada con canal y hora del centro, y se actualiza solo cuando hay cambio de última hora. Se pega con una línea de HTML: https://dondever.app/widget
+> Si les acomoda, también hay un widget gratis para dejar fijo en la sección de deportes: https://dondever.app/widget.
 >
-> No hay costo ni registro. Lo único que pido es el enlace que ya viene incluido en el código.
->
-> Si les sirve, con gusto se los dejo configurado para Liga MX.
->
-> Alejandro — DondeVer.app
+> Alejandro — dondever.app
 
 ---
 
-### 4. Revista Tu Moto — guía MotoGP sin horas para LATAM · **Media**
+### 9. Reddit — r/AskArgentina, "dónde ver fútbol, rugby y F1" · Media
 
-**URL:** https://revistatumoto.com/donde-ver-motogp-en-2026/
+**URL:** https://www.reddit.com/r/AskArgentina/comments/1w7ffqk/donde_ver_futbol_rugby_y_f1/
+**Por qué vale la pena:** pregunta abierta de alguien que quiere seguir varios deportes y no sabe qué contratar; DondeVer tiene vista por país para Argentina.
+**⚠️ Sin verificar:** no pude abrir Reddit desde aquí (bloqueado para el asistente). **Antes de responder, confirma la fecha del hilo (que tenga menos de 30 días) y que no haya ya una buena respuesta.** Ajusta los canales a lo que muestre la ficha del partido ese día.
+**Acción recomendada:** responder el hilo.
 
-**Por qué vale la pena:** su apartado "¿Dónde ver MotoGP en 2026 en Estados Unidos y Latinoamérica?" es solo una lista de canales sin una sola hora local — y esta semana corre el GP de Austria. Publican una previa de horarios por GP, pero siempre en hora peninsular.
-
-**Acción:** correo al editor. Es un medio español, así que el encaje es parcial: lo que aportas es el dato que a ellos les falta, no una colaboración profunda. Prioridad media por eso.
-
-> **Asunto:** La hora LATAM que falta en tu guía de MotoGP
+> Depende del deporte, pero en Argentina la mayoría se reparte así: el fútbol local va entre ESPN y TNT Sports, y las dos señales están dentro de Disney+ (plan con deportes), así que con eso cubrís casi toda la liga. La F1 la tenés por Fox Sports, y el rugby depende del torneo — el Súper Rugby y los test matches suelen ir por ESPN.
 >
-> Hola,
->
-> Soy Alejandro, llevo DondeVer.app desde México. Vi vuestra guía de dónde ver MotoGP 2026: el apartado de Latinoamérica lista los canales pero no las horas locales, y es lo primero que busca alguien desde México o Argentina.
->
-> Para el GP de Austria de este fin de semana: la carrera es el domingo 20 a las 6:00 de la mañana en hora del centro de México (14:00 en España), la sprint el sábado a las 7:00 MX. Por ESPN y Disney+ en LATAM.
->
-> Tenemos la tabla por país aquí, por si os sirve citarla: https://dondever.app/evento/motogp-gp-de-austria-2026
->
-> Alejandro — DondeVer.app
+> Lo que a mí me sirve es chequear partido por partido, porque la señal cambia según la fecha. Yo uso esta página que te muestra qué canal te toca según el país: https://dondever.app/donde-ver-en-argentina
 
 ---
 
-### 5. Players of Life Monterrey — calendario de Rayados sin canales · **Media**
+### 10. Reddit — r/fulbo, "dónde ver el partido" · Media
 
-**URL:** https://playersoflife.com/monterrey/calendario-de-rayados-de-monterrey-para-el-apertura-2026-de-liga-mx-todos-los-partidos/
+**URL:** https://www.reddit.com/r/fulbo/comments/1wfahkw/donde_ver_el_partido/
+**Por qué vale la pena:** hilo reciente y directamente sobre el tema; si sigue sin respuesta útil, una contestación concreta se queda arriba.
+**⚠️ Sin verificar:** no pude abrir Reddit desde aquí. **Abre el hilo, mira de qué partido habla y arma la respuesta con la ficha correspondiente.** Plantilla:
 
-**Por qué vale la pena:** revista regional de Nuevo León con calendario completo de Rayados por torneo; encaja con que eres de Monterrey, lo que hace el correo más creíble. Este sábado juegan Monterrey vs Cruz Azul.
-
-⚠️ **Por verificar:** no alcancé a abrir la página para confirmar si su calendario ya trae canal. Revísalo antes de mandar el correo y ajusta la primera línea.
-
-> **Asunto:** Widget de Rayados con canal y hora, gratis
+> [Partido] va el [día] a las [hora] (hora de México / hora local) por [canal]. Si tenés [plataforma], ahí lo tenés incluido.
 >
-> Hola,
->
-> Soy Alejandro, regio, y llevo DondeVer.app — una guía de en qué canal y a qué hora se ve cada partido.
->
-> Vi su calendario de Rayados del Apertura 2026. Tengo un widget gratis que muestra los próximos partidos del equipo con el canal confirmado y la hora del centro, y se actualiza solo. Se pega con una línea de HTML y no necesita cuenta: https://dondever.app/widget
->
-> Este sábado, por ejemplo, es Monterrey vs Cruz Azul a las 7 de la noche en el BBVA.
->
-> Si lo quieren, se los dejo armado para Rayados en cinco minutos.
->
-> Alejandro — DondeVer.app
+> Por si te sirve para los que vienen, esta página te arma el listado del día con el canal según tu país: https://dondever.app
 
 ---
 
-### 6 y 7. Listicles de "mejores apps para ver deportes" · **Baja**
+### 11. El Economista — guía "¿Dónde ver tus deportes favoritos en México?" · Baja
 
-**URLs:**
-- https://filmora.wondershare.es/video-editor/mejores-apps-para-transmision-en-vivo-de-deportes-y-futbol.html
-- https://internetpasoapaso.com/mejores-aplicaciones-para-ver-deportes/
+**URL:** https://www.eleconomista.com.mx/deportes/ver-tus-deportes-favoritos-mexico-guia-canales-plataformas-futbol-nfl-nba-f1-20260829-830600.html
+**Por qué vale la pena:** es exactamente el tipo de guía-directorio donde DondeVer encaja como recurso gratuito, y sigue posicionando; es un medio grande, así que es tiro largo.
+**Acción recomendada:** correo al autor pidiendo inclusión como recurso.
 
-**Por qué vale la pena:** son listas de "dónde ver deportes" donde DondeVer no aparece, y posicionan bien para esas búsquedas. **Pero** son blogs corporativos de software (uno es de Wondershare), rara vez responden a correos en frío y sus listas mezclan apps de streaming con guías. Tasa de éxito baja; mándalos solo si te sobra tiempo.
-
-**Acción:** formulario de contacto, mensaje corto pidiendo inclusión.
-
-> **Asunto:** Propuesta para tu lista de apps para ver deportes
+> **Asunto:** Un recurso gratuito para la guía de "dónde ver deportes en México"
 >
-> Hola,
+> Hola, soy Alejandro, de Monterrey. Leí la guía de canales y plataformas del 29 de agosto.
 >
-> Soy Alejandro, creador de DondeVer.app. Tu lista cubre las plataformas que transmiten, pero no hay ninguna herramienta que diga en qué canal está un partido concreto — que es el problema real de mucha gente en México.
+> Hice DondeVer.app, una página gratuita que muestra, partido por partido, el horario en hora del centro y el canal o plataforma donde se transmite — Liga MX, NFL, NBA, MLB, F1, UFC y boxeo. No vendemos nada ni pedimos registro.
 >
-> DondeVer.app es gratis, web (no hay que instalar nada) y muestra por partido el canal y la hora del centro, en México, USA y LATAM. Sin enlaces de transmisión, solo la guía.
+> Por si encaja como recurso para el lector que quiere el dato del día concreto y no solo el panorama de plataformas: https://dondever.app.
 >
-> ¿Lo considerarías para una próxima actualización del artículo?
->
-> Alejandro — DondeVer.app
+> Alejandro — dondever.app
 
 ---
 
-### 8. rayados-de-monterrey.com.mx — página "Partidos" sin partidos · **Baja**
+### 12. MMA.es — cartelera UFC 331 · Baja
 
-**URL:** https://rayados-de-monterrey.com.mx/partidos/
+**URL:** https://www.mma.es/2026/09/13/ufc-331-cartelera-horarios-y-donde-ver
+**Por qué vale la pena:** nota fresca (13 sep) con horarios, pero orientada a España; les falta el bloque de México y LATAM y reciben tráfico latino.
+**Acción recomendada:** correo aportando el horario y canal mexicanos. Prioridad baja porque el enlace tendría poco peso local.
 
-**Por qué vale la pena:** la página se llama "Calendario de Partidos" y **no tiene ni un solo partido** — es puro texto de relleno. El widget la arreglaría de un jalón.
-
-⚠️ **Reserva importante:** el sitio mete enlaces de afiliado de una casa de apuestas dentro del texto editorial y no tiene autor identificable. Huele a sitio hecho para SEO/afiliados, no a peña real. Un enlace de ahí vale poco y puede no ser el tipo de vecindario que quieres. **Mi recomendación es saltarla**; la incluyo solo porque el hueco es tan evidente que quizá quieras juzgarlo tú.
+> **Asunto:** Horario y canal de UFC 331 en México, por si suman el bloque LATAM
+>
+> Hola, soy Alejandro, de Monterrey. Llevo DondeVer.app, donde publico horarios y canales de deportes para México y Latinoamérica.
+>
+> Vi su nota de UFC 331. Por si añaden el bloque latino: la cartelera principal va el sábado 19 a las 7:00 PM hora del centro de México, por Paramount+ y Fox Sports MX. Los datos por país están en https://dondever.app/evento/ufc-331-van-vs-pantoja-2-2026-09-19, por si quieren citarlos.
+>
+> Alejandro — dondever.app
 
 ---
 
 ## Menciones sin enlace
 
-**Ninguna esta semana.** Busqué "dondever.app", "DondeVer" + deportes y variantes de marca. Los únicos resultados son páginas del propio sitio (home, `/guia/mejores-apps-ver-futbol-en-vivo`, `/equipos`). No aparece ni una mención de terceros, con enlace o sin él.
+**Ninguna esta semana.** La búsqueda de `"dondever.app"` y `"DondeVer"` fuera del dominio propio solo devuelve tu propia cuenta de Instagram (@dondeverapp, publicaciones del 30 jul, 6 y 8 ago). No encontré terceros nombrando la marca sin enlazar.
 
-Lectura práctica: la marca todavía no tiene huella fuera del dominio. Eso hace que las oportunidades 1, 2 y 3 valgan más de lo normal — serían las primeras menciones externas.
+*Idea suelta, no es una oportunidad de enlace:* las publicaciones de Instagram con los juegos del día son el formato que otros sitios copian; agregar "dondever.app" como texto en la imagen haría rastreable esa copia en semanas futuras.
 
 ---
 
 ## Descartadas
 
-| Sitio / resultado | Razón |
-|---|---|
-| goal.com (docenas de notas "dónde ver") | Medio grande, no cita fuentes externas |
-| mediotiempo.com, ESPN, El Financiero, Excélsior, Milenio, Sopitas | Medios grandes, mismo caso |
-| legalbet.mx — "Páginas para ver fútbol gratis" | Sitio de apuestas |
-| bet-mexico.com.mx (enlazado desde el fan site de Rayados) | Casa de apuestas |
-| depor.com, elcomercio.pe, gestion.pe | Peruanos, con notas "dónde ver" de F1 en México, pero son granjas de contenido con títulos duplicados |
-| es.motorsport.com, motosan.es, motorbikemag.es | España, solo hora peninsular, sin ángulo LATAM |
-| futbolenvivomexico.com | Competidor directo, mismo modelo |
-| nflentele.com | Competidor directo en el nicho de NFL México |
-| Pirlo TV, Roja Directa, Fútbol Libre y similares | Piratería |
-| Hilos de Reddit | No accesibles desde esta sesión (ver nota al inicio) |
+- **r/PiratasEspanolLatino — "NFL en LATAM"** — subreddit de piratería.
+- **r/MAGISTV — "donde ver partidos de la liga"** — comunidad de IPTV pirata.
+- **r/NFSUnboundGame (varios hilos de "livestreams")** — spam de enlaces piratas disfrazado con caracteres Unicode.
+- **r/Monterrey — "buenos lugares para ver partidos de fútbol"** — preguntan por bares, no por canal; no encaja.
+- **r/futbol — "dónde me puedo ver los partidos"** — hilo de hace más de un mes.
+- **r/BocaJuniors — "donde ver el partido de hoy"** y **r/AskArgentina — "cómo ver fútbol gratis"** — el segundo atrae respuestas de piratería y responder ahí asocia la marca con eso; el primero es de un partido ya jugado.
+- **blog.betmaster.com.mx** — casa de apuestas.
+- **oneracingapp.com** — es competencia directa ("cómo ver MotoGP por país"), no un enlace a buscar.
+- **Marca, AS, Infobae, Récord, Fox Sports MX, Sporting News, DAZN, ESPN, Olympics.com** — medios grandes con equipo propio de SEO; no contestan este tipo de correos.
+- **MOTOSAN, Selectra, AS Motor** — España, sin audiencia mexicana.
+- **radarboricua.com** — Puerto Rico, cubre la cartelera del 19 pero sin ángulo de canales MX.
+- **lasemanadelsur.com** — republica contenido de Marca sin redacción propia; no hay a quién escribirle.
 
 ---
 
-## Resumen honesto
+## Notas de método (esta semana)
 
-De las 8 oportunidades, **tres son buenas de verdad** (Primero y Diez, Ikal Market, Tus Buenas Noticias): sitios activos, con un hueco concreto que el widget resuelve y con autor identificable al que se le puede escribir. Las otras cinco son de relleno moderado — mándalas solo si te sobra tiempo después de las tres primeras.
-
-La semana que entra el radar mejora si se puede incluir Reddit y foros, que es donde está el volumen de preguntas sin respuesta.
-
-**Fuentes consultadas:** [DondeVer.app](https://dondever.app/) · [DondeVer — GP de Austria](https://dondever.app/evento/motogp-gp-de-austria-2026) · [DondeVer — Widget](https://dondever.app/widget) · [Primero y Diez](https://www.primeroydiez.com/2026/09/14/calendario-de-la-semana-2-temporada-nfl-2026-fechas-horarios-y-donde-ver-los-partidos/) · [Tus Buenas Noticias](https://www.tusbuenasnoticias.com/noticias/deportes/2026/09/14/64408-liga-mx-apertura-2026-cuando-y-donde-ver-la-jornada-9) · [Ikal Market](https://www.ikalmarket.com.mx/blog/posts/dnde-ver-ftbol-en-vivo-gratis-y-legal-en-mxico-b29d70912345/) · [Revista Tu Moto](https://revistatumoto.com/donde-ver-motogp-en-2026/) · [Premier Boxing Champions](https://www.premierboxingchampions.com/isaac-cruz-vs-nestor-bravo) · [es.motorsport.com](https://es.motorsport.com/motogp/news/horarios-austria-red-bull-ring-motogp-2026-como-ver/10854510/)
+- **Reddit no se pudo abrir** desde este entorno (bloqueado tanto en búsqueda como en navegación). Los hilos de arriba salieron de resultados de buscador con filtro del último mes, con título y URL, pero **no pude leer el contenido, la fecha exacta ni si ya hay respuesta**. Los tres marcados como "sin verificar" requieren que los abras tú antes de contestar.
+- Las oportunidades de blogs y medios sí se verificaron abriendo la página.
+- Total: 12 oportunidades. La calidad real de la semana está en los puntos 1, 2 y 3 — son sitios que hacen a mano, cada semana, exactamente lo que el widget automatiza.
