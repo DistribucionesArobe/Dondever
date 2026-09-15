@@ -1771,6 +1771,27 @@
             {% if game.preview and game.preview.snippet %}
             <div class="gc-preview-snippet">{{ game.preview.snippet }}</div>
             {% endif %}
+            {% if game.status.state != 'post' %}
+            {% if game.odds %}
+            <div class="gc-bet-preview" onclick="event.stopPropagation();" style="padding:0.4rem 0.75rem;">
+                <div class="bet-odds-row" style="margin:0;">
+                    <div class="bet-odds-chips">
+                        <a href="/go/bet?s=must-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
+                        {% if game.odds.draw_odds %}<a href="/go/bet?s=must-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip draw">EMP <strong>{{ game.odds.draw_odds }}</strong></a>{% endif %}
+                        <a href="/go/bet?s=must-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
+                    </div>
+                    <div class="bet-cta-col">
+                        <a href="/go/bet?s=must-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main">Ver cuotas</a>
+                    </div>
+                </div>
+            </div>
+            {% elif game.sport not in ('racing',) %}
+            <div class="gc-bet-preview gc-bet-nobet" onclick="event.stopPropagation();">
+                <span class="gc-bet-nobet-txt">&#127922; Momios de {{ top_team.name[:14] }} vs {{ bottom_team.name[:14] }}</span>
+                <a href="/go/bet?s=must-nobet&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main" style="flex:0 0 auto;">Ver momios &#8599;</a>
+            </div>
+            {% endif %}
+            {% endif %}
             <div class="gc-accordion-body" style="display:none;">
                 <div class="gc-channels-full">
                     {% for b in game.broadcasts %}
