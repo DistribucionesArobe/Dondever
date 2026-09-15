@@ -1737,17 +1737,15 @@
         </div>
     </section>
 
-    {# ── 🥊🏎️ EVENTOS GRANDES PRÓXIMOS (UFC PPV, GP, boxeo) ── #}
-    {% if big_events %}
-    <section class="priority-section" id="secBigEvents" style="margin-bottom:0.9rem;">
-        {% for e in big_events %}
-        <a href="/evento/{{ e.slug }}" style="display:flex;justify-content:space-between;align-items:center;gap:0.6rem;background:linear-gradient(135deg,#1a1a2e,#312e81);color:#fff;border-radius:12px;padding:0.7rem 0.9rem;margin-bottom:0.4rem;text-decoration:none;">
-            <span style="min-width:0;"><span style="font-size:0.62rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;opacity:0.8;">{{ {'ufc': '🥊 UFC', 'f1': '🏎️ Fórmula 1', 'motogp': '🏍️ MotoGP', 'nascar': '🏁 NASCAR', 'indycar': '🏎️ IndyCar'}.get(e.kind, '🥊 Boxeo') }}</span><br><b style="font-size:0.92rem;">{{ e.name }}</b><br><span style="font-size:0.72rem;opacity:0.85;">{{ (e.channels.MX or [])|join(', ') }}</span></span>
-            <span style="text-align:right;white-space:nowrap;font-weight:800;color:#fbbf24;font-size:0.85rem;">{{ fmt_event_when(e.date) }}<br><span style="font-size:0.65rem;font-weight:600;opacity:0.85;">hora MX &middot; ver d&oacute;nde &rarr;</span></span>
-        </a>
-        {% endfor %}
-    </section>
-    {% endif %}
+    {# ── Anuncio (antes iba el strip de eventos grandes UFC/boxeo; esos siguen en /liga/ufc, /liga/boxeo y el buscador) ── #}
+    <div class="ad-after-favs" style="max-width:728px;margin:0.4rem auto 0.9rem;text-align:center;max-height:100px;overflow:hidden;">
+        <ins class="adsbygoogle"
+             style="display:block;max-height:90px;"
+             data-ad-client="ca-pub-2576227882415709"
+             data-ad-format="horizontal"
+             data-full-width-responsive="false"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
 
     {# ── 🔥 LOS IMPERDIBLES DE HOY ── #}
     {% if must_watch %}

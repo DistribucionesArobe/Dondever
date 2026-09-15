@@ -778,23 +778,9 @@ async def home(
     # Is this a non-today date page? (noindex for historical pages)
     is_historical = bool(date) and date != today.strftime("%Y%m%d")
 
-    # Próximos eventos grandes (UFC PPV / GP / boxeo) en los próximos 10 días → strip en portada
-    big_events = []
-    if not is_historical:
-        try:
-            from events_api import fetch_all_events
-            _cut = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
-            for e in await fetch_all_events(days_ahead=10):
-                if e["status"] == "post" or e.get("is_minor"):
-                    continue
-                if e["kind"] == "ufc" and "fight night" in e["name"].lower():
-                    continue  # solo PPV / Noche UFC en portada
-                if e["kind"] in ("nascar", "indycar") and not e.get("playoffs"):
-                    continue  # carreras semanales: solo en /liga/nascar
-                big_events.append(e)
-            big_events = big_events[:3]
-        except Exception as _e:
-            logger.warning(f"big_events failed: {_e}")
+    # El strip de eventos grandes (UFC PPV / GP / boxeo) se quitó de la portada para poner un anuncio;
+    # los eventos siguen en /liga/ufc, /liga/boxeo, /liga/f1 y el buscador. Se deja vacío para no costar llamadas.
+    big_events: list = []
 
     response = templates.TemplateResponse(
         request,
