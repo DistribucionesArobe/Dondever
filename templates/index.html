@@ -2048,16 +2048,6 @@
 
     {% if deduped_games %}{% set _ = league_idx.__setitem__(0, league_idx[0] + 1) %}
 
-    {# ── Interstitial promo: after 2nd league section ── #}
-    {% if league_idx[0] == 2 and not is_historical %}
-    <div class="promo-interstitial">
-        <div class="promo-inter-title">&#128176; Compara momios y apuesta con ventaja</div>
-        <div class="promo-inter-sub">Revisa las cuotas de cada partido y encuentra el mejor valor en casas autorizadas en M&eacute;xico</div>
-        <a href="/casinos" data-affiliate="bet" class="promo-inter-cta">Ver mejores casas &#8599;</a>
-        <div class="promo-inter-fine">+18 | Publicidad | Juega responsablemente</div>
-    </div>
-    {% endif %}
-
     {# ── Affiliate banner: after 4th league section (geo-targeted) ── #}
     {% if league_idx[0] == 4 and not is_historical %}
     {# MX: Jubilee #}
