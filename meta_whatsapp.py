@@ -151,7 +151,7 @@ INTERACTIVE_BODY_MAX = 1024
 
 
 def send_text_with_buttons(to: str, body: str, buttons: list[dict] | None = None,
-                           footer: str = "", follow_up: str = "¿Qué más quieres ver? 👇") -> dict:
+                           footer: str = "", follow_up: str = "¿Qué más quieres ver? Toca un botón 👇") -> dict:
     """Manda `body` como mensaje interactivo con botones si cabe (≤1024 chars);
     si no, manda el texto y después un mensaje corto con los botones."""
     buttons = buttons or DEFAULT_BUTTONS

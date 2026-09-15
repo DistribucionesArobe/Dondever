@@ -409,7 +409,7 @@ async def compose_daily_message() -> str | None:
     lines.append("📱 Todos los juegos y canales:")
     lines.append("dondever.app")
     lines.append("")
-    lines.append("_+18 · Apuesta responsable · Responde HOY para recibirlo mañana · Escribe SALIR para cancelar_")
+    lines.append("_+18 · Apuesta responsable · Toca un botón cada día para seguir recibiendo el resumen · SALIR para cancelar_")
 
     return "\n".join(lines)
 
@@ -674,7 +674,7 @@ async def send_daily_broadcast(test_number: str | None = None):
         if freeform_message and in_24h_window(phone):
             from meta_whatsapp import send_text_with_buttons
             result = send_text_with_buttons(phone, freeform_message,
-                                            follow_up="Toca un botón para ver más. Responder mantiene tu resumen diario activo 👇")
+                                            follow_up="Toca un botón para ver más 👇 (así sigues recibiendo el resumen cada día)")
             if result["ok"]:
                 sent += 1
                 sent_ok = True

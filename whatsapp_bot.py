@@ -433,7 +433,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             if remaining > 0:
                 lines.append(f"_...y {remaining} juegos mas en {APP_URL.replace('https://', '')}_")
             lines.append("")
-            lines.append("_+18 · Apuesta responsable · Responde HOY cada dia para seguir recibiendo el resumen_")
+            lines.append("_+18 · Apuesta responsable · Toca un boton cada dia para seguir recibiendo el resumen_")
 
             return "\n".join(lines)
 
