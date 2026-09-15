@@ -4814,6 +4814,7 @@ async def sitemap_core():
         urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.9", hreflang=True))
     urls.append(_sm_url(f'{APP_URL}/widget', _SM_STATIC_LASTMOD, "monthly", "0.5"))
     urls.append(_sm_url(f'{APP_URL}/contacto', _SM_STATIC_LASTMOD, "monthly", "0.4"))
+    urls.append(_sm_url(f'{APP_URL}/whatsapp', _SM_STATIC_LASTMOD, "monthly", "0.6"))
     for slug in ("nascar", "indycar"):  # motor en LEAGUES_INDIVIDUAL (no en portada) pero con página propia
         urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.8", hreflang=True))
 
@@ -4853,6 +4854,12 @@ def _contact_ctx(**kw) -> dict:
             "sent": False, "error": "", "motivo": "", "nombre": "", "email": "", "mensaje": ""}
     base.update(kw)
     return base
+
+
+@app.get("/whatsapp", response_class=HTMLResponse)
+async def whatsapp_guide(request: Request):
+    """Instrucciones del bot de WhatsApp: cómo empezar, botones, comandos, por qué hay que responder."""
+    return templates.TemplateResponse(request, "whatsapp_guide.html", {"year": datetime.now(TZ_MX).year})
 
 
 @app.get("/contacto", response_class=HTMLResponse)

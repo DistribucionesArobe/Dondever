@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot de WhatsApp de DondeVer: partidos de hoy, canales y picks gratis | Cómo funciona</title>
+    <meta name="description" content="Escribe HOY al WhatsApp de DondeVer y recibe al instante los partidos del día con canal y hora de México. Botones, picks diarios, alertas de tu equipo. Gratis.">
+    <link rel="canonical" href="{{ app_url }}/whatsapp">
+    <meta property="og:title" content="Bot de WhatsApp de DondeVer — partidos, canales y picks">
+    <meta property="og:description" content="Escribe HOY y te contesta al instante con los partidos del día, canal y hora. Gratis.">
+    <meta property="og:url" content="{{ app_url }}/whatsapp">
+    <meta property="og:image" content="{{ app_url }}/static/og-image.png">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script type="application/ld+json">
+    {"@context": "https://schema.org", "@type": "HowTo", "name": "Cómo usar el bot de WhatsApp de DondeVer",
+     "step": [
+       {"@type": "HowToStep", "name": "Abre el chat", "text": "Toca el botón 'Abrir WhatsApp' o guarda el número +1 571 546 3202 y escribe HOY."},
+       {"@type": "HowToStep", "name": "Toca los botones", "text": "El bot responde con los partidos del día y tres botones: Juegos de hoy, Pick del día y Mis equipos."},
+       {"@type": "HowToStep", "name": "Recibe el resumen diario", "text": "Cada mañana llega el resumen con picks y momios. Toca un botón o responde HOY para seguir recibiéndolo."}
+     ]}
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 820px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .main { max-width: 820px; margin: 1rem auto 3rem; padding: 0 1rem; }
+        h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .lead { color: #4b5563; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1rem; }
+        .cta { display: block; text-align: center; background: #25d366; color: #fff; font-weight: 800; padding: 0.85rem 1rem; border-radius: 10px; text-decoration: none; font-size: 1rem; margin: 0.6rem 0 1.2rem; }
+        .num { text-align: center; font-size: 0.8rem; color: #6b7280; margin-top: -0.8rem; margin-bottom: 1.2rem; }
+        h2 { font-size: 1.05rem; font-weight: 800; margin: 1.3rem 0 0.5rem; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem; }
+        ol.steps { list-style: none; counter-reset: s; }
+        ol.steps li { counter-increment: s; position: relative; padding-left: 2.2rem; font-size: 0.9rem; color: #374151; line-height: 1.55; margin-bottom: 0.7rem; }
+        ol.steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #25d366; color: #fff; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { text-align: left; padding: 0.5rem 0.4rem; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+        th { color: #9ca3af; font-size: 0.72rem; font-weight: 700; }
+        code { background: #ecfdf5; color: #065f46; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 700; font-family: inherit; }
+        .chat { background: #e5ddd5; border-radius: 12px; padding: 0.8rem; font-size: 0.82rem; max-width: 420px; margin: 0.6rem auto; }
+        .chat .m { background: #fff; border-radius: 8px; padding: 0.5rem 0.65rem; margin-bottom: 0.45rem; max-width: 92%; box-shadow: 0 1px 0 rgba(0,0,0,0.06); color: #1a1a2e; }
+        .chat .m.me { background: #dcf8c6; margin-left: auto; }
+        .chat .btns { display: grid; gap: 0.3rem; margin-top: 0.4rem; }
+        .chat .btns span { background: #fff; border: 1px solid #d1d5db; border-radius: 6px; text-align: center; padding: 0.35rem; color: #0a7cff; font-weight: 700; }
+        .faq p { font-size: 0.88rem; color: #374151; line-height: 1.6; margin-bottom: 0.6rem; }
+        .footer { max-width: 820px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+    </style>
+</head>
+<body>
+<header class="header"><div class="header-inner"><a href="/" class="logo">Donde<span>Ver</span></a><a href="/" style="color:#10b981;text-decoration:none;font-weight:600;font-size:0.85rem;">&larr; Inicio</a></div></header>
+<main class="main">
+    <h1>&#128242; El bot de WhatsApp de DondeVer</h1>
+    <p class="lead">Pregunta qu&eacute; partidos hay hoy y d&oacute;nde verlos sin abrir el navegador. Contesta al instante, con canal y hora de M&eacute;xico, y te manda cada ma&ntilde;ana el resumen con picks. Es gratis.</p>
+    <a class="cta" href="https://wa.me/15715463202?text=hoy" target="_blank" rel="noopener" onclick="if(typeof gtag==='function'){gtag('event','wa_open_chat',{event_category:'whatsapp',event_label:'guide'});}">&#128172; Abrir WhatsApp y escribir "hoy"</a>
+    <p class="num">N&uacute;mero del bot: <b>+1 571 546 3202</b> &middot; gu&aacute;rdalo como "DondeVer"</p>
+
+    <h2>C&oacute;mo funciona (3 pasos)</h2>
+    <div class="card">
+        <ol class="steps">
+            <li><b>Abre el chat y env&iacute;a "hoy".</b> El bot&oacute;n de arriba ya lo deja escrito. (Si guardaste el n&uacute;mero, escr&iacute;belo t&uacute;.)</li>
+            <li><b>Toca los botones.</b> Cada respuesta trae tres: <b>Juegos de hoy</b>, <b>Pick del d&iacute;a</b> y <b>Mis equipos</b>. No hace falta escribir nada m&aacute;s.</li>
+            <li><b>Recibe el resumen cada ma&ntilde;ana.</b> Con los mejores partidos, picks y momios. WhatsApp solo entrega mensajes a quien respondi&oacute; el d&iacute;a anterior: <b>toca cualquier bot&oacute;n</b> (o escribe "hoy") y sigues recibi&eacute;ndolo.</li>
+        </ol>
+    </div>
+
+    <div class="chat" aria-hidden="true">
+        <div class="m me">hoy</div>
+        <div class="m"><b>Juegos de hoy</b> 📺<br>Todos los partidos, canales y horarios: dondever.app<br><br>⚽ <b>Liga MX</b><br>Am&eacute;rica vs Chivas<br>Hora: 8:00 PM (hora centro)<br>Donde verlo: Canal 5, TUDN<br><br>🏈 <b>NFL</b><br>Cowboys vs Eagles<br>Hora: 7:15 PM (hora centro)<br>Donde verlo: Fox Sports MX, ESPN
+            <div class="btns"><span>📺 Juegos de hoy</span><span>🎯 Pick del d&iacute;a</span><span>⭐ Mis equipos</span></div>
+        </div>
+        <div class="m me">alerta tigres</div>
+        <div class="m">✅ Listo, te aviso cuando jueguen los <b>Tigres</b>.</div>
+    </div>
+
+    <h2>Todo lo que puedes escribirle</h2>
+    <div class="card">
+        <table>
+            <tr><th>Escribe</th><th>Qu&eacute; hace</th></tr>
+            <tr><td><code>hoy</code></td><td>Partidos de hoy con canal y hora de M&eacute;xico (o toca <b>Juegos de hoy</b>).</td></tr>
+            <tr><td><code>picks</code></td><td>Pick del d&iacute;a con momios y mercado sugerido (o toca <b>Pick del d&iacute;a</b>).</td></tr>
+            <tr><td><code>ver</code></td><td>Los 10 mejores picks del d&iacute;a completos.</td></tr>
+            <tr><td><code>combinada</code></td><td>Un parlay de 3 picks.</td></tr>
+            <tr><td><code>tigres</code>, <code>dodgers</code>, <code>nfl</code>&hellip;</td><td>Cu&aacute;ndo y d&oacute;nde ver a ese equipo o liga.</td></tr>
+            <tr><td><code>alerta tigres</code></td><td>Aviso cuando juegue tu equipo. <code>quitar tigres</code> para dejar de seguirlo; <code>mis equipos</code> para ver la lista (o toca <b>Mis equipos</b>).</td></tr>
+            <tr><td><code>hola</code> o <code>ayuda</code></td><td>Men&uacute; con botones.</td></tr>
+            <tr><td><code>SALIR</code></td><td>Cancela el resumen diario.</td></tr>
+        </table>
+    </div>
+
+    <h2>Preguntas frecuentes</h2>
+    <div class="card faq">
+        <p><b>&iquest;Por qu&eacute; dej&oacute; de llegarme el resumen?</b> WhatsApp (Meta) solo permite a las empresas enviar mensajes a quien les escribi&oacute; en las &uacute;ltimas 24 horas. Toca un bot&oacute;n o escribe "hoy" y vuelve a llegar al d&iacute;a siguiente.</p>
+        <p><b>&iquest;Cuesta algo?</b> No. El bot y el resumen son gratis. Los enlaces de apuestas son publicidad; solo para mayores de 18 y con responsabilidad.</p>
+        <p><b>&iquest;Funciona fuera de M&eacute;xico?</b> S&iacute;: los horarios van en hora del centro de M&eacute;xico y los canales incluyen Venezuela, Colombia, Argentina y Estados Unidos. En <a href="/" style="color:#059669;font-weight:700;">dondever.app</a> puedes elegir tu pa&iacute;s.</p>
+        <p><b>&iquest;Un canal est&aacute; mal?</b> Dinos en <a href="/contacto" style="color:#059669;font-weight:700;">/contacto</a> y lo corregimos el mismo d&iacute;a.</p>
+    </div>
+</main>
+<footer class="footer"><p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; Tu gu&iacute;a deportiva en M&eacute;xico y LATAM</p></footer>
+</body>
+</html>

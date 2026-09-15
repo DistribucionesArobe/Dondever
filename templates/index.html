@@ -1263,6 +1263,18 @@
             font-size: 0.7rem; color: #374151;
         }
         .wa-cta-features span { background: #f0fdf4; padding: 0.2rem 0.5rem; border-radius: 4px; }
+        .wa-how { display: grid; grid-template-columns: 1.2fr 1fr; gap: 0.9rem; margin-top: 0.8rem; align-items: start; }
+        @media (max-width: 640px) { .wa-how { grid-template-columns: 1fr; } }
+        .wa-steps { list-style: none; counter-reset: s; margin: 0; padding: 0; }
+        .wa-steps li { counter-increment: s; position: relative; padding-left: 2rem; font-size: 0.8rem; color: #374151; line-height: 1.45; margin-bottom: 0.55rem; }
+        .wa-steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: #25d366; color: #fff; font-weight: 800; font-size: 0.72rem; display: flex; align-items: center; justify-content: center; }
+        .wa-steps b { color: #1a1a2e; }
+        .wa-chat { background: #e5ddd5; border-radius: 12px; padding: 0.6rem; font-size: 0.72rem; }
+        .wa-chat .m { background: #fff; border-radius: 8px; padding: 0.45rem 0.55rem; margin-bottom: 0.4rem; max-width: 92%; color: #1a1a2e; box-shadow: 0 1px 0 rgba(0,0,0,0.06); }
+        .wa-chat .m.me { background: #dcf8c6; margin-left: auto; }
+        .wa-chat .btns { display: grid; gap: 0.25rem; margin-top: 0.35rem; }
+        .wa-chat .btns span { background: #fff; border: 1px solid #d1d5db; border-radius: 6px; text-align: center; padding: 0.3rem; color: #0a7cff; font-weight: 700; }
+        [data-theme="dark"] .wa-steps li { color: #d1d5db; } [data-theme="dark"] .wa-steps b { color: #fff; }
         .wa-form {
             display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;
         }
@@ -2141,7 +2153,21 @@
             <span><b>tigres</b> &rarr; tu equipo</span>
             <span><b>alerta tigres</b> &rarr; avisos</span>
         </div>
+        <div class="wa-how">
+            <ol class="wa-steps">
+                <li><b>Toca el bot&oacute;n verde.</b> Se abre WhatsApp con el mensaje "hoy" ya escrito; solo env&iacute;alo.</li>
+                <li><b>El bot te contesta al instante</b> con los partidos de hoy, canal y hora de M&eacute;xico, y te deja <b>3 botones</b>: Juegos de hoy, Pick del d&iacute;a y Mis equipos. Toca y listo, no hay que escribir.</li>
+                <li><b>Cada ma&ntilde;ana</b> te llega el resumen con picks y momios. WhatsApp solo lo entrega si respondiste el d&iacute;a anterior: <b>toca cualquier bot&oacute;n</b> y sigues recibi&eacute;ndolo. Para tu equipo escribe <b>alerta tigres</b> (o el que sea); para salir, <b>SALIR</b>.</li>
+            </ol>
+            <div class="wa-chat" aria-hidden="true">
+                <div class="m me">hoy</div>
+                <div class="m"><b>Juegos de hoy</b> 📺<br>⚽ Liga MX &middot; Am&eacute;rica vs Chivas<br>8:00 PM &middot; Canal 5, TUDN<br>🏈 NFL &middot; Cowboys vs Eagles<br>7:15 PM &middot; Fox Sports, ESPN
+                    <div class="btns"><span>📺 Juegos de hoy</span><span>🎯 Pick del d&iacute;a</span><span>⭐ Mis equipos</span></div>
+                </div>
+            </div>
+        </div>
         <a href="https://wa.me/15715463202?text=hoy" target="_blank" rel="noopener" class="wa-cta-btn" style="display:block;text-align:center;text-decoration:none;margin-top:0.6rem;" onclick="if(typeof gtag==='function'){gtag('event','wa_open_chat',{event_category:'whatsapp',event_label:'home_cta'});}">&#128172; ABRIR WHATSAPP Y ESCRIBIR "HOY"</a>
+        <div style="text-align:center;font-size:0.7rem;margin-top:0.35rem;"><a href="/whatsapp" style="color:#059669;font-weight:700;text-decoration:none;">Ver todos los comandos del bot &rarr;</a></div>
         <div style="text-align:center;font-size:0.72rem;opacity:0.75;margin:0.6rem 0 0.2rem;">o deja tu n&uacute;mero y te escribimos nosotros ma&ntilde;ana:</div>
         <form class="wa-form" id="waForm" onsubmit="return waSubscribe(event)">
             <input type="tel" id="waPhone" placeholder="+52 81 1234 5678" required
@@ -2309,7 +2335,7 @@
         <a href="/sobre-nosotros">Sobre nosotros</a> &middot;
         <a href="/privacidad">Privacidad</a> &middot;
         <a href="/terminos">Terminos</a> &middot;
-        <a href="#wa-subscribe" onclick="document.getElementById('wa-subscribe').scrollIntoView({behavior:'smooth'});return false;">WhatsApp</a>
+        <a href="/whatsapp">Bot de WhatsApp</a>
     </p>
     <p style="margin-top:0.3rem">Los enlaces de apuestas son publicidad. Apuesta responsablemente. Solo mayores de 18.</p>
 </footer>
