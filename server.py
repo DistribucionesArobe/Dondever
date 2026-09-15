@@ -391,7 +391,9 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                     body = body.replace(b"</head>", sticky_css + b"</head>", 1)
                 sticky_html = (
                     '<div class="dv-sticky" id="dv-sticky"><a href="/" aria-label="DondeVer inicio"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app"></a>'
-                    '<a class="h" href="/">Inicio &rarr;</a></div>'
+                    '<span style="display:flex;align-items:center;gap:0.7rem;"><a class="h dv-sticky-app" href="/app" style="display:none;">&#128241; App</a><a class="h" href="/">Inicio &rarr;</a></span></div>'
+                    '<script>(function(){try{var m=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);var st=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;'
+                    'if(m&&!st){var a=document.querySelector(".dv-sticky-app");if(a)a.style.display="inline";}}catch(e){}})();</script>'
                     '<script>(function(){var b=document.getElementById("dv-sticky");if(!b)return;var h=document.querySelector(".header")||document.querySelector("header");'
                     'var t=h?(h.offsetTop+h.offsetHeight):80;var on=false;function f(){var y=window.scrollY||window.pageYOffset;'
                     'if(y>t&&!on){b.classList.add("visible");on=true}else if(y<=t&&on){b.classList.remove("visible");on=false}}'
@@ -4836,6 +4838,7 @@ async def sitemap_core():
     # Static pages (legal + guides)
     static_pages = [
         ("sobre-nosotros", "monthly", "0.5"),
+        ("app", "monthly", "0.6"),
         ("privacidad", "monthly", "0.3"),
         ("terminos", "monthly", "0.3"),
         ("guia/donde-ver-liga-mx", "weekly", "0.8"),
@@ -4931,6 +4934,12 @@ def _contact_ctx(**kw) -> dict:
 async def whatsapp_guide(request: Request):
     """Instrucciones del bot de WhatsApp: cómo empezar, botones, comandos, por qué hay que responder."""
     return templates.TemplateResponse(request, "whatsapp_guide.html", {"year": datetime.now(TZ_MX).year})
+
+
+@app.get("/app", response_class=HTMLResponse)
+async def app_install_page(request: Request):
+    """Cómo instalar la PWA (iPhone Safari / Android / escritorio). Se enlaza desde el header móvil y el bot."""
+    return templates.TemplateResponse(request, "app_install.html", {"year": datetime.now(TZ_MX).year})
 
 
 @app.get("/contacto", response_class=HTMLResponse)

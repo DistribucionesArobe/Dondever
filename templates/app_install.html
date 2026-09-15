@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App de DondeVer: instálala gratis en iPhone y Android en 10 segundos</title>
+    <meta name="description" content="DondeVer no está en la App Store ni en Google Play: se instala desde el navegador. Pasos para iPhone (Safari) y Android, con alertas de goles y partidos de tus equipos.">
+    <link rel="canonical" href="{{ app_url }}/app">
+    <meta property="og:title" content="Instala la app de DondeVer (gratis, iPhone y Android)">
+    <meta property="og:description" content="Se instala desde el navegador en 10 segundos. Alertas de goles, partidos de hoy y canales.">
+    <meta property="og:url" content="{{ app_url }}/app">
+    <meta property="og:image" content="{{ app_url }}/static/og-image.png?v=2">
+    <link rel="icon" type="image/png" href="/static/logo.png?v=2">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script type="application/ld+json">
+    {"@context": "https://schema.org", "@type": "HowTo", "name": "Cómo instalar la app de DondeVer",
+     "step": [
+       {"@type": "HowToStep", "name": "Abre dondever.app en Safari (iPhone) o Chrome (Android)", "text": "En iPhone la instalación solo funciona desde Safari."},
+       {"@type": "HowToStep", "name": "Compartir → Agregar a pantalla de inicio", "text": "En iPhone toca Compartir y luego 'Agregar a pantalla de inicio'. En Android, menú ⋮ → Instalar app."},
+       {"@type": "HowToStep", "name": "Activa las alertas", "text": "Abre la app desde el icono y toca 🔔 en un partido o sigue a tu equipo."}
+     ]}
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 760px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .main { max-width: 760px; margin: 1rem auto 3rem; padding: 0 1rem; }
+        .hero { display:flex; align-items:center; gap:1rem; margin-bottom:1rem; }
+        .hero img { width:72px; height:72px; border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,0.15); }
+        h1 { font-size: 1.35rem; font-weight: 800; line-height:1.25; }
+        .lead { color: #4b5563; font-size: 0.92rem; line-height: 1.6; margin-top:0.3rem; }
+        .why { display:flex; gap:0.5rem; flex-wrap:wrap; margin:0.9rem 0 1.2rem; }
+        .why span { font-size:0.75rem; background:#ecfdf5; color:#065f46; border-radius:8px; padding:0.3rem 0.6rem; font-weight:600; }
+        .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 0.9rem; }
+        .card h2 { font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem; display:flex; align-items:center; gap:0.5rem; }
+        .card.active { border-color:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,0.15); }
+        .badge { font-size:0.62rem; background:#10b981; color:#fff; border-radius:999px; padding:0.15rem 0.5rem; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; }
+        ol { list-style:none; counter-reset: s; }
+        ol li { counter-increment: s; position: relative; padding: 0.45rem 0 0.45rem 2.2rem; font-size: 0.9rem; color: #374151; line-height: 1.5; border-bottom:1px solid #f3f4f6; }
+        ol li:last-child { border-bottom:none; }
+        ol li::before { content: counter(s); position: absolute; left: 0; top: 0.5rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: #10b981; color: #fff; font-weight: 800; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
+        .ico { display:inline-block; background:#f3f4f6; border-radius:6px; padding:0 0.4rem; font-weight:700; }
+        .btn { display:block; text-align:center; background:#10b981; color:#fff; border:none; border-radius:10px; padding:0.8rem; font-weight:800; font-size:0.95rem; cursor:pointer; font-family:inherit; text-decoration:none; margin-top:0.7rem; width:100%; }
+        .faq p { font-size:0.88rem; color:#374151; line-height:1.6; margin-bottom:0.6rem; }
+        .footer { max-width: 760px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
+        .footer a { color: #059669; text-decoration: none; }
+        body.dark-mode .card { background:#1e293b; border-color:#334155; }
+        body.dark-mode ol li { color:#e2e8f0; border-color:#334155; }
+        body.dark-mode .ico { background:#334155; }
+    </style>
+</head>
+<body>
+<header class="header"><div class="header-inner"><a href="/" class="logo" aria-label="DondeVer.app"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" width="181" height="32" style="height:32px;width:auto;display:block;"></a><a href="/" style="color:#10b981;text-decoration:none;font-weight:600;font-size:0.85rem;">&larr; Inicio</a></div></header>
+<main class="main">
+    <div class="hero">
+        <img src="/static/icon-192.png?v=2" alt="Icono de DondeVer">
+        <div>
+            <h1>Instala la app de DondeVer</h1>
+            <p class="lead">No est&aacute; en la App Store ni en Google Play: se instala <b>desde el navegador</b> en 10 segundos, gratis, y queda como cualquier otra app en tu pantalla de inicio.</p>
+        </div>
+    </div>
+    <div class="why"><span>&#128276; Alertas de goles y del inicio de tus partidos</span><span>&#9889; Abre al instante, sin buscar la p&aacute;gina</span><span>&#128176; Gratis y sin crear cuenta</span></div>
+
+    <div id="installedMsg" class="card" style="display:none;border-color:#10b981;background:#ecfdf5;color:#065f46;font-weight:700;">&#10003; Ya est&aacute;s usando la app instalada. Toca &#128276; en cualquier partido para recibir avisos.</div>
+
+    <div class="card" id="cardIos">
+        <h2>&#63743; iPhone / iPad <span class="badge" id="badgeIos" style="display:none;">tu dispositivo</span></h2>
+        <ol>
+            <li>Abre <b>dondever.app</b> en <span class="ico">Safari</span> (en iPhone solo funciona desde Safari, no desde Chrome ni desde el navegador de WhatsApp o Instagram).</li>
+            <li>Toca el bot&oacute;n <span class="ico">Compartir</span> <span style="font-size:1rem;">&#x2B06;&#xFE0E;</span> en la barra de abajo (el cuadrito con la flecha hacia arriba).</li>
+            <li>Desliza hacia abajo en el men&uacute; y toca <span class="ico">Agregar a pantalla de inicio</span> <span style="font-size:1rem;">&#x2295;</span>.</li>
+            <li>Toca <span class="ico">Agregar</span> arriba a la derecha. El icono de DondeVer aparece con tus dem&aacute;s apps.</li>
+            <li>Abre la app <b>desde el icono</b> y toca &#128276; en un partido: ah&iacute; te pedir&aacute; permiso para las notificaciones.</li>
+        </ol>
+    </div>
+
+    <div class="card" id="cardAndroid">
+        <h2>&#129302; Android <span class="badge" id="badgeAndroid" style="display:none;">tu dispositivo</span></h2>
+        <ol>
+            <li>Abre <b>dondever.app</b> en <span class="ico">Chrome</span>.</li>
+            <li>Toca <span class="ico">Instalar app</span> cuando aparezca abajo, o el men&uacute; <span class="ico">&#8942;</span> &rarr; <span class="ico">Instalar app</span> / <span class="ico">Agregar a pantalla de inicio</span>.</li>
+            <li>Confirma. Listo: abre DondeVer desde el icono y toca &#128276; en un partido.</li>
+        </ol>
+        <button class="btn" id="androidInstallBtn" style="display:none;" onclick="if(window.__pwaPrompt){window.__pwaPrompt.prompt();}">&#128229; Instalar ahora</button>
+    </div>
+
+    <div class="card">
+        <h2>&#128187; Computadora</h2>
+        <ol>
+            <li>En Chrome o Edge, toca el icono <span class="ico">Instalar</span> que aparece a la derecha de la barra de direcciones (o men&uacute; &#8942; &rarr; <span class="ico">Instalar DondeVer</span>).</li>
+        </ol>
+    </div>
+
+    <h2 style="font-size:1rem;font-weight:800;margin:1.2rem 0 0.5rem;">Preguntas frecuentes</h2>
+    <div class="card faq">
+        <p><b>&iquest;Por qu&eacute; no est&aacute; en la App Store?</b> Porque es una <i>web app</i>: se actualiza sola, no ocupa espacio y no necesitas descargar nada. Funciona igual que una app instalada, incluidas las notificaciones.</p>
+        <p><b>&iquest;Ocupa espacio?</b> Pr&aacute;cticamente nada (menos de 1 MB).</p>
+        <p><b>No me llegan las notificaciones.</b> En iPhone solo funcionan si abres DondeVer desde el icono de la pantalla de inicio (no desde Safari) y aceptaste el permiso. Rev&iacute;salo en Ajustes &rarr; Notificaciones &rarr; DondeVer.</p>
+        <p><b>Sali&oacute; el icono viejo.</b> Borra el icono y vuelve a agregarlo con los pasos de arriba.</p>
+    </div>
+</main>
+<footer class="footer"><p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; Tu gu&iacute;a deportiva en M&eacute;xico y LATAM &middot; <a href="/whatsapp">Bot de WhatsApp</a> &middot; <a href="/contacto">Contacto</a></p></footer>
+<script>
+(function(){
+  var ua=navigator.userAgent;
+  var isIOS=/iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints>1 && /Macintosh/.test(ua));
+  var isAndroid=/Android/i.test(ua);
+  var standalone=window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
+  if(standalone){ document.getElementById('installedMsg').style.display='block'; }
+  if(isIOS){ document.getElementById('cardIos').classList.add('active'); document.getElementById('badgeIos').style.display='inline-block'; }
+  if(isAndroid){ document.getElementById('cardAndroid').classList.add('active'); document.getElementById('badgeAndroid').style.display='inline-block';
+    document.querySelector('.main').insertBefore(document.getElementById('cardAndroid'), document.getElementById('cardIos')); }
+  window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); window.__pwaPrompt=e; document.getElementById('androidInstallBtn').style.display='block'; });
+  window.addEventListener('appinstalled',function(){ document.getElementById('installedMsg').style.display='block'; });
+})();
+</script>
+</body>
+</html>

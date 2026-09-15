@@ -212,6 +212,28 @@
             position: relative;
         }
         .hero-inner { max-width: 1100px; margin: 0 auto; }
+        /* ── Instalar app (PWA): botón + modal con pasos por plataforma ── */
+        .dv-install-btn { display:none; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.5); border-radius:999px; padding:0.3rem 0.7rem; font-weight:700; font-size:0.72rem; cursor:pointer; font-family:inherit; white-space:nowrap; }
+        body.dv-mobile:not(.dv-standalone) .dv-install-btn { display:inline-flex; align-items:center; gap:0.25rem; }
+        .dv-install-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.75); z-index:10050; align-items:flex-end; justify-content:center; }
+        .dv-install-overlay.open { display:flex; }
+        .dv-install-sheet { background:#fff; color:#1a1a2e; width:100%; max-width:520px; border-radius:18px 18px 0 0; padding:1.1rem 1.2rem 1.4rem; box-shadow:0 -8px 30px rgba(0,0,0,0.35); animation: dvUp .25s ease; }
+        @keyframes dvUp { from { transform: translateY(40px); opacity:0 } to { transform:none; opacity:1 } }
+        .dv-install-sheet h3 { font-size:1.05rem; font-weight:800; margin:0 0 0.2rem; display:flex; align-items:center; gap:0.5rem; }
+        .dv-install-sheet h3 img { width:36px; height:36px; border-radius:9px; }
+        .dv-install-sheet p.sub { font-size:0.8rem; color:#6b7280; margin:0 0 0.8rem; }
+        .dv-steps { list-style:none; margin:0; padding:0; counter-reset: st; }
+        .dv-steps li { counter-increment: st; position:relative; padding:0.45rem 0 0.45rem 2.2rem; font-size:0.88rem; line-height:1.45; border-bottom:1px solid #f3f4f6; }
+        .dv-steps li:last-child { border-bottom:none; }
+        .dv-steps li::before { content: counter(st); position:absolute; left:0; top:0.5rem; width:1.5rem; height:1.5rem; border-radius:50%; background:#10b981; color:#fff; font-weight:800; font-size:0.75rem; display:flex; align-items:center; justify-content:center; }
+        .dv-steps .ico { display:inline-block; background:#f3f4f6; border-radius:6px; padding:0 0.4rem; font-weight:700; }
+        .dv-install-primary { display:block; width:100%; margin-top:0.9rem; background:#10b981; color:#fff; border:none; border-radius:10px; padding:0.75rem; font-weight:800; font-size:0.95rem; cursor:pointer; font-family:inherit; }
+        .dv-install-close { display:block; width:100%; margin-top:0.4rem; background:none; color:#6b7280; border:none; padding:0.5rem; font-size:0.85rem; cursor:pointer; font-family:inherit; }
+        .dv-install-why { display:flex; gap:0.5rem; flex-wrap:wrap; margin:0 0 0.8rem; }
+        .dv-install-why span { font-size:0.7rem; background:#ecfdf5; color:#065f46; border-radius:6px; padding:0.2rem 0.5rem; font-weight:600; }
+        body.dark-mode .dv-install-sheet { background:#1e293b; color:#f1f5f9; }
+        body.dark-mode .dv-steps li { border-color:#334155; }
+        body.dark-mode .dv-steps .ico { background:#334155; }
         .hero-logo {
             display: block;
             margin: 0 auto 0.5rem;
@@ -871,65 +893,6 @@
         }
 
         /* ── Sticky Betting Bar (mobile) ── */
-        .sticky-bet-bar {
-            display: block;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 9990;
-            background: linear-gradient(135deg, #7c2d12, #991b1b);
-            padding: 0.6rem 1rem;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.35);
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-        }
-        .sticky-bet-bar.visible { transform: translateY(0); }
-        .sticky-bet-inner {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            max-width: 600px;
-            margin: 0 auto;
-            gap: 0.75rem;
-        }
-        .sticky-bet-text {
-            color: #fed7aa;
-            font-size: 0.72rem;
-            font-weight: 600;
-        }
-        .sticky-bet-text strong { color: white; }
-        .sticky-bet-cta {
-            background: linear-gradient(135deg, #f59e0b, #ea580c);
-            color: white;
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 0.35rem 0.8rem;
-            border-radius: 6px;
-            text-decoration: none;
-            white-space: nowrap;
-            box-shadow: 0 1px 4px rgba(245,158,11,0.3);
-            transition: transform 0.15s;
-        }
-        .sticky-bet-cta:hover { transform: scale(1.03); }
-        .sticky-bet-close {
-            background: none;
-            border: none;
-            color: #fed7aa;
-            font-size: 1rem;
-            cursor: pointer;
-            padding: 0.25rem;
-            opacity: 0.6;
-        }
-        .sticky-bet-close:hover { opacity: 1; }
-        .sticky-bet-fine {
-            text-align: center;
-            font-size: 0.4rem;
-            color: #fecaca;
-            opacity: 0.5;
-            margin-top: 0.2rem;
-        }
-        @media (min-width: 768px) { .sticky-bet-bar { display: none !important; } }
 
         /* ── Interstitial Promo Card ── */
         .promo-interstitial {
@@ -1477,11 +1440,13 @@
 {%- endmacro %}
 <div class="sticky-brand" id="sticky-brand">
     <a href="/"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" class="sticky-brand-logo"></a>
-    <button class="sticky-brand-toggle" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button>
+    <span style="display:flex;align-items:center;gap:0.4rem;"><button class="dv-install-btn" onclick="dvShowInstall('sticky')" title="Instalar DondeVer en tu celular">&#128241; Instalar</button>
+    <button class="sticky-brand-toggle" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button></span>
 </div>
 
 <header class="header">
     <div class="header-right">
+        <button class="dv-install-btn" onclick="dvShowInstall('header')" title="Instalar DondeVer en tu celular">&#128241; Instalar app</button>
         <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button>
     </div>
 </header>
@@ -2275,27 +2240,64 @@
         <a href="/sobre-nosotros">Sobre nosotros</a> &middot;
         <a href="/privacidad">Privacidad</a> &middot;
         <a href="/terminos">Terminos</a> &middot;
-        <a href="/whatsapp">Bot de WhatsApp</a>
+        <a href="/whatsapp">Bot de WhatsApp</a> &middot;
+        <a href="/app">Instalar la app</a>
     </p>
     <p style="margin-top:0.5rem;font-size:0.68rem;line-height:1.7;"><span style="color:#9ca3af;">Gu&iacute;as:</span> <a href="/guia/donde-ver-liga-mx">Liga MX</a> &middot; <a href="/guia/como-ver-premier-league-en-mexico">Premier League</a> &middot; <a href="/guia/como-ver-la-liga-en-mexico">La Liga</a> &middot; <a href="/guia/como-ver-serie-a-en-mexico">Serie A</a> &middot; <a href="/guia/como-ver-bundesliga-en-mexico">Bundesliga</a> &middot; <a href="/guia/como-ver-ligue-1-en-mexico">Ligue 1</a> &middot; <a href="/guia/donde-ver-champions-league">Champions</a> &middot; <a href="/guia/como-ver-europa-league-en-mexico">Europa League</a> &middot; <a href="/guia/donde-ver-nfl-en-mexico">NFL</a> &middot; <a href="/guia/donde-ver-nba-en-mexico">NBA</a> &middot; <a href="/guia/como-ver-mlb-en-mexico">MLB</a> &middot; <a href="/guia/como-ver-nhl-en-mexico">NHL</a> &middot; <a href="/guia/como-ver-mls-en-mexico">MLS</a> &middot; <a href="/guia/como-ver-ufc-en-mexico">UFC</a> &middot; <a href="/guia/como-ver-liga-mx-femenil">Liga MX Femenil</a> &middot; <a href="/guia/donde-ver-mlb-en-venezuela">MLB Venezuela</a> &middot; <a href="/guia/donde-ver-mlb-en-republica-dominicana">MLB Rep. Dominicana</a> &middot; <a href="/guia/donde-ver-mlb-en-panama">MLB Panama</a></p>
     <p style="margin-top:0.2rem;font-size:0.68rem;line-height:1.7;"><span style="color:#9ca3af;">D&oacute;nde ver por pa&iacute;s:</span> <a href="/donde-ver-en-mexico">Mexico</a> &middot; <a href="/donde-ver-en-estados-unidos">USA</a> &middot; <a href="/donde-ver-en-venezuela">Venezuela</a> &middot; <a href="/donde-ver-en-republica-dominicana">Rep. Dominicana</a> &middot; <a href="/donde-ver-en-panama">Panama</a> &middot; <a href="/donde-ver-en-colombia">Colombia</a> &middot; <a href="/donde-ver-en-argentina">Argentina</a></p>
     <p style="margin-top:0.3rem">Los enlaces de apuestas son publicidad. Apuesta responsablemente. Solo mayores de 18.</p>
 </footer>
 
-<!-- Sticky Mobile Betting Bar -->
-{% if not is_historical %}
-<div class="sticky-bet-bar" id="stickyBetBar">
-    <div style="display:flex;align-items:center;gap:0.6rem;justify-content:space-between;">
-        <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;font-size:0.78rem;">&#9917; Compara momios</div>
-            <div style="font-size:0.65rem;color:#9ca3af;margin-top:1px;">Mejores cuotas en casas autorizadas MX</div>
-        </div>
-        <a href="/casinos" data-affiliate="bet" style="background:linear-gradient(135deg,#10b981,#059669);color:white;padding:0.5rem 1rem;border-radius:8px;font-weight:700;font-size:0.78rem;text-decoration:none;white-space:nowrap;animation:pulse-cta 2s infinite;">Ver cuotas &rsaquo;</a>
-        <button onclick="document.getElementById('stickyBetBar').style.display='none';sessionStorage.setItem('bet-bar-closed','1')" style="background:none;border:none;color:#6b7280;font-size:1.1rem;cursor:pointer;padding:0 0.2rem;">&times;</button>
+<!-- Instalar app: hoja con pasos (iPhone Safari / iPhone otro navegador / Android) -->
+<div class="dv-install-overlay" id="dvInstall" onclick="if(event.target===this)dvHideInstall()">
+    <div class="dv-install-sheet" role="dialog" aria-labelledby="dvInstallTitle">
+        <h3 id="dvInstallTitle"><img src="/static/icon-192.png?v=2" alt="">Instala DondeVer en tu celular</h3>
+        <p class="sub">No está en la App Store ni en Google Play: se instala desde el navegador en 10 segundos y queda como cualquier app.</p>
+        <div class="dv-install-why"><span>&#128276; Alertas de goles y partidos</span><span>&#9889; Abre al instante</span><span>&#128176; Gratis, sin cuenta</span></div>
+        <ol class="dv-steps" id="dvStepsIosSafari" style="display:none;">
+            <li>Toca el botón <span class="ico">Compartir</span> <span style="font-size:1rem;">&#x2B06;&#xFE0E;</span> en la barra de abajo de Safari (el cuadrito con la flecha).</li>
+            <li>Desliza hacia abajo en el menú y toca <span class="ico">Agregar a pantalla de inicio</span> <span style="font-size:1rem;">&#x2295;</span>.</li>
+            <li>Toca <span class="ico">Agregar</span> arriba a la derecha. Listo: el icono de DondeVer aparece con tus demás apps.</li>
+            <li>Abre la app desde el icono y toca &#128276; en un partido para recibir avisos.</li>
+        </ol>
+        <ol class="dv-steps" id="dvStepsIosOther" style="display:none;">
+            <li>En iPhone la instalación solo funciona desde <span class="ico">Safari</span>. Copia el enlace <b>dondever.app</b> y ábrelo en Safari.</li>
+            <li>En Safari toca <span class="ico">Compartir</span> <span style="font-size:1rem;">&#x2B06;&#xFE0E;</span> &rarr; <span class="ico">Agregar a pantalla de inicio</span> &rarr; <span class="ico">Agregar</span>.</li>
+        </ol>
+        <ol class="dv-steps" id="dvStepsAndroid" style="display:none;">
+            <li>Toca el botón verde <span class="ico">Instalar</span> de abajo y confirma.</li>
+            <li>Si no aparece: menú <span class="ico">&#8942;</span> del navegador &rarr; <span class="ico">Instalar app</span> o <span class="ico">Agregar a pantalla de inicio</span>.</li>
+        </ol>
+        <ol class="dv-steps" id="dvStepsDesktop" style="display:none;">
+            <li>Abre <b>dondever.app</b> en tu celular y toca <span class="ico">&#128241; Instalar app</span> arriba.</li>
+            <li>En computadora: icono <span class="ico">Instalar</span> en la barra de direcciones de Chrome/Edge.</li>
+        </ol>
+        <button class="dv-install-primary" id="dvInstallNow" style="display:none;" onclick="if(window.__pwaPrompt){window.__pwaPrompt.prompt();}">&#128229; Instalar ahora</button>
+        <button class="dv-install-close" onclick="dvHideInstall()">Ahora no</button>
     </div>
-    <div style="font-size:0.55rem;color:#6b7280;text-align:center;margin-top:0.3rem;">+18 | Publicidad | Juega responsablemente</div>
 </div>
-{% endif %}
+<script>
+(function(){
+  var ua=navigator.userAgent;
+  var isMobile=/Mobi|Android|iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints>1 && /Macintosh/.test(ua));
+  var standalone=window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
+  if(isMobile) document.body.classList.add('dv-mobile');
+  if(standalone) document.body.classList.add('dv-standalone');
+  window.dvShowInstall=function(src){
+    var isIOS=/iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints>1 && /Macintosh/.test(ua));
+    var isSafari=/Safari/i.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/i.test(ua);
+    var isAndroid=/Android/i.test(ua);
+    ['dvStepsIosSafari','dvStepsIosOther','dvStepsAndroid','dvStepsDesktop'].forEach(function(id){document.getElementById(id).style.display='none';});
+    var show = isIOS ? (isSafari?'dvStepsIosSafari':'dvStepsIosOther') : (isAndroid?'dvStepsAndroid':'dvStepsDesktop');
+    document.getElementById(show).style.display='block';
+    document.getElementById('dvInstallNow').style.display = (window.__pwaPrompt ? 'block' : 'none');
+    document.getElementById('dvInstall').classList.add('open');
+    try{ if(typeof gtag==='function') gtag('event','pwa_install_open',{event_category:'pwa',event_label:src||''}); }catch(e){}
+  };
+  window.dvHideInstall=function(){ document.getElementById('dvInstall').classList.remove('open'); };
+  window.addEventListener('appinstalled',function(){ document.body.classList.add('dv-standalone'); dvHideInstall(); });
+})();
+</script>
 
 <!-- PWA Install Banner -->
 <div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:1rem 1.25rem;box-shadow:0 -4px 20px rgba(0,0,0,0.3);border-radius:16px 16px 0 0;font-family:'Inter',-apple-system,sans-serif;">
@@ -2310,8 +2312,8 @@
     <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
         <button id="pwa-install-btn" onclick="window.__pwaPrompt&&window.__pwaPrompt.prompt()" style="flex:1;background:#10b981;color:white;border:none;padding:0.6rem;border-radius:8px;font-weight:700;font-size:0.82rem;cursor:pointer;">Instalar app</button>
     </div>
-    <div id="pwa-ios-hint" style="display:none;margin-top:0.6rem;font-size:0.72rem;color:#d1d5db;text-align:center;">
-        Toca <strong>Compartir</strong> <span style="font-size:0.85rem;">&#x2191;</span> y luego <strong>"Agregar a inicio"</strong>
+    <div id="pwa-ios-hint" style="display:none;margin-top:0.6rem;text-align:center;">
+        <button onclick="dvShowInstall('banner')" style="background:#10b981;color:#fff;border:none;padding:0.55rem 1rem;border-radius:8px;font-weight:800;font-size:0.82rem;cursor:pointer;width:100%;">Ver c&oacute;mo instalarla (3 pasos)</button>
     </div>
 </div>
 
@@ -2349,7 +2351,7 @@
         // Kill any fixed divs that contain iframes from googleads
         document.querySelectorAll('div').forEach(function(el) {
             var s = window.getComputedStyle(el);
-            if (s.position === 'fixed' && el.id !== 'pwa-banner' && el.id !== 'pwa-ios-hint' && !el.classList.contains('wa-float') && !el.id.startsWith('stickyBet')) {
+            if (s.position === 'fixed' && el.id !== 'pwa-banner' && el.id !== 'pwa-ios-hint' && !el.classList.contains('wa-float')) {
                 var iframes = el.querySelectorAll('iframe[src*="googleads"], iframe[src*="doubleclick"], iframe[id*="aswift"]');
                 if (iframes.length > 0) {
                     el.style.display = 'none';
@@ -3798,18 +3800,6 @@ function emailSubscribe(e) {
   });
 })();
 
-// Sticky bet bar: show after scrolling 600px, hide if user closed it
-(function(){
-  var bar=document.getElementById('stickyBetBar');
-  if(!bar) return;
-  if(sessionStorage.getItem('bet-bar-closed')==='1'){bar.style.display='none';return;}
-  var shown=false;
-  window.addEventListener('scroll',function(){
-    if(sessionStorage.getItem('bet-bar-closed')==='1') return;
-    if(window.scrollY>600 && !shown){bar.classList.add('visible');shown=true;}
-    else if(window.scrollY<=600 && shown){bar.classList.remove('visible');shown=false;}
-  },{passive:true});
-})();
 </script>
 <!-- ── Onboarding Modal ── -->
 <div class="onboard-overlay" id="onboardOverlay">
