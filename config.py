@@ -1544,7 +1544,7 @@ CHANNEL_ALIASES = {
     "Las Estrellas": {"name": "Las Estrellas", "country": "MX", "type": "broadcast"},
     "Caliente TV": {"name": "Caliente TV", "country": "MX", "type": "streaming"},
     "Afizzionados": {"name": "Afizzionados", "country": "MX", "type": "cable"},
-    "ESPN Deportes": {"name": "ESPN Deportes", "country": "MX", "type": "cable"},
+    "ESPN Deportes": {"name": "ESPN Deportes", "country": "US", "type": "cable"},  # canal de EE.UU. en español
     "Blue To Go": {"name": "Blue To Go", "country": "MX", "type": "streaming"},
     "SKY": {"name": "SKY", "country": "MX", "type": "cable"},
     "Sky Sports": {"name": "SKY", "country": "MX", "type": "cable"},
@@ -1600,7 +1600,7 @@ CHANNEL_ALIASES = {
     "Max": {"name": "Max", "country": "MX", "type": "streaming"},
     "HBO Max": {"name": "Max", "country": "MX", "type": "streaming"},
     # ── Both / Spanish US (shown under MX for our audience) ──
-    "Univision": {"name": "Univision", "country": "MX", "type": "broadcast"},
+    "Univision": {"name": "Univision", "country": "US", "type": "broadcast"},  # EE.UU.; en México es Televisa/TUDN
     "UniMas": {"name": "UniMas", "country": "MX", "type": "broadcast"},
     "UniMás": {"name": "UniMas", "country": "MX", "type": "broadcast"},
     "TUDN USA": {"name": "TUDN", "country": "MX", "type": "cable"},
