@@ -853,6 +853,9 @@
             text-align: center;
         }
         .bet-cta-main:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(234,88,12,0.3); }
+        .gc-bet-nobet { display:flex; align-items:center; justify-content:space-between; gap:0.6rem; padding:0.35rem 0.75rem; }
+        .gc-bet-nobet-txt { font-size:0.68rem; color:#6b7280; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+        body.dark-mode .gc-bet-nobet-txt { color:#94a3b8; }
         .bet-cta-secondary {
             display: flex;
             align-items: center;
@@ -1640,6 +1643,11 @@
                     </div>
                 </div>
             </div>
+            {% elif game.sport not in ('racing',) %}
+            <div class="gc-bet-preview gc-bet-nobet" onclick="event.stopPropagation();">
+                <span class="gc-bet-nobet-txt">&#127922; Apuestas en vivo</span>
+                <a href="/go/bet?s=live-nobet&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main" style="flex:0 0 auto;">Ver momios &#8599;</a>
+            </div>
             {% endif %}
             {# ── Accordion ── #}
             <div class="gc-accordion">
@@ -1955,6 +1963,12 @@
                         <a href="/go/bet?s=card-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">Ver cuotas</a>
                     </div>
                 </div>
+            </div>
+            {% elif state != 'post' and game.sport not in ('racing',) %}
+            {# Sin cuotas de la API: link de afiliado directo para que nunca falte el botón #}
+            <div class="gc-bet-preview gc-bet-nobet" onclick="event.stopPropagation();">
+                <span class="gc-bet-nobet-txt">&#127922; Momios de {{ top_team.name[:14] }} vs {{ bottom_team.name[:14] }}</span>
+                <a href="/go/bet?s=card-nobet&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main" style="flex:0 0 auto;">Ver momios &#8599;</a>
             </div>
             {% endif %}
 
