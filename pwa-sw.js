@@ -1,10 +1,10 @@
 // DondeVer PWA Service Worker — cache de assets estáticos
-const CACHE_NAME = 'dondever-v1';
+const CACHE_NAME = 'dondever-v2';
 const STATIC_ASSETS = [
   '/static/logo.png',
   '/static/icon-192.png',
   '/static/icon-512.png',
-  '/static/logo-full.png',
+  '/static/logo-dondever-sm.png',
 ];
 
 // Install: pre-cache static assets

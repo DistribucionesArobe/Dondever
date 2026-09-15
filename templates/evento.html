@@ -8,7 +8,7 @@
     <meta property="og:title" content="{{ seo_title }}">
     <meta property="og:description" content="{{ seo_desc }}">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="{{ app_url }}/static/og-image.png">
+    <meta property="og:image" content="{{ app_url }}/static/og-image.png?v=2">
     <meta property="og:url" content="{{ app_url }}/evento/{{ ev.slug }}">
     <meta property="og:site_name" content="DondeVer.app">
     <meta property="og:locale" content="es_MX">
@@ -35,7 +35,7 @@
       ],
       {% if competitor_names %}"competitor": [{% for n in competitor_names %}{"@type": "Person", "name": "{{ n }}"}{% if not loop.last %},{% endif %}{% endfor %}],{% endif %}
       {% if ev.sessions|length > 1 %}"subEvent": [{% for s in ev.sessions %}{"@type": "SportsEvent", "name": {{ (s.name ~ " — " ~ ev.short_name)|tojson }}, "startDate": "{{ s.date }}", "eventStatus": "https://schema.org/{% if s.status == 'post' %}EventCompleted{% else %}EventScheduled{% endif %}", "location": {"@type": "Place", "name": "{{ ev.venue or ev.city }}"}}{% if not loop.last %},{% endif %}{% endfor %}],{% endif %}
-      "image": "{{ app_url }}/static/og-image.png",
+      "image": "{{ app_url }}/static/og-image.png?v=2",
       "broadcastOfEvent": [{% for c in ev.channels.MX %}{"@type": "BroadcastEvent", "isLiveBroadcast": true, "publishedOn": {"@type": "BroadcastService", "name": "{{ c }}", "areaServed": "MX"}}{% if not loop.last %},{% endif %}{% endfor %}],
       "organizer": {"@type": "SportsOrganization", "name": "{{ org_name }}"},
       "inLanguage": "es"
@@ -59,8 +59,8 @@
       "mainEntity": [{% for q, a in faq %}{"@type": "Question", "name": "{{ q }}", "acceptedAnswer": {"@type": "Answer", "text": "{{ a }}"}}{% if not loop.last %},{% endif %}{% endfor %}]
     }
     </script>
-    <link rel="icon" type="image/png" href="/static/logo.png">
-    <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <link rel="icon" type="image/png" href="/static/logo.png?v=2">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#10b981">
     <link rel="preconnect" href="https://fonts.googleapis.com">

@@ -45,6 +45,31 @@ def _get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
         return ImageFont.load_default()
 
 
+_BRAND_LOGO = None
+
+
+def _brand_logo(height: int = 44):
+    """Logo oficial (static/logo-dondever-md.png) escalado; cacheado en memoria."""
+    global _BRAND_LOGO
+    try:
+        if _BRAND_LOGO is None:
+            from pathlib import Path
+            _BRAND_LOGO = Image.open(Path(__file__).parent / "static" / "logo-dondever-md.png").convert("RGBA")
+        lg = _BRAND_LOGO
+        w = round(lg.width * height / lg.height)
+        return lg.resize((w, height), Image.LANCZOS)
+    except Exception:
+        return None
+
+
+def _paste_brand(img, draw, x: int, y: int, height: int, fallback_font, fallback_fill):
+    lg = _brand_logo(height)
+    if lg is not None:
+        img.paste(lg, (x, y), lg)
+    else:
+        draw.text((x, y), "DondeVer.app", fill=fallback_fill, font=fallback_font)
+
+
 async def _download_logo(url: str, size: int = 120) -> Optional[Image.Image]:
     """Download and resize a team logo from ESPN."""
     if not url:
@@ -108,7 +133,7 @@ async def generate_game_og(
     font_small = _get_font(16)
 
     # Brand name top-left
-    draw.text((50, 30), "DondeVer.app", fill=ACCENT, font=font_brand)
+    _paste_brand(img, draw, 50, 24, 44, font_brand, ACCENT)
 
     # "Dónde ver en vivo" top-right
     draw.text((W - 350, 30), "Dónde ver en vivo", fill=GRAY, font=font_sub)
@@ -191,7 +216,7 @@ async def generate_team_og(
     font_sub = _get_font(22)
 
     # Brand
-    draw.text((50, 30), "DondeVer.app", fill=ACCENT, font=font_brand)
+    _paste_brand(img, draw, 50, 24, 44, font_brand, ACCENT)
 
     # Team logo centered
     logo = await _download_logo(team_logo_url, 160)
