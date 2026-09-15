@@ -107,12 +107,22 @@ _tv_cache = TTLCache(maxsize=96, ttl=14400)  # ~47 ligas x fecha: con 30 slots s
 # Track when TheSportsDB is rate-limiting us to avoid flooding with 429s
 _sportsdb_blocked_until = 0  # timestamp when we can retry
 # Odds cache: 6h TTL — reduced from 200 to 50
-_odds_cache = TTLCache(maxsize=50, ttl=21600)  # 6 hours, 47 leagues
+# Créditos mensuales del plan de the-odds-api (cada request cuesta 1 crédito por mercado).
+# Plan gratis = 500 → modo ahorro: solo h2h, caché 12 h y solo ligas prioritarias (~15 créditos/día).
+ODDS_MONTHLY_CREDITS = int(os.getenv("ODDS_MONTHLY_CREDITS", "20000") or 20000)
+ODDS_LOW_MODE = ODDS_MONTHLY_CREDITS <= 1000
+ODDS_MARKETS = os.getenv("ODDS_MARKETS", "h2h" if ODDS_LOW_MODE else "h2h,spreads,totals")
+_ODDS_TTL = 43200 if ODDS_LOW_MODE else 21600
+_odds_cache = TTLCache(maxsize=50, ttl=_ODDS_TTL)
 _odds_request_count = 0  # track requests this process lifetime
 _odds_fail_cache = TTLCache(maxsize=50, ttl=600)
 ODDS_DIAG: dict = {"key_configured": bool(os.getenv("ODDS_API_KEY", "")), "last_status": None, "remaining": None,
-                   "used": None, "last_error": "", "errors": 0, "events_by_sport": {}}
+                   "used": None, "last_error": "", "errors": 0, "events_by_sport": {},
+                   "monthly_credits": ODDS_MONTHLY_CREDITS, "low_mode": ODDS_LOW_MODE, "markets": ODDS_MARKETS}
 _ODDS_MONTHLY_BUDGET = 6000  # ~6,666 effective requests with 3-market calls
+# En modo ahorro solo pedimos cuotas de las ligas que generan clics de apuestas
+ODDS_PRIORITY_LEAGUES = {"liga-mx", "nfl", "mlb", "nba", "champions", "premier-league", "la-liga", "libertadores", "ufc"}
+_ODDS_RESERVE = 25  # créditos que dejamos sin usar para no quedar en 0 (la API regresa 401 al agotarse)
 
 # ── Odds API (the-odds-api.com) ────────────────────────
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
@@ -2763,12 +2773,22 @@ async def fetch_odds(league_slug: str, markets: str = "h2h,spreads,totals") -> l
     if not odds_sport:
         return []
 
-    # Always use full markets to maximize cache hits
-    markets = "h2h,spreads,totals"
+    # Always use the same markets so homepage and game page share one cache entry
+    markets = ODDS_MARKETS
     cache_key = f"odds:{odds_sport}"
     if cache_key in _odds_cache:
         return _odds_cache[cache_key]
     if cache_key in _odds_fail_cache:
+        return []
+    if ODDS_LOW_MODE and league_slug not in ODDS_PRIORITY_LEAGUES:
+        return []
+    # Cuota restante reportada por la API (persiste entre reinicios): no bajar de la reserva
+    try:
+        _rem = int(ODDS_DIAG.get("remaining") or -1)
+    except (TypeError, ValueError):
+        _rem = -1
+    if 0 <= _rem < _ODDS_RESERVE + len(markets.split(",")):
+        logger.warning(f"Odds API: créditos casi agotados ({_rem}); sin pedir {odds_sport}")
         return []
 
     # Budget guard — stop fetching if we're burning too many requests
