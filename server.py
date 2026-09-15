@@ -1597,6 +1597,29 @@ async def game_semantic(request: Request, slug: str):
 @app.get("/juego/{event_id}", response_class=HTMLResponse)
 async def game_detail(request: Request, event_id: str, date: Optional[str] = Query(None)):
     """Redirect to semantic URL or show game if slug can't be built."""
+    # IDs basura (no numéricos de ESPN) → 410 sin gastar 5 fetches
+    if not re.fullmatch(r"\d{6,14}", event_id):
+        return templates.TemplateResponse(request, "404.html", status_code=410,
+                                          context={"message": "Este juego ya no existe. Ve los juegos de hoy en la home."})
+
+    # Partidos viejos (2,056 URLs /juego/ legacy en GSC): si está en la BD y ya terminó,
+    # 301 a la página del equipo (conserva el valor del enlace) en vez de 410.
+    try:
+        from sqlalchemy import text as sa_text
+        from db import async_session
+        async with async_session() as session:
+            row = (await session.execute(
+                sa_text("SELECT home_name, away_name, league_slug, game_date, state FROM games WHERE id = :id"),
+                {"id": event_id})).mappings().first()
+        if row and (row["state"] == "post" or (row["game_date"] or "") < (datetime.now(TZ_MX) - timedelta(days=1)).strftime("%Y%m%d")):
+            tslug = _team_name_to_slug(row["home_name"]) or _team_name_to_slug(row["away_name"])
+            if tslug:
+                return RedirectResponse(url=f"/equipo/{tslug}", status_code=301)
+            if row["league_slug"] in ALL_LEAGUES:
+                return RedirectResponse(url=f"/liga/{row['league_slug']}", status_code=301)
+    except Exception:
+        pass
+
     # Try the requested date first, then today, then nearby dates
     all_games = await get_todays_games(date_str=date)
     game = next((g for g in all_games if g["id"] == event_id), None)
