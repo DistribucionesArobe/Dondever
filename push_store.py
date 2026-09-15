@@ -108,8 +108,10 @@ def stats() -> dict:
         for t in info.get("teams", []):
             teams[t] = teams.get(t, 0) + 1
     top = sorted(teams.items(), key=lambda kv: -kv[1])[:15]
+    subs = [{"id": k[:8] + "…", "teams": v.get("teams", []), "games": v.get("games", []),
+             "updated": v.get("updated", ""), "ua": (v.get("ua") or "")[:60]} for k, v in data.items()]
     return {"subscriptions": len(data), "with_teams": sum(1 for i in data.values() if i.get("teams")),
-            "top_teams": top}
+            "with_games": sum(1 for i in data.values() if i.get("games")), "top_teams": top, "subs": subs[:50]}
 
 
 def purge_stale(days: int = 120) -> int:

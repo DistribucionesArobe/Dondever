@@ -109,21 +109,51 @@
       saveNotifyGames(games);
       btn.classList.remove('active');
       btn.innerHTML = btn.getAttribute('data-label-off') || '&#128276;';
+      notifyStatus(btn, 'off');
       if (window.dvPush) window.dvPush.sync(true);
       return;
     }
 
     // Request notification permission if needed
-    if ('Notification' in window && Notification.permission === 'default') {
+    if (!('Notification' in window)) {
+      notifyStatus(btn, 'unsupported');
+      addNotifyGame(btn, gid, kickoff, title, league, channels);
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      notifyStatus(btn, 'denied');
+      return;
+    }
+    if (Notification.permission === 'default') {
       Notification.requestPermission().then(function(perm) {
         if (perm === 'granted') {
           addNotifyGame(btn, gid, kickoff, title, league, channels);
+        } else {
+          notifyStatus(btn, 'denied');
         }
       });
     } else {
       addNotifyGame(btn, gid, kickoff, title, league, channels);
     }
   };
+
+  // Mensaje de estado junto al botón (solo si la página tiene #followStatus)
+  function notifyStatus(btn, code, extra) {
+    var el = document.getElementById('followStatus');
+    if (!el) return;
+    var ios = /iPhone|iPad/i.test(navigator.userAgent);
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    var msgs = {
+      pending: '&#9203; Activando avisos&hellip;',
+      ok: '&#10003; Avisos activados para este partido.',
+      denied: '&#9888;&#65039; Las notificaciones est&aacute;n bloqueadas. ' + (ios ? 'Ajustes &rarr; Notificaciones &rarr; DondeVer &rarr; Permitir.' : 'Act&iacute;valas en el candado de la barra de direcciones (Permisos &rarr; Notificaciones).'),
+      unsupported: (ios && !standalone) ? '&#9888;&#65039; En iPhone los avisos solo funcionan con la app instalada: Compartir &rarr; &ldquo;Agregar a pantalla de inicio&rdquo; y vuelve a tocar el bot&oacute;n.' : '&#9888;&#65039; Este navegador no soporta notificaciones.',
+      noid: '&#9888;&#65039; No se pudo registrar el dispositivo (' + (extra || 'sin respuesta del servicio de push') + '). Recarga la p&aacute;gina e intenta de nuevo.',
+      off: 'Ya no recibir&aacute;s avisos de este partido.'
+    };
+    el.innerHTML = msgs[code] || '';
+    el.className = 'gd-follow-status ' + (code === 'ok' || code === 'off' ? 'ok' : (code === 'pending' ? '' : 'warn'));
+  }
 
   function addNotifyGame(btn, gid, kickoff, title, league, channels) {
     var games = getNotifyGames();
@@ -138,7 +168,9 @@
     btn.classList.add('active');
     btn.innerHTML = btn.getAttribute('data-label-on') || '&#128276; <span class="notify-label">Alertas</span>';
     // Push real (OneSignal): inicio, anotaciones y final aunque la pestaña esté cerrada
-    if (window.dvPush) window.dvPush.enable({ add_games: [gid] });
+    notifyStatus(btn, 'pending');
+    if (window.dvPush) window.dvPush.enable({ add_games: [gid] }, function(code, extra) { notifyStatus(btn, code, extra); });
+    else notifyStatus(btn, 'noid', 'SDK no cargado');
   }
 
   // ── Push por equipo / partido (OneSignal v16 + /api/push/subscribe) ──
@@ -154,7 +186,7 @@
     var body = { sub_id: id, teams: myTeams(), games: Object.keys(getNotifyGames()) };
     if (extra) for (var k in extra) body[k] = extra[k];
     return fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      .then(function() { localStorage.setItem(PUSH_SYNC_KEY, JSON.stringify({ t: Date.now(), teams: body.teams.join(','), games: body.games.length })); })
+      .then(function(r) { if (r && r.ok) localStorage.setItem(PUSH_SYNC_KEY, JSON.stringify({ t: Date.now(), teams: body.teams.join(','), games: body.games.length })); })
       .catch(function() {});
   }
   window.dvPush = {
@@ -170,19 +202,25 @@
       });
     },
     // Pide permiso (si hace falta) y registra la suscripción con los equipos seguidos
-    enable: function(extra) {
+    enable: function(extra, onStatus) {
+      var done = function(code, x) { if (typeof onStatus === 'function') { try { onStatus(code, x); } catch (e) {} } };
+      var fired = false;
+      // Si el SDK de OneSignal nunca carga (bloqueador, sin red), avisar
+      setTimeout(function() { if (!fired) { fired = true; done('noid', 'OneSignal no carg\u00f3'); } }, 15000);
       onOneSignal(async function(OS) {
         try {
           if (!(OS.Notifications && OS.Notifications.permission)) await OS.Notifications.requestPermission();
+          if (OS.Notifications && OS.Notifications.permission === false) { fired = true; done('denied'); return; }
           var ps = OS.User && OS.User.PushSubscription;
           if (ps && ps.optedIn === false) await ps.optIn();
           var tries = 0;
           (function waitId() {
             var id = OS.User && OS.User.PushSubscription && OS.User.PushSubscription.id;
-            if (id) { postSub(id, extra); return; }
-            if (tries++ < 10) setTimeout(waitId, 800);
+            if (id) { fired = true; postSub(id, extra).then(function() { done('ok'); }); return; }
+            if (tries++ < 12) setTimeout(waitId, 800);
+            else { fired = true; done('noid', 'sin id de suscripci\u00f3n'); }
           })();
-        } catch (e) {}
+        } catch (e) { fired = true; done('noid', (e && e.message) || 'error'); }
       });
     }
   };
