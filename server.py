@@ -3362,7 +3362,7 @@ async def meta_whatsapp_verify(request: Request):
     return PlainTextResponse(content="Forbidden", status_code=403)
 
 
-_seen_wamids = TTLCache(maxsize=4000, ttl=900)  # dedupe de webhooks entrantes de Meta
+_seen_wamids = _TTLCache(maxsize=4000, ttl=900)  # dedupe de webhooks entrantes de Meta
 
 
 @app.post("/webhook/meta-whatsapp")
