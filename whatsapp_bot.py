@@ -203,6 +203,9 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
     """
     try:
         body_clean = body.strip().lower()
+        # Botones de respuesta rápida → comando equivalente
+        body_clean = {"btn_hoy": "hoy", "btn_picks": "picks", "btn_equipos": "mis equipos",
+                      "btn_ayuda": "ayuda", "btn_suscribir": "btn_suscribir"}.get(body_clean, body_clean)
         # Strip common prefixes like "donde ver chivas" -> "chivas"
         for prefix in ("donde ver ", "donde puedo ver ", "como ver ", "en donde ver "):
             if body_clean.startswith(prefix):
@@ -242,7 +245,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
                     import meta_whatsapp
                     picks_msg = await compose_daily_message()
                     if picks_msg and meta_whatsapp.is_configured():
-                        result = meta_whatsapp.send_text(from_number, picks_msg)
+                        result = meta_whatsapp.send_text_with_buttons(from_number, picks_msg)
                         logger.info(f"Welcome picks sent via Meta to {from_number}: {result.get('ok')}")
                 except Exception as e:
                     logger.exception(f"Failed to send welcome picks: {e}")
@@ -299,7 +302,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
                 import meta_whatsapp
                 picks_msg = await compose_daily_message()
                 if picks_msg and meta_whatsapp.is_configured():
-                    result = meta_whatsapp.send_text(from_number, picks_msg)
+                    result = meta_whatsapp.send_text_with_buttons(from_number, picks_msg)
                     logger.info(f"VER picks sent via Meta to {from_number}: {result.get('ok')}")
             except Exception as e:
                 logger.exception(f"Failed to send VER picks: {e}")

@@ -139,6 +139,33 @@ def send_template(to: str, template_name: str, language: str = "en", components:
         return {"ok": False, "id": None, "error": str(e)}
 
 
+# Botones que acompañan CADA respuesta del bot: el usuario ve qué puede hacer sin escribir
+# y cada toque cuenta como respuesta → mantiene abierta la ventana de 24 h (Meta solo entrega
+# texto libre dentro de ella; las plantillas de marketing se bloquean con 131049).
+DEFAULT_BUTTONS = [
+    {"id": "btn_hoy", "title": "📺 Juegos de hoy"},
+    {"id": "btn_picks", "title": "🎯 Pick del día"},
+    {"id": "btn_equipos", "title": "⭐ Mis equipos"},
+]
+INTERACTIVE_BODY_MAX = 1024
+
+
+def send_text_with_buttons(to: str, body: str, buttons: list[dict] | None = None,
+                           footer: str = "", follow_up: str = "¿Qué más quieres ver? 👇") -> dict:
+    """Manda `body` como mensaje interactivo con botones si cabe (≤1024 chars);
+    si no, manda el texto y después un mensaje corto con los botones."""
+    buttons = buttons or DEFAULT_BUTTONS
+    if len(body) <= INTERACTIVE_BODY_MAX:
+        r = send_interactive_buttons(to, body=body, buttons=buttons, footer=footer)
+        if r.get("ok"):
+            return r
+        # fallback: interactivo rechazado (p. ej. formato) → texto normal
+    r = send_text(to, body)
+    if r.get("ok"):
+        send_interactive_buttons(to, body=follow_up, buttons=buttons)
+    return r
+
+
 def send_interactive_buttons(to: str, body: str, buttons: list[dict], header: str = "", footer: str = "") -> dict:
     """
     Send a WhatsApp interactive message with reply buttons (max 3).

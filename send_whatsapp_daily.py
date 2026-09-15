@@ -672,7 +672,9 @@ async def send_daily_broadcast(test_number: str | None = None):
         sent_ok = False
 
         if freeform_message and in_24h_window(phone):
-            result = send_text(phone, freeform_message)
+            from meta_whatsapp import send_text_with_buttons
+            result = send_text_with_buttons(phone, freeform_message,
+                                            follow_up="Toca un botón para ver más. Responder mantiene tu resumen diario activo 👇")
             if result["ok"]:
                 sent += 1
                 sent_ok = True

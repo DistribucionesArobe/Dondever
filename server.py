@@ -3334,9 +3334,9 @@ async def whatsapp_verify():
 # ── Meta WhatsApp Cloud API Webhook ────────────────────────
 
 WELCOME_BUTTONS = [
-    {"id": "btn_picks", "title": "Picks del Dia"},
-    {"id": "btn_hoy", "title": "Juegos de Hoy"},
-    {"id": "btn_suscribir", "title": "Suscribirse"},
+    {"id": "btn_hoy", "title": "📺 Juegos de hoy"},
+    {"id": "btn_picks", "title": "🎯 Pick del día"},
+    {"id": "btn_suscribir", "title": "🔔 Resumen diario"},
 ]
 
 WELCOME_BODY = (
@@ -3431,7 +3431,9 @@ async def meta_whatsapp_webhook(request: Request):
             )
             logger.info(f"Meta WA buttons to {from_number}: {result.get('ok')}")
         else:
-            result = meta_whatsapp.send_text(from_number, response_text)
+            # Toda respuesta lleva botones (Juegos de hoy / Pick del día / Mis equipos):
+            # el usuario ve qué hace el bot sin escribir y cada toque mantiene la ventana de 24 h.
+            result = meta_whatsapp.send_text_with_buttons(from_number, response_text)
             logger.info(f"Meta WA reply to {from_number}: ok={result.get('ok')}")
 
     # Fire-and-forget: process all messages in background, respond to Meta immediately.
