@@ -2131,20 +2131,22 @@
     <div class="wa-cta-inner">
         <div class="wa-cta-top">
             <div>
-                <div class="wa-cta-title">&#128242; Recibe picks y momios por WhatsApp</div>
-                <div class="wa-cta-sub">Tips basados en estadisticas + links de apuestas. Gratis, diario a las 9 AM.</div>
+                <div class="wa-cta-title">&#128242; Pregunta por WhatsApp qu&eacute; hay hoy y d&oacute;nde verlo</div>
+                <div class="wa-cta-sub">Escribe <b>HOY</b> y el bot te contesta al instante con los partidos del d&iacute;a, canal y hora de M&eacute;xico. Cada ma&ntilde;ana recibes el resumen con picks y momios; responde <b>HOY</b> para seguir recibi&eacute;ndolo. Gratis.</div>
             </div>
         </div>
         <div class="wa-cta-features">
-            <span>Juegos del dia</span>
-            <span>Momios</span>
-            <span>Tips estadisticos</span>
-            <span>Over/Under</span>
+            <span><b>hoy</b> &rarr; partidos y canales</span>
+            <span><b>picks</b> &rarr; tips y momios</span>
+            <span><b>tigres</b> &rarr; tu equipo</span>
+            <span><b>alerta tigres</b> &rarr; avisos</span>
         </div>
+        <a href="https://wa.me/15715463202?text=hoy" target="_blank" rel="noopener" class="wa-cta-btn" style="display:block;text-align:center;text-decoration:none;margin-top:0.6rem;" onclick="if(typeof gtag==='function'){gtag('event','wa_open_chat',{event_category:'whatsapp',event_label:'home_cta'});}">&#128172; ABRIR WHATSAPP Y ESCRIBIR "HOY"</a>
+        <div style="text-align:center;font-size:0.72rem;opacity:0.75;margin:0.6rem 0 0.2rem;">o deja tu n&uacute;mero y te escribimos nosotros ma&ntilde;ana:</div>
         <form class="wa-form" id="waForm" onsubmit="return waSubscribe(event)">
-            <input type="tel" id="waPhone" placeholder="+52 1 834 175 1234" required
-                   pattern="[\+]?[0-9\s\-]{10,15}" title="Numero con lada (ej: +521XXXXXXXXXX)">
-            <button type="submit" class="wa-cta-btn" id="waBtn">SUSCRIBIRME GRATIS</button>
+            <input type="tel" id="waPhone" placeholder="+52 81 1234 5678" required
+                   pattern="[\+]?[0-9\s\-]{10,15}" title="Numero con lada (ej: +5281XXXXXXXX)">
+            <button type="submit" class="wa-cta-btn" id="waBtn" style="background:#374151;">AVISARME</button>
         </form>
         <div class="wa-msg" id="waMsg"></div>
         <div class="wa-note">Solo entretenimiento. +18. Escribe SALIR en cualquier momento para cancelar.</div>
@@ -3695,7 +3697,7 @@ function waSubscribe(e) {
   .then(function(data) {
     if (data.ok) {
       msg.className = 'wa-msg success';
-      msg.textContent = data.new ? 'Listo! Recibiras picks y momios diario a las 9 AM.' : 'Ya estas suscrito. Recibiras el mensaje diario.';
+      msg.innerHTML = (data.new ? '¡Listo! Mañana te llega el resumen. ' : 'Ya estás suscrito. ') + 'Para recibirlo seguro, <a href="https://wa.me/15715463202?text=hoy" target="_blank" rel="noopener" style="color:#fff;font-weight:800;">escríbenos HOY por WhatsApp</a> (WhatsApp solo entrega mensajes a quien ya nos escribió).';
       msg.style.display = 'block';
       btn.textContent = 'SUSCRITO';
       if (typeof gtag === 'function') {
@@ -3706,7 +3708,7 @@ function waSubscribe(e) {
       msg.textContent = data.error || 'Error al registrar. Intenta de nuevo.';
       msg.style.display = 'block';
       btn.disabled = false;
-      btn.textContent = 'SUSCRIBIRME GRATIS';
+      btn.textContent = 'AVISARME';
     }
   })
   .catch(function() {
