@@ -654,43 +654,49 @@ async def send_daily_broadcast(test_number: str | None = None):
     failed = 0
     errors = []
 
+    from meta_whatsapp import in_24h_window, pick_daily_template
+    tpl_name, tpl_lang, tpl_cat = pick_daily_template()
+    logger.info(f"Plantilla diaria: {tpl_name} ({tpl_lang}, {tpl_cat})")
+    via = {"freeform": 0, "template": 0}
+
     for phone in recipients:
-        # Strategy: freeform FIRST (confirmed working), template as fallback.
-        # Marketing templates on this WABA are silently accepted by Meta API
-        # but never delivered (likely per-user marketing frequency cap).
-        # Freeform works reliably — requires 24h window but broadcast
-        # triggers daily interaction so window stays open.
+        # Diagnóstico con el webhook de estados (2026-09-14): la API acepta el texto libre
+        # (ok:true) pero Meta lo rechaza después con 131047 si el usuario no nos escribió en
+        # 24 h → nunca se mandaba la plantilla. Ahora: freeform SOLO dentro de la ventana;
+        # fuera de ella, plantilla (UTILITY si está aprobada; a la MARKETING le aplica el
+        # experimento 130472 de Meta para algunos usuarios).
         # WABA: Distribuciones Arobe (ID: 1224835083125902)
         sent_ok = False
 
-        # Primary: freeform text (confirmed working, delivers instantly)
-        if not sent_ok and freeform_message:
+        if freeform_message and in_24h_window(phone):
             result = send_text(phone, freeform_message)
             if result["ok"]:
                 sent += 1
                 sent_ok = True
-                logger.info(f"Sent freeform to {phone} — msg_id: {result['id']}")
+                via["freeform"] += 1
+                logger.info(f"Sent freeform (ventana 24h) to {phone} — msg_id: {result['id']}")
             else:
                 logger.info(f"Freeform failed for {phone}: {result.get('error')}, trying template")
 
-        # Fallback: template (for users outside 24h window)
         if not sent_ok and v1_components:
             result = send_template(
                 phone,
-                template_name="dondever_picks_diarios",
-                language="en",
+                template_name=tpl_name,
+                language=tpl_lang,
                 components=v1_components,
             )
             if result["ok"]:
                 sent += 1
                 sent_ok = True
-                logger.info(f"Sent dondever_picks_diarios to {phone} — msg_id: {result['id']}")
+                via["template"] += 1
+                logger.info(f"Sent {tpl_name} to {phone} — msg_id: {result['id']}")
             else:
                 failed += 1
                 errors.append({"phone": phone, "error": result["error"]})
                 logger.error(f"Failed all methods for {phone}: {result['error']}")
 
-    summary = {"sent": sent, "failed": failed, "total": len(recipients), "errors": errors}
+    summary = {"sent": sent, "failed": failed, "total": len(recipients), "errors": errors,
+               "via": via, "template": tpl_name, "template_category": tpl_cat}
     logger.info(f"Broadcast complete: {sent} sent, {failed} failed")
     return summary
 

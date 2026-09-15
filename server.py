@@ -3362,6 +3362,7 @@ async def meta_whatsapp_webhook(request: Request):
         message_id = msg.get("message_id")
 
         logger.info(f"Meta WA from {from_number}: {body!r}")
+        meta_whatsapp.record_inbound(from_number, float(msg.get("timestamp") or 0) or None)
 
         # Mark as read (blue check)
         if message_id:
@@ -4067,6 +4068,28 @@ async def whatsapp_broadcast_status():
         "meta_whatsapp_configured": wa_configured(),
         "hint": "Usa Meta Cloud API. Set WHATSAPP_ACCESS_TOKEN y WHATSAPP_PHONE_NUMBER_ID en env vars."
     }
+
+
+@app.get("/whatsapp/create-utility-template")
+async def whatsapp_create_utility_template(token: str = ""):
+    """Crea 'dondever_resumen_diario' (UTILITY) en el WABA. Ver estado en /whatsapp/list-templates."""
+    if not token or token != os.getenv("ADMIN_TOKEN", ""):
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    return meta_whatsapp.create_daily_utility_template()
+
+
+@app.get("/whatsapp/window-status")
+async def whatsapp_window_status(token: str = ""):
+    """Qué suscriptores están dentro de la ventana de 24 h (freeform) y qué plantilla se usaría."""
+    if not token or token != os.getenv("ADMIN_TOKEN", ""):
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    from subscribers import get_active_subscribers
+    subs = [s.get("phone", s) if isinstance(s, dict) else s for s in get_active_subscribers()]
+    name, lang, cat = meta_whatsapp.pick_daily_template()
+    return {"template": {"name": name, "lang": lang, "category": cat},
+            "in_window": [p for p in subs if meta_whatsapp.in_24h_window(str(p))],
+            "outside_window": [p for p in subs if not meta_whatsapp.in_24h_window(str(p))],
+            "templates": [{k: t.get(k) for k in ("name", "language", "status", "category")} for t in meta_whatsapp.list_templates()]}
 
 
 @app.get("/whatsapp/delivery-log")

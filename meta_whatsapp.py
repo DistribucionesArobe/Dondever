@@ -224,6 +224,97 @@ def mark_as_read(message_id: str) -> bool:
         return False
 
 
+# ── Ventana de 24 h por número ─────────────────────────────────────────────
+# Meta solo permite texto libre si el usuario nos escribió en las últimas 24 h
+# (si no: error 131047 asíncrono, aunque la API responda ok). Guardamos el último
+# inbound por número para decidir freeform vs plantilla ANTES de enviar.
+import json as _json
+import time as _time
+from pathlib import Path as _Path
+_WINDOW_FILE = _Path(os.getenv("SUBSCRIBERS_FILE", "subscribers.json")).parent / "wa_last_inbound.json"
+_last_inbound: dict = {}
+try:
+    _last_inbound = _json.loads(_WINDOW_FILE.read_text(encoding="utf-8"))
+except Exception:
+    _last_inbound = {}
+
+
+def record_inbound(from_number: str, ts: float | None = None) -> None:
+    """Llamar cuando llega un mensaje del usuario (webhook)."""
+    key = _normalize_to(from_number)
+    if not key:
+        return
+    _last_inbound[key] = float(ts or _time.time())
+    try:
+        _WINDOW_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _WINDOW_FILE.write_text(_json.dumps(_last_inbound), encoding="utf-8")
+    except Exception as e:
+        logger.debug(f"no se pudo guardar wa_last_inbound: {e}")
+
+
+def in_24h_window(to: str) -> bool:
+    key = _normalize_to(to)
+    ts = _last_inbound.get(key) or _last_inbound.get("521" + key[2:] if key.startswith("52") else "")
+    return bool(ts) and (_time.time() - float(ts)) < 23.5 * 3600
+
+
+WABA_ID = os.getenv("WHATSAPP_WABA_ID", "1224835083125902")  # Distribuciones Arobe
+_tpl_cache: dict = {"ts": 0, "data": []}
+
+
+def list_templates(force: bool = False) -> list[dict]:
+    """Plantillas del WABA con status/categoría (cache 30 min)."""
+    if not force and _tpl_cache["data"] and _time.time() - _tpl_cache["ts"] < 1800:
+        return _tpl_cache["data"]
+    token, _ = _get_credentials()
+    try:
+        r = httpx.get(f"https://graph.facebook.com/{META_API_VERSION}/{WABA_ID}/message_templates",
+                      params={"fields": "name,language,status,category", "limit": "100", "access_token": token}, timeout=15)
+        data = r.json().get("data", []) if r.status_code == 200 else []
+        if data:
+            _tpl_cache.update(ts=_time.time(), data=data)
+        return data
+    except Exception as e:
+        logger.warning(f"list_templates failed: {e}")
+        return _tpl_cache["data"]
+
+
+DAILY_TEMPLATE_UTILITY = "dondever_resumen_diario"   # UTILITY: no le aplica el experimento de marketing
+DAILY_TEMPLATE_MARKETING = ("dondever_picks_diarios", "en")
+
+
+def pick_daily_template() -> tuple[str, str, str]:
+    """(nombre, idioma, categoría) de la mejor plantilla aprobada para el resumen diario."""
+    for t in list_templates():
+        if t.get("name") == DAILY_TEMPLATE_UTILITY and t.get("status") == "APPROVED":
+            return t["name"], t.get("language", "es_MX"), t.get("category", "UTILITY")
+    return DAILY_TEMPLATE_MARKETING[0], DAILY_TEMPLATE_MARKETING[1], "MARKETING"
+
+
+def create_daily_utility_template() -> dict:
+    """Crea la plantilla UTILITY del resumen diario (Meta la revisa; minutos a 24 h)."""
+    token, _ = _get_credentials()
+    payload = {
+        "name": DAILY_TEMPLATE_UTILITY,
+        "language": "es_MX",
+        "category": "UTILITY",
+        "allow_category_change": False,
+        "components": [
+            {"type": "BODY",
+             "text": "Hola 👋 Aquí está el resumen de partidos de hoy que solicitaste en DondeVer:\n\n{{1}}\n\nHorarios del centro de México. Responde VER para la lista completa con canales.",
+             "example": {"body_text": [["⚽ América vs Chivas 8:00 PM · Canal 5, TUDN\n🏈 Cowboys vs Eagles 7:15 PM · Fox Sports"]]}},
+            {"type": "FOOTER", "text": "Responde STOP para dejar de recibirlo."},
+        ],
+    }
+    try:
+        r = httpx.post(f"https://graph.facebook.com/{META_API_VERSION}/{WABA_ID}/message_templates",
+                       params={"access_token": token}, json=payload, timeout=20)
+        _tpl_cache["ts"] = 0
+        return {"status": r.status_code, "response": r.json()}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # Últimos estados de entrega (sent/delivered/read/failed) que Meta manda por webhook.
 # Es la única forma de saber POR QUÉ una plantilla "aceptada" (ok:true) nunca llega:
 # el error viene aquí (p. ej. 130472 'parte de un experimento', 131049 'límite por usuario',
