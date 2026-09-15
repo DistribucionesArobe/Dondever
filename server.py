@@ -4884,7 +4884,7 @@ async def contacto_submit(request: Request, motivo: str = Form("otro"), nombre: 
     try:
         from send_email_daily import send_email
         import html as _html
-        to = os.getenv("CONTACT_EMAIL", "ealejandro.robledo@gmail.com")
+        to = os.getenv("CONTACT_EMAIL", "contacto@arobegroup.com")
         labels = {"publicidad": "📣 Publicidad", "idea": "💡 Idea", "opinion": "💬 Opinión", "correccion": "🛠️ Corrección",
                   "widget": "🔗 Widget/colaboración", "otro": "Otro"}
         body = (f"<p><b>{labels.get(motivo, motivo)}</b> — {_html.escape(ctx['nombre'])} &lt;{_html.escape(ctx['email'])}&gt;</p>"
@@ -4904,7 +4904,7 @@ async def contact_messages(token: str = ""):
     if not token or token != os.getenv("ADMIN_TOKEN", ""):
         return JSONResponse(status_code=403, content={"error": "forbidden"})
     diag = {"resend_key_configured": bool(os.getenv("RESEND_API_KEY")), "from": os.getenv("RESEND_FROM_EMAIL", "DondeVer Picks <picks@dondever.app>"),
-            "to": os.getenv("CONTACT_EMAIL", "ealejandro.robledo@gmail.com"), "last_email": _contact_last_email}
+            "to": os.getenv("CONTACT_EMAIL", "contacto@arobegroup.com"), "last_email": _contact_last_email}
     try:
         with open(_CONTACT_FILE, "r", encoding="utf-8") as f:
             return {"ok": True, "email": diag, "messages": list(reversed(json.load(f)))[:100]}
