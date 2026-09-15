@@ -455,7 +455,7 @@
                 <div class="channel-group">
                     <span class="country-label free-label">TV ABIERTA</span>
                     {% for b in mx_free %}
-                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill broadcast" style="text-decoration:none;">{{ b.channel }}</a>
+                    <a href="/canal/{{ b.channel|channel_slug }}" class="channel-pill broadcast" style="text-decoration:none;">{{ b.channel }}</a>
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -467,7 +467,7 @@
                     {% if saff %}
                     <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
                     {% else %}
-                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
+                    <a href="/canal/{{ b.channel|channel_slug }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
                     {% endif %}
                     {% endfor %}
                 </div>
@@ -481,7 +481,7 @@
                     {% if saff %}
                     <a href="/go/{{ saff.key }}?s=game-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" class="channel-pill streaming" style="text-decoration:none;background:{{ saff.bg }};color:{{ saff.color }};font-weight:700;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
                     {% else %}
-                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
+                    <a href="/canal/{{ b.channel|channel_slug }}" class="channel-pill {{ b.info.get('type', 'unknown') }}" style="text-decoration:none;">{{ b.channel }}</a>
                     {% endif %}
                     {% endfor %}
                 </div>
@@ -489,7 +489,7 @@
                 {% if other_channels %}
                 <div class="channel-group">
                     {% for b in other_channels %}
-                    <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-pill unknown" style="text-decoration:none;">{{ b.channel }}</a>
+                    <a href="/canal/{{ b.channel|channel_slug }}" class="channel-pill unknown" style="text-decoration:none;">{{ b.channel }}</a>
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -1471,7 +1471,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:0.3rem;">
                 {% for b in game.broadcasts[:6] %}
                 {% if not b.get('is_us_regional') %}
-                <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" style="font-size:0.68rem;font-weight:600;color:var(--text-secondary,#6b7280);background:var(--bg-muted,#f3f4f6);padding:0.2rem 0.5rem;border-radius:4px;text-decoration:none;">{{ b.channel }}</a>
+                <a href="/canal/{{ b.channel|channel_slug }}" style="font-size:0.68rem;font-weight:600;color:var(--text-secondary,#6b7280);background:var(--bg-muted,#f3f4f6);padding:0.2rem 0.5rem;border-radius:4px;text-decoration:none;">{{ b.channel }}</a>
                 {% endif %}
                 {% endfor %}
                 <a href="/canales" style="font-size:0.68rem;font-weight:600;color:#10b981;padding:0.2rem 0.5rem;text-decoration:none;">Todos &rarr;</a>

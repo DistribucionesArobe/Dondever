@@ -1692,7 +1692,7 @@
                             {{ b.channel }} &#8599;
                         </a>
                         {% else %}
-                        <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="text-decoration:none;" onclick="event.stopPropagation();">
+                        <a href="/canal/{{ b.channel|channel_slug }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="text-decoration:none;" onclick="event.stopPropagation();">
                             {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
                         </a>
                         {% endif %}
@@ -2012,7 +2012,7 @@
                             {{ b.channel }} &#8599;
                         </a>
                         {% else %}
-                        <a href="/canal/{{ b.channel|lower|replace(' ', '-')|replace('+', '-plus') }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="text-decoration:none;" onclick="event.stopPropagation();">
+                        <a href="/canal/{{ b.channel|channel_slug }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}{% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="text-decoration:none;" onclick="event.stopPropagation();">
                             {% if b.info and b.info.get('country') == 'MX' and b.info.get('type') == 'broadcast' %}GRATIS {% endif %}{{ b.channel }}
                         </a>
                         {% endif %}
@@ -2145,11 +2145,11 @@
     <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
         {% set popular_channels = [
             ("ViX", "vix"), ("ESPN", "espn"), ("TUDN", "tudn"), ("Canal 5", "canal-5"),
-            ("Fox Sports", "fox-sports"), ("TNT Sports", "tnt-sports"),
+            ("Fox Sports MX", "fox-sports-mx"), ("ESPN MX", "espn-mx"),
             ("Disney+", "disney-plus"), ("Prime Video", "prime-video"),
             ("Paramount+", "paramount-plus"), ("Apple TV+", "apple-tv-plus"),
-            ("MLB.tv", "mlb-tv"), ("NBA League Pass", "nba-league-pass"),
-            ("Claro Sports", "claro-sports"), ("TV Azteca", "tv-azteca")
+            ("MLB.TV", "mlbtv"), ("ESPN+", "espn-plus"),
+            ("Claro Sports", "claro-sports"), ("Azteca 7", "azteca-7")
         ] %}
         {% for name, slug in popular_channels %}
         <a href="/canal/{{ slug }}" style="display:inline-block;padding:0.3rem 0.65rem;border-radius:6px;font-size:0.68rem;font-weight:600;background:var(--bg-card,white);border:1px solid var(--border-main,#e5e7eb);color:var(--text-secondary,#6b7280);text-decoration:none;transition:all 0.15s;">{{ name }}</a>

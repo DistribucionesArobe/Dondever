@@ -1243,11 +1243,29 @@ async def canales_ads_page(request: Request):
 
 
 def _slugify_channel(name: str) -> str:
-    """Turn a channel name into a URL-safe slug: 'ESPN MX' -> 'espn-mx'."""
+    """Turn a channel name into a URL-safe slug: 'ESPN MX' -> 'espn-mx', 'Disney+' -> 'disney', 'MLB.TV' -> 'mlbtv'.
+    ÚNICA regla de slug de canal: la usan /canales, /canal/ y el filtro Jinja `channel_slug` de las cards."""
     import re, unicodedata
-    s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    s = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
+    s = s.replace("+", " plus")            # ESPN+ → espn-plus (distinto de ESPN); Disney+ → disney-plus
     s = re.sub(r"[^\w\s-]", "", s).strip().lower()
     return re.sub(r"[\s_]+", "-", s)
+
+
+_CHANNEL_SLUG_LEGACY = {
+    "disney": "disney-plus", "paramount": "paramount-plus", "appletv": "apple-tv-plus", "apple-tv": "apple-tv-plus",
+    "mlb.tv": "mlbtv", "mlb-tv": "mlbtv", "nba.tv": "nbatv", "nba-tv": "nbatv", "nfl.tv": "nfltv", "nhl.tv": "nhltv",
+    "espnplus": "espn-plus", "star-plus": "disney-plus", "star": "disney-plus",
+}
+
+
+def _canon_channel_slug(slug: str) -> str:
+    """Normaliza variantes viejas de URL a la canónica de _slugify_channel."""
+    s = (slug or "").lower().strip().strip("-")
+    return _CHANNEL_SLUG_LEGACY.get(s, s.replace(".", ""))
+
+
+templates.env.filters["channel_slug"] = _slugify_channel
 
 
 @app.get("/canales", response_class=HTMLResponse)
@@ -1290,6 +1308,10 @@ async def canales_index(request: Request):
 @app.get("/canal/{channel_slug}", response_class=HTMLResponse)
 async def canal_page(request: Request, channel_slug: str, date: Optional[str] = Query(None)):
     """Per-channel page — all games airing on a specific channel today."""
+    # Una sola URL por canal: variantes viejas (disney-plus, mlb.tv, paramount-plus…) → 301 a la canónica
+    _canon = _canon_channel_slug(channel_slug)
+    if _canon != channel_slug:
+        return RedirectResponse(url=f"/canal/{_canon}" + (f"?date={date}" if date else ""), status_code=301)
     games = await get_todays_games(date_str=date)
 
     today = datetime.now(TZ_MX)
@@ -1322,7 +1344,9 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
         re.match(r"^[kw][a-z]{2,3}(-|\d|$)", channel_slug) or re.search(
             r"(fanduel-sn|bally|nbc-sports-(?!mx)|root-sports|marquee|yes-network|^sny$|^nesn$|^masn|"
             r"^sportsnet|^[a-z]+\.tv$|fox\d{1,2}$|cbs\)|\(cbs|\(nbc|\(abc|\(fox)", channel_slug))
-    _is_curated = channel_slug in CHANNEL_PAGES or (channel_name and channel_name in STREAMING_AFFILIATES)
+    _curated_page = CHANNEL_PAGES.get(channel_slug) or next((v for k, v in CHANNEL_PAGES.items() if _canon_channel_slug(k) == channel_slug), None)
+    _is_curated = bool(_curated_page) or (channel_name and channel_name in STREAMING_AFFILIATES) \
+        or any(_slugify_channel(n) == channel_slug for n in STREAMING_AFFILIATES)
     if _regional_us and not _is_curated:
         return templates.TemplateResponse(
             request, "404.html", status_code=404,
@@ -1334,7 +1358,8 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             context={"message": "Canal no encontrado."}
         )
     if not channel_name:
-        channel_name = CHANNEL_PAGES.get(channel_slug, {}).get("name") or channel_slug.replace("-", " ").title()
+        channel_name = (_curated_page or {}).get("name") or next((n for n in STREAMING_AFFILIATES if _slugify_channel(n) == channel_slug), None) \
+            or channel_slug.replace("-", " ").title()
 
     # Check if this is a streaming platform with affiliate
     saff = STREAMING_AFFILIATES.get(channel_name)
@@ -4846,7 +4871,7 @@ async def sitemap_core():
         urls.append(_sm_url(f'{APP_URL}/{sport_slug}', today_str, "daily", "0.9"))
 
     # Curated channel pages ("qué pasan hoy en ESPN")
-    for ch_slug in CHANNEL_PAGES:
+    for ch_slug in sorted({_canon_channel_slug(k) for k in CHANNEL_PAGES}):
         urls.append(_sm_url(f'{APP_URL}/canal/{ch_slug}', today_str, "daily", "0.8"))
 
     # Country pages (evergreen)
@@ -5021,6 +5046,12 @@ CHANNEL_PAGES = {
     "apple-tv":      {"name": "Apple TV+",     "country": "US", "type": "streaming", "desc": "Apple TV+ tiene MLS Season Pass con todos los partidos de la MLS y Friday Night Baseball de MLB."},
     "univision":     {"name": "Univision",     "country": "US", "type": "broadcast", "desc": "Univision transmite Liga MX, Concacaf y la Seleccion Mexicana para la audiencia hispana en EE.UU."},
     "telemundo":     {"name": "Telemundo",     "country": "US", "type": "broadcast", "desc": "Telemundo cubre Premier League, Copa del Mundo y eventos deportivos en espanol en EE.UU."},
+    # Streaming con afiliado / muy buscados (no deben dar 404 aunque hoy no tengan partidos)
+    "disney-plus":   {"name": "Disney+",       "country": "MX", "type": "streaming", "desc": "Disney+ (antes Star+) incluye ESPN en Mexico y Latinoamerica: Premier League, La Liga, Champions, NBA, MLB, F1 y UFC segun el pais."},
+    "mlbtv":         {"name": "MLB.TV",        "country": "US", "type": "streaming", "desc": "MLB.TV transmite todos los juegos de la temporada regular de las Grandes Ligas en streaming (con bloqueos locales en EE.UU.; en Mexico sin bloqueos)."},
+    "tnt-sports":    {"name": "TNT Sports",    "country": "MX", "type": "cable",     "desc": "TNT Sports Mexico transmite Champions League, Europa League y Conference League por cable y en HBO Max."},
+    "hbo-max":       {"name": "HBO Max",       "country": "MX", "type": "streaming", "desc": "HBO Max transmite en Mexico la Champions League y competencias UEFA de TNT Sports."},
+    "nba-league-pass": {"name": "NBA League Pass", "country": "MX", "type": "streaming", "desc": "NBA League Pass ofrece todos los partidos de la NBA en vivo y bajo demanda en Mexico y Latinoamerica."},
 }
 
 
