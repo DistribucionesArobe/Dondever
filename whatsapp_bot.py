@@ -96,17 +96,38 @@ def format_game_for_whatsapp(game: dict) -> str:
     return "\n".join(lines)
 
 
-def get_random_affiliate(betting_only: bool = False) -> dict:
-    """Pick an affiliate to show (rotate between them) with WhatsApp tracking.
-    betting_only=True excludes VPN/non-betting affiliates (for picks, game results).
-    """
+def _country_from_phone(phone: str) -> str:
+    """Código de país por lada del número: 52 → MX, 1 → US, 58 VE, 57 CO, 54 AR, 507 PA, 1809/1829/1849 RD…"""
+    d = "".join(ch for ch in (phone or "") if ch.isdigit())
+    if d.startswith("52"):
+        return "MX"
+    if d.startswith(("1809", "1829", "1849")):
+        return "DO"
+    if d.startswith("1"):
+        return "US"
+    for pre, cc in (("58", "VE"), ("57", "CO"), ("54", "AR"), ("507", "PA"), ("56", "CL"), ("51", "PE"), ("593", "EC"), ("34", "ES")):
+        if d.startswith(pre):
+            return cc
+    return ""
+
+
+def get_random_affiliate(betting_only: bool = False, phone: str = "", source: str = "whatsapp") -> dict:
+    """Afiliado a mostrar. Para apuestas se elige por país del número (misma regla que /go/bet):
+    MX → Jubilee/Vivento (licencia mexicana), US → Betsson, resto de LATAM → 1xBet.
+    Antes era aleatorio entre Betsson/Jubilee/Vivento y a usuarios de México les salía Betsson."""
     if betting_only:
-        betting_keys = [k for k in AFFILIATES if k in ("betsson", "jubilee", "vivento")]
-        key = random.choice(betting_keys) if betting_keys else random.choice(list(AFFILIATES.keys()))
+        cc = _country_from_phone(phone)
+        if cc == "MX" or not cc:
+            pool = [k for k in ("jubilee", "vivento") if k in AFFILIATES]
+        elif cc == "US":
+            pool = [k for k in ("betsson",) if k in AFFILIATES]
+        else:
+            pool = [k for k in ("1xbet",) if k in AFFILIATES]
+        key = random.choice(pool) if pool else random.choice([k for k in AFFILIATES if k in ("betsson", "jubilee", "vivento", "1xbet")])
     else:
         key = random.choice(list(AFFILIATES.keys()))
     aff = AFFILIATES[key].copy()
-    aff["url"] = get_short_affiliate_url(key, source="whatsapp")
+    aff["url"] = get_short_affiliate_url(key, source=source)
     return aff
 
 
@@ -347,7 +368,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
 
         channels = format_broadcast_text(pick["broadcasts"])
         time_str = format_game_time(pick["date"])
-        aff = get_random_affiliate(betting_only=True)
+        aff = get_random_affiliate(betting_only=True, phone=from_number, source="wa-pick")
         pick_sport = pick.get("sport", "")
         pick_home_left = pick_sport in HOME_LEFT_SPORTS
         pick_first = pick["home"]["name"] if pick_home_left else pick["away"]["name"]
@@ -388,7 +409,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
         upcoming.sort(key=score)
         combo_games = upcoming[:3] if len(upcoming) >= 3 else upcoming[:2]
 
-        aff = get_random_affiliate(betting_only=True)
+        aff = get_random_affiliate(betting_only=True, phone=from_number, source="wa-parlay")
         lines = ["🔥 *PARLAY DEL DÍA* (combinada de 3)\n"]
         for i, g in enumerate(combo_games, 1):
             team, reason = _compute_pick(g)
@@ -502,7 +523,7 @@ async def handle_whatsapp_message(body: str, from_number: str) -> str:
             lines.append(f"...y {len(games) - 10} juegos mas en {APP_URL}")
 
         # Affiliate link
-        aff = get_random_affiliate(betting_only=True)
+        aff = get_random_affiliate(betting_only=True, phone=from_number, source="wa-equipo")
         lines.append(f"\n{aff['cta']}: {aff['url']}")
 
         return "\n".join(lines)

@@ -401,8 +401,8 @@ async def compose_daily_message() -> str | None:
         lines.append("")
 
     # ── Casino CTA ──
-    jubilee_url = get_short_affiliate_url("jubilee", source="whatsapp")
-    lines.append(f"💰 Ver cuotas → {jubilee_url}")
+    # /go/bet elige la casa según el país de quien abre el link (MX → Jubilee/Vivento, US → Betsson, LATAM → 1xBet)
+    lines.append(f"💰 Ver cuotas y bono → {APP_URL}/go/bet?s=wa-daily-cuotas")
     lines.append("")
 
     # ── Footer ──
