@@ -376,6 +376,28 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
             if b"</head>" in body:
                 body = body.replace(b"</head>", snippet + b"</head>", 1)
 
+            # Logo fijo arriba al hacer scroll en TODAS las páginas interiores (la portada ya lo tiene)
+            _p = request.url.path
+            if _p != "/" and not _p.startswith("/widget") and b"</body>" in body and b'id="sticky-brand"' not in body:
+                sticky_css = (
+                    '<style>.dv-sticky{position:fixed;top:0;left:0;right:0;z-index:150;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);'
+                    'border-bottom:1px solid rgba(255,255,255,.08);padding:.4rem 1rem;display:flex;align-items:center;justify-content:space-between;'
+                    'transform:translateY(-100%);transition:transform .3s ease;box-shadow:0 2px 12px rgba(0,0,0,.3)}'
+                    '.dv-sticky.visible{transform:translateY(0)}.dv-sticky img{height:30px;width:auto;display:block}'
+                    '.dv-sticky a.h{color:#10b981;font-weight:800;font-size:.8rem;text-decoration:none}</style>'
+                ).encode("utf-8")
+                if b"</head>" in body:
+                    body = body.replace(b"</head>", sticky_css + b"</head>", 1)
+                sticky_html = (
+                    '<div class="dv-sticky" id="dv-sticky"><a href="/" aria-label="DondeVer inicio"><img src="/static/logo-dondever.png" alt="DondeVer.app"></a>'
+                    '<a class="h" href="/">Inicio &rarr;</a></div>'
+                    '<script>(function(){var b=document.getElementById("dv-sticky");if(!b)return;var h=document.querySelector(".header")||document.querySelector("header");'
+                    'var t=h?(h.offsetTop+h.offsetHeight):80;var on=false;function f(){var y=window.scrollY||window.pageYOffset;'
+                    'if(y>t&&!on){b.classList.add("visible");on=true}else if(y<=t&&on){b.classList.remove("visible");on=false}}'
+                    'window.addEventListener("scroll",f,{passive:true});f();})();</script>'
+                ).encode("utf-8")
+                body = body.replace(b"</body>", sticky_html + b"</body>", 1)
+
             # Botón de contacto en el pie de TODAS las páginas (publicidad, ideas, opiniones)
             if b"</footer>" in body and not request.url.path.startswith(("/widget", "/contacto")):
                 contact_btn = (
