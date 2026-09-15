@@ -390,7 +390,7 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                 if b"</head>" in body:
                     body = body.replace(b"</head>", sticky_css + b"</head>", 1)
                 sticky_html = (
-                    '<div class="dv-sticky" id="dv-sticky"><a href="/" aria-label="DondeVer inicio"><img src="/static/logo-dondever.png" alt="DondeVer.app"></a>'
+                    '<div class="dv-sticky" id="dv-sticky"><a href="/" aria-label="DondeVer inicio"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app"></a>'
                     '<a class="h" href="/">Inicio &rarr;</a></div>'
                     '<script>(function(){var b=document.getElementById("dv-sticky");if(!b)return;var h=document.querySelector(".header")||document.querySelector("header");'
                     'var t=h?(h.offsetTop+h.offsetHeight):80;var on=false;function f(){var y=window.scrollY||window.pageYOffset;'

@@ -1476,7 +1476,7 @@
 {%- endif -%}
 {%- endmacro %}
 <div class="sticky-brand" id="sticky-brand">
-    <a href="/"><img src="/static/logo-dondever.png" alt="DondeVer.app" class="sticky-brand-logo"></a>
+    <a href="/"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" class="sticky-brand-logo"></a>
     <button class="sticky-brand-toggle" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button>
 </div>
 
@@ -1491,7 +1491,7 @@
 {% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
 <div class="hero">
     <div class="hero-inner">
-        <a href="/"><img src="/static/logo-dondever.png" alt="DondeVer.app" class="hero-logo"></a>
+        <a href="/"><img src="/static/logo-dondever-md.png" alt="DondeVer.app" class="hero-logo"></a>
         {% if is_historical %}
         <h1>Deportes del <span class="accent">{{ today_display }}</span></h1>
         {% else %}

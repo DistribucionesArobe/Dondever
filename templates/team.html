@@ -204,6 +204,10 @@
         .shop-section { margin:1.25rem 0; }
         .shop-section h2 { font-size:1rem; font-weight:700; margin-bottom:0.6rem; }
         .shop-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:0.6rem; }
+        /* México (default): MercadoLibre primero, Amazon (EE.UU.) al final. En EE.UU. se invierte por JS. */
+        .shop-grid .shop-card[data-affiliate="mercadolibre"] { order: -1; }
+        .shop-section.shop-us .shop-card[data-affiliate="mercadolibre"] { order: 1; }
+        .shop-section.shop-us .amz-intl { display: none; }
         .shop-card {
             display:flex; flex-direction:column; align-items:center; justify-content:center;
             background:white; border:1px solid #e5e7eb; border-radius:10px;
@@ -771,7 +775,7 @@
                 {% endif %}
                 <span class="shop-label">{{ prod.name }}</span>
                 <span class="shop-sub">{{ prod.brand }} &middot; Producto verificado</span>
-                <span class="shop-badge">Comprar en Amazon &#8599;</span>
+                <span class="shop-badge">Comprar en Amazon &#8599;</span><span class="shop-sub amz-intl" style="display:block;font-size:0.6rem;color:#9ca3af;">Amazon EE.UU. &middot; env&iacute;o internacional a M&eacute;xico</span>
             </a>
             {% endif %}
             {# ── AMAZON: Curated gorra with image ── #}
@@ -787,7 +791,7 @@
                 {% endif %}
                 <span class="shop-label">{{ gprod.name }}</span>
                 <span class="shop-sub">{{ gprod.brand }}</span>
-                <span class="shop-badge">Comprar en Amazon &#8599;</span>
+                <span class="shop-badge">Comprar en Amazon &#8599;</span><span class="shop-sub amz-intl" style="display:block;font-size:0.6rem;color:#9ca3af;">Amazon EE.UU. &middot; env&iacute;o internacional a M&eacute;xico</span>
             </a>
             {% endif %}
             {# ── AMAZON: Generic jersey (with ML image fallback) ── #}
@@ -800,7 +804,7 @@
                 {% endif %}
                 <span class="shop-label">Jerseys {{ team_name }}</span>
                 <span class="shop-sub">Temporada actual</span>
-                <span class="shop-badge">Ver en Amazon &#8599;</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span><span class="shop-sub amz-intl" style="display:block;font-size:0.6rem;color:#9ca3af;">Amazon EE.UU. &middot; env&iacute;o internacional a M&eacute;xico</span>
             </a>
             {% endif %}
             {# ── AMAZON: Generic gorra (with ML image fallback) ── #}
@@ -813,7 +817,7 @@
                 {% endif %}
                 <span class="shop-label">Gorras</span>
                 <span class="shop-sub">New Era y mas</span>
-                <span class="shop-badge">Ver en Amazon &#8599;</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span><span class="shop-sub amz-intl" style="display:block;font-size:0.6rem;color:#9ca3af;">Amazon EE.UU. &middot; env&iacute;o internacional a M&eacute;xico</span>
             </a>
             {% endif %}
             {# ── AMAZON: Accesorios (with ML image fallback) ── #}
@@ -825,7 +829,7 @@
                 {% endif %}
                 <span class="shop-label">Accesorios</span>
                 <span class="shop-sub">Todo de {{ team_name }}</span>
-                <span class="shop-badge">Ver en Amazon &#8599;</span>
+                <span class="shop-badge">Ver en Amazon &#8599;</span><span class="shop-sub amz-intl" style="display:block;font-size:0.6rem;color:#9ca3af;">Amazon EE.UU. &middot; env&iacute;o internacional a M&eacute;xico</span>
             </a>
             {# ── MERCADOLIBRE: Jersey with API image ── #}
             {% set meli_curated = team_shop_meli.get(team_slug) %}
@@ -867,7 +871,7 @@
         <div style="font-size:0.6rem;color:#9ca3af;margin-top:0.5rem;text-align:right;">Publicidad &middot; Amazon Associates &middot; MercadoLibre Afiliados</div>
     </div>
     <script>
-    (function(){var s=document.querySelector('.shop-section');if(s&&!s.querySelector('.shop-card.has-img'))s.style.display='none';})();
+    (function(){var s=document.querySelector('.shop-section');if(!s)return;if(!s.querySelector('.shop-card.has-img')){s.style.display='none';return;}var cc='';try{cc=(localStorage.getItem('dv_country')||'').toUpperCase();}catch(e){}if(cc==='US')s.classList.add('shop-us');})();
     </script>
 
     {# ══ TABLA DE POSICIONES ══ #}
