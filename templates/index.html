@@ -96,7 +96,9 @@
                 "awayTeam": {"@type": "SportsTeam", "name": "{{ game.away.name }}"},
                 {% endif %}
                 "organizer": {"@type": "SportsOrganization", "name": "{{ game.league_name }}"}
-                {% if game.broadcasts %},
+                {# Solo declaramos BroadcastEvent con canales confirmados: un dato
+                   estructurado es una afirmaci&oacute;n hacia Google, no una sugerencia. #}
+                {% if game.broadcasts and game.get('channels_confirmed', True) %},
                 "broadcast": [{% for bc in game.broadcasts[:3] %}{% if not loop.first %},{% endif %}{"@type": "BroadcastEvent", "isLiveBroadcast": true, "publishedOn": {"@type": "BroadcastService", "name": "{{ bc.channel }}"}}{% endfor %}]
                 {% endif %}
               }
@@ -1445,7 +1447,12 @@
 {%- endfor -%}
 {%- if ns_pc.b is none and game.broadcasts -%}{%- set ns_pc.b = game.broadcasts[0] -%}{%- set ns_pc.foreign = true -%}{%- endif -%}
 {%- if ns_pc.b -%}
-<span class="channel-tag {{ ns_pc.b.info.get('type', 'unknown') if ns_pc.b.info else 'unknown' }}{% if ns_pc.b.info and ns_pc.b.info.get('country') == 'MX' and ns_pc.b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="font-size:0.74rem;padding:3px 9px;" title="{% if ns_pc.foreign %}Canal de Estados Unidos; en México aún sin canal confirmado{% endif %}">{{ ns_pc.b.channel }}{% if ns_pc.foreign %} <span style="opacity:0.75;font-weight:600;">· EE.UU.</span>{% endif %}</span>
+{#- Si el canal sale del default de la liga y no de un dato de este partido, se
+    dice "probable" en vez de presentarlo como confirmado. -#}
+{#- .get(…, True): los partidos de TheSportsDB y otras rutas no traen el campo;
+    sin el default se marcar&iacute;an como "probable" canales que s&iacute; est&aacute;n confirmados. -#}
+{%- set _unconf = not game.get('channels_confirmed', True) -%}
+<span class="channel-tag {{ ns_pc.b.info.get('type', 'unknown') if ns_pc.b.info else 'unknown' }}{% if ns_pc.b.info and ns_pc.b.info.get('country') == 'MX' and ns_pc.b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="font-size:0.74rem;padding:3px 9px;{% if _unconf %}opacity:0.78;{% endif %}" title="{% if ns_pc.foreign %}Canal de Estados Unidos; en México a&uacute;n sin canal confirmado{% elif _unconf %}Canal habitual de la liga; a&uacute;n sin confirmar para este partido{% endif %}">{{ ns_pc.b.channel }}{% if ns_pc.foreign %} <span style="opacity:0.75;font-weight:600;">· EE.UU.</span>{% elif _unconf %} <span style="opacity:0.75;font-weight:600;">· probable</span>{% endif %}</span>
 {%- endif -%}
 {%- endmacro %}
 <div class="sticky-brand" id="sticky-brand">

@@ -29,7 +29,6 @@ from sports_api import (
     generate_nfl_power_rankings, generate_nfl_picks, get_nfl_team_advanced_stats,
     fetch_sportsdb_team_info, compute_sportsdb_standings,
     fetch_league_leaders,
-    mx_channels_for_game,
     DEFAULT_LEAGUE_CHANNELS,
 )
 from whatsapp_bot import handle_whatsapp_message
@@ -6229,17 +6228,16 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         is_home = st in (home.get("name", "") or "").lower()
         opp_full = away.get("name", "") if is_home else home.get("name", "")
         opp = _short_team_name(opp_full, lg)
-        # get_todays_games deja "broadcasts" tal cual viene de ESPN, o sea con
-        # canales de Estados Unidos. Tomar el primero a secas ponía "MLB.TV" o
-        # "Paramount+" en el título de una página que lee gente en México, donde
-        # ese servicio ni siquiera transmite el juego. Pasa por la misma función
-        # que el resto del sitio para que la respuesta sea una sola.
-        us = [b.get("channel") if isinstance(b, dict) else str(b)
-              for b in (game.get("broadcasts") or [])]
-        us = [c for c in us if c]
-        mx = mx_channels_for_game(game.get("league_slug", ""),
-                                  home.get("name", ""), away.get("name", ""), us)
-        return opp, (mx[0] if mx else (us[0] if us else ""))
+        # El canal solo se nombra si viene de un dato real de este partido.
+        # channels_confirmed es False cuando get_todays_games cayó al default de
+        # la liga: en ese caso el título dice la hora y calla el canal, en vez de
+        # afirmar uno que nadie verificó.
+        if not game.get("channels_confirmed", True):
+            return opp, ""
+        chans = [b.get("channel") if isinstance(b, dict) else str(b)
+                 for b in (game.get("broadcasts") or [])]
+        chans = [c for c in chans if c]
+        return opp, (chans[0] if chans else "")
 
     today = [g for g in games if (g.get("status") or {}).get("state") in ("pre", "in", "post")]
     live = [g for g in today if g["status"]["state"] == "in"]

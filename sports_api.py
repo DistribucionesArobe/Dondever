@@ -1088,6 +1088,9 @@ async def parse_espn_events_enriched(
 
         # Determine MX channels to add
         mx_defaults = []
+        # ¿Los canales salen de un dato real (ESPN, TheSportsDB, la tabla curada
+        # de Liga MX) o de un default de liga? Solo lo primero se puede afirmar.
+        channels_confirmed = True
         if league_slug == "liga-mx":
             # Liga MX: always add team-specific channels (ESPN rarely has MX data)
             home_lower = home["name"].lower()
@@ -1106,6 +1109,10 @@ async def parse_espn_events_enriched(
         elif league_slug == "nfl":
             # NFL: rights-based mapping (TNF→Fox Sports MX, MNF/SNF→ESPN MX/Disney+, todos→Game Pass)
             mx_defaults = nfl_mx_channels([b["channel"] for b in espn_broadcasts])
+            # Sin datos de ESPN, nfl_mx_channels devuelve el reparto genérico de
+            # derechos, no el canal de ESTE partido: es suposición.
+            if not espn_broadcasts:
+                channels_confirmed = False
         elif not has_mx_channel:
             # Try TheSportsDB first — match this game in pre-fetched schedule
             for sdb_ev in sportsdb_events:
@@ -1143,33 +1150,23 @@ async def parse_espn_events_enriched(
                     break
 
             if not mx_defaults and espn_broadcasts:
-                # TheSportsDB had nothing — map US channel → MX equivalent
-                _US_TO_MX = {
-                    "ESPN": "ESPN MX", "ESPN2": "ESPN MX", "ESPNU": "ESPN MX",
-                    "ESPNews": "ESPN MX", "ABC": "ESPN MX",
-                    "ESPN+": "Disney+",
-                    "FOX": "Fox Sports MX", "FS1": "Fox Sports MX",
-                    "FS2": "Fox Sports MX",
-                    "NBC": "ESPN MX", "NBCSN": "ESPN MX",
-                    "CBS": "Fox Sports MX", "CBSSN": "Fox Sports MX",
-                    "Univision": "TUDN", "UniMas": "TUDN",
-                    "Telemundo": "Telemundo",
-                    "TNT": "TNT Sports", "TBS": "TNT Sports",
-                    "Max": "Max", "HBO Max": "Max",
-                    "Peacock": "Disney+",
-                    "Amazon Prime": "Amazon Prime",
-                    "Prime Video": "Amazon Prime",
-                    "Netflix": "Netflix",
-                }
+                # TheSportsDB no tenía nada — traducimos el canal de EE.UU.
+                # Antes había AQUÍ una segunda copia de la tabla US→MX, aparte de
+                # US_TO_MX_CHANNEL. Dos copias de la misma tabla es justo el bug
+                # que ya nos dio tres respuestas distintas para Juárez–Tigres:
+                # se actualiza una y la otra se queda vieja. Ahora hay una sola.
                 mapped = set()
                 for b in espn_broadcasts:
-                    mx_ch = _US_TO_MX.get(b["channel"])
+                    mx_ch = US_TO_MX_CHANNEL.get(b["channel"])
                     if mx_ch and mx_ch not in mapped:
                         mapped.add(mx_ch)
                         mx_defaults.append(mx_ch)
             elif not mx_defaults and not espn_broadcasts:
-                # Nothing from ESPN or TheSportsDB — league defaults as last resort
+                # Nada de ESPN ni de TheSportsDB. Los defaults de liga son una
+                # SUPOSICIÓN, no un dato: se marcan como no confirmados para que
+                # el título, la meta description y el JSON-LD no los afirmen.
                 mx_defaults = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
+                channels_confirmed = False
 
         # Add MX channels that aren't already in ESPN data
         for ch in mx_defaults:
@@ -1187,17 +1184,28 @@ async def parse_espn_events_enriched(
                 "info": info,
             })
 
-        # Sort: free TV first (TV abierta), then cable, streaming, US regional last
+        # Orden: primero por PAÍS, después por tipo (abierta → cable → streaming).
+        #
+        # El país faltaba y por eso el título de /equipo/dodgers decía "por
+        # MLB.TV" a lectores de México. MLB.TV no está en CHANNEL_ALIASES, así
+        # que caía en el tipo "cable" por defecto y empataba con ESPN MX; como
+        # los canales de ESPN se agregan ANTES que los mexicanos y el sort de
+        # Python es estable, el empate lo ganaba siempre el de Estados Unidos.
+        # El público de este sitio está en México: un canal mexicano va primero
+        # aunque sea streaming, y uno de EE.UU. va al final aunque sea abierto.
         def _channel_sort_key(b):
             if b.get("is_us_regional"):
-                return 3
+                return (3, 0)
+            country = (b.get("info") or {}).get("country", "")
+            if country == "MX":
+                geo = 0
+            elif not country:          # global (Netflix, Amazon…) o desconocido
+                geo = 1
+            else:                      # US y cualquier otro país
+                geo = 2
             ch_type = (b.get("info") or {}).get("type", "cable")
-            if ch_type == "free":
-                return 0
-            elif ch_type == "cable":
-                return 1
-            else:  # streaming
-                return 2
+            tier = {"free": 0, "cable": 1}.get(ch_type, 2)
+            return (geo, tier)
         broadcasts.sort(key=_channel_sort_key)
 
         # Status
@@ -1301,6 +1309,10 @@ async def parse_espn_events_enriched(
             "status": status,
             "live": live,
             "broadcasts": broadcasts,
+            # False = los canales salen del default de la liga, no de un dato de
+            # este partido. Quien AFIRME el canal (título, meta description,
+            # JSON-LD) tiene que callarse cuando esto es False.
+            "channels_confirmed": channels_confirmed,
             "venue": venue,
             "recap": recap,
             "link": ev.get("links", [{}])[0].get("href", "") if ev.get("links") else "",
