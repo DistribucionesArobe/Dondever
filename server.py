@@ -6222,25 +6222,31 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
     pre = [g for g in today if g["status"]["state"] == "pre"]
     post = [g for g in today if g["status"]["state"] == "post"]
 
+    # Nota SEO: la consulta real es "donde ver <equipo> hoy" (69 clics de
+    # "donde ver cruz azul hoy", 45 de "donde ver yankees hoy"...). Con posición
+    # media 10 y CTR 1.1%, lo que más pesa es que el título empiece con la frase
+    # exacta que buscaron — Google la resalta en negritas. Por eso "Dónde ver"
+    # va al frente y no detrás de un pipe, y la descripción responde hora+canal
+    # en la primera línea en vez de listar países.
     if live:
         g = live[0]
         opp, ch = _opp_and_channel(g)
-        ch_txt = f" en {ch}" if ch else ""
+        ch_txt = f" por {ch}" if ch else ""
         return {
-            "title": f"{team_name} vs {opp} EN VIVO hoy{ch_txt} | Dónde ver",
+            "title": f"Dónde ver {team_name} vs {opp} EN VIVO hoy{ch_txt}",
             "h1": f"{team_name} vs {opp} en vivo hoy{ch_txt}",
-            "desc": f"{team_name} vs {opp} EN VIVO ahora{ch_txt}. Marcador en tiempo real, canal de TV y streaming{lg_sfx} en México, Venezuela, Panamá y Latinoamérica.",
+            "desc": f"{team_name} vs {opp} se juega ahora{ch_txt}. Marcador en vivo, canal de TV y cómo verlo en streaming{lg_sfx} desde México y Latinoamérica.",
         }
     if pre:
         g = pre[0]
         opp, ch = _opp_and_channel(g)
         t = format_mx_time(g.get("date", "")).lstrip("0")
-        ch_txt = f" en {ch}" if ch else ""
+        ch_txt = f" por {ch}" if ch else ""
         t_txt = f" {t} MX" if t else ""
         return {
-            "title": f"{team_name} hoy:{t_txt}{ch_txt} vs {opp} | Dónde ver",
+            "title": f"Dónde ver {team_name} vs {opp} hoy:{t_txt}{ch_txt}",
             "h1": f"Dónde ver {team_name} hoy vs {opp}:{t_txt}{ch_txt}",
-            "desc": f"{team_name} vs {opp} hoy{t_txt} (hora de México){ch_txt}. Canal de TV, streaming y horario{lg_sfx} para México, USA, Venezuela, Panamá y Latinoamérica.",
+            "desc": f"{team_name} vs {opp} hoy{t_txt} (hora de México){ch_txt}. Horario en tu país, canal de TV, streaming{lg_sfx} y qué hacer si no tienes cable.",
         }
     if post:
         g = post[0]
@@ -6250,9 +6256,9 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         hs, as_ = home.get("score", ""), away.get("score", "")
         score = f" {hs}-{as_}" if hs != "" and as_ != "" else ""
         return {
-            "title": f"{team_name} hoy: resultado vs {opp}{score} y próximo juego | Dónde ver",
+            "title": f"{team_name} hoy{score} vs {opp} | Dónde ver el próximo juego",
             "h1": f"{team_name} hoy: resultado vs {opp} y próximo partido",
-            "desc": f"Resultado de {team_name} vs {opp}{score} y dónde ver el próximo juego: horario, canal de TV y streaming{lg_sfx}.",
+            "desc": f"{team_name} vs {opp}{score}: así quedó hoy. Y dónde ver el próximo juego — horario en tu país, canal de TV y streaming{lg_sfx}.",
         }
     if upcoming_games:
         u = upcoming_games[0]
@@ -6269,14 +6275,16 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         when_short = when.replace(" · ", " ")[:3].lower() + when.replace(" · ", " ")[3:] if when else ""
         when_short_txt = f" {when_short}" if when_short else ""
         return {
-            "title": f"Dónde ver {team_name}: próximo juego vs {opp}{when_short_txt} MX",
+            # Sin fecha no se escribe " MX" suelto: quedaba "vs Mets: MX y canal".
+            "title": (f"Dónde ver {team_name} vs {opp}:{when_short_txt} MX y canal"
+                      if when_short_txt else f"Dónde ver {team_name} vs {opp}: horario y canal"),
             "h1": f"Dónde ver {team_name}: próximo partido vs {opp}{when_txt}",
-            "desc": f"{team_name} no juega hoy. Próximo partido vs {opp}{when_txt} (hora MX){ch_txt}. Calendario, programación, canal de TV y streaming{lg_sfx}.",
+            "desc": f"{team_name} no juega hoy. El próximo es vs {opp}{when_txt}{' (hora de México)' if when_txt else ''}{ch_txt}. Calendario completo, canal de TV y streaming{lg_sfx}.",
         }
     return {
-        "title": f"Dónde ver {full_name} hoy en vivo: horario, canal y TV | DondeVer",
+        "title": f"Dónde ver {team_name} hoy: horario, canal y streaming",
         "h1": f"Dónde ver {full_name} hoy en vivo",
-        "desc": f"Dónde ver a {team_name} hoy en vivo. Horario, canal de TV, streaming, calendario y programación{lg_sfx} en México, USA y Latinoamérica.",
+        "desc": f"Dónde ver a {team_name} hoy: horario en tu país, canal de TV y opciones de streaming{lg_sfx}. Calendario de los próximos partidos actualizado cada día.",
     }
 
 
