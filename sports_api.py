@@ -2680,6 +2680,57 @@ async def get_recent_league_results(sport: str, league: str, days: int = 5, limi
     return results[:limit]
 
 
+# Mapa US→MX compartido: antes vivía dentro de get_todays_games, así que
+# get_upcoming_league_games no lo aplicaba y el mismo partido salía con canales
+# distintos según la página desde la que se mirara.
+US_TO_MX_CHANNEL = {
+    "ESPN": "ESPN MX", "ESPN2": "ESPN MX", "ESPNU": "ESPN MX",
+    "ESPNews": "ESPN MX", "ABC": "ESPN MX",
+    "ESPN+": "Disney+",
+    "FOX": "Fox Sports MX", "FS1": "Fox Sports MX", "FS2": "Fox Sports MX",
+    "NBC": "ESPN MX", "NBCSN": "ESPN MX",
+    "CBS": "Fox Sports MX", "CBSSN": "Fox Sports MX",
+    "Univision": "TUDN", "UniMas": "TUDN",
+    "Telemundo": "Telemundo",
+    "TNT": "TNT Sports", "TBS": "TNT Sports",
+    "Max": "Max", "HBO Max": "Max",
+    "Peacock": "Disney+",
+    "Amazon Prime": "Amazon Prime", "Prime Video": "Amazon Prime",
+    "Netflix": "Netflix",
+}
+
+
+def mx_channels_for_game(league_slug: str, home_name: str, away_name: str,
+                         us_channels: list[str] | None = None) -> list[str]:
+    """Canales de México para un partido, con las mismas reglas en todo el sitio.
+
+    Una sola fuente de verdad: la ficha del partido, la página de equipo, la de
+    país y el calendario tienen que responder lo mismo. Antes cada una calculaba
+    lo suyo (o no calculaba nada) y Juárez–Tigres salía con tres respuestas.
+    """
+    us_channels = us_channels or []
+    out: list[str] = []
+
+    if league_slug == "liga-mx":
+        hl, al = (home_name or "").lower(), (away_name or "").lower()
+        for names in (hl, al):
+            for team_key, channels in LIGA_MX_TEAM_CHANNELS.items():
+                if team_key in names or (names and names in team_key):
+                    return list(channels)
+        return ["TUDN", "ViX"]
+
+    if league_slug == "nfl":
+        return list(nfl_mx_channels(us_channels))
+
+    for ch in us_channels:
+        mx = US_TO_MX_CHANNEL.get(ch)
+        if mx and mx not in out:
+            out.append(mx)
+    if not out:
+        out = list(DEFAULT_LEAGUE_CHANNELS.get(league_slug, []))
+    return out
+
+
 async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limit: int = 10) -> list[dict]:
     """
     Get upcoming (not started) games for the next N days for a league.
@@ -2692,6 +2743,12 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
 
     now = datetime.now(TZ_MX)
     upcoming = []
+
+    # El slug interno (liga-mx, nfl…) a partir del código ESPN (mex.1, nfl…)
+    league_slug_hint = next(
+        (slug for slug, v in ALL_LEAGUES.items() if len(v) >= 2 and v[0] == sport and v[1] == league),
+        league,
+    )
 
     tasks = []
     for d in range(1, days + 1):
@@ -2732,14 +2789,17 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
                         "country": info.get("country", ""),
                     })
 
-            # NFL: add Mexico channels inferred from US broadcaster
-            if league == "nfl" and not any(c.get("country") == "MX" for c in channels):
-                for mx in nfl_mx_channels([c["name"] for c in channels]):
+            # Canales de México con las MISMAS reglas que usa la ficha del partido
+            _home_nm = home_c.get("team", {}).get("displayName", "")
+            _away_nm = away_c.get("team", {}).get("displayName", "")
+            if not any(c.get("country") == "MX" for c in channels):
+                for mx in mx_channels_for_game(league_slug_hint, _home_nm, _away_nm,
+                                               [c["name"] for c in channels]):
                     info = CHANNEL_ALIASES.get(mx, {})
                     display = info.get("name", mx)
                     if display.lower() not in seen_ch:
                         seen_ch.add(display.lower())
-                        channels.append({"name": display, "country": "MX"})
+                        channels.append({"name": display, "country": info.get("country", "MX")})
 
             upcoming.append({
                 "id": event.get("id", ""),

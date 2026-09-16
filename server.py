@@ -6565,13 +6565,13 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "Canal 5", "type": "TV Abierta", "sports": "América, Pumas, Monterrey selectos"},
             {"name": "Azteca 7", "type": "TV Abierta", "sports": "Tigres, Puebla, Necaxa selectos"},
             {"name": "Fox Sports MX", "type": "Cable", "sports": "León, Pachuca, Tijuana, Querétaro"},
-            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "América, Cruz Azul, Pumas, Monterrey, Santos y Atlas"},
             {"name": "Amazon Prime", "type": "Streaming", "sports": "Chivas (exclusivo)"},
             {"name": "ESPN MX / Disney+", "type": "Cable/Streaming", "sports": "Atlético de San Luis"},
         ],
         "estados-unidos": [
             {"name": "TUDN / Univision", "type": "Cable/TV", "sports": "Liga MX en español"},
-            {"name": "ViX Premium", "type": "Streaming", "sports": "Liga MX completa"},
+            {"name": "ViX Premium", "type": "Streaming", "sports": "Equipos de TUDN (no toda la liga)"},
             {"name": "FOX Deportes", "type": "Cable", "sports": "Liga MX selectos"},
         ],
         "argentina": [
