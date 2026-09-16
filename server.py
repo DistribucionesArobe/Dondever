@@ -741,11 +741,15 @@ async def home(
         g["interest_score"] = score_game_interest(g)
 
     # ── Must-watch "Lo imperdible" — send 15, JS picks best 5 per user ──
+    # Se eligen por interés, pero se MUESTRAN por hora: una lista que va 1:30 PM,
+    # 6:05 PM y luego vuelve a 11:00 AM se lee como un error. Y 15 partidos no son
+    # una curaduría: 8 sí.
     must_watch = sorted(
         [g for g in games if g["status"]["state"] == "pre" and g["interest_score"] >= 20],
         key=lambda g: g["interest_score"],
         reverse=True,
-    )[:15]
+    )[:8]
+    must_watch.sort(key=lambda g: g.get("date", ""))
 
     # ── Free games (TV abierta / streaming gratis) ─────
     free_games = [

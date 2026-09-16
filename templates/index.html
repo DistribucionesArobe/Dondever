@@ -108,7 +108,7 @@
     }
     </script>
     {% endif %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2576227882415709" crossorigin="anonymous" data-overlays="bottom" data-ad-frequency-hint="30s"></script>
+    <!-- adsbygoogle.js lo inyecta GAInjectMiddleware en todas las páginas: no duplicarlo aquí -->
     <link rel="icon" type="image/png" href="/static/logo.png?v=2">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <link rel="manifest" href="/manifest.json">
@@ -1526,7 +1526,7 @@
             </a>
             <a href="/?sport=basketball" class="sport-card {% if current_sport == 'basketball' %}active{% endif %}">
                 <span class="sc-emoji">&#127936;</span>
-                <span class="sc-label">NBA</span>
+                <span class="sc-label">B&aacute;squet</span>
                 <span class="sc-count">{% if sport_counts.get('basketball') %}{{ sport_counts['basketball'] }}{% endif %}</span>
             </a>
             <a href="/?sport=football" class="sport-card {% if current_sport == 'football' %}active{% endif %}">
@@ -1641,9 +1641,9 @@
             <div class="gc-bet-preview" onclick="event.stopPropagation();" style="padding:0.4rem 0.75rem;">
                 <div class="bet-odds-row" style="margin:0;">
                     <div class="bet-odds-chips">
-                        <a href="/go/bet?s=live-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
+                        <a href="/go/bet?s=live-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.short or top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
                         {% if game.odds.draw_odds %}<a href="/go/bet?s=live-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip draw">EMP <strong>{{ game.odds.draw_odds }}</strong></a>{% endif %}
-                        <a href="/go/bet?s=live-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
+                        <a href="/go/bet?s=live-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.short or bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
                     </div>
                     <div class="bet-cta-col">
                         <a href="/go/bet?s=live-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">Ver apuestas</a>
@@ -1960,11 +1960,11 @@
             <div class="gc-bet-preview" onclick="event.stopPropagation();" style="padding:0.4rem 0.75rem;">
                 <div class="bet-odds-row" style="margin:0;">
                     <div class="bet-odds-chips">
-                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
+                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.short or top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
                         {% if game.odds.draw_odds %}
                         <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip draw">EMP <strong>{{ game.odds.draw_odds }}</strong></a>
                         {% endif %}
-                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
+                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.short or bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
                     </div>
                     <div class="bet-cta-col">
                         <a href="/go/bet?s=card-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">Ver apuestas</a>
