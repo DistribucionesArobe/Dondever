@@ -663,12 +663,12 @@
                 </div>
                 <div style="background:#eff6ff;border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
                     <div style="font-size:0.65rem;color:#1e40af;font-weight:600;">&#127462;&#127479; Argentina</div>
-                    <div style="font-size:1.1rem;font-weight:800;color:#1a1a2e;" data-utc="{{ game.date }}" data-tz="America/Argentina/Buenos_Aires" data-fmt="time" id="tz-ar">—</div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#1a1a2e;" data-utc="{{ game.date }}" data-tz="America/Argentina/Buenos_Aires" data-fmt="time" id="tz-ar">{{ format_tz_time(game.date, 'America/Argentina/Buenos_Aires') }}</div>
                     <div style="font-size:0.55rem;color:#1e40af;">Buenos Aires</div>
                 </div>
                 <div style="background:#fdf2f8;border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
                     <div style="font-size:0.65rem;color:#9d174d;font-weight:600;">&#127464;&#127476; Colombia</div>
-                    <div style="font-size:1.1rem;font-weight:800;color:#1a1a2e;" data-utc="{{ game.date }}" data-tz="America/Bogota" data-fmt="time" id="tz-co">—</div>
+                    <div style="font-size:1.1rem;font-weight:800;color:#1a1a2e;" data-utc="{{ game.date }}" data-tz="America/Bogota" data-fmt="time" id="tz-co">{{ format_tz_time(game.date, 'America/Bogota') }}</div>
                     <div style="font-size:0.55rem;color:#9d174d;">Bogot&aacute;</div>
                 </div>
             </div>

@@ -613,6 +613,11 @@ templates.env.globals["format_mx_day_time"] = format_mx_day_time
 templates.env.globals["format_mx_date_short"] = format_mx_date_short
 templates.env.globals["mx_when_label"] = mx_when_label
 templates.env.globals["format_us_time"] = format_us_time
+# Hora en cualquier zona, para renderizar el bloque "Horario por país" en el
+# servidor. Antes México y EE.UU. salían del servidor pero Argentina y Colombia
+# eran un "—" que sólo rellenaba el JavaScript: Googlebot y cualquiera con el
+# JS lento veían un guion donde debía ir la hora.
+templates.env.globals["format_tz_time"] = lambda iso, tz: _fmt_local(iso, tz)
 templates.env.globals["affiliates"] = AFFILIATES
 templates.env.globals["streaming_aff"] = STREAMING_AFFILIATES
 templates.env.globals["app_url"] = APP_URL
