@@ -5649,23 +5649,13 @@ def generate_match_preview(game: dict) -> dict | None:
     underdog = prediction["underdog"] if prediction else None
     value = prediction.get("value") if prediction else None
 
-    # ── Snippet (short, data-first for homepage) ──
-    if fav and prob:
-        if prob >= 70:
-            snippet_parts.append(f"Favorito: {fav} · {prob}%")
-            tone = "neutral"
-        elif prob >= 55:
-            snippet_parts.append(f"Favorito: {fav} · {prob}%")
-            tone = "neutral"
-        else:
-            snippet_parts.append(f"Partido parejo · {prob}%")
-            tone = "exciting"
-
-        if value:
-            snippet_parts.append(f"{value['team']} {value['odds']}")
-            tone = "exciting"
-    else:
-        snippet_parts.append(f"{home} vs {away}")
+    # ── Snippet (portada) ──
+    # Quien llega busca canal y hora, no momios. El snippet de la tarjeta ya no
+    # muestra probabilidad implícita ni apuesta de valor; ese análisis vive en
+    # /partido/ (full_parts), donde el usuario sí pidió el detalle del partido.
+    if fav and prob and prob < 55:
+        snippet_parts.append("Partido parejo")
+        tone = "exciting"
 
     snippet = " | ".join(snippet_parts)
 

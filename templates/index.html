@@ -789,13 +789,20 @@
         .bet-pill.bp-1xbet { background: #1a5276; }
 
         /* ── Betting Preview (visible on closed card) ── */
+        /* Momios: ocultos hasta que el usuario expande la tarjeta.
+           La intención de quien llega es "dónde ver", no apostar; el que quiere
+           momios abre la tarjeta y los encuentra. */
         .gc-bet-preview {
+            display: none;
             margin: 0.5rem 0 -0.25rem;
             padding: 0.5rem;
-            background: linear-gradient(135deg, #fffbeb, #fef3c7);
-            border: 1px solid #fbbf24;
+            background: #fafafa;
+            border: 1px solid #e5e7eb;
             border-radius: 10px;
         }
+        .game-card.gc-open .gc-bet-preview { display: block; }
+        .game-card.gc-open .gc-bet-preview.gc-bet-nobet { display: flex; }
+        body.dark-mode .gc-bet-preview { background: #0f172a; border-color: #334155; }
         .bet-odds-row {
             display: flex;
             align-items: stretch;
@@ -1438,7 +1445,7 @@
 {%- endfor -%}
 {%- if ns_pc.b is none and game.broadcasts -%}{%- set ns_pc.b = game.broadcasts[0] -%}{%- set ns_pc.foreign = true -%}{%- endif -%}
 {%- if ns_pc.b -%}
-<span class="channel-tag {{ ns_pc.b.info.get('type', 'unknown') if ns_pc.b.info else 'unknown' }}{% if ns_pc.b.info and ns_pc.b.info.get('country') == 'MX' and ns_pc.b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="font-size:0.58rem;" title="{% if ns_pc.foreign %}Canal de Estados Unidos; en México aún sin canal confirmado{% endif %}">{{ ns_pc.b.channel }}{% if ns_pc.foreign %} <span style="opacity:0.75;font-weight:600;">· EE.UU.</span>{% endif %}</span>
+<span class="channel-tag {{ ns_pc.b.info.get('type', 'unknown') if ns_pc.b.info else 'unknown' }}{% if ns_pc.b.info and ns_pc.b.info.get('country') == 'MX' and ns_pc.b.info.get('type') == 'broadcast' %} free-mx{% endif %}" style="font-size:0.74rem;padding:3px 9px;" title="{% if ns_pc.foreign %}Canal de Estados Unidos; en México aún sin canal confirmado{% endif %}">{{ ns_pc.b.channel }}{% if ns_pc.foreign %} <span style="opacity:0.75;font-weight:600;">· EE.UU.</span>{% endif %}</span>
 {%- endif -%}
 {%- endmacro %}
 <div class="sticky-brand" id="sticky-brand">
@@ -1771,27 +1778,6 @@
             {% if game.preview and game.preview.snippet %}
             <div class="gc-preview-snippet">{{ game.preview.snippet }}</div>
             {% endif %}
-            {% if game.status.state != 'post' %}
-            {% if game.odds %}
-            <div class="gc-bet-preview" onclick="event.stopPropagation();" style="padding:0.4rem 0.75rem;">
-                <div class="bet-odds-row" style="margin:0;">
-                    <div class="bet-odds-chips">
-                        <a href="/go/bet?s=must-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
-                        {% if game.odds.draw_odds %}<a href="/go/bet?s=must-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip draw">EMP <strong>{{ game.odds.draw_odds }}</strong></a>{% endif %}
-                        <a href="/go/bet?s=must-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
-                    </div>
-                    <div class="bet-cta-col">
-                        <a href="/go/bet?s=must-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main">Ver apuestas</a>
-                    </div>
-                </div>
-            </div>
-            {% elif game.sport not in ('racing',) %}
-            <div class="gc-bet-preview gc-bet-nobet" onclick="event.stopPropagation();">
-                <span class="gc-bet-nobet-txt">&#127922; Momios de {{ top_team.name[:14] }} vs {{ bottom_team.name[:14] }}</span>
-                <a href="/go/bet?s=must-nobet&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main" style="flex:0 0 auto;">Ver momios &#8599;</a>
-            </div>
-            {% endif %}
-            {% endif %}
             <div class="gc-accordion-body" style="display:none;">
                 <div class="gc-channels-full">
                     {% for b in game.broadcasts %}
@@ -2088,21 +2074,21 @@
     {# MX: Jubilee #}
     <div class="promo-interstitial" style="border-color:#d97706;" data-geo="mx">
         <div class="promo-inter-title">&#127942; {{ affiliates.jubilee.name }} &mdash; {{ affiliates.jubilee.bonus }}</div>
-        <div class="promo-inter-sub">Casa de apuestas autorizada. Bono de bienvenida disponible para nuevos usuarios.</div>
+        <div class="promo-inter-sub">Bono de bienvenida disponible para nuevos usuarios. Verifica siempre que el operador tenga permiso vigente en tu pa&iacute;s.</div>
         <a href="/go/jubilee?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" class="promo-inter-cta" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Registrarme &#8599;</a>
         <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
     {# US: Betsson #}
     <div class="promo-interstitial" style="border-color:#ea580c;display:none;" data-geo="us">
         <div class="promo-inter-title">&#127942; {{ affiliates.betsson.name }} &mdash; {{ affiliates.betsson.bonus }}</div>
-        <div class="promo-inter-sub">Casa de apuestas autorizada. Bono de bienvenida disponible para nuevos usuarios.</div>
+        <div class="promo-inter-sub">Bono de bienvenida disponible para nuevos usuarios. Verifica siempre que el operador tenga permiso vigente en tu pa&iacute;s.</div>
         <a href="/go/betsson?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="promo-inter-cta" style="background:linear-gradient(135deg,#ea580c,#dc2626);">Registrarme &#8599;</a>
         <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
     {# LATAM/resto: 1xBet #}
     <div class="promo-interstitial" style="border-color:#1a5276;display:none;" data-geo="latam">
         <div class="promo-inter-title">&#127942; {{ affiliates['1xbet'].name }} &mdash; {{ affiliates['1xbet'].bonus }}</div>
-        <div class="promo-inter-sub">Casa de apuestas autorizada. Bono de bienvenida disponible para nuevos usuarios.</div>
+        <div class="promo-inter-sub">Bono de bienvenida disponible para nuevos usuarios. Verifica siempre que el operador tenga permiso vigente en tu pa&iacute;s.</div>
         <a href="/go/1xbet?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" class="promo-inter-cta" style="background:linear-gradient(135deg,#1a5276,#2c6e9e);">Registrarme &#8599;</a>
         <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
@@ -2494,9 +2480,11 @@
         if (acc.classList.contains('open')) {
             acc.classList.remove('open');
             btn.classList.remove('open');
+            card.classList.remove('gc-open');
         } else {
             acc.classList.add('open');
             btn.classList.add('open');
+            card.classList.add('gc-open');
         }
     }
     // Click anywhere on the compact part of the card toggles the accordion
