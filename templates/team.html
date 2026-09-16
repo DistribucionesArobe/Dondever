@@ -27,6 +27,8 @@
     <meta name="twitter:image" content="{{ app_url }}/og/equipo/{{ team_slug }}.png">
     <link rel="canonical" href="https://dondever.app/equipo/{{ team_slug }}">
     {{ hreflang_tags(request.url) }}
+    {% if en_alt %}<link rel="alternate" hreflang="en" href="{{ en_alt }}">
+    <link rel="alternate" hreflang="en-US" href="{{ en_alt }}">{% endif %}
     <!-- JSON-LD: SportsTeam -->
     <script type="application/ld+json">
     {

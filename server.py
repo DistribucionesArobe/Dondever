@@ -4858,6 +4858,9 @@ async def sitemap_equipos():
         t_priority = "0.9" if plays else ("0.8" if team_slug in NFL_TEAM_EXTRA else "0.7")
         urls.append(_sm_url(f'{APP_URL}/equipo/{team_slug}', today_str if plays else week_start,
                             "daily", t_priority))
+    # Versiones en inglés para equipos de EE.UU. (hreflang recíproco con /equipo/{slug})
+    for team_slug in _en_team_list():
+        urls.append(_sm_url(f'{APP_URL}/en/{team_slug}', today_str, "daily", "0.7"))
     # /equipo/{slug}/calendario se quitó del sitemap (GSC 28 d: 5,013 impresiones, 0 clics,
     # posición ~44). Duplica los próximos partidos que ya trae /equipo/{slug} y se lleva
     # presupuesto de rastreo. Las páginas siguen accesibles para el usuario, pero con noindex.
@@ -6498,6 +6501,8 @@ async def team_page(request: Request, team_slug: str):
     )
 
     return templates.TemplateResponse(request, "team.html", {
+        # Alterna en inglés (solo equipos de EE.UU. con versión traducida)
+        "en_alt": f"{APP_URL}/en/{team_slug}" if team_slug in EN_TEAMS else "",
         "seo_title": seo["title"],
         "seo_desc": seo["desc"],
         "seo_h1": seo["h1"],
@@ -7253,6 +7258,117 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
         "all_countries": all_countries,
         "format_mx_time": format_mx_time,
         "format_local_time": format_local_time,
+    })
+
+
+# ── Versión en inglés para equipos de EE.UU. ────────────────────────────────
+# GSC (28 d, país = Estados Unidos): 47,800 impresiones, 249 clics, CTR 0.5%,
+# posición media 11.3. Google ya nos posiciona para consultas en inglés
+# ("what channel is the eagles game on", posición 5.9, 0 clics) pero el usuario
+# llega a una página en español y se va. URLs separadas + hreflang recíproco:
+# NO servimos inglés en la URL española, para no tocar el 91% de tráfico en español.
+EN_TEAMS = [
+    # Con demanda medida desde EE.UU.
+    "dodgers", "yankees", "mets", "red-sox", "braves", "rangers",
+    # Mayores generadores de búsquedas "what channel" en EE.UU.
+    "astros", "phillies", "cubs", "padres", "giants", "angels",
+    "eagles", "chiefs", "cowboys", "49ers", "packers", "bills", "ravens", "lions",
+    "lakers", "warriors", "celtics",
+]
+
+_EN_LEAGUE_LABEL = {"MLB": "MLB", "NFL": "NFL", "NBA": "NBA", "NHL": "NHL", "WNBA": "WNBA"}
+
+
+def _en_team_list() -> list:
+    """Sólo los slugs que existen en POPULAR_TEAMS y son de liga estadounidense."""
+    out = []
+    for slug in EN_TEAMS:
+        info = POPULAR_TEAMS.get(slug)
+        if info and info.get("league") in _EN_LEAGUE_LABEL:
+            out.append(slug)
+    return out
+
+
+@app.get("/en/{team_slug}", response_class=HTMLResponse)
+async def team_page_en(request: Request, team_slug: str):
+    """English TV-schedule page: 'What channel is the {team} game on?'"""
+    if team_slug not in _en_team_list():
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404,
+            context={"message": "Page not found."})
+
+    info = POPULAR_TEAMS[team_slug]
+    team_name = info["name"]
+    league = info.get("league", "")
+
+    search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
+    st = search_term.lower()
+    games = await search_games(search_term)
+
+    team_logo = ""
+    for g in games:
+        for side in ("home", "away"):
+            if st in (g.get(side, {}).get("name", "") or "").lower():
+                team_logo = g[side].get("logo", "") or team_logo
+    if not team_logo:
+        try:
+            team_logo = (await get_team_stats(team_slug)).get("team_logo", "")
+        except Exception:
+            pass
+
+    def _us_channels(g):
+        out = []
+        for b in g.get("broadcasts", []):
+            inf = b.get("info") or {}
+            if inf.get("country") in ("US", "") or not inf:
+                ch = b.get("channel", "")
+                if ch and ch not in out:
+                    out.append(ch)
+        return out[:4]
+
+    today_game = next((g for g in games if (g.get("status") or {}).get("state") in ("pre", "in")), None)
+
+    # Próximos partidos del equipo (mismo dato que la versión en español)
+    upcoming = []
+    try:
+        from sports_api import TEAM_LEAGUE_MAP as _TLM
+        lm = _TLM.get(team_slug)
+        if lm:
+            for u in await get_upcoming_league_games(lm[0], lm[1], days=14, limit=40):
+                if st in (u.get("home") or "").lower() or st in (u.get("away") or "").lower():
+                    upcoming.append(u)
+                if len(upcoming) >= 6:
+                    break
+    except Exception:
+        pass
+
+    def fmt_et(iso_date: str) -> str:
+        try:
+            dt = datetime.fromisoformat(str(iso_date).replace("Z", "+00:00")).astimezone(TZ_ET)
+            return dt.strftime("%a, %b %-d · %-I:%M %p ET")
+        except Exception:
+            return ""
+
+    ch_now = _us_channels(today_game) if today_game else []
+    if today_game:
+        opp_raw = (today_game["away"]["name"] if st in (today_game["home"]["name"] or "").lower()
+                   else today_game["home"]["name"])
+        when = fmt_et(today_game.get("date", ""))
+        title = f"What channel is the {team_name} game on today? {(ch_now[0] + ' · ') if ch_now else ''}{when}"
+        desc = (f"{team_name} vs {opp_raw} today: {when}"
+                f"{' on ' + ', '.join(ch_now) if ch_now else ''}. TV channel, start time and streaming options.")
+        h1 = f"What channel is the {team_name} game on today?"
+    else:
+        title = f"{team_name} TV schedule: what channel is the next game on? | DondeVer"
+        desc = (f"{team_name} TV schedule — next game date, start time (ET) and the channel "
+                f"carrying it, plus the rest of the upcoming {league} schedule.")
+        h1 = f"{team_name} TV schedule: next games and channels"
+
+    return templates.TemplateResponse(request, "team_en.html", {
+        "team_name": team_name, "team_slug": team_slug, "team_logo": team_logo,
+        "league": league, "today_game": today_game, "ch_now": ch_now,
+        "upcoming": upcoming, "fmt_et": fmt_et, "us_channels": _us_channels,
+        "seo_title": title, "seo_desc": desc, "seo_h1": h1,
     })
 
 
