@@ -526,6 +526,11 @@ _MONTHS_ES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
               "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
 
+_DAYS_ES_SHORT = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
+_MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun",
+                    "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
 def format_date_es(dt) -> str:
     """'Lunes 10 de Agosto, 2026' — fully Spanish date display."""
     return f"{_DAYS_ES_FMT[dt.weekday()]} {dt.day} de {_MONTHS_ES[dt.month]}, {dt.year}"
@@ -537,6 +542,39 @@ def format_mx_day_time(iso_date: str) -> str:
         dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
         mx = dt.astimezone(TZ_MX)
         return f"{_DAYS_ES_FMT[mx.weekday()]} {mx.day} · {mx.strftime('%I:%M %p').lstrip('0')}"
+    except Exception:
+        return ""
+
+
+def format_mx_date_short(iso_date: str) -> str:
+    """'vie 18 sep' en hora de México.
+
+    Las plantillas imprimían `date[:10]` sobre el ISO en UTC, así que un partido
+    del 18 a las 20:00 (México) salía como '2026-09-19'. Todo lo que muestre una
+    fecha al usuario tiene que pasar por aquí, igual en todas las ligas.
+    """
+    try:
+        dt = datetime.fromisoformat(str(iso_date).replace("Z", "+00:00")).astimezone(TZ_MX)
+        return f"{_DAYS_ES_SHORT[dt.weekday()]} {dt.day} {_MONTHS_ES_SHORT[dt.month - 1]}"
+    except Exception:
+        return str(iso_date)[:10] if iso_date else ""
+
+
+def mx_when_label(iso_date: str) -> str:
+    """'hoy', 'mañana', 'ayer' o 'el vie 18 sep' — según la fecha en México.
+
+    Evita el título 'Dónde ver hoy' en partidos que no son hoy.
+    """
+    try:
+        dt = datetime.fromisoformat(str(iso_date).replace("Z", "+00:00")).astimezone(TZ_MX)
+        delta = (dt.date() - datetime.now(TZ_MX).date()).days
+        if delta == 0:
+            return "hoy"
+        if delta == 1:
+            return "mañana"
+        if delta == -1:
+            return "ayer"
+        return f"el {format_mx_date_short(iso_date)}"
     except Exception:
         return ""
 
@@ -553,6 +591,8 @@ def format_us_time(iso_date: str) -> str:
 
 templates.env.globals["format_mx_time"] = format_mx_time
 templates.env.globals["format_mx_day_time"] = format_mx_day_time
+templates.env.globals["format_mx_date_short"] = format_mx_date_short
+templates.env.globals["mx_when_label"] = mx_when_label
 templates.env.globals["format_us_time"] = format_us_time
 templates.env.globals["affiliates"] = AFFILIATES
 templates.env.globals["streaming_aff"] = STREAMING_AFFILIATES

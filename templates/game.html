@@ -6,10 +6,10 @@
     {% set home_left_meta = game.sport in ('soccer', 'boxing', 'mma') %}
     {% set first_team = game.home.name if home_left_meta else game.away.name %}
     {% set second_team = game.away.name if home_left_meta else game.home.name %}
-    <title>{{ first_team }} vs {{ second_team }}: D&oacute;nde Ver Hoy{% if odds %}, Momios y Pron&oacute;stico{% endif %} — {{ game.league_name }} | DondeVer</title>
+    <title>{{ first_team }} vs {{ second_team }}: d&oacute;nde ver{{ " " + mx_when_label(game.date) if mx_when_label(game.date) }}{% if odds %}, momios y pron&oacute;stico{% endif %} — {{ game.league_name }} | DondeVer</title>
     <meta name="description" content="Dónde ver {{ first_team }} vs {{ second_team }} en vivo: hora, canales de TV y streaming para México, USA y Latinoamérica.{% if game.broadcasts %} Transmite: {{ game.broadcasts[0].channel }}.{% endif %}{% if odds %} Momios, pronóstico y picks actualizados.{% endif %}">
     <!-- Open Graph -->
-    <meta property="og:title" content="{{ first_team }} vs {{ second_team }}: Dónde Ver Hoy{% if odds %} — Momios y Pronóstico{% endif %}">
+    <meta property="og:title" content="{{ first_team }} vs {{ second_team }}: dónde ver{{ " " + mx_when_label(game.date) if mx_when_label(game.date) }}{% if odds %} — momios y pronóstico{% endif %}">
     <meta property="og:description" content="{{ game.league_name }} en vivo — canales de TV y streaming en México, USA y Latinoamérica.{% if odds %} Cuotas y pronóstico.{% endif %}">
     <meta property="og:type" content="article">
     <meta property="og:url" content="{{ app_url }}{{ game|game_url }}">
@@ -391,7 +391,7 @@
         <a href="/liga/{{ game.league_slug }}">{{ game.league_name }}</a> &rsaquo;
         <span>{{ first_team }} vs {{ second_team }}</span>
     </nav>
-    <h1 class="game-h1">{{ first_team }} vs {{ second_team }}: D&oacute;nde Ver Hoy{% if odds %}, Momios y Pron&oacute;stico{% endif %} &mdash; {{ game.league_name }}</h1>
+    <h1 class="game-h1">{{ first_team }} vs {{ second_team }}: d&oacute;nde ver{{ " " + mx_when_label(game.date) if mx_when_label(game.date) }}{% if odds %}, momios y pron&oacute;stico{% endif %} &mdash; {{ game.league_name }}</h1>
 
     <div class="game-hero">
         <div class="league-badge">{{ game.emoji }} {{ game.league_name }}</div>
@@ -971,7 +971,7 @@
                 {% for ev in series.events %}
                 {% if ev.status == 'STATUS_FINAL' and ev.teams %}
                 <div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;">
-                    <span style="color:#9ca3af;font-size:0.6rem;min-width:3.5rem;">{{ ev.date[:10] if ev.date else '' }}</span>
+                    <span style="color:#9ca3af;font-size:0.6rem;min-width:3.5rem;">{{ format_mx_date_short(ev.date) if ev.date else '' }}</span>
                     {% for t in ev.teams %}
                     <span style="flex:1;{% if loop.first %}text-align:right;{% else %}text-align:left;{% endif %}color:{% if t.winner %}#059669{% else %}#6b7280{% endif %};font-weight:{% if t.winner %}700{% else %}400{% endif %};">
                         {{ t.abbr or t.name }}
@@ -1116,7 +1116,7 @@
                     <div style="font-size:0.7rem;font-weight:700;color:#1a1a2e;margin-bottom:0.3rem;text-align:center;">{{ game.home.name.split(' ')[-1] if home_left else game.away.name.split(' ')[-1] }}</div>
                     {% for u in lu_post[:2] %}
                     <a href="/equipo/{{ game.home.slug if home_left else game.away.slug }}" style="display:block;padding:0.3rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;text-decoration:none;color:#374151;">
-                        <div style="color:#9ca3af;font-size:0.6rem;">{{ u.date[:10] if u.date else '' }}</div>
+                        <div style="color:#9ca3af;font-size:0.6rem;">{{ format_mx_date_short(u.date) if u.date else '' }}</div>
                         <div style="font-weight:600;">{{ u.home }} vs {{ u.away }}</div>
                     </a>
                     {% endfor %}
@@ -1126,7 +1126,7 @@
                     <div style="font-size:0.7rem;font-weight:700;color:#1a1a2e;margin-bottom:0.3rem;text-align:center;">{{ game.away.name.split(' ')[-1] if home_left else game.home.name.split(' ')[-1] }}</div>
                     {% for u in ru_post[:2] %}
                     <a href="/equipo/{{ game.away.slug if home_left else game.home.slug }}" style="display:block;padding:0.3rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;text-decoration:none;color:#374151;">
-                        <div style="color:#9ca3af;font-size:0.6rem;">{{ u.date[:10] if u.date else '' }}</div>
+                        <div style="color:#9ca3af;font-size:0.6rem;">{{ format_mx_date_short(u.date) if u.date else '' }}</div>
                         <div style="font-weight:600;">{{ u.home }} vs {{ u.away }}</div>
                     </a>
                     {% endfor %}
@@ -1433,7 +1433,7 @@
                     <div style="font-size:0.7rem;font-weight:700;color:#1a1a2e;margin-bottom:0.4rem;text-align:center;">{{ left_team.name.split(' ')[-1] }}</div>
                     {% for u in lu %}
                     <div style="padding:0.35rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;">
-                        <div style="color:#9ca3af;font-size:0.6rem;">{{ u.date[:10] if u.date else '' }}</div>
+                        <div style="color:#9ca3af;font-size:0.6rem;">{{ format_mx_date_short(u.date) if u.date else '' }}</div>
                         <div style="color:#374151;font-weight:600;">{{ u.home }} vs {{ u.away }}</div>
                     </div>
                     {% endfor %}
@@ -1443,7 +1443,7 @@
                     <div style="font-size:0.7rem;font-weight:700;color:#1a1a2e;margin-bottom:0.4rem;text-align:center;">{{ right_team.name.split(' ')[-1] }}</div>
                     {% for u in ru %}
                     <div style="padding:0.35rem 0;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}font-size:0.7rem;">
-                        <div style="color:#9ca3af;font-size:0.6rem;">{{ u.date[:10] if u.date else '' }}</div>
+                        <div style="color:#9ca3af;font-size:0.6rem;">{{ format_mx_date_short(u.date) if u.date else '' }}</div>
                         <div style="color:#374151;font-weight:600;">{{ u.home }} vs {{ u.away }}</div>
                     </div>
                     {% endfor %}
@@ -1587,6 +1587,14 @@ function emailSubscribe(e) {
       var d = new Date(utc);
       if (isNaN(d)) return;
       var s = d.toLocaleTimeString('es-MX', {timeZone: tz, hour:'2-digit', minute:'2-digit', hour12: false});
+      // Si en ese país el partido cae otro día, decirlo: "00:00" a secas confunde
+      // (el usuario en Argentina creía que era hoy y era la madrugada del día siguiente).
+      try {
+        var dayLocal = d.toLocaleDateString('en-CA', {timeZone: tz});
+        var dayMx = d.toLocaleDateString('en-CA', {timeZone: 'America/Mexico_City'});
+        if (dayLocal > dayMx) s += ' (+1 día)';
+        else if (dayLocal < dayMx) s += ' (-1 día)';
+      } catch(e){}
       el.textContent = s;
     } catch(e){}
   });
