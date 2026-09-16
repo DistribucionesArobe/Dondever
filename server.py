@@ -3941,6 +3941,7 @@ async def whatsapp_test_send(to: str):
 
 # Store last broadcast result for diagnostics + deduplication
 _last_broadcast = {"ran_at": None, "result": None, "error": None, "date": None}
+_PROCESS_STARTED = datetime.now(TZ_MX).isoformat(timespec="seconds")  # para detectar reinicios entre envíos
 # Keep strong reference to background tasks so GC doesn't collect them mid-execution
 _background_tasks: set = set()
 _catchup_checked = {"date": None}
@@ -4179,8 +4180,15 @@ async def whatsapp_broadcast_status():
     from subscribers import get_active_subscribers
     from meta_whatsapp import is_configured as wa_configured
     active = get_active_subscribers()
+    try:
+        from send_whatsapp_daily import sent_today as _wa_sent_today, _LEDGER_FILE as _wa_ledger
+        ledger = {"sent_today": len(_wa_sent_today()), "file": str(_wa_ledger)}
+    except Exception as e:
+        ledger = {"error": str(e)}
     return {
         "last_broadcast": _last_broadcast,
+        "ledger": ledger,
+        "process_started": _PROCESS_STARTED,
         "active_subscribers": len(active),
         "meta_whatsapp_configured": wa_configured(),
         "hint": "Usa Meta Cloud API. Set WHATSAPP_ACCESS_TOKEN y WHATSAPP_PHONE_NUMBER_ID en env vars."

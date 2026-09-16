@@ -16,9 +16,11 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import sys
+from pathlib import Path
 from datetime import datetime, timezone
 
 import httpx
@@ -573,6 +575,53 @@ async def compose_template_variables() -> dict | None:
 
 # ── Sender ───────────────────────────────────────────────────
 
+# ── Libro diario de envíos (persistido en disco, junto a subscribers.json) ──────────
+# El dedupe en memoria (_last_broadcast en server.py) se pierde con cada reinicio/deploy y
+# no ve lo que mandó otro proceso (cron externo, catch-up). Este ledger garantiza que a
+# cada número le llegue el resumen UNA vez por día, sin importar quién dispare el envío.
+_LEDGER_FILE = Path(os.getenv("SUBSCRIBERS_FILE", "subscribers.json")).parent / "wa_daily_sent.json"
+
+
+def _ledger_load() -> dict:
+    try:
+        with open(_LEDGER_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def _ledger_save(data: dict) -> None:
+    try:
+        _LEDGER_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _LEDGER_FILE.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        os.replace(tmp, _LEDGER_FILE)
+    except Exception as e:
+        logger.warning(f"No se pudo guardar el ledger de envíos: {e}")
+
+
+def _today_key() -> str:
+    return datetime.now(TZ_MX).strftime("%Y-%m-%d")
+
+
+def sent_today() -> set:
+    return set(_ledger_load().get(_today_key(), []))
+
+
+def mark_sent(phone_norm: str) -> None:
+    data = _ledger_load()
+    today = _today_key()
+    # Conservar solo los últimos 7 días
+    for k in sorted(k for k in data if k < today)[:-7]:
+        data.pop(k, None)
+    lst = data.setdefault(today, [])
+    if phone_norm not in lst:
+        lst.append(phone_norm)
+    _ledger_save(data)
+
+
 async def send_daily_broadcast(test_number: str | None = None):
     """
     Send daily WhatsApp broadcast via Meta Cloud API.
@@ -653,6 +702,15 @@ async def send_daily_broadcast(test_number: str | None = None):
     recipients = unique_recipients
     logger.info(f"After dedup+validation: {len(recipients)} valid recipients")
 
+    # Ya recibieron el resumen hoy (otro proceso / cron externo / reinicio): no repetir
+    already = sent_today() if not test_number else set()
+    if already:
+        before = len(recipients)
+        recipients = [p for p in recipients if _normalize_to(p) not in already]
+        logger.info(f"Ledger: {before - len(recipients)} ya recibieron el resumen hoy; quedan {len(recipients)}")
+    if not recipients:
+        return {"sent": 0, "failed": 0, "total": 0, "skipped": "all_sent_today", "already_sent": len(already)}
+
     sent = 0
     failed = 0
     errors = []
@@ -679,6 +737,8 @@ async def send_daily_broadcast(test_number: str | None = None):
                 sent += 1
                 sent_ok = True
                 via["freeform"] += 1
+                if not test_number:
+                    mark_sent(_normalize_to(phone))
                 logger.info(f"Sent freeform (ventana 24h) to {phone} — msg_id: {result['id']}")
             else:
                 logger.info(f"Freeform failed for {phone}: {result.get('error')}, trying template")
@@ -694,6 +754,8 @@ async def send_daily_broadcast(test_number: str | None = None):
                 sent += 1
                 sent_ok = True
                 via["template"] += 1
+                if not test_number:
+                    mark_sent(_normalize_to(phone))
                 logger.info(f"Sent {tpl_name} to {phone} — msg_id: {result['id']}")
             else:
                 failed += 1
@@ -701,7 +763,8 @@ async def send_daily_broadcast(test_number: str | None = None):
                 logger.error(f"Failed all methods for {phone}: {result['error']}")
 
     summary = {"sent": sent, "failed": failed, "total": len(recipients), "errors": errors,
-               "via": via, "template": tpl_name, "template_category": tpl_cat}
+               "via": via, "template": tpl_name, "template_category": tpl_cat,
+               "already_sent_today": len(already)}
     logger.info(f"Broadcast complete: {sent} sent, {failed} failed")
     return summary
 
