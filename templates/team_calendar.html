@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendario de {{ team_name }} — Partidos esta semana | DondeVer</title>
+    {% if noindex %}<meta name="robots" content="noindex,follow">{% endif %}
     <meta name="description" content="Calendario de partidos de {{ team_name }} esta semana. Próximos juegos de {{ team_league }} con horarios, canales y dónde verlos en vivo.">
     <meta property="og:title" content="Calendario de {{ team_name }} esta semana | DondeVer">
     <meta property="og:description" content="Próximos partidos de {{ team_name }} ({{ team_league }}). Horarios y canales.">

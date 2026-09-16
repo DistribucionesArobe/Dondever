@@ -4858,10 +4858,9 @@ async def sitemap_equipos():
         t_priority = "0.9" if plays else ("0.8" if team_slug in NFL_TEAM_EXTRA else "0.7")
         urls.append(_sm_url(f'{APP_URL}/equipo/{team_slug}', today_str if plays else week_start,
                             "daily", t_priority))
-    for team_slug in sorted(POPULAR_TEAMS.keys()):
-        plays = team_slug in playing_today
-        urls.append(_sm_url(f'{APP_URL}/equipo/{team_slug}/calendario',
-                            today_str if plays else week_start, "daily", "0.6"))
+    # /equipo/{slug}/calendario se quitó del sitemap (GSC 28 d: 5,013 impresiones, 0 clics,
+    # posición ~44). Duplica los próximos partidos que ya trae /equipo/{slug} y se lleva
+    # presupuesto de rastreo. Las páginas siguen accesibles para el usuario, pero con noindex.
     return _sm_wrap(urls)
 
 
@@ -7362,6 +7361,9 @@ async def team_calendar_page(request: Request, team_slug: str):
     week_range = f"{now_mx.day} {_MONTHS_ES_FULL[now_mx.month][:3]} – {end_day.day} {_MONTHS_ES_FULL[end_day.month][:3]} {end_day.year}"
 
     return templates.TemplateResponse(request, "team_calendar.html", {
+        # Duplicado delgado de /equipo/{slug}: fuera del índice, pero sigue servible y enlazado
+        # para quien la use desde el sitio.
+        "noindex": True,
         "team_name": team_name,
         "team_slug": team_slug,
         "team_logo": team_logo,
