@@ -615,7 +615,7 @@
             {% if odds %}
             <div style="text-align:center;">
                 <a href="#momios" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;font-size:0.75rem;font-weight:700;padding:0.6rem 2rem;border-radius:8px;text-decoration:none;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                    Ver cuotas &darr;
+                    Ver apuestas &darr;
                 </a>
                 <div style="font-size:0.55rem;color:#475569;margin-top:0.35rem;">+18 apuesta responsablemente. Publicidad.</div>
             </div>
@@ -636,7 +636,7 @@
         {# ── Betting Strip — sutil, dentro del card ── #}
         {% if game.status.state == 'pre' and odds %}
         <div style="margin:0.75rem -1.25rem -1.25rem;background:#1e293b;border-radius:0 0 16px 16px;padding:0.5rem 1rem;text-align:center;">
-            <a href="#momios" style="color:#10b981;font-size:0.75rem;font-weight:700;text-decoration:none;">Ver cuotas del partido &darr;</a>
+            <a href="#momios" style="color:#10b981;font-size:0.75rem;font-weight:700;text-decoration:none;">Ver apuestas del partido &darr;</a>
         </div>
         {% endif %}
     </div>
@@ -1269,95 +1269,101 @@
                 <div style="font-size:0.85rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.05em;">Pick DondeVer</div>
             </div>
 
-            {# Determine pick based on available data #}
-            {% set pick_team = None %}
-            {% set pick_reason = '' %}
-            {% set pick_confidence = '' %}
+            {# El pick se ancla en el mercado: la probabilidad impl&iacute;cita de los
+               momios es la mejor estimaci&oacute;n disponible y es la que ya se muestra
+               arriba en esta misma p&aacute;gina. Los r&eacute;cords entran como contexto,
+               nunca como veredicto, para que el pick no pueda contradecir a las
+               cuotas que el propio sitio publica. #}
+            {% set lp = (implied_probs.home if home_left else implied_probs.away) if implied_probs else None %}
+            {% set rp = (implied_probs.away if home_left else implied_probs.home) if implied_probs else None %}
+            {% set pick_side = None %}
+            {% set fav_prob = 0 %}
+            {% set edge = 0 %}
+            {% set from_market = false %}
 
-            {% if left_stats and right_stats and left_stats.win_pct and right_stats.win_pct %}
+            {% if lp and rp %}
+                {% set from_market = true %}
+                {% set edge = (lp - rp)|abs %}
+                {% if edge >= 5 %}
+                    {% set pick_side = 'left' if lp > rp else 'right' %}
+                    {% set fav_prob = lp if lp > rp else rp %}
+                {% endif %}
+            {% elif left_stats and right_stats and left_stats.win_pct and right_stats.win_pct %}
                 {% set l_wp = left_stats.win_pct|float %}
                 {% set r_wp = right_stats.win_pct|float %}
-                {% set diff = (l_wp - r_wp)|abs %}
-
-                {% if diff >= 0.08 %}
-                    {% if l_wp > r_wp %}
-                        {% set pick_side = 'left' %}
-                    {% else %}
-                        {% set pick_side = 'right' %}
-                    {% endif %}
+                {% if (l_wp - r_wp)|abs >= 0.08 %}
+                    {% set pick_side = 'left' if l_wp > r_wp else 'right' %}
                 {% endif %}
+            {% endif %}
 
-                {% if pick_side == 'left' %}
+            {% set diff = (edge / 100) if from_market else ((left_stats.win_pct|float - right_stats.win_pct|float)|abs if (left_stats and right_stats and left_stats.win_pct and right_stats.win_pct) else 0) %}
+
+            {% set pick_team   = left_team  if pick_side == 'left' else (right_team  if pick_side == 'right' else None) %}
+            {% set pick_stats  = left_stats if pick_side == 'left' else (right_stats if pick_side == 'right' else None) %}
+            {% set pick_odds   = left_odds_val if pick_side == 'left' else (right_odds_val if pick_side == 'right' else None) %}
+            {% set other_team  = right_team  if pick_side == 'left' else (left_team  if pick_side == 'right' else None) %}
+            {% set other_stats = right_stats if pick_side == 'left' else (left_stats if pick_side == 'right' else None) %}
+
+            {% if pick_team %}
                 <div style="display:flex;align-items:center;gap:0.75rem;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem;">
-                    {% if left_team.logo %}<img src="{{ left_team.logo }}" alt="" style="width:32px;height:32px;">{% endif %}
+                    {% if pick_team.logo %}<img src="{{ pick_team.logo }}" alt="" style="width:32px;height:32px;">{% endif %}
                     <div style="flex:1;">
-                        <div style="font-size:0.85rem;font-weight:700;color:white;">{{ left_team.name }}</div>
-                        <div style="font-size:0.7rem;color:#9ca3af;">R&eacute;cord: {{ left_stats.record }} ({{ left_stats.win_pct }}) &middot; Racha: {{ left_stats.streak or 'N/A' }}</div>
+                        <div style="font-size:0.85rem;font-weight:700;color:white;">{{ pick_team.name }}</div>
+                        {% if pick_stats and pick_stats.record %}
+                        <div style="font-size:0.7rem;color:#9ca3af;">R&eacute;cord: {{ pick_stats.record }}{% if pick_stats.streak %} &middot; Racha: {{ pick_stats.streak }}{% endif %}</div>
+                        {% endif %}
                     </div>
-                    <div style="font-size:1.1rem;font-weight:800;color:#10b981;">{{ left_odds_val or '' }}</div>
+                    <div style="text-align:right;">
+                        <div style="font-size:1.1rem;font-weight:800;color:#10b981;">{{ pick_odds or '' }}</div>
+                        {% if from_market and fav_prob %}<div style="font-size:0.62rem;color:#9ca3af;">{{ fav_prob }}% impl&iacute;cito</div>{% endif %}
+                    </div>
                 </div>
                 <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
-                    📊 <strong style="color:white;">{{ left_team.name.split(' ')[-1] }}</strong> tiene mejor porcentaje de victorias
-                    ({{ left_stats.win_pct }} vs {{ right_stats.win_pct }}).
-                    {% if left_stats.all_stats and left_stats.all_stats.get('Last Ten Games') %}
-                    En los &uacute;ltimos 10 juegos: {{ left_stats.all_stats.get('Last Ten Games') }}.
+                    {% if from_market %}
+                    &#128202; El mercado de apuestas le da a <strong style="color:white;">{{ pick_team.name.split(' ')[-1] }}</strong>
+                    un <strong style="color:white;">{{ fav_prob }}%</strong> de probabilidad impl&iacute;cita
+                    frente al {{ (100 - fav_prob - (implied_probs.draw or 0))|round(1) }}% de {{ other_team.name.split(' ')[-1] }}{% if implied_probs.draw %} y {{ implied_probs.draw }}% de empate{% endif %}.
+                        {% if pick_stats and other_stats and pick_stats.win_pct and other_stats.win_pct %}
+                            {% if pick_stats.win_pct|float > other_stats.win_pct|float %}
+                            Los r&eacute;cords lo respaldan ({{ pick_stats.record }} vs {{ other_stats.record }}).
+                            {% elif pick_stats.win_pct|float < other_stats.win_pct|float %}
+                            Ojo: {{ other_team.name.split(' ')[-1] }} tiene mejor r&eacute;cord ({{ other_stats.record }} vs {{ pick_stats.record }}), as&iacute; que el mercado est&aacute; pesando otras cosas (pitcher, lesiones, localidad).
+                            {% else %}
+                            Los r&eacute;cords est&aacute;n igualados ({{ pick_stats.record }} vs {{ other_stats.record }}); la diferencia la marca el mercado.
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                    &#128202; <strong style="color:white;">{{ pick_team.name.split(' ')[-1] }}</strong> llega con mejor porcentaje de victorias
+                    ({{ pick_stats.win_pct }} vs {{ other_stats.win_pct }}).
+                    {% endif %}
+                    {% if pick_stats and pick_stats.all_stats and pick_stats.all_stats.get('Last Ten Games') %}
+                    &Uacute;ltimos 10: {{ pick_stats.all_stats.get('Last Ten Games') }}.
                     {% endif %}
                     {% if diff >= 0.12 %}
-                    <span style="color:#10b981;">Ventaja clara.</span>
+                    <span style="color:#10b981;">Favorito claro.</span>
                     {% else %}
                     <span style="color:#f59e0b;">Ventaja moderada — juego competitivo.</span>
                     {% endif %}
                 </div>
-                {% elif pick_side == 'right' %}
-                <div style="display:flex;align-items:center;gap:0.75rem;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem;">
-                    {% if right_team.logo %}<img src="{{ right_team.logo }}" alt="" style="width:32px;height:32px;">{% endif %}
-                    <div style="flex:1;">
-                        <div style="font-size:0.85rem;font-weight:700;color:white;">{{ right_team.name }}</div>
-                        <div style="font-size:0.7rem;color:#9ca3af;">R&eacute;cord: {{ right_stats.record }} ({{ right_stats.win_pct }}) &middot; Racha: {{ right_stats.streak or 'N/A' }}</div>
-                    </div>
-                    <div style="font-size:1.1rem;font-weight:800;color:#10b981;">{{ right_odds_val or '' }}</div>
-                </div>
-                <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
-                    📊 <strong style="color:white;">{{ right_team.name.split(' ')[-1] }}</strong> tiene mejor porcentaje de victorias
-                    ({{ right_stats.win_pct }} vs {{ left_stats.win_pct }}).
-                    {% if right_stats.all_stats and right_stats.all_stats.get('Last Ten Games') %}
-                    En los &uacute;ltimos 10 juegos: {{ right_stats.all_stats.get('Last Ten Games') }}.
-                    {% endif %}
-                    {% if diff >= 0.12 %}
-                    <span style="color:#10b981;">Ventaja clara.</span>
-                    {% else %}
-                    <span style="color:#f59e0b;">Ventaja moderada — juego competitivo.</span>
-                    {% endif %}
-                </div>
-                {% else %}
+            {% else %}
                 <div style="display:flex;align-items:center;gap:0.75rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem;">
                     <div style="flex:1;text-align:center;">
                         <div style="font-size:0.85rem;font-weight:700;color:#f59e0b;">Juego parejo</div>
-                        <div style="font-size:0.7rem;color:#9ca3af;">{{ left_stats.record }} ({{ left_stats.win_pct }}) vs {{ right_stats.record }} ({{ right_stats.win_pct }})</div>
+                        {% if from_market %}
+                        <div style="font-size:0.7rem;color:#9ca3af;">{{ left_team.name.split(' ')[-1] }} {{ lp }}% &middot; {{ right_team.name.split(' ')[-1] }} {{ rp }}%{% if implied_probs.draw %} &middot; Empate {{ implied_probs.draw }}%{% endif %}</div>
+                        {% elif left_stats and right_stats and left_stats.record and right_stats.record %}
+                        <div style="font-size:0.7rem;color:#9ca3af;">{{ left_stats.record }} vs {{ right_stats.record }}</div>
+                        {% endif %}
                     </div>
                 </div>
                 <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
-                    ⚖️ Equipos con rendimiento similar. Considera el factor local y rachas recientes antes de decidir.
-                    {% if left_stats.all_stats and left_stats.all_stats.get('Last Ten Games') %}
+                    &#9878;&#65039; {% if from_market %}Ni las cuotas ni los r&eacute;cords marcan un favorito claro.{% else %}Equipos con rendimiento similar.{% endif %}
+                    Considera el factor local y las rachas recientes antes de decidir.
+                    {% if left_stats and left_stats.all_stats and left_stats.all_stats.get('Last Ten Games') %}
                     {{ left_team.name.split(' ')[-1] }} &uacute;ltimos 10: {{ left_stats.all_stats.get('Last Ten Games') }}.
                     {% endif %}
-                    {% if right_stats.all_stats and right_stats.all_stats.get('Last Ten Games') %}
+                    {% if right_stats and right_stats.all_stats and right_stats.all_stats.get('Last Ten Games') %}
                     {{ right_team.name.split(' ')[-1] }} &uacute;ltimos 10: {{ right_stats.all_stats.get('Last Ten Games') }}.
-                    {% endif %}
-                </div>
-                {% endif %}
-            {% elif odds %}
-                {# No stats, but we have odds — show the favorite based on odds #}
-                <div style="font-size:0.75rem;color:#d1d5db;line-height:1.5;margin-bottom:0.5rem;">
-                    Los momios sugieren
-                    {% if left_odds_val and right_odds_val %}
-                        {% if left_odds_val|string|first == '-' and right_odds_val|string|first == '+' %}
-                        a <strong style="color:white;">{{ left_team.name }}</strong> como favorito ({{ left_odds_val }}).
-                        {% elif right_odds_val|string|first == '-' and left_odds_val|string|first == '+' %}
-                        a <strong style="color:white;">{{ right_team.name }}</strong> como favorito ({{ right_odds_val }}).
-                        {% else %}
-                        un juego competitivo.
-                        {% endif %}
                     {% endif %}
                 </div>
             {% endif %}
@@ -1369,12 +1375,21 @@
                     <div style="font-size:0.95rem;font-weight:700;color:white;">{{ odds.total_point }}</div>
                     <div style="font-size:0.6rem;color:#9ca3af;">Over/Under</div>
                 </div>
-                {% if left_stats and left_stats.all_stats and right_stats and right_stats.all_stats %}
-                {% set avg_runs = ((left_stats.all_stats.get('avgPointsFor', '0')|float) + (right_stats.all_stats.get('avgPointsAgainst', '0')|float) + (right_stats.all_stats.get('avgPointsFor', '0')|float) + (left_stats.all_stats.get('avgPointsAgainst', '0')|float)) / 2 %}
+                {# Solo mostramos la tendencia si los cuatro promedios existen de verdad.
+                   Antes, si ESPN no dev&iacute;a avgPointsFor/Against, el c&aacute;lculo daba 0.0 y la
+                   p&aacute;gina afirmaba "Tendencia Under" en todos los partidos. #}
+                {% if left_stats and left_stats.all_stats and right_stats and right_stats.all_stats
+                      and (left_stats.all_stats.get('avgPointsFor')|float) > 0
+                      and (right_stats.all_stats.get('avgPointsFor')|float) > 0
+                      and (left_stats.all_stats.get('avgPointsAgainst')|float) > 0
+                      and (right_stats.all_stats.get('avgPointsAgainst')|float) > 0 %}
+                {% set avg_runs = ((left_stats.all_stats.get('avgPointsFor')|float) + (right_stats.all_stats.get('avgPointsAgainst')|float) + (right_stats.all_stats.get('avgPointsFor')|float) + (left_stats.all_stats.get('avgPointsAgainst')|float)) / 2 %}
+                {% set _line = odds.total_point|float %}
+                {% set _gap = avg_runs - _line %}
                 <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:8px;padding:0.5rem 0.75rem;text-align:center;">
                     <div style="font-size:0.6rem;color:#9ca3af;text-transform:uppercase;">Prom. combinado</div>
-                    <div style="font-size:0.95rem;font-weight:700;color:{% if avg_runs > odds.total_point|float %}#22c55e{% else %}#f97316{% endif %};">{{ '%.1f'|format(avg_runs) }}</div>
-                    <div style="font-size:0.6rem;color:#9ca3af;">{% if avg_runs > odds.total_point|float %}Tendencia Over{% else %}Tendencia Under{% endif %}</div>
+                    <div style="font-size:0.95rem;font-weight:700;color:{% if _gap > 0.3 %}#22c55e{% elif _gap < -0.3 %}#f97316{% else %}#9ca3af{% endif %};">{{ '%.1f'|format(avg_runs) }}</div>
+                    <div style="font-size:0.6rem;color:#9ca3af;">{% if _gap > 0.3 %}Tendencia Over{% elif _gap < -0.3 %}Tendencia Under{% else %}En l&iacute;nea{% endif %}</div>
                 </div>
                 {% endif %}
             </div>
@@ -1382,7 +1397,7 @@
 
             <div style="text-align:center;margin-top:0.75rem;">
                 <a href="/go/bet?s=pick" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" style="display:inline-block;background:#10b981;color:white;font-size:0.75rem;font-weight:700;padding:0.5rem 1.5rem;border-radius:8px;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
-                    Ver cuotas completas &rarr;
+                    Ver apuestas &rarr;
                 </a>
             </div>
             <div style="text-align:center;margin-top:0.5rem;font-size:0.55rem;color:#6b7280;">

@@ -404,7 +404,7 @@ async def compose_daily_message() -> str | None:
 
     # ── Casino CTA ──
     # /go/bet elige la casa según el país de quien abre el link (MX → Jubilee/Vivento, US → Betsson, LATAM → 1xBet)
-    lines.append(f"💰 Ver cuotas y bono → {APP_URL}/go/bet?s=wa-daily-cuotas")
+    lines.append(f"💰 Ver apuestas y bono → {APP_URL}/go/bet?s=wa-daily-cuotas")
     lines.append("")
 
     # ── Footer ──
