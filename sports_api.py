@@ -44,6 +44,24 @@ _STATUS_ES = {
     "Pre-Game": "Por iniciar",
     "Warmup": "Calentamiento",
     "End of Regulation": "Fin del tiempo regular",
+    # ESPN alterna entre "1st Half" y "First Half" según el deporte/competición
+    "First Half": "1er Tiempo",
+    "Second Half": "2do Tiempo",
+    "End of 1st Half": "Fin del 1er tiempo",
+    "End of 2nd Half": "Fin del 2do tiempo",
+    "Extra Time": "Tiempo extra",
+    "1st Extra Time": "1er tiempo extra",
+    "2nd Extra Time": "2do tiempo extra",
+    "Penalties": "Penales",
+    "Shootout": "Tanda de penales",
+    "1st Quarter": "1er cuarto",
+    "2nd Quarter": "2do cuarto",
+    "3rd Quarter": "3er cuarto",
+    "4th Quarter": "4to cuarto",
+    "Overtime": "Tiempo extra",
+    "End of Game": "Fin del partido",
+    "In Progress": "En juego",
+    "Scheduled": "Programado",
 }
 
 

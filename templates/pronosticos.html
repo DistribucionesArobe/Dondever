@@ -137,10 +137,11 @@
                 <div class="odds-value">{{ right_odds or '—' }}</div>
             </a>
         </div>
-        {% if game.preview %}
+        {% set _analisis = (game.preview.full if game.preview and game.preview.full else (game.preview.snippet if game.preview else '')) | trim %}
+        {% if _analisis %}
         <div class="pick-analysis">
-            <div class="pick-analysis-title">Pron&oacute;stico</div>
-            <div class="pick-analysis-text">{{ game.preview.snippet }}</div>
+            <div class="pick-analysis-title">An&aacute;lisis del partido</div>
+            <div class="pick-analysis-text">{{ _analisis }}</div>
         </div>
         {% endif %}
         <div class="pick-cta">

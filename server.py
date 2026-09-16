@@ -5819,6 +5819,12 @@ def generate_match_preview(game: dict) -> dict | None:
                 f"El partido se transmite por {', '.join(ch_names)}."
             )
 
+    # Sin análisis real (solo la frase genérica de apertura y/o el canal) no hay
+    # nada que justifique un bloque titulado "Análisis": mejor no mostrarlo.
+    # full_parts[0] siempre es "X y Y se enfrentan…", así que exigimos algo más.
+    if len(full_parts) < 3:
+        full_parts = []
+
     return {
         "snippet": snippet,
         "full": " ".join(full_parts),
