@@ -459,6 +459,15 @@ import zlib as _zlib
 from cachetools import TTLCache as _TTLCache
 
 _HTML_CACHE = _TTLCache(maxsize=800, ttl=300)
+
+# La portada es la página más pesada (arma todas las ligas del día + momios) y
+# era la única que no pasaba por el caché: /equipo/, /liga/, /partido/ y los hubs
+# sí, pero "/" no estaba en ninguna de las dos listas, así que se renderizaba de
+# cero en cada visita. Va en su propio caché porque necesita un TTL mucho más
+# corto que los 300 s del resto: muestra marcadores y "hoy", y a los 5 minutos
+# ya mentiría. Con 60 s el HTML puede quedar un minuto viejo, pero los
+# marcadores en vivo se refrescan aparte desde /api/live-scores.
+_HOME_CACHE = _TTLCache(maxsize=64, ttl=60)
 _HTML_CACHE_PREFIXES = ("/equipo/", "/liga/", "/partido/", "/evento/", "/canal/", "/donde-ver/",
                         "/guia/", "/resultado/", "/donde-ver-en-", "/equipos", "/widget/")
 _HTML_CACHE_HUBS = {"/playoffs-mlb", "/gratis-hoy", "/pronosticos-hoy", "/futbol-hoy",
@@ -469,9 +478,10 @@ _HTML_CACHE_HUBS = {"/playoffs-mlb", "/gratis-hoy", "/pronosticos-hoy", "/futbol
 class HTMLCacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         path = request.url.path
+        is_home = path == "/"
         cacheable = (
             request.method == "GET"
-            and (path.startswith(_HTML_CACHE_PREFIXES) or path in _HTML_CACHE_HUBS
+            and (is_home or path.startswith(_HTML_CACHE_PREFIXES) or path in _HTML_CACHE_HUBS
                  or path.startswith("/sitemap"))
             and "nocache" not in request.query_params
             and "token" not in request.query_params
@@ -479,11 +489,16 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
         if not cacheable:
             return await call_next(request)
 
+        store = _HOME_CACHE if is_home else _HTML_CACHE
         key = path + ("?" + str(request.query_params) if request.query_params else "")
-        hit = _HTML_CACHE.get(key)
+        hit = store.get(key)
         if hit is not None:
             body, ctype = hit
-            _h = {"X-Cache": "HIT", "Cache-Control": "public, max-age=120, s-maxage=300", "Vary": "Accept-Encoding"}
+            # La portada conserva su propio Cache-Control (90 s) para no
+            # contradecir lo que ya manda la ruta.
+            _cc = ("public, max-age=90, s-maxage=90" if is_home
+                   else "public, max-age=120, s-maxage=300")
+            _h = {"X-Cache": "HIT", "Cache-Control": _cc, "Vary": "Accept-Encoding"}
             if path.startswith("/widget/"):
                 _h["Content-Security-Policy"] = "frame-ancestors *"  # embebible en otros sitios
             return Response(content=_zlib.decompress(body), status_code=200, media_type=ctype, headers=_h)
@@ -496,11 +511,15 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
             body = b""
             async for chunk in response.body_iterator:
                 body += chunk
-            _HTML_CACHE[key] = (_zlib.compress(body, 6), ctype)
+            store[key] = (_zlib.compress(body, 6), ctype)
             headers = dict(response.headers)
             headers.pop("content-length", None)
             headers["X-Cache"] = "MISS"
-            headers.setdefault("Cache-Control", "public, max-age=120, s-maxage=300")
+            # dict(response.headers) trae las claves en minúscula, así que un
+            # setdefault("Cache-Control", …) no encontraba el valor que ya había
+            # puesto la ruta y añadía un SEGUNDO Cache-Control. La portada salía
+            # con "max-age=90, s-maxage=90, public, max-age=120, s-maxage=300".
+            headers.setdefault("cache-control", "public, max-age=120, s-maxage=300")
             return Response(content=body, status_code=200, headers=headers, media_type=ctype)
         except Exception as e:
             logging.getLogger("dondever").warning(f"HTML cache failed: {e}")
