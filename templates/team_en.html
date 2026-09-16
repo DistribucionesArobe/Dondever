@@ -75,11 +75,11 @@
         {% if today_game %}
         <div class="lbl">{% if today_game.status.state == 'in' %}Playing now{% else %}Today{% endif %}</div>
         <div class="match">
-            {% if today_game.home.logo %}<img src="{{ today_game.home.logo }}" alt="">{% endif %}
-            <span>{{ today_game.home.name }}</span>
-            <span style="color:#9ca3af;font-weight:600;">vs</span>
-            <span>{{ today_game.away.name }}</span>
             {% if today_game.away.logo %}<img src="{{ today_game.away.logo }}" alt="">{% endif %}
+            <span>{{ today_game.away.name }}</span>
+            <span style="color:#9ca3af;font-weight:600;">at</span>
+            <span>{{ today_game.home.name }}</span>
+            {% if today_game.home.logo %}<img src="{{ today_game.home.logo }}" alt="">{% endif %}
         </div>
         <div class="when">{{ fmt_et(today_game.date) }}</div>
         <div class="chs">
@@ -90,9 +90,9 @@
         {% set nx = upcoming[0] %}
         <div class="lbl">Next game</div>
         <div class="match">
-            <span>{{ nx.home }}</span>
-            <span style="color:#9ca3af;font-weight:600;">vs</span>
             <span>{{ nx.away }}</span>
+            <span style="color:#9ca3af;font-weight:600;">at</span>
+            <span>{{ nx.home }}</span>
         </div>
         <div class="when">{{ fmt_et(nx.date) }}</div>
         <div class="chs">
@@ -111,7 +111,7 @@
         {% for u in upcoming %}
         <div class="row">
             <span class="w">{{ fmt_et(u.date) }}</span>
-            <span class="m">{{ u.home }} vs {{ u.away }}</span>
+            <span class="m">{{ u.away }} at {{ u.home }}</span>
             <span class="c">{% if u.channels %}{% for c in u.channels %}{{ c.name if c is mapping else c }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}TBA{% endif %}</span>
         </div>
         {% endfor %}

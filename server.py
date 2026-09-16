@@ -379,6 +379,7 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
 
             # Logo fijo arriba al hacer scroll en TODAS las páginas interiores (la portada ya lo tiene)
             _p = request.url.path
+            _is_en = _p.startswith("/en/")
             if _p != "/" and not _p.startswith("/widget") and b"</body>" in body and b'id="sticky-brand"' not in body:
                 sticky_css = (
                     '<style>.dv-sticky{position:fixed;top:0;left:0;right:0;z-index:150;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);'
@@ -391,7 +392,8 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                     body = body.replace(b"</head>", sticky_css + b"</head>", 1)
                 sticky_html = (
                     '<div class="dv-sticky" id="dv-sticky"><a href="/" aria-label="DondeVer inicio"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app"></a>'
-                    '<span style="display:flex;align-items:center;gap:0.7rem;"><a class="h dv-sticky-app" href="/app" style="display:none;">&#128241; App</a><a class="h" href="/">Inicio &rarr;</a></span></div>'
+                    '<span style="display:flex;align-items:center;gap:0.7rem;"><a class="h dv-sticky-app" href="/app" style="display:none;">&#128241; App</a>'
+                    f'<a class="h" href="/">{"Home" if _is_en else "Inicio"} &rarr;</a></span></div>'
                     '<script>(function(){try{var m=/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);var st=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;'
                     'if(m&&!st){var a=document.querySelector(".dv-sticky-app");if(a)a.style.display="inline";}}catch(e){}})();</script>'
                     '<script>(function(){var b=document.getElementById("dv-sticky");if(!b)return;var h=document.querySelector(".header")||document.querySelector("header");'
@@ -401,12 +403,16 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                 ).encode("utf-8")
                 body = body.replace(b"</body>", sticky_html + b"</body>", 1)
 
-            # Botón de contacto en el pie de TODAS las páginas (publicidad, ideas, opiniones)
+            # Botón de contacto en el pie de TODAS las páginas (publicidad, ideas, opiniones).
+            # En las páginas en inglés (/en/) va en inglés: si el usuario de EE.UU. ve texto en
+            # español se va, que es justo el problema que estas páginas vienen a resolver.
             if b"</footer>" in body and not request.url.path.startswith(("/widget", "/contacto")):
+                _label = ('&#128172; Contact us &middot; advertising, ideas and feedback' if _is_en
+                          else '&#128172; Cont&aacute;ctanos &middot; publicidad, ideas y opiniones')
                 contact_btn = (
                     '<p style="margin:0.6rem 0 0.2rem;"><a href="/contacto" style="display:inline-block;padding:0.45rem 0.95rem;'
                     'background:#10b981;color:#fff;border-radius:999px;font-weight:800;font-size:0.78rem;text-decoration:none;">'
-                    '&#128172; Cont&aacute;ctanos &middot; publicidad, ideas y opiniones</a></p>'
+                    f'{_label}</a></p>'
                 ).encode("utf-8")
                 body = body.replace(b"</footer>", contact_btn + b"</footer>", 1)
 
