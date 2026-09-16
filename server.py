@@ -1294,6 +1294,46 @@ async def canales_index(request: Request):
     )
 
 
+# Ruta de streaming oficial por canal, solo donde está verificada (ver /streaming, sept 2026).
+# No inventamos números de cable ni listas de operadores: eso cambia por región y proveedor.
+CHANNEL_STREAM_ROUTE = {
+    "tudn": ("ViX Premium", "La programación de TUDN se ve en ViX Premium con suscripción."),
+    "espn": ("Disney+", "En México, los canales ESPN se ven dentro de Disney+ (planes con ESPN)."),
+    "espn2": ("Disney+", "En México, los canales ESPN se ven dentro de Disney+ (planes con ESPN)."),
+    "espn-mx": ("Disney+", "En México, los canales ESPN se ven dentro de Disney+ (planes con ESPN)."),
+    "espn-deportes": ("Disney+", "En México, los canales ESPN se ven dentro de Disney+ (planes con ESPN)."),
+    "tnt-sports": ("HBO Max", "TNT Sports comparte derechos con HBO Max en México."),
+    "canal-5": ("ViX", "Canal 5 es TV abierta; su señal también está en ViX."),
+    "fox-sports-mx": ("Fox One", "Fox One es la app de streaming de Fox Sports México."),
+}
+
+_CHANNEL_TYPE_HOWTO = {
+    "broadcast": "Es televisión abierta: se ve gratis con antena o en la señal digital de tu zona, sin suscripción.",
+    "cable": "Es un canal de televisión de paga: necesitas un plan de cable o satélite que lo incluya, o la app oficial del canal iniciando sesión con tu proveedor.",
+    "streaming": "Es una plataforma de streaming: se ve por internet con una suscripción, sin necesidad de cable.",
+}
+
+
+async def _channel_upcoming(channel_slug: str, days: int = 3, limit: int = 10) -> list:
+    """Próximos partidos en este canal (siguientes días). Da contenido a la página
+    los días sin transmisión, que antes quedaba vacía y en noindex."""
+    out = []
+    base = datetime.now(TZ_MX)
+    for d in range(1, days + 1):
+        if len(out) >= limit:
+            break
+        ds = (base + timedelta(days=d)).strftime("%Y%m%d")
+        try:
+            for g in await get_todays_games(date_str=ds):
+                if any(_slugify_channel(b.get("channel", "")) == channel_slug for b in g.get("broadcasts", [])):
+                    out.append(g)
+                    if len(out) >= limit:
+                        break
+        except Exception:
+            continue
+    return out
+
+
 @app.get("/canal/{channel_slug}", response_class=HTMLResponse)
 async def canal_page(request: Request, channel_slug: str, date: Optional[str] = Query(None)):
     """Per-channel page — all games airing on a specific channel today."""
@@ -1365,6 +1405,22 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
     live_count = sum(1 for g in channel_games if g["status"]["state"] == "in")
     upcoming_count = sum(1 for g in channel_games if g["status"]["state"] == "pre")
 
+    # ── Contenido permanente: cómo verlo, qué transmite y próximos días ──
+    from config import CHANNEL_ALIASES as _CH_ALIAS
+    _cinfo = _curated_page or _CH_ALIAS.get(channel_name) or {}
+    ch_type = _cinfo.get("type", "")
+    ch_country = _cinfo.get("country", "")
+    ch_desc = _cinfo.get("desc", "")
+    howto = _CHANNEL_TYPE_HOWTO.get(ch_type, "")
+    stream_route = CHANNEL_STREAM_ROUTE.get(channel_slug)
+    next_games = [] if date else await _channel_upcoming(channel_slug)
+    # Ligas que realmente se transmiten en este canal (de nuestros propios datos, no inventadas)
+    leagues_here = []
+    for g in channel_games + next_games:
+        ln = g.get("league_name", "")
+        if ln and ln not in leagues_here:
+            leagues_here.append(ln)
+
     return templates.TemplateResponse(
         request,
         "canal.html",
@@ -1377,12 +1433,20 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             "live_count": live_count,
             "upcoming_count": upcoming_count,
             "saff": saff,
+            "ch_type": ch_type,
+            "ch_country": ch_country,
+            "ch_desc": ch_desc,
+            "howto": howto,
+            "stream_route": stream_route,
+            "next_games": next_games,
+            "leagues_here": leagues_here[:8],
             "current_date": date or today.strftime("%Y%m%d"),
             "today_display": format_date_es(viewing_date),
             "prev_date": prev_date,
             "next_date": next_date,
-            # ?date= variants are thin duplicates → noindex (canonical already points to /canal/{slug})
-            "noindex": bool(date) or len(channel_games) == 0,
+            # ?date= sigue siendo duplicado delgado → noindex. La página sin partidos HOY ya no:
+            # ahora lleva cómo verlo, qué transmite y los próximos días, así que es indexable.
+            "noindex": bool(date) or (len(channel_games) == 0 and len(next_games) == 0),
         },
     )
 

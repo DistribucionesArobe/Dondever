@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ channel_name }} en vivo hoy — Partidos y horarios | DondeVer.app</title>
-    <meta name="description" content="Partidos en {{ channel_name }} hoy: {{ total_games }} juegos en vivo. Horarios, resultados y programación deportiva de {{ channel_name }} en Mexico, USA y Latinoamerica.">
+    <title>{{ channel_name }} en vivo hoy: qué partidos pasan y a qué hora | DondeVer</title>
+    <meta name="description" content="Qué pasan hoy en {{ channel_name }}: {% if total_games %}{{ total_games }} partido{{ 's' if total_games != 1 else '' }} con horario de México{% else %}próximos partidos y programación{% endif %}, cómo ver el canal en vivo y qué ligas transmite.">
     <meta property="og:title" content="{{ channel_name }} hoy — Programación deportiva en vivo | DondeVer">
     <meta property="og:description" content="{{ total_games }} partidos en {{ channel_name }} hoy. Horarios y programación deportiva actualizada.">
     <meta property="og:type" content="website">
@@ -101,6 +101,25 @@
         .gc-time { font-weight: 700; font-size: 0.78rem; color: #374151; }
         .gc-sub { font-size: 0.55rem; color: #9ca3af; font-weight: 600; }
         .no-games { text-align: center; padding: 3rem 1rem; color: #6b7280; }
+        .ch-next { background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
+        .ch-next-row { display:flex; align-items:center; gap:0.7rem; padding:0.6rem 0.9rem; border-top:1px solid #f3f4f6; text-decoration:none; color:inherit; font-size:0.85rem; flex-wrap:wrap; }
+        .ch-next-row:first-child { border-top:none; }
+        .ch-next-when { font-weight:800; color:#f97316; white-space:nowrap; }
+        .ch-next-match { flex:1; min-width:0; font-weight:700; color:#1a1a2e; }
+        .ch-next-league { font-size:0.72rem; color:#6b7280; white-space:nowrap; }
+        .ch-info { max-width:900px; margin:1.5rem auto 0; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1.1rem 1.25rem; }
+        .ch-info h2 { font-size:1rem; font-weight:800; margin:1rem 0 0.4rem; color:#1a1a2e; }
+        .ch-info h2:first-child { margin-top:0; }
+        .ch-info p { font-size:0.88rem; line-height:1.65; color:#374151; margin-bottom:0.5rem; }
+        .ch-note { font-size:0.75rem; color:#9ca3af; }
+        .ch-link { color:#059669; font-weight:700; text-decoration:none; }
+        .ch-ad { font-size:0.62rem; color:#9ca3af; }
+        .ch-leagues { display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.5rem; }
+        .ch-league-tag { font-size:0.72rem; background:#f3f4f6; color:#374151; border-radius:6px; padding:0.2rem 0.55rem; font-weight:600; }
+        .ch-faq p { margin-bottom:0.6rem; }
+        body.dark-mode .ch-info, body.dark-mode .ch-next { background:#1e293b; border-color:#334155; }
+        body.dark-mode .ch-info p, body.dark-mode .ch-next-match { color:#e2e8f0; }
+        body.dark-mode .ch-league-tag { background:#334155; color:#e2e8f0; }
         .no-games h2 { font-size: 1.1rem; margin-bottom: 0.4rem; color: #374151; }
         .footer { background: #1a1a2e; color: #9ca3af; text-align: center; padding: 1.5rem 1rem; font-size: 0.75rem; margin-top: 2rem; }
         .footer a { color: #10b981; text-decoration: none; }
@@ -132,8 +151,8 @@
     {% else %}
     <div class="channel-badge" style="background:#1e293b;color:white;">&#128250; {{ channel_name }}</div>
     {% endif %}
-    <h1>Partidos en {{ channel_name }} hoy</h1>
-    <p>Programación deportiva de {{ channel_name }} para hoy. Horarios, resultados y dónde verlo en México, USA y Latinoamérica.</p>
+    <h1>{{ channel_name }} en vivo hoy: qué partidos pasan</h1>
+    <p>{% if total_games %}Esto es lo que transmite {{ channel_name }} hoy, con horario del centro de México.{% else %}Hoy {{ channel_name }} no tiene partidos en nuestra programación. Abajo están los próximos y cómo ver el canal en vivo.{% endif %}</p>
     <div class="hero-stats">
         <span class="hero-stat"><strong>{{ total_games }}</strong> partido{{ 's' if total_games != 1 else '' }}</span>
         {% if live_count %}<span class="hero-stat" style="color:#ef4444;"><strong>{{ live_count }}</strong> en vivo</span>{% endif %}
@@ -204,7 +223,62 @@
         {% endfor %}
     </section>
     {% endfor %}
+
+    {# ── Próximos partidos en el canal (da contenido los días sin transmisión) ── #}
+    {% if next_games %}
+    <section class="league-section" style="margin-top:1.2rem;">
+        <h2 class="league-header"><span>&#128197; Pr&oacute;ximos partidos en {{ channel_name }}</span></h2>
+        <div class="ch-next">
+            {% for g in next_games %}
+            <a class="ch-next-row" href="{{ g|game_url }}">
+                <span class="ch-next-when">{{ format_mx_day_time(g.date) }}</span>
+                <span class="ch-next-match">{{ g.home.name }} vs {{ g.away.name }}</span>
+                <span class="ch-next-league">{{ g.emoji }} {{ g.league_name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        <p class="ch-note">Horarios del centro de M&eacute;xico. La programaci&oacute;n puede cambiar sin aviso.</p>
+    </section>
+    {% endif %}
+
+    {# ── Contenido permanente: cómo ver el canal y qué transmite ── #}
+    <section class="ch-info">
+        <h2>C&oacute;mo ver {{ channel_name }} en vivo</h2>
+        {% if howto %}<p>{{ howto }}</p>{% endif %}
+        {% if stream_route %}
+        <p><strong>Por internet:</strong> {{ stream_route[1] }}</p>
+        {% endif %}
+        {% if saff %}
+        <p><a href="/go/{{ saff.key }}?s=canal-howto" target="_blank" rel="sponsored nofollow noopener" class="ch-link">{{ saff.cta }} &#8599;</a> <span class="ch-ad">Publicidad</span></p>
+        {% endif %}
+        {% if ch_desc %}<p>{{ ch_desc }}</p>{% endif %}
+        <p class="ch-note">La disponibilidad y el n&uacute;mero de canal cambian seg&uacute;n tu pa&iacute;s y tu proveedor de TV. Verifica con tu operador antes de contratar.</p>
+
+        {% if leagues_here %}
+        <h2>Qu&eacute; se transmite en {{ channel_name }}</h2>
+        <p>Competencias que hemos visto en {{ channel_name }} estos d&iacute;as:</p>
+        <div class="ch-leagues">
+            {% for ln in leagues_here %}<span class="ch-league-tag">{{ ln }}</span>{% endfor %}
+        </div>
+        {% endif %}
+
+        <h2>Preguntas frecuentes</h2>
+        <div class="ch-faq">
+            <p><b>&iquest;Qu&eacute; est&aacute;n pasando ahora en {{ channel_name }}?</b> {% if live_count %}En este momento hay {{ live_count }} partido{{ 's' if live_count != 1 else '' }} en vivo; lo ves arriba con el marcador actualizado.{% elif total_games %}Hoy hay {{ total_games }} partido{{ 's' if total_games != 1 else '' }} programado{{ 's' if total_games != 1 else '' }} en {{ channel_name }}; arriba est&aacute; el horario de cada uno.{% else %}Hoy no tenemos partidos programados en {{ channel_name }}. Arriba aparecen los pr&oacute;ximos d&iacute;as.{% endif %}</p>
+            <p><b>&iquest;{{ channel_name }} es gratis?</b> {% if ch_type == 'broadcast' %}S&iacute;: es televisi&oacute;n abierta y no necesitas suscripci&oacute;n.{% elif ch_type == 'streaming' %}No: requiere una suscripci&oacute;n de pago, aunque algunos planes incluyen prueba inicial.{% else %}No: forma parte de la televisi&oacute;n de paga, as&iacute; que necesitas un plan de cable o satélite que lo incluya.{% endif %}</p>
+            <p><b>&iquest;Se puede ver {{ channel_name }} sin cable?</b> {% if stream_route %}S&iacute;. {{ stream_route[1] }}{% elif ch_type == 'streaming' %}S&iacute;, es una plataforma de streaming: solo necesitas internet y una cuenta.{% elif ch_type == 'broadcast' %}S&iacute;, es TV abierta.{% else %}Depende de tu pa&iacute;s: algunos operadores ofrecen la se&ntilde;al en su propia app con tu cuenta de cable.{% endif %}</p>
+            <p><b>&iquest;En qu&eacute; horario est&aacute;n los partidos?</b> Todos los horarios de esta p&aacute;gina est&aacute;n en hora del centro de M&eacute;xico (CDMX). Si est&aacute;s en otro pa&iacute;s, en la p&aacute;gina de cada partido ves la hora local.</p>
+        </div>
+    </section>
 </main>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+ {"@type":"Question","name":"¿Cómo ver {{ channel_name }} en vivo?","acceptedAnswer":{"@type":"Answer","text":"{{ howto }} {% if stream_route %}{{ stream_route[1] }}{% endif %}"}},
+ {"@type":"Question","name":"¿{{ channel_name }} es gratis?","acceptedAnswer":{"@type":"Answer","text":"{% if ch_type == 'broadcast' %}Sí, es televisión abierta y no requiere suscripción.{% elif ch_type == 'streaming' %}No, requiere una suscripción de pago.{% else %}No, forma parte de la televisión de paga.{% endif %}"}},
+ {"@type":"Question","name":"¿Qué partidos pasan hoy en {{ channel_name }}?","acceptedAnswer":{"@type":"Answer","text":"{% if total_games %}Hoy {{ channel_name }} transmite {{ total_games }} partido{{ 's' if total_games != 1 else '' }}, con horario del centro de México.{% else %}Hoy no hay partidos programados en {{ channel_name }}; en la página aparecen los próximos.{% endif %}"}}
+]}
+</script>
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>
