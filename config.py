@@ -1310,6 +1310,20 @@ TEAM_ALIASES = {
     "yanquis": "yankees",
     "medias rojas": "red sox",
     "cachorros": "cubs",
+    # Nombres en español que faltaban. La prensa deportiva de Venezuela y el
+    # Caribe escribe así: "6:35 PM ByM SPORT: Dodgers vs Rojos", "8:00 PM IVC:
+    # Medias Rojas vs Rangers". Sin estos, una búsqueda por "mellizos" o
+    # "angelinos" no encontraba nada.
+    # NO se agregan "tigres", "bravos", "leones", "águilas", "caribes" ni
+    # "tiburones": en español chocan con Tigres UANL, Bravos de Margarita,
+    # Leones del Caracas y compañía, y darían resultados equivocados.
+    "mellizos": "twins",
+    "rocosos": "rockies",
+    "atléticos": "athletics",
+    "vigilantes": "rangers",
+    "carmelitas": "padres",
+    "serpientes": "diamondbacks",
+    "cascabeles": "diamondbacks",
     "mets": "mets",
     "padres": "padres",
     "angels": "angels",
