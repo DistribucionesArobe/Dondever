@@ -210,14 +210,22 @@ async def grid(cc: str) -> list[dict]:
 _SPLIT = re.compile(r"\s+vs\.?\s+|\s+v\s+", re.I)
 
 
+# Cuánto puede separarse la transmisión del inicio del partido.
+#
+# 5 h cubre de sobra el previo y un juego largo, y deja fuera el mismo
+# enfrentamiento de OTRO día, que está a ~24 h. Sin este límite pasó lo
+# siguiente el 17/09/2026: el archivo trae dos días, y a un Dodgers-Reds de hoy
+# le pegamos el canal del Dodgers-Reds de AYER (Teleantillas, 16/09 22:30 UTC).
+# El canal existía y el partido existía, pero no juntos. Eso es una mentira.
+_VENTANA_MIN = 300
+
+
 def _match(programas: list[dict], home: str, away: str,
            start: datetime | None) -> list[dict]:
     """Programas que son ESTE partido, el más cercano en hora primero.
 
     Aquí SÍ filtramos por hora, al revés que en gatotv.py: estas horas vienen
-    con su offset declarado, así que son de fiar. Preferimos la transmisión en
-    vivo, pero si solo hay repetición la damos igual — el canal es el mismo y
-    es la respuesta que el usuario busca.
+    con su offset declarado, así que son de fiar y podemos exigirles algo.
     """
     hk, ak = _gatotv._keys(home), _gatotv._keys(away)
     if not hk or not ak:
@@ -234,7 +242,12 @@ def _match(programas: list[dict], home: str, away: str,
              (_gatotv._same_team(hk, der) and _gatotv._same_team(ak, izq))
         if not ok:
             continue
-        delta = abs((p["start"] - start).total_seconds()) if start else 0
+        if start is not None:
+            delta = abs((p["start"] - start).total_seconds())
+            if delta > _VENTANA_MIN * 60:
+                continue
+        else:
+            delta = 0
         hits.append((delta, p))
 
     hits.sort(key=lambda x: x[0])
