@@ -3317,14 +3317,30 @@
         });
         var ordered = leagueFav.concat(teamFav).concat(sportFav).concat(neither);
 
+        // Recordar el orden con el que llegó del servidor, una sola vez.
+        sections.forEach(function(sec, i) {
+            if (sec.dataset.dvOrig === undefined) sec.dataset.dvOrig = i;
+        });
+
         // Antes esto hacía container.appendChild(sec) para cada sección, lo que
         // las sacaba de #hiddenLeagues y las tiraba AL FINAL del contenedor,
         // debajo del botón "Mostrar más" y de lo que viniera después. Por eso
         // marcar un deporte no se notaba: la liga subía en el orden interno
         // pero terminaba más abajo en la página. Ahora se respetan las dos
         // zonas: las primeras van arriba, el resto queda colapsado.
-        var visibles = ordered.slice(0, DV_MAX_VISIBLE_LEAGUES);
-        var resto = ordered.slice(DV_MAX_VISIBLE_LEAGUES);
+        // Marcar un deporte ORDENA, no filtra. Si solo dejáramos arriba las 5
+        // primeras del nuevo orden, marcar "fútbol" empujaba MLB, LNBP y WNBA
+        // detrás de "Mostrar más ligas" — y eso se lee como si las hubiéramos
+        // quitado. Regla: arriba van los favoritos MÁS todo lo que ya se veía
+        // antes de marcar nada. Nadie pierde su lugar por marcar un deporte.
+        var favSet = new Set(leagueFav.concat(teamFav).concat(sportFav));
+        var tope = Math.max(DV_MAX_VISIBLE_LEAGUES, Math.min(8, ordered.length));
+        var visibles = [], resto = [];
+        ordered.forEach(function(sec) {
+            var eraVisible = parseInt(sec.dataset.dvOrig, 10) < DV_MAX_VISIBLE_LEAGUES;
+            if ((favSet.has(sec) || eraVisible) && visibles.length < tope) visibles.push(sec);
+            else resto.push(sec);
+        });
 
         // El ancla marca DÓNDE empieza el bloque de ligas. Si no hay botón
         // "Mostrar más" (pocas ligas), dejamos una marca invisible en el sitio
@@ -3369,7 +3385,8 @@
             if (!header) return;
             var tag = document.createElement('span');
             tag.className = 'dv-why-tag';
-            tag.innerHTML = '&#9733; Tu deporte';
+            // Sin estrella: el encabezado ya trae la de "seguir liga" y salían dos.
+            tag.textContent = 'Tu deporte';
             header.appendChild(document.createTextNode(' '));
             header.appendChild(tag);
         });
