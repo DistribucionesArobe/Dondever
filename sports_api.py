@@ -694,19 +694,27 @@ async def fetch_sportsdb_tv_by_event(event_id: str) -> list[dict]:
             result = []
             for tv in tv_list:
                 country = tv.get("strCountry", "")
-                # Only keep MX and US channels
-                if country in ("Mexico", "United States", "US", "MX", "Worldwide"):
-                    channel = tv.get("strChannel", "")
-                    if channel:
-                        result.append({
-                            "channel": channel,
-                            "country": country,
-                            "info": CHANNEL_ALIASES.get(channel, {
-                                "name": channel,
-                                "country": "MX" if "Mexico" in country else "US",
-                                "type": "cable"
-                            }),
-                        })
+                # Antes sólo se guardaban México, EE.UU. y Worldwide, y todo lo
+                # demás se tiraba. Según Search Console, Venezuela (17%), Panamá
+                # (8%) y Dominicana (4%) son casi un tercio de los clics del
+                # sitio: estábamos descartando el único dato de canal REAL que
+                # tenemos para ellos. Ahora se guardan todos los países que
+                # servimos, con su código ISO.
+                cc = SPORTSDB_COUNTRY_CODE.get(country)
+                if not cc:
+                    continue
+                channel = tv.get("strChannel", "")
+                if channel:
+                    result.append({
+                        "channel": channel,
+                        "country": country,
+                        "cc": cc,          # "MX", "VE", "PA"… o "*" para Worldwide
+                        "info": CHANNEL_ALIASES.get(channel, {
+                            "name": channel,
+                            "country": cc if cc != "*" else "",
+                            "type": "cable",
+                        }),
+                    })
             _tv_cache[cache_key] = result
             return result
         except Exception as e:
@@ -1091,6 +1099,9 @@ async def parse_espn_events_enriched(
         # ¿Los canales salen de un dato real (ESPN, TheSportsDB, la tabla curada
         # de Liga MX) o de un default de liga? Solo lo primero se puede afirmar.
         channels_confirmed = True
+        # Canal por país tal como lo reporta TheSportsDB: {"MX": [...], "VE": [...]}.
+        # Vacío cuando esa fuente no tiene nada para este partido.
+        channels_by_country: dict[str, list[str]] = {}
         if league_slug == "liga-mx":
             # Liga MX: always add team-specific channels (ESPN rarely has MX data)
             home_lower = home["name"].lower()
@@ -1138,13 +1149,20 @@ async def parse_espn_events_enriched(
                                 tv_channels = await fetch_sportsdb_tv_by_event(sdb_event_id)
                                 for tv in tv_channels:
                                     ch_name = tv.get("channel", "")
-                                    ch_country = tv.get("country", "")
-                                    if ch_name and "Mexico" in ch_country:
-                                        normalized = _normalize_channel(ch_name)
-                                        alias = CHANNEL_ALIASES.get(normalized, CHANNEL_ALIASES.get(ch_name))
-                                        final_name = alias.get("name", ch_name) if alias else ch_name
-                                        if final_name not in mx_defaults:
-                                            mx_defaults.append(final_name)
+                                    cc = tv.get("cc", "")
+                                    if not ch_name or not cc:
+                                        continue
+                                    normalized = _normalize_channel(ch_name)
+                                    alias = CHANNEL_ALIASES.get(normalized, CHANNEL_ALIASES.get(ch_name))
+                                    final_name = alias.get("name", ch_name) if alias else ch_name
+                                    # Guardamos el canal de CADA país, no sólo el
+                                    # de México: Venezuela, Panamá y Dominicana
+                                    # juntas son el 29% de los clics del sitio.
+                                    bucket = channels_by_country.setdefault(cc, [])
+                                    if final_name not in bucket:
+                                        bucket.append(final_name)
+                                    if cc in ("MX", "*") and final_name not in mx_defaults:
+                                        mx_defaults.append(final_name)
                             except Exception:
                                 pass
                     break
@@ -1313,6 +1331,7 @@ async def parse_espn_events_enriched(
             # este partido. Quien AFIRME el canal (título, meta description,
             # JSON-LD) tiene que callarse cuando esto es False.
             "channels_confirmed": channels_confirmed,
+            "channels_by_country": channels_by_country,
             "venue": venue,
             "recap": recap,
             "link": ev.get("links", [{}])[0].get("href", "") if ev.get("links") else "",
@@ -2713,6 +2732,25 @@ async def get_recent_league_results(sport: str, league: str, days: int = 5, limi
 # Mapa US→MX compartido: antes vivía dentro de get_todays_games, así que
 # get_upcoming_league_games no lo aplicaba y el mismo partido salía con canales
 # distintos según la página desde la que se mirara.
+# Nombres de país que usa TheSportsDB → código ISO. La lista sale del reparto
+# real de tráfico en Search Console (28 días): MX 41%, VE 17%, PA 8%, US 6%,
+# DO 4%, CO 4%, ES 4%, PE/EC/PR ~2% cada uno.
+SPORTSDB_COUNTRY_CODE = {
+    "Mexico": "MX", "México": "MX", "MX": "MX",
+    "Venezuela": "VE", "VE": "VE",
+    "Panama": "PA", "Panamá": "PA", "PA": "PA",
+    "Dominican Republic": "DO", "República Dominicana": "DO", "DO": "DO",
+    "Colombia": "CO", "CO": "CO",
+    "Peru": "PE", "Perú": "PE", "PE": "PE",
+    "Ecuador": "EC", "EC": "EC",
+    "Argentina": "AR", "AR": "AR",
+    "Chile": "CL", "CL": "CL",
+    "Spain": "ES", "España": "ES", "ES": "ES",
+    "United States": "US", "USA": "US", "US": "US",
+    "Puerto Rico": "PR", "PR": "PR",
+    "Worldwide": "*", "International": "*",
+}
+
 US_TO_MX_CHANNEL = {
     "ESPN": "ESPN MX", "ESPN2": "ESPN MX", "ESPNU": "ESPN MX",
     "ESPNews": "ESPN MX", "ABC": "ESPN MX",
