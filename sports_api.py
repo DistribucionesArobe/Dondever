@@ -660,11 +660,76 @@ async def fetch_sportsdb_schedule(
             return []
 
 
+# Nuestro tipo de deporte → el nombre que usa TheSportsDB en eventstv.php
+_SPORTSDB_TV_SPORT = {
+    "baseball": "Baseball",
+    "soccer": "Soccer",
+    "football": "American Football",
+    "basketball": "Basketball",
+    "hockey": "Ice Hockey",
+}
+
+_tv_day_cache = TTLCache(maxsize=40, ttl=3600)
+
+
+async def fetch_sportsdb_tv_by_day(sport_type: str, date_iso: str) -> dict[str, list[dict]]:
+    """Transmisiones de TV de todo un día, indexadas por idEvent de TheSportsDB.
+
+    Reemplaza a lookupeventtv.php, que devuelve 404 con nuestra clave (probado
+    2026-09-16: responde una página HTML de error, no JSON). Ese endpoint muerto
+    se llamaba una vez POR PARTIDO y siempre fallaba en silencio dentro del
+    try/except, así que gastábamos una petición por juego para nada.
+
+    eventstv.php sí responde y trae strChannel + strCountry, y con una sola
+    llamada por deporte y día cubre todos los partidos.
+    """
+    sport = _SPORTSDB_TV_SPORT.get(sport_type)
+    if not sport:
+        return {}
+    cache_key = f"sportsdb:tvday:{sport}:{date_iso}"
+    if cache_key in _tv_day_cache:
+        return _tv_day_cache[cache_key]
+
+    import time as _time
+    global _sportsdb_blocked_until
+    if _time.time() < _sportsdb_blocked_until:
+        return {}
+
+    by_event: dict[str, list[dict]] = {}
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(f"{SPORTSDB_BASE}/eventstv.php",
+                                    params={"d": date_iso, "s": sport})
+            if resp.status_code == 429:
+                _sportsdb_blocked_until = _time.time() + 1800
+                logger.warning("TheSportsDB rate limited (429) — backing off 30 min")
+                return {}
+            resp.raise_for_status()
+            for tv in (resp.json().get("tvevents") or []):
+                cc = SPORTSDB_COUNTRY_CODE.get(tv.get("strCountry", ""))
+                channel = tv.get("strChannel", "")
+                ev_id = str(tv.get("idEvent", ""))
+                if not (cc and channel and ev_id):
+                    continue
+                bucket = by_event.setdefault(ev_id, [])
+                if not any(x["channel"] == channel and x["cc"] == cc for x in bucket):
+                    bucket.append({"channel": channel, "cc": cc})
+    except Exception as e:
+        logger.warning(f"TheSportsDB TV-by-day error: {e}")
+        return {}
+
+    _tv_day_cache[cache_key] = by_event
+    return by_event
+
+
 async def fetch_sportsdb_tv_by_event(event_id: str) -> list[dict]:
     """
     Lookup TV broadcast channels for a specific event ID.
     TheSportsDB Premium endpoint.
     Includes rate-limit protection: if we get 429, back off for 30 min.
+
+    OJO: con nuestra clave este endpoint responde 404 (probado 2026-09-16).
+    Queda por si se reactiva, pero el camino vivo es fetch_sportsdb_tv_by_day().
     """
     import time as _time
     global _sportsdb_blocked_until
@@ -982,11 +1047,21 @@ async def parse_espn_events_enriched(
 
     # Pre-fetch TheSportsDB schedule ONCE per league (cached 4h)
     sportsdb_events = []
+    # Transmisiones de TV del día, una sola llamada para todos los partidos del
+    # deporte (antes era una petición por partido a un endpoint que da 404).
+    sportsdb_tv_day: dict[str, list[dict]] = {}
     sportsdb_league = SPORTSDB_LEAGUE_MAP.get(league_slug)
     if sportsdb_league:
         formatted_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
         try:
             sportsdb_events = await fetch_sportsdb_schedule(sportsdb_league, formatted_date)
+        except Exception:
+            pass
+        try:
+            # sport_type se calcula más abajo, dentro del bucle de partidos; aquí
+            # todavía no existe, así que lo derivamos de league_info igual que allá.
+            _sport_for_tv = league_info[0] if isinstance(league_info, tuple) else ""
+            sportsdb_tv_day = await fetch_sportsdb_tv_by_day(_sport_for_tv, formatted_date)
         except Exception:
             pass
 
@@ -1143,10 +1218,10 @@ async def parse_espn_events_enriched(
                                     mx_defaults.append(final_name)
                     # Also try detailed TV lookup if schedule had no TV data
                     if not mx_defaults:
-                        sdb_event_id = sdb_ev.get("idEvent", "")
+                        sdb_event_id = str(sdb_ev.get("idEvent", ""))
                         if sdb_event_id:
                             try:
-                                tv_channels = await fetch_sportsdb_tv_by_event(sdb_event_id)
+                                tv_channels = sportsdb_tv_day.get(sdb_event_id, [])
                                 for tv in tv_channels:
                                     ch_name = tv.get("channel", "")
                                     cc = tv.get("cc", "")
@@ -2748,7 +2823,9 @@ SPORTSDB_COUNTRY_CODE = {
     "Spain": "ES", "España": "ES", "ES": "ES",
     "United States": "US", "USA": "US", "US": "US",
     "Puerto Rico": "PR", "PR": "PR",
-    "Worldwide": "*", "International": "*",
+    # eventstv.php devuelve "World" (no "Worldwide", que es lo que usa el
+    # endpoint viejo). Sin esta entrada se descartaban las transmisiones globales.
+    "World": "*", "Worldwide": "*", "International": "*",
 }
 
 US_TO_MX_CHANNEL = {
