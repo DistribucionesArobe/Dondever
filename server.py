@@ -618,6 +618,21 @@ templates.env.globals["format_us_time"] = format_us_time
 # eran un "—" que sólo rellenaba el JavaScript: Googlebot y cualquiera con el
 # JS lento veían un guion donde debía ir la hora.
 templates.env.globals["format_tz_time"] = lambda iso, tz: _fmt_local(iso, tz)
+
+# Etiquetas y orden de los países para el bloque "Dónde verlo en tu país".
+# El orden es el del tráfico real (Search Console, 28 días), no alfabético:
+# México, Venezuela y Panamá son los tres primeros por volumen de clics.
+COUNTRY_LABELS = {
+    "MX": ("México", "🇲🇽"), "VE": ("Venezuela", "🇻🇪"), "PA": ("Panamá", "🇵🇦"),
+    "US": ("Estados Unidos", "🇺🇸"), "DO": ("Dominicana", "🇩🇴"),
+    "CO": ("Colombia", "🇨🇴"), "ES": ("España", "🇪🇸"), "PE": ("Perú", "🇵🇪"),
+    "EC": ("Ecuador", "🇪🇨"), "PR": ("Puerto Rico", "🇵🇷"),
+    "AR": ("Argentina", "🇦🇷"), "CL": ("Chile", "🇨🇱"),
+    "*": ("Internacional", "🌎"),
+}
+COUNTRY_ORDER = ["MX", "VE", "PA", "US", "DO", "CO", "ES", "PE", "EC", "PR", "AR", "CL", "*"]
+templates.env.globals["country_labels"] = COUNTRY_LABELS
+templates.env.globals["country_order"] = COUNTRY_ORDER
 templates.env.globals["affiliates"] = AFFILIATES
 templates.env.globals["streaming_aff"] = STREAMING_AFFILIATES
 templates.env.globals["app_url"] = APP_URL

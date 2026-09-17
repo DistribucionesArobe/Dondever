@@ -450,7 +450,7 @@
         <script id="liveInit" type="application/json">{{ (game.live or {})|tojson }}</script>
         {% endif %}
         <div class="channels-section">
-            <h3>DONDE VERLO</h3>
+            <h3>D&Oacute;NDE VERLO</h3>
             {% if game.broadcasts %}
                 {% set mx_channels = [] %}
                 {% set us_channels = [] %}
@@ -523,6 +523,55 @@
                 <span class="channel-pill unknown">Canales por confirmar</span>
             {% endif %}
         </div>
+
+        {# ── Canal por pa&iacute;s ──────────────────────────────────────────────
+           Dato de TheSportsDB por partido, con el pa&iacute;s que ellos reportan.
+           Hasta ahora el parser se quedaba solo con M&eacute;xico y tiraba el resto,
+           aunque Venezuela, Panam&aacute; y Dominicana son el 29% de los clics.
+           Solo aparece cuando hay al menos un pa&iacute;s adem&aacute;s de M&eacute;xico: si no,
+           el bloque de arriba ya respondi&oacute; y este ser&iacute;a ruido. #}
+        {% set _cbc = game.channels_by_country or {} %}
+        {% if _cbc and (_cbc|length > 1 or (_cbc|length == 1 and 'MX' not in _cbc)) %}
+        <div class="cbc-section" id="cbcSection">
+            <h3 style="font-size:0.72rem;font-weight:800;letter-spacing:0.06em;color:#6b7280;text-transform:uppercase;margin:1.1rem 0 0.5rem;">D&oacute;nde verlo en tu pa&iacute;s</h3>
+            <div style="display:flex;flex-direction:column;gap:0.3rem;">
+                {% for cc in country_order %}
+                    {% if cc in _cbc and _cbc[cc] %}
+                    {% set _lbl = country_labels.get(cc, (cc, '')) %}
+                    <div class="cbc-row" data-cc="{{ cc }}" style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;padding:0.4rem 0.6rem;border-radius:8px;border:1px solid #e5e7eb;">
+                        <span style="font-size:0.78rem;font-weight:700;min-width:108px;">{{ _lbl[1] }} {{ _lbl[0] }}</span>
+                        <span style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                            {% for ch in _cbc[cc][:3] %}
+                            <a href="/canal/{{ ch|channel_slug }}" class="channel-pill unknown" style="text-decoration:none;font-size:0.72rem;">{{ ch }}</a>
+                            {% endfor %}
+                        </span>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div style="font-size:0.58rem;color:#9ca3af;margin-top:0.4rem;">Transmisiones reportadas para este partido. Pueden cambiar sin aviso.</div>
+        </div>
+        <script>
+        (function(){
+          // Resalta el país que el visitante eligió en el selector. No filtra ni
+          // esconde a los demás: alguien en Panamá puede querer ver el canal de
+          // Venezuela, y de todos modos el HTML es el mismo para el caché.
+          try {
+            var cc = (localStorage.getItem('dv_country') || '').toUpperCase();
+            if (!cc) return;
+            var row = document.querySelector('#cbcSection .cbc-row[data-cc="' + cc + '"]');
+            if (!row) return;
+            row.style.borderColor = '#10b981';
+            row.style.background = '#ecfdf5';
+            var tag = document.createElement('span');
+            tag.textContent = 'tu país';
+            tag.style.cssText = 'font-size:0.58rem;font-weight:800;color:#065f46;background:#d1fae5;border-radius:999px;padding:0.1rem 0.45rem;';
+            row.appendChild(tag);
+            row.parentNode.insertBefore(row, row.parentNode.firstChild);
+          } catch(e) {}
+        })();
+        </script>
+        {% endif %}
 
         {% if game.venue %}<div class="venue">Sede: {{ game.venue }}</div>{% endif %}
 
