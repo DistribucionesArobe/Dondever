@@ -45,11 +45,19 @@ EVENT_SOURCES = {
     "f1": ("racing", "f1"),
     "nascar": ("racing", "nascar-premier"),   # NASCAR Cup Series
     "indycar": ("racing", "irl"),             # IndyCar Series
+    # Tenis y golf: ESPN los devuelve como TORNEOS, no como enfrentamientos.
+    # El scoreboard trae el evento ("US Open", "Biltmore Championship") con
+    # date/endDate y competitions vacío. Por eso viven aquí y no en sports_api:
+    # tratarlos como partidos producía "TBD vs TBD".
+    "atp": ("tennis", "atp"),
+    "wta": ("tennis", "wta"),
+    "pga": ("golf", "pga"),
 }
 # MotoGP no está en ESPN → TheSportsDB (key premium) eventsseason, agrupado por GP.
 SPORTSDB_MOTOGP_ID = "4407"
 RACE_KINDS = ("f1", "motogp", "nascar", "indycar")
-ALL_KINDS = ("ufc", "f1", "boxing", "motogp", "nascar", "indycar")
+TOURNAMENT_KINDS = ("atp", "wta", "pga")
+ALL_KINDS = ("ufc", "f1", "boxing", "motogp", "nascar", "indycar", "atp", "wta", "pga")
 
 # Canales por país (rights 2026). Se muestran en la página de evento.
 EVENT_CHANNELS = {
@@ -100,6 +108,37 @@ EVENT_CHANNELS = {
         "CO": ["ESPN Latinoamérica", "Disney+"],
         "AR": ["ESPN Latinoamérica", "Disney+"],
         "ES": ["DAZN"],
+    },
+    # Tenis y golf: canal HABITUAL de la categoría, no confirmado torneo por
+    # torneo. Los Grand Slams y los majors cambian de manos con frecuencia (el
+    # Abierto de Australia, Wimbledon o el Masters no siempre van por el mismo
+    # sitio), así que la página de evento lo presenta como referencia y la
+    # confirmación real sale de la parrilla por país, igual que en los partidos.
+    # Base verificada: el 16/09/2026 la parrilla de ESPN México listaba
+    # "Alexander Zverev vs. Ben Shelton — Final masculina" del US Open.
+    "atp": {
+        "MX": ["ESPN MX", "Disney+"],
+        "US": ["ESPN", "Tennis Channel"],
+        "VE": ["ESPN Latinoamérica", "Disney+"],
+        "CO": ["ESPN Latinoamérica", "Disney+"],
+        "AR": ["ESPN Latinoamérica", "Disney+"],
+        "ES": ["Movistar Plus+"],
+    },
+    "wta": {
+        "MX": ["ESPN MX", "Disney+"],
+        "US": ["ESPN", "Tennis Channel"],
+        "VE": ["ESPN Latinoamérica", "Disney+"],
+        "CO": ["ESPN Latinoamérica", "Disney+"],
+        "AR": ["ESPN Latinoamérica", "Disney+"],
+        "ES": ["Movistar Plus+"],
+    },
+    "pga": {
+        "MX": ["ESPN MX", "Disney+"],
+        "US": ["Golf Channel", "CBS", "NBC"],
+        "VE": ["ESPN Latinoamérica", "Disney+"],
+        "CO": ["ESPN Latinoamérica", "Disney+"],
+        "AR": ["ESPN Latinoamérica", "Disney+"],
+        "ES": ["Movistar Plus+"],
     },
 }
 
@@ -420,6 +459,96 @@ def _parse_race(kind: str, ev: dict) -> dict:
     }
 
 
+# ── Tenis y golf: torneos, no enfrentamientos ──────────────────────────────
+
+_TOURNAMENT_ORG = {"atp": "ATP", "wta": "WTA", "pga": "PGA Tour"}
+
+# Nombres que la gente busca en español. Solo los inequívocos: no se traduce
+# "US Open" a "Abierto de Estados Unidos" en el slug porque nadie lo busca así.
+_TOURNAMENT_ES = {
+    "australian open": "Abierto de Australia",
+    "french open": "Roland Garros",
+    "roland garros": "Roland Garros",
+    "wimbledon": "Wimbledon",
+    "us open": "US Open",
+    "the masters": "El Masters de Augusta",
+    "masters tournament": "El Masters de Augusta",
+    "pga championship": "PGA Championship",
+    "the open championship": "The Open (British Open)",
+}
+
+
+def _parse_tournament(kind: str, ev: dict) -> dict:
+    """Un torneo de tenis o golf como evento con fecha de inicio y fin.
+
+    ESPN no da enfrentamientos aquí: da el torneo. Intentar leerlo como
+    partido producía "TBD vs TBD" y páginas /partido/ vacías.
+    """
+    name = (ev.get("name") or "").strip()
+    short = (ev.get("shortName") or name).strip()
+    name_es = _TOURNAMENT_ES.get(name.lower(), name)
+    start = ev.get("date", "")
+    end = ev.get("endDate", "") or start
+    venue = (ev.get("venue") or {})
+    comp = (ev.get("competitions") or [{}])[0]
+    if not venue:
+        venue = (comp.get("venue") or {})
+    addr = venue.get("address") or {}
+    year = (ev.get("season") or {}).get("year") or (start or "")[:4]
+
+    # ESPN marca el estado por la última ronda jugada, no por el torneo: el
+    # Guadalajara Open venía como "post" el 16/09 aunque termina el 20. Si nos
+    # fiáramos de eso, un torneo en curso saldría en "resultados" en vez de en
+    # "próximos". El estado real se deduce de las fechas.
+    status = _state(ev)
+    try:
+        _now = datetime.now(timezone.utc)
+        _ini = datetime.fromisoformat((start or "").replace("Z", "+00:00"))
+        _fin = datetime.fromisoformat((end or "").replace("Z", "+00:00"))
+        if _now < _ini:
+            status = "pre"
+        elif _now <= _fin:
+            status = "in"
+        else:
+            status = "post"
+    except Exception:
+        pass
+
+    # Slug perenne por torneo y año: /evento/wta-guadalajara-open-2026 sigue
+    # sirviendo aunque cambien las fechas, y se puede enlazar con antelación.
+    slug = f"{kind}-{slugify(name_es)}-{year}"
+
+    return {
+        "kind": kind,
+        "id": str(ev.get("id", "")),
+        "slug": slug,
+        "name": name_es,
+        "short_name": short,
+        "name_en": name,
+        "date": start,
+        "start_date": start,
+        "end_date": end,
+        "status": status,
+        "venue": venue.get("fullName", ""),
+        "city": addr.get("city", ""),
+        "country": addr.get("country", ""),
+        "segments": [],
+        "fights": [],
+        # El torneo dura días: se muestran inicio y fin en vez de una sola hora,
+        # que es lo que la gente pregunta ("¿cuándo empieza?").
+        "sessions": [
+            {"key": "start", "name": "Comienza", "date": start, "status": status},
+            {"key": "end", "name": "Termina", "date": end, "status": status},
+        ],
+        "broadcasts_us": [],
+        "channels": dict(EVENT_CHANNELS[kind]),
+        "is_minor": False,
+        "major": bool(ev.get("major")),
+        "org": _TOURNAMENT_ORG.get(kind, kind.upper()),
+        "espn_link": ((ev.get("links") or [{}])[0]).get("href", ""),
+    }
+
+
 # ── MotoGP (TheSportsDB eventsseason, agrupado por GP) ──
 
 _MOTOGP_GP_ES = {
@@ -580,6 +709,8 @@ async def fetch_events(kind: str, days_back: int = 3, days_ahead: int = 90) -> l
         parser = _parse_ufc
     elif kind == "f1":
         parser = _parse_f1
+    elif kind in TOURNAMENT_KINDS:
+        parser = lambda ev: _parse_tournament(kind, ev)
     else:
         parser = lambda ev: _parse_race(kind, ev)
     out = []
@@ -611,10 +742,12 @@ async def get_event_by_slug(slug: str) -> Optional[dict]:
         if ev["slug"] == slug:
             return ev
     # El prefijo del slug dice el kind → una sola llamada en la mayoría de los casos
-    order = [k for k in ("motogp", "nascar", "indycar", "ufc") if slug.startswith(k + "-")]
+    order = [k for k in ("motogp", "nascar", "indycar", "ufc", "atp", "wta", "pga")
+             if slug.startswith(k + "-")]
     if slug.startswith("gp-de-"):
         order.append("f1")
-    order += [k for k in ("ufc", "f1", "motogp", "nascar", "indycar") if k not in order]
+    order += [k for k in ("ufc", "f1", "motogp", "nascar", "indycar", "atp", "wta", "pga")
+              if k not in order]
     for kind in order:
         for ev in await fetch_events(kind, days_back=30, days_ahead=120):
             if ev["slug"] == slug:

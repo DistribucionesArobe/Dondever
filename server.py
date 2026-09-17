@@ -918,8 +918,15 @@ _EVENT_META = {
     "motogp": {"org": "MotoGP", "league_slug": "motogp", "sport": "Motorcycle Racing", "kicker": "MotoGP"},
     "nascar": {"org": "NASCAR", "league_slug": "nascar", "sport": "Motorsport", "kicker": "NASCAR Cup Series"},
     "indycar": {"org": "IndyCar", "league_slug": "indycar", "sport": "Motorsport", "kicker": "IndyCar"},
+    # Tenis y golf son TORNEOS, no enfrentamientos: ESPN devuelve "US Open" con
+    # la lista de competidores vacía, y tratarlos como partido generaba páginas
+    # /partido/tbd-vs-tbd-…. Van por /evento/ como UFC, F1 y boxeo.
+    "atp": {"org": "ATP", "league_slug": "atp", "sport": "Tennis", "kicker": "ATP"},
+    "wta": {"org": "WTA", "league_slug": "wta", "sport": "Tennis", "kicker": "WTA"},
+    "pga": {"org": "PGA Tour", "league_slug": "pga", "sport": "Golf", "kicker": "PGA Tour"},
 }
 _RACE_KINDS = ("f1", "motogp", "nascar", "indycar")
+_TOURNAMENT_KINDS = ("atp", "wta", "pga")
 from events_api import EVENT_CHANNELS as EVENT_CHANNELS_BY_KIND
 # Texto de "dónde ver gratis" por categoría de motor (FAQ)
 _RACE_FREE_FAQ = {
@@ -2433,7 +2440,9 @@ async def league_page(request: Request, league_slug: str):
     upcoming_events = []
     recent_events = []
     event_faq = []
-    _EVENT_KIND = {"ufc": "ufc", "f1": "f1", "boxeo": "boxing", "motogp": "motogp", "nascar": "nascar", "indycar": "indycar"}
+    _EVENT_KIND = {"ufc": "ufc", "f1": "f1", "boxeo": "boxing", "motogp": "motogp",
+                   "nascar": "nascar", "indycar": "indycar",
+                   "atp": "atp", "wta": "wta", "pga": "pga"}
     _ev_kind = _EVENT_KIND.get(league_slug)
     if _ev_kind:
         try:
