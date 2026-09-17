@@ -1726,14 +1726,14 @@
                         <a href="/go/bet?s=live-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.short or bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
                     </div>
                     <div class="bet-cta-col">
-                        <a href="/go/bet?s=live-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">Ver apuestas</a>
+                        <a href="/go/bet?s=live-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">Tomar cuota</a>
                     </div>
                 </div>
             </div>
             {% elif game.sport not in ('racing',) %}
             <div class="gc-bet-preview gc-bet-nobet" onclick="event.stopPropagation();">
                 <span class="gc-bet-nobet-txt">&#127922; Apuestas en vivo</span>
-                <a href="/go/bet?s=live-nobet&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main" style="flex:0 0 auto;">Ver apuestas &#8599;</a>
+                <a href="/go/bet?s=live-nobet&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main" style="flex:0 0 auto;">Ver momios &#8599;</a>
             </div>
             {% endif %}
             {# ── Accordion ── #}
@@ -2042,14 +2042,14 @@
             <div class="gc-bet-preview" onclick="event.stopPropagation();" style="padding:0.4rem 0.75rem;">
                 <div class="bet-odds-row" style="margin:0;">
                     <div class="bet-odds-chips">
-                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.short or top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
+                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}&amp;league={{ league_data.slug }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ top_team.short or top_team.name[:3]|upper }} <strong>{{ game.odds.home_odds if home_left else game.odds.away_odds or '—' }}</strong></a>
                         {% if game.odds.draw_odds %}
-                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip draw">EMP <strong>{{ game.odds.draw_odds }}</strong></a>
+                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}&amp;league={{ league_data.slug }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip draw">EMP <strong>{{ game.odds.draw_odds }}</strong></a>
                         {% endif %}
-                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.short or bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
+                        <a href="/go/bet?s=card-odds&amp;sport={{ game.sport }}&amp;league={{ league_data.slug }}" target="_blank" rel="sponsored nofollow noopener" class="bet-odd-chip">{{ bottom_team.short or bottom_team.name[:3]|upper }} <strong>{{ game.odds.away_odds if home_left else game.odds.home_odds or '—' }}</strong></a>
                     </div>
                     <div class="bet-cta-col">
-                        <a href="/go/bet?s=card-cta&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">Ver apuestas</a>
+                        <a href="/go/bet?s=card-cta&amp;sport={{ game.sport }}&amp;league={{ league_data.slug }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" class="bet-cta-main">Tomar cuota</a>
                     </div>
                 </div>
             </div>
@@ -2057,7 +2057,7 @@
             {# Sin cuotas de la API: link de afiliado directo para que nunca falte el botón #}
             <div class="gc-bet-preview gc-bet-nobet" onclick="event.stopPropagation();">
                 <span class="gc-bet-nobet-txt">&#127922; Momios de {{ top_team.name[:14] }} vs {{ bottom_team.name[:14] }}</span>
-                <a href="/go/bet?s=card-nobet&amp;sport={{ game.sport }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main" style="flex:0 0 auto;">Ver apuestas &#8599;</a>
+                <a href="/go/bet?s=card-nobet&amp;sport={{ game.sport }}&amp;league={{ league_data.slug }}" target="_blank" rel="sponsored nofollow noopener" data-affiliate="bet" class="bet-cta-main" style="flex:0 0 auto;">Ver momios &#8599;</a>
             </div>
             {% endif %}
 
@@ -2154,24 +2154,24 @@
     {# ── Affiliate banner: after 4th league section (geo-targeted) ── #}
     {% if league_idx[0] == 4 and not is_historical %}
     {# MX: Jubilee #}
-    <div class="promo-interstitial" style="border-color:#d97706;" data-geo="mx">
+    <div class="promo-interstitial" style="border-color:#d97706;" data-geo="mx" data-nosnippet>
         <div class="promo-inter-title">&#127942; {{ affiliates.jubilee.name }} &mdash; {{ affiliates.jubilee.bonus }}</div>
         <div class="promo-inter-sub">Bono de bienvenida disponible para nuevos usuarios. Verifica siempre que el operador tenga permiso vigente en tu pa&iacute;s.</div>
-        <a href="/go/jubilee?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" class="promo-inter-cta" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Registrarme &#8599;</a>
+        <a href="/go/jubilee?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" class="promo-inter-cta" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Ver bono &#8599;</a>
         <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
     {# US: Betsson #}
-    <div class="promo-interstitial" style="border-color:#ea580c;display:none;" data-geo="us">
+    <div class="promo-interstitial" style="border-color:#ea580c;display:none;" data-geo="us" data-nosnippet>
         <div class="promo-inter-title">&#127942; {{ affiliates.betsson.name }} &mdash; {{ affiliates.betsson.bonus }}</div>
         <div class="promo-inter-sub">Bono de bienvenida disponible para nuevos usuarios. Verifica siempre que el operador tenga permiso vigente en tu pa&iacute;s.</div>
-        <a href="/go/betsson?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="promo-inter-cta" style="background:linear-gradient(135deg,#ea580c,#dc2626);">Registrarme &#8599;</a>
+        <a href="/go/betsson?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="promo-inter-cta" style="background:linear-gradient(135deg,#ea580c,#dc2626);">Ver bono &#8599;</a>
         <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
     {# LATAM/resto: 1xBet #}
-    <div class="promo-interstitial" style="border-color:#1a5276;display:none;" data-geo="latam">
+    <div class="promo-interstitial" style="border-color:#1a5276;display:none;" data-geo="latam" data-nosnippet>
         <div class="promo-inter-title">&#127942; {{ affiliates['1xbet'].name }} &mdash; {{ affiliates['1xbet'].bonus }}</div>
         <div class="promo-inter-sub">Bono de bienvenida disponible para nuevos usuarios. Verifica siempre que el operador tenga permiso vigente en tu pa&iacute;s.</div>
-        <a href="/go/1xbet?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" class="promo-inter-cta" style="background:linear-gradient(135deg,#1a5276,#2c6e9e);">Registrarme &#8599;</a>
+        <a href="/go/1xbet?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" class="promo-inter-cta" style="background:linear-gradient(135deg,#1a5276,#2c6e9e);">Ver bono &#8599;</a>
         <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
     {% endif %}
@@ -2215,7 +2215,7 @@
 </div>
 
 <!-- WhatsApp CTA -->
-<div class="wa-cta" id="wa-subscribe">
+<div class="wa-cta" id="wa-subscribe" data-nosnippet>
     <div class="wa-cta-inner">
         <div class="wa-cta-top">
             <div>
@@ -2248,7 +2248,7 @@
 </div>
 
 <!-- Email Newsletter CTA -->
-<div class="wa-cta" id="email-subscribe" style="background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 100%);">
+<div class="wa-cta" id="email-subscribe" style="background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 100%);" data-nosnippet>
     <div class="wa-cta-inner">
         <div class="wa-cta-top">
             <div>
@@ -3886,7 +3886,7 @@
         html += '<div class="tp-actions">';
         html += '<a href="/equipo/' + d.slug + '" class="tp-btn tp-btn-primary">Ver todo sobre ' + d.name + ' ↗</a>';
         var _betLabel = window.__geoRegion === 'us' ? 'Betsson' : window.__geoRegion === 'latam' ? '1xBet' : 'Jubilee';
-        html += '<a href="/go/bet?s=search-panel" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="bet" data-placement="search-panel">Ver apuestas ↗</a>';
+        html += '<a href="/go/bet?s=search-panel" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="bet" data-placement="search-panel">Ver momios ↗</a>';
         html += '</div>';
 
         html += '</div>';

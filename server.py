@@ -2107,8 +2107,15 @@ _CLICKS_FILE = os.getenv("CLICKS_FILE", os.path.join(
 ))
 
 
-def _track_click(affiliate: str, source: str):
-    """Persist affiliate click count by day/affiliate/source."""
+def _track_click(affiliate: str, source: str, sport: str = "", league: str = "",
+                 country: str = ""):
+    """Cuenta clics por día, afiliado y origen.
+
+    Antes la clave era solo "afiliado:origen", que responde "¿convierte más la
+    tarjeta o el banner?" pero no "¿qué liga, qué deporte, qué país?". Ahora la
+    clave lleva las cinco dimensiones y se sigue guardando la corta, para no
+    romper el panel de admin ni perder la serie histórica.
+    """
     try:
         _Path(_CLICKS_FILE).parent.mkdir(parents=True, exist_ok=True)
         try:
@@ -2120,6 +2127,9 @@ def _track_click(affiliate: str, source: str):
         data.setdefault(today, {})
         key = f"{affiliate}:{source}"
         data[today][key] = data[today].get(key, 0) + 1
+        if sport or league or country:
+            detalle = f"{affiliate}:{source}:{sport or '-'}:{league or '-'}:{country or '-'}"
+            data[today][detalle] = data[today].get(detalle, 0) + 1
         with open(_CLICKS_FILE, "w") as f:
             _json.dump(data, f, indent=2)
     except Exception as e:
@@ -2167,7 +2177,8 @@ def _purge_click_junk() -> int:
 
 # Branded affiliate redirect — "dondever.app/go/betsson" en vez de links largos
 @app.get("/go/{key}")
-async def affiliate_redirect(key: str, s: str = "web", sport: str = "", request: Request = None):
+async def affiliate_redirect(key: str, s: str = "web", sport: str = "",
+                             league: str = "", request: Request = None):
     """
     Redirige a la URL del afiliado con tracking de source.
     Uso: /go/betsson?s=twitter  →  link afiliado real + sub1=twitter
@@ -2191,6 +2202,10 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "", request:
     if not re.fullmatch(r"[a-z0-9_-]{1,40}", s):
         s = "other"
     sport = sport if re.fullmatch(r"[a-z0-9_-]{0,30}", sport or "") else ""
+    # Hasta ahora solo se guardaba afiliado + origen, asi que no habia forma de
+    # saber QUE LIGA convierte. Se valida igual que el resto: esto viene de la
+    # URL y el panel de admin ya vio intentos de inyeccion por estos parametros.
+    league = league if re.fullmatch(r"[a-z0-9_-]{0,40}", league or "") else ""
     _ua = (request.headers.get("user-agent", "") if request is not None else "").lower()
     _is_bot = any(b in _ua for b in ("bot", "crawl", "spider", "whatsapp", "facebookexternalhit",
                                      "preview", "curl", "python-requests", "sqlmap", "scanner", "headless"))
@@ -2225,7 +2240,11 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "", request:
             else:
                 key = "1xbet"  # español genérico u otro → 1xBet
     if not _is_bot:
-        _track_click(key, s)  # track antes de redirigir (humanos solamente)
+        # El pais sale del mismo header que ya usamos para elegir casa.
+        _pais = ((request.headers.get("cf-ipcountry")
+                  or request.headers.get("x-vercel-ip-country") or "").upper()
+                 if request is not None else "")
+        _track_click(key, s, sport=sport, league=league, country=_pais)
     target = get_affiliate_url(key, source=s, sport=sport)
     if target == "#":
         return RedirectResponse(url="/", status_code=302)
