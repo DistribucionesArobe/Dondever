@@ -1722,6 +1722,36 @@ async def game_semantic(request: Request, slug: str):
         except Exception as e:
             logger.warning(f"Form/upcoming fetch failed for game {event_id}: {e}")
 
+    # ── Canales por país (GatoTV) ──────────────────────────────────────────
+    # El 38% de los clics viene de fuera de México (Venezuela 17%, Panamá 8%,
+    # Dominicana 4%, Colombia 4%, Perú y Ecuador ~2%) y hasta ahora les
+    # respondíamos con canales mexicanos. GatoTV publica la parrilla por país;
+    # aquí buscamos ESTE partido en la de cada uno.
+    #
+    # Se hace en la ficha del partido y no en get_todays_games a propósito: la
+    # portada arma decenas de juegos y no vale la pena, mientras que quien abre
+    # la ficha es justo el que quiere saber su canal. Las parrillas se cachean
+    # 6 h, así que son ~35 peticiones al día en total, no por visita.
+    try:
+        import gatotv as _gatotv
+        _g_start = datetime.fromisoformat(str(game.get("date", "")).replace("Z", "+00:00"))
+        # La parrilla es por día en hora local del canal (UTC-5).
+        _g_date = _gatotv.grid_date_for(_g_start)
+        _by_country = await _gatotv.channels_by_country_for_game(
+            _g_date, game["home"]["name"], game["away"]["name"], _g_start
+        )
+        if _by_country:
+            _merged = dict(game.get("channels_by_country") or {})
+            for _cc, _chs in _by_country.items():
+                _bucket = list(_merged.get(_cc) or [])
+                for _ch in _chs:
+                    if _ch not in _bucket:
+                        _bucket.append(_ch)
+                _merged[_cc] = _bucket
+            game["channels_by_country"] = _merged
+    except Exception as e:
+        logger.warning(f"GatoTV por país falló para {event_id}: {e}")
+
     # ── Implied probability from odds ──
     implied_probs = {}
     if odds:

@@ -104,6 +104,15 @@ GATOTV_SPORTS_CHANNELS: dict[str, list[tuple[str, str]]] = {
 _grid_cache: TTLCache = TTLCache(maxsize=400, ttl=21600)
 _fail_until: dict[str, float] = {}
 
+# Estamos leyendo la web de alguien más. Como mucho 5 peticiones a la vez, para
+# no parecer un ataque ni tumbarles el servidor en la primera visita del día.
+_sem = asyncio.Semaphore(5)
+
+
+def grid_date_for(dt: datetime) -> str:
+    """Día de parrilla (YYYY-MM-DD) que le corresponde a un instante UTC."""
+    return dt.astimezone(_GRID_TZ).strftime("%Y-%m-%d")
+
 _ROW_RE = re.compile(
     r'<tr[^>]*class="[^"]*tbl_EPG_row(?:Alternate|_selected)?[^"]*"[^>]*>(.*?)</tr>',
     re.S | re.I,
@@ -165,7 +174,7 @@ async def fetch_grid(channel_slug: str, date_iso: str) -> list[dict]:
 
     url = f"{GATOTV_BASE}/{channel_slug}/{date_iso}"
     try:
-        async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
+        async with _sem, httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
             resp = await client.get(url, headers={
                 "User-Agent": "Mozilla/5.0 (compatible; DondeVerBot/1.0; +https://dondever.app)",
                 "Accept-Language": "es",
