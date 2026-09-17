@@ -1745,7 +1745,8 @@ async def game_semantic(request: Request, slug: str):
     try:
         import gatotv as _gatotv
         _g_start = datetime.fromisoformat(str(game.get("date", "")).replace("Z", "+00:00"))
-        # La parrilla es por día en hora local del canal (UTC-5).
+        # La parrilla es por día y en hora local de cada país; gatotv.py decide
+        # qué día (o días) pedir a partir del horario del partido.
         _g_date = _gatotv.grid_date_for(_g_start)
         _by_country = await _gatotv.channels_by_country_for_game(
             _g_date, game["home"]["name"], game["away"]["name"], _g_start,

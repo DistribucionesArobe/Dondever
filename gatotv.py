@@ -41,9 +41,23 @@ logger = logging.getLogger("dondever")
 
 GATOTV_BASE = "https://www.gatotv.com/canal"
 
-# GatoTV publica las horas de la parrilla en UTC-5 fijo (sin horario de verano).
-# Es lo mismo que asume el grabber de iptv-org para este sitio.
-_GRID_TZ = timezone(timedelta(hours=-5))
+# GatoTV publica la parrilla de cada país en la hora local de ESE país, sin
+# horario de verano (ninguno de los seis lo usa). El grabber de iptv-org asume
+# UTC-5 para todo el sitio; eso es correcto para Colombia, Perú y Ecuador, pero
+# deja Venezuela y Panamá/Dominicana una hora corridas.
+#
+# IMPORTANTE: esta zona ya NO se usa para emparejar partidos, solo para decidir
+# QUÉ DÍA de parrilla pedir. Ver la nota en match_program sobre por qué dejamos
+# de filtrar por hora.
+_GRID_TZ_BY_CC = {
+    "VE": timezone(timedelta(hours=-4)),
+    "DO": timezone(timedelta(hours=-4)),
+    "PA": timezone(timedelta(hours=-5)),
+    "CO": timezone(timedelta(hours=-5)),
+    "PE": timezone(timedelta(hours=-5)),
+    "EC": timezone(timedelta(hours=-5)),
+}
+_GRID_TZ = timezone(timedelta(hours=-5))  # por defecto
 
 # Canales deportivos por país. Solo los que de verdad transmiten deporte: la
 # lista completa de GatoTV trae 1,993 canales y no vamos a pedir Cartoon Network.
@@ -155,9 +169,29 @@ _fail_until: dict[str, float] = {}
 _sem = asyncio.Semaphore(5)
 
 
-def grid_date_for(dt: datetime) -> str:
+def grid_date_for(dt: datetime, cc: str | None = None) -> str:
     """Día de parrilla (YYYY-MM-DD) que le corresponde a un instante UTC."""
-    return dt.astimezone(_GRID_TZ).strftime("%Y-%m-%d")
+    tz = _GRID_TZ_BY_CC.get((cc or "").upper(), _GRID_TZ)
+    return dt.astimezone(tz).strftime("%Y-%m-%d")
+
+
+def grid_dates_for(dt: datetime, cc: str | None = None) -> list[str]:
+    """Días de parrilla a consultar para un partido.
+
+    Un partido de noche en Europa cae de madrugada en América, y uno de noche en
+    América cae al día siguiente en la parrilla. Como no podemos jurar la zona
+    horaria exacta que usa GatoTV en cada página, pedimos también el día vecino
+    cuando el horario local queda cerca de la medianoche. Son parrillas cacheadas
+    6 h: el costo de pedir una de más es cero, el de no pedirla es no tener canal.
+    """
+    tz = _GRID_TZ_BY_CC.get((cc or "").upper(), _GRID_TZ)
+    local = dt.astimezone(tz)
+    dates = [local.strftime("%Y-%m-%d")]
+    if local.hour >= 17:
+        dates.append((local + timedelta(days=1)).strftime("%Y-%m-%d"))
+    elif local.hour <= 7:
+        dates.append((local - timedelta(days=1)).strftime("%Y-%m-%d"))
+    return dates
 
 _ROW_RE = re.compile(
     r'<tr[^>]*class="[^"]*tbl_EPG_row(?:Alternate|_selected)?[^"]*"[^>]*>(.*?)</tr>',
@@ -186,7 +220,25 @@ def parse_grid(html: str, date_iso: str) -> list[dict]:
     except Exception:
         return out
 
-    for row in _ROW_RE.findall(html or ""):
+    # La parrilla de un día empieza con el programa que venía corriendo desde la
+    # noche anterior. Verificado el 17/09/2026 en ESPN 3, 5 y 7 de Venezuela: la
+    # primera fila es 23:00 y la segunda 01:00. Si les ponemos la misma fecha a
+    # las dos, esa primera fila queda 24 h corrida.
+    rollback_until = 0
+    raw_rows = _ROW_RE.findall(html or "")
+    prev_minutes = None
+    for idx, row in enumerate(raw_rows):
+        tm = _TIME_RE.search(row)
+        if not tm:
+            continue
+        hh, mm = (int(x) for x in tm.group(1).split(":"))
+        minutes = hh * 60 + mm
+        if prev_minutes is not None and minutes < prev_minutes:
+            rollback_until = idx  # todo lo anterior es de la víspera
+            break
+        prev_minutes = minutes
+
+    for idx, row in enumerate(raw_rows):
         tm = _TIME_RE.search(row)
         if not tm:
             continue
@@ -201,7 +253,10 @@ def parse_grid(html: str, date_iso: str) -> list[dict]:
             continue
         try:
             hh, mm = (int(x) for x in tm.group(1).split(":"))
-            start = datetime(y, m, d, hh, mm, tzinfo=_GRID_TZ).astimezone(timezone.utc)
+            start = datetime(y, m, d, hh, mm, tzinfo=_GRID_TZ)
+            if idx < rollback_until:
+                start -= timedelta(days=1)
+            start = start.astimezone(timezone.utc)
         except Exception:
             continue
         out.append({"start": start, "title": title})
@@ -267,24 +322,78 @@ def _keys(team_name: str) -> list[str]:
     return toks or [t for t in _norm(team_name).split() if len(t) > 2]
 
 
+# Palabras que por sí solas no identifican a nadie: media Europa tiene un
+# "Madrid", un "United" o un "Deportivo". Si el nombre corto se reduce a una de
+# estas, exigimos coincidencia exacta en lugar de dejar que "encaje dentro" del
+# nombre largo del rival.
+_AMBIGUOUS = {
+    "madrid", "united", "city", "real", "deportivo", "atletico", "athletic",
+    "sporting", "nacional", "america", "americano", "san", "santos", "juniors",
+    "wanderers", "racing", "union", "internacional", "rangers", "county",
+    "town", "albion", "rovers", "olimpia", "universidad", "independiente",
+}
+
+_SPLIT_RE = re.compile(r"\s+vs\.?\s+|\s+v\s+", re.I)
+
+
+def _same_team(ours: list[str], theirs: list[str]) -> bool:
+    """¿'NEC Nijmegen' y 'NEC' son el mismo club? ¿'Real Madrid' y 'Atlético de Madrid'?
+
+    Regla: uno de los dos nombres tiene que estar CONTENIDO en el otro. Así
+    'NEC' ⊆ 'NEC Nijmegen' pasa, y 'Atlético Madrid' vs 'Real Madrid' no, porque
+    ninguno contiene al otro (uno tiene 'atletico', el otro 'real').
+
+    La versión anterior exigía que TODAS nuestras palabras estuvieran en el
+    título de GatoTV. Eso mataba cualquier abreviatura: el 17/09/2026 ESPN 5
+    Venezuela listaba "Juventus vs. NEC" y nosotros buscábamos 'nijmegen', que
+    no aparece. Resultado: el partido salía sin canal para Venezuela aunque el
+    dato estaba publicado.
+    """
+    a, b = set(ours), set(theirs)
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    short, long_ = (a, b) if len(a) < len(b) else (b, a)
+    if not short <= long_:
+        return False
+    # Nombre corto de una sola palabra genérica → no basta.
+    if len(short) == 1 and next(iter(short)) in _AMBIGUOUS:
+        return False
+    return True
+
+
 def match_program(programs: list[dict], home: str, away: str,
                   game_start: datetime | None = None,
-                  window_min: int = 150) -> dict | None:
+                  window_min: int | None = None) -> dict | None:
     """¿Alguna línea de la parrilla es ESTE partido?
 
-    Exige que TODAS las palabras identificadoras de cada equipo estén en el
-    título, no solo una. Con "alguna" bastaba, "Real Madrid" cruzaba con
-    "Atlético de Madrid". Ser estricto produce algún partido sin canal, que es
-    un silencio; ser laxo produce un canal equivocado, que es una mentira.
+    Parte el título de GatoTV en sus dos equipos y los compara uno a uno, en vez
+    de buscar palabras sueltas dentro de la cadena entera. Comparar por lados
+    evita el falso positivo clásico ("Real Madrid vs Osasuna" cruzando con
+    "Atlético de Madrid vs. CA Osasuna") sin castigar las abreviaturas.
+
+    SOBRE LA HORA: ya no filtramos por hora, y es deliberado. Las horas de
+    GatoTV vienen sin zona horaria declarada y no pudimos verificar cuál usa
+    cada página; con la ventana de ±150 min descartábamos transmisiones reales.
+    Además, lo que publicamos es el CANAL, no la hora de GatoTV — la hora sale
+    de nuestro propio dato. El día de parrilla ya acota bastante. Si se pasa
+    window_min explícitamente, se respeta.
     """
     hk, ak = _keys(home), _keys(away)
     if not hk or not ak:
         return None
     for p in programs:
-        t = _norm(p["title"])
-        if not all(k in t for k in hk) or not all(k in t for k in ak):
+        parts = _SPLIT_RE.split(_norm(p["title"]))
+        if len(parts) != 2:
             continue
-        if game_start is not None:
+        left = [t for t in parts[0].split() if len(t) > 2 and t not in _STOP]
+        right = [t for t in parts[1].split() if len(t) > 2 and t not in _STOP]
+        ok = (_same_team(hk, left) and _same_team(ak, right)) or \
+             (_same_team(hk, right) and _same_team(ak, left))
+        if not ok:
+            continue
+        if game_start is not None and window_min is not None:
             delta = abs((p["start"] - game_start).total_seconds()) / 60
             if delta > window_min:
                 continue
@@ -299,12 +408,16 @@ async def channels_for_game(cc: str, date_iso: str, home: str, away: str,
     canales = channels_for(cc, sport)
     if not canales:
         return []
+    # Días de parrilla a mirar: el del partido y, si cae cerca de medianoche
+    # en hora local, también el vecino.
+    fechas = grid_dates_for(game_start, cc) if game_start is not None else [date_iso]
+    pares = [(slug, display, f) for slug, display in canales for f in fechas]
     grids = await asyncio.gather(
-        *(fetch_grid(slug, date_iso) for slug, _ in canales),
+        *(fetch_grid(slug, f) for slug, _, f in pares),
         return_exceptions=True,
     )
     found: list[str] = []
-    for (slug, display), grid in zip(canales, grids):
+    for (slug, display, _f), grid in zip(pares, grids):
         if isinstance(grid, Exception) or not grid:
             continue
         if match_program(grid, home, away, game_start) and display not in found:
