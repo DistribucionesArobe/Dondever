@@ -2456,16 +2456,40 @@ async def fetch_league_leaders(sport: str, league: str, top_n: int = 5) -> list[
 
     url = f"https://site.api.espn.com/apis/site/v3/sports/{espn_sport}/{league}/leaders"
 
-    async with httpx.AsyncClient(timeout=15) as client:
-        try:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            logger.warning(f"Leaders error for {sport}/{league}: {e}")
-            return []
+    # ── Qué temporada pedir ───────────────────────────────────────────────────
+    # Sin parámetros, ESPN devuelve basura para el fútbol. Comprobado el
+    # 17/09/2026 contra la jornada 8 del Apertura:
+    #   Liga MX  sin params -> Paulinho 3 goles   (viejo, de otro torneo)
+    #            con params -> Salomón Rondón 8   (correcto)
+    #   MLS      sin params -> nada               con params -> Messi 19
+    #   Premier  sin params -> nada               con params -> Haaland 4
+    # Y al revés en las ligas de EE.UU.: MLB, NFL, NBA y NHL responden bien sin
+    # parámetros y devuelven vacío con ellos. Por eso la regla es por deporte.
+    #
+    # Se prueba también el año anterior porque las temporadas europeas cruzan el
+    # año: en enero, Premier 2026-27 sigue siendo season=2026 para ESPN.
+    if espn_sport == "soccer":
+        _y = datetime.now(timezone.utc).year
+        intentos = [f"?season={_y}&seasontype=1", f"?season={_y - 1}&seasontype=1", ""]
+    else:
+        intentos = [""]
 
-    raw_categories = data.get("leaders", {}).get("categories", [])
+    raw_categories = []
+    async with httpx.AsyncClient(timeout=15) as client:
+        for _q in intentos:
+            try:
+                resp = await client.get(url + _q)
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception as e:
+                logger.warning(f"Leaders error for {sport}/{league}{_q}: {e}")
+                continue
+            cats = data.get("leaders", {}).get("categories", [])
+            # "Tiene categorías" no basta: ESPN devuelve el armazón vacío.
+            if any(c.get("leaders") for c in cats):
+                raw_categories = cats
+                break
+
     if not raw_categories:
         return []
 
