@@ -1748,10 +1748,23 @@ async def game_semantic(request: Request, slug: str):
         # La parrilla es por día y en hora local de cada país; gatotv.py decide
         # qué día (o días) pedir a partir del horario del partido.
         _g_date = _gatotv.grid_date_for(_g_start)
-        _by_country = await _gatotv.channels_by_country_for_game(
+        # Con la caché fría esto pide hasta 70 parrillas y medimos 12 s en la
+        # ficha de un juego de MLB, que además no saca ni un canal de GatoTV.
+        # Nadie espera 12 s. Damos 2.5 s: si llega, se muestra; si no, la página
+        # sale sin el bloque y la tarea SIGUE VIVA llenando la caché, así que la
+        # siguiente visita —incluida la de Google— ya lo trae.
+        _g_task = asyncio.ensure_future(_gatotv.channels_by_country_for_game(
             _g_date, game["home"]["name"], game["away"]["name"], _g_start,
             sport=game.get("sport"),
-        )
+        ))
+        _done, _ = await asyncio.wait({_g_task}, timeout=2.5)
+        if _g_task in _done:
+            _by_country = _g_task.result()
+        else:
+            _by_country = {}
+            # Sin esto, si la tarea termina en excepción, asyncio la reporta
+            # como "never retrieved" y ensucia los logs.
+            _g_task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
         if _by_country:
             _merged = dict(game.get("channels_by_country") or {})
             for _cc, _chs in _by_country.items():
