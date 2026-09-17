@@ -503,12 +503,19 @@
                     <tr>
                         <td colspan="3" style="font-size:0.7rem;color:#6b7280;padding:0 0.5rem 0.4rem;">
                             &#128250;
+                            {# Las cadenas locales de un mercado de EE.UU. (Atlanta News
+                               First, Victory+ ATL, NBC Sports BO…) se imprim&iacute;an sin
+                               etiqueta justo despu&eacute;s de "MX:", as&iacute; que un lector en
+                               M&eacute;xico las le&iacute;a como si fueran opci&oacute;n suya. Van al final y
+                               dicen de d&oacute;nde son. #}
                             {% set mx_ch = u.channels|selectattr('country','equalto','MX')|list %}
-                            {% set us_ch = u.channels|selectattr('country','equalto','US')|list %}
-                            {% set other_ch = u.channels|rejectattr('country','in',['MX','US'])|list %}
+                            {% set us_ch = u.channels|rejectattr('is_us_regional')|selectattr('country','equalto','US')|list %}
+                            {% set reg_ch = u.channels|selectattr('is_us_regional')|list %}
+                            {% set other_ch = u.channels|rejectattr('is_us_regional')|rejectattr('country','in',['MX','US'])|list %}
                             {% if mx_ch %}<span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}{% else %}<span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span>{% endif %}
                             {% if us_ch %} · <span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}{% endif %}
                             {% if other_ch %} · {{ other_ch|map(attribute='name')|join(', ') }}{% endif %}
+                            {% if reg_ch %} · <span style="opacity:0.55;">Regional EE.UU.: {{ reg_ch|map(attribute='name')|join(', ') }}</span>{% endif %}
                         </td>
                     </tr>
                     {% endif %}

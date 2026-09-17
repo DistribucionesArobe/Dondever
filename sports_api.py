@@ -2938,6 +2938,12 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
                     channels.append({
                         "name": display,
                         "country": info.get("country", ""),
+                        # Cadena local de un mercado de EE.UU. (Atlanta News First,
+                        # Victory+ ATL, NBC Sports BO…). ESPN las marca con
+                        # market Home/Away y no están en CHANNEL_ALIASES. Sin este
+                        # dato, la página de liga las imprimía sin etiqueta justo
+                        # después de "MX:", y parecían opciones para México.
+                        "is_us_regional": (not info) and geo.get("market", {}).get("type", "") in ("Home", "Away"),
                     })
 
             # Canales de México con las MISMAS reglas que usa la ficha del partido
