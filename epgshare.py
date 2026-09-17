@@ -111,6 +111,34 @@ _PR_RE = re.compile(
 _TAIL_RE = re.compile(r",.*$")
 
 
+# ── Nombres de canal presentables ────────────────────────────────────────────
+# El EPG los trae crudos y quedan mal en pantalla: debajo del encabezado
+# "🇩🇴 Dominicana" no tiene sentido leer "Canal ESPN 3 (República Dominicana)".
+# Tampoco los códigos internos del cableoperador: "DSPORTS (COL)(DTSC)".
+_PAIS_PAREN = re.compile(
+    r"\s*\((?:Rep[uú]blica\s+Dominicana|Panam[áa]|Ecuador|Colombia|Per[uú]|M[ée]xico|"
+    r"\d+\s+de\s+Rep[uú]blica\s+Dominicana)\)", re.I)
+_COD_PAREN = re.compile(r"\s*\((?=[A-Z0-9+]{2,8}\))[A-Z0-9+]{2,8}\)")
+_CANAL_N_DE = re.compile(
+    r"^Canal\s+(\d+)\s+de\s+[^(]+\(([^)]+)\)\s*$", re.I)
+
+
+def limpiar_canal(nombre: str) -> str:
+    """'Canal ESPN 3 (República Dominicana)' → 'ESPN 3'.
+
+    'Canal 2 de República Dominicana (Teleantillas)' → 'Teleantillas (Canal 2)',
+    porque ahí el número SÍ sirve: es como lo busca la gente en su control.
+    """
+    s = (nombre or "").strip()
+    m = _CANAL_N_DE.match(s)
+    if m:
+        return f"{m.group(2).strip()} (Canal {m.group(1)})"
+    s = _PAIS_PAREN.sub("", s)
+    s = _COD_PAREN.sub("", s)
+    s = re.sub(r"^Canal\s+", "", s, flags=re.I)
+    return re.sub(r"\s+", " ", s).strip() or (nombre or "").strip()
+
+
 def _parse(xml: str) -> list[dict]:
     """XMLTV → solo los programas que son un enfrentamiento.
 
@@ -118,7 +146,7 @@ def _parse(xml: str) -> list[dict]:
     y solo 272 son partidos. Guardar el resto sería cargar dibujos animados en
     memoria para siempre.
     """
-    nombres = dict(_CH_RE.findall(xml))
+    nombres = {cid: limpiar_canal(n) for cid, n in _CH_RE.findall(xml)}
     out: list[dict] = []
     for start, off, ch, title, sub in _PR_RE.findall(xml):
         if " vs" not in sub.lower():
