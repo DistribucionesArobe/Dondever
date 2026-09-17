@@ -147,6 +147,9 @@ FREE_PREFIXES_US = {"vix"}
 
 FREE_CHANNELS_VE = {
     "televen", "rctv", "pluto tv",
+    # Señal abierta en Venezuela, y las cuatro transmiten LVBP. Sin esto, el
+    # filtro "Gratis hoy" no encontraba un solo juego de béisbol venezolano.
+    "venevisión", "venevision", "tves", "canal i", "meridiano tv", "meridiano",
 }
 FREE_PREFIXES_VE = set()
 

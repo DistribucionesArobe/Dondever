@@ -1617,8 +1617,24 @@ CHANNEL_ALIASES = {
     "DirecTV Sports": {"name": "DirecTV Sports", "country": "VE", "type": "cable"},
     "DSports": {"name": "DSports", "country": "VE", "type": "cable"},
     "ESPN Venezuela": {"name": "ESPN", "country": "VE", "type": "cable"},
-    "Meridiano TV": {"name": "Meridiano TV", "country": "VE", "type": "cable"},
+    "Meridiano TV": {"name": "Meridiano TV", "country": "VE", "type": "broadcast"},
+    "Meridiano": {"name": "Meridiano TV", "country": "VE", "type": "broadcast"},
+    "Meridiano Television": {"name": "Meridiano TV", "country": "VE", "type": "broadcast"},
     "RCTV": {"name": "RCTV", "country": "VE", "type": "broadcast"},
+    # Canales con derechos de la LVBP. Fuente: El Estímulo, 23/12/2025,
+    # "¿Dónde ver la LVBP por TV?" — lista de la temporada 2025-26.
+    # Venevisión, TVES, Canal i, Televen y Meridiano son señal abierta en
+    # Venezuela; IVC, ByM Sport y 1 Baseball van por cable (Inter / Simple TV).
+    "Venevision": {"name": "Venevisión", "country": "VE", "type": "broadcast"},
+    "Venevisión": {"name": "Venevisión", "country": "VE", "type": "broadcast"},
+    "TVES": {"name": "TVES", "country": "VE", "type": "broadcast"},
+    "Canal i": {"name": "Canal i", "country": "VE", "type": "broadcast"},
+    "Canal I": {"name": "Canal i", "country": "VE", "type": "broadcast"},
+    "1 Baseball": {"name": "1 Baseball", "country": "VE", "type": "cable"},
+    "1Baseball": {"name": "1 Baseball", "country": "VE", "type": "cable"},
+    "ByM Sports": {"name": "ByM Sport", "country": "VE", "type": "cable"},
+    "Beisbol Play": {"name": "BeisbolPlay", "country": "VE", "type": "streaming"},
+    "BeisbolPlay": {"name": "BeisbolPlay", "country": "VE", "type": "streaming"},
     "Inter": {"name": "Inter", "country": "VE", "type": "cable"},
     "NetUno": {"name": "NetUno", "country": "VE", "type": "cable"},
     # ── República Dominicana ──

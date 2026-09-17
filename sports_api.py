@@ -260,7 +260,13 @@ DEFAULT_LEAGUE_CHANNELS = {
     "lmp": ["TUDN", "ESPN MX", "Canal 5"],
     "lmb": ["ESPN MX", "TUDN"],
     # ── Béisbol invernal del Caribe (Oct–Ene) ──
-    "lvbp": ["Televen", "IVC", "ByM Sport", "SimpleTV"],
+    # LVBP: los ocho canales con derechos, en orden de utilidad para el lector
+    # (primero la señal abierta, que no cuesta nada, después el cable).
+    # Fuente: El Estímulo, 23/12/2025 — temporada 2025-26. SimpleTV estaba aquí
+    # por error: es una operadora de cable, no un canal con derechos; quien la
+    # tiene ve la LVBP por Meridiano, IVC o ByM, no "por SimpleTV".
+    "lvbp": ["Meridiano TV", "Televen", "Venevisión", "TVES", "Canal i",
+             "IVC", "ByM Sport", "1 Baseball"],
     "lidom": ["CDN Deportes", "Teleantillas", "Coral 39", "Digital 15"],
     # ── Basquetbol México ──
     "lnbp": ["ESPN MX", "TUDN", "Claro Sports"],
