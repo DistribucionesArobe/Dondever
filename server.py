@@ -461,6 +461,8 @@ app.add_middleware(GAInjectMiddleware)
 import zlib as _zlib
 from cachetools import TTLCache as _TTLCache
 
+from time import monotonic as _mono
+
 _HTML_CACHE = _TTLCache(maxsize=800, ttl=300)
 
 # La portada es la página más pesada (arma todas las ligas del día + momios) y
@@ -495,12 +497,21 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
         store = _HOME_CACHE if is_home else _HTML_CACHE
         key = path + ("?" + str(request.query_params) if request.query_params else "")
         hit = store.get(key)
+        if hit is not None and len(hit) == 3 and hit[2] is not None and _mono() > hit[2]:
+            # Venció antes que su TTL normal: es una ficha de un partido en vivo.
+            # Se reporto que la portada iba en la alta de la 9a y la ficha en la
+            # baja de la 8a. La portada se cachea 60 s y la ficha 300 s, asi que
+            # la ficha podia ir cuatro minutos atras. En deportes eso destruye la
+            # confianza en todo el sitio, no solo en esa pagina.
+            hit = None
         if hit is not None:
-            body, ctype = hit
+            body, ctype = hit[0], hit[1]
             # La portada conserva su propio Cache-Control (90 s) para no
             # contradecir lo que ya manda la ruta.
             _cc = ("public, max-age=90, s-maxage=90" if is_home
                    else "public, max-age=120, s-maxage=300")
+            if len(hit) == 3 and hit[2] is not None:
+                _cc = "public, max-age=15, s-maxage=15"
             _h = {"X-Cache": "HIT", "Cache-Control": _cc, "Vary": "Accept-Encoding"}
             if path.startswith("/widget/"):
                 _h["Content-Security-Policy"] = "frame-ancestors *"  # embebible en otros sitios
@@ -514,10 +525,23 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
             body = b""
             async for chunk in response.body_iterator:
                 body += chunk
-            store[key] = (_zlib.compress(body, 6), ctype)
+            # La ruta puede pedir un vencimiento más corto que el TTL del caché
+            # (cabecera x-dv-ttl). Lo usan las fichas de partidos en vivo o a
+            # punto de empezar: ahí 300 s de HTML viejo es una mentira.
+            _ttl_corto = None
+            try:
+                _v = int(response.headers.get("x-dv-ttl") or 0)
+                if _v > 0:
+                    _ttl_corto = _mono() + _v
+            except Exception:
+                pass
+            store[key] = (_zlib.compress(body, 6), ctype, _ttl_corto)
             headers = dict(response.headers)
             headers.pop("content-length", None)
+            headers.pop("x-dv-ttl", None)
             headers["X-Cache"] = "MISS"
+            if _ttl_corto is not None:
+                headers["cache-control"] = "public, max-age=15, s-maxage=15"
             # dict(response.headers) trae las claves en minúscula, así que un
             # setdefault("Cache-Control", …) no encontraba el valor que ya había
             # puesto la ruta y añadía un SEGUNDO Cache-Control. La portada salía
@@ -1851,7 +1875,28 @@ async def game_semantic(request: Request, slug: str):
         or game.get("away", {}).get("name", "") == "TBD"
     )
 
-    return templates.TemplateResponse(
+    # ── Cuánto puede envejecer este HTML ──────────────────────────────────────
+    # Se reportó que la portada mostraba Padres-Rockies en la alta de la novena
+    # y esta página en la baja de la octava. La portada se cachea 60 s y esta
+    # 300 s: podía ir cuatro minutos atrás. En un sitio de deportes, un marcador
+    # viejo no es un detalle — el usuario deja de creerle al resto del sitio.
+    #
+    # En vivo: 15 s. A punto de empezar: 30 s, para que el cambio de "programado"
+    # a "en vivo" no se quede atorado en una copia vieja. Lo demás no cambia.
+    _estado = (game.get("status") or {}).get("state", "")
+    _ttl_corto = 0
+    if _estado == "in":
+        _ttl_corto = 15
+    elif _estado == "pre":
+        try:
+            _faltan = (datetime.fromisoformat(str(game.get("date", "")).replace("Z", "+00:00"))
+                       - datetime.now(timezone.utc)).total_seconds()
+            if -3600 < _faltan < 1800:
+                _ttl_corto = 30
+        except Exception:
+            pass
+
+    _resp = templates.TemplateResponse(
         request, "game.html", context={
             "game": game, "odds": odds,
             "home_slug": home_slug, "away_slug": away_slug,
@@ -1865,6 +1910,9 @@ async def game_semantic(request: Request, slug: str):
             "noindex": noindex,
         }
     )
+    if _ttl_corto:
+        _resp.headers["x-dv-ttl"] = str(_ttl_corto)
+    return _resp
 
 
 @app.get("/juego/{event_id}", response_class=HTMLResponse)

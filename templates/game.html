@@ -35,7 +35,10 @@
       "name": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}{{ game.name }}{% else %}{{ first_team }} vs {{ second_team }}{% endif %}",
       "description": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}Dónde ver {{ game.name }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.{% else %}Dónde ver {{ first_team }} vs {{ second_team }} de {{ game.league_name }} en vivo. Canales de TV y streaming para México, USA y Latinoamérica.{% endif %}{% if odds %} Momios y pronóstico actualizados.{% endif %}",
       "startDate": "{{ game.date }}",
-      "eventStatus": "https://schema.org/{% if game.status.display in ('Pospuesto', 'Postponed') %}EventPostponed{% elif game.status.display in ('Cancelado', 'Cancelled') %}EventCancelled{% elif game.status.state == 'post' %}EventCompleted{% else %}EventScheduled{% endif %}",
+      {# Faltaba EventInProgress: un partido en vivo se declaraba "programado",
+         contradiciendo el marcador de la propia página. Va junto al TTL corto
+         del HTML (x-dv-ttl) para que el estado cambie cuando cambia el marcador. #}
+      "eventStatus": "https://schema.org/{% if game.status.display in ('Pospuesto', 'Postponed') %}EventPostponed{% elif game.status.display in ('Cancelado', 'Cancelled') %}EventCancelled{% elif game.status.state == 'post' %}EventCompleted{% elif game.status.state == 'in' %}EventInProgress{% else %}EventScheduled{% endif %}",
       "eventAttendanceMode": "https://schema.org/{% if game.venue %}MixedEventAttendanceMode{% else %}OnlineEventAttendanceMode{% endif %}",
       "image": "{{ app_url }}/og/partido/{{ game|game_url|replace('/partido/', '') }}.png",
       "url": "{{ app_url }}{{ game|game_url }}",
@@ -440,13 +443,17 @@
                     data-label-off="&#128276; Avisarme de este partido"
                     data-label-on="&#10003; Siguiendo este partido &middot; toca para quitar">&#128276; Avisarme de este partido</button>
             <div id="followStatus" class="gd-follow-status"></div>
-            <div class="gd-follow-sub">{% if game.status.state == 'in' %}Te avisamos cada {{ 'gol' if game.sport == 'soccer' else 'anotaci&oacute;n' }} y el resultado final{% else %}Aviso al inicio, en cada {{ 'gol' if game.sport == 'soccer' else 'anotaci&oacute;n' }} y al final{% endif %}, aunque cierres la app.</div>
+            {# Las entidades HTML (&oacute;) NO pueden ir dentro de {{ }}: Jinja
+               autoescapa el '&' y en pantalla sale "anotaci&oacute;n" tal cual.
+               Dentro de una expresión va el carácter directo. #}
+            <div class="gd-follow-sub">{% if game.status.state == 'in' %}Te avisamos cada {{ 'gol' if game.sport == 'soccer' else 'anotación' }} y el resultado final{% else %}Aviso al inicio, en cada {{ 'gol' if game.sport == 'soccer' else 'anotación' }} y al final{% endif %}, aunque cierres la app.</div>
         </div>
         {% endif %}
         {% if game.status.state != 'pre' %}
         {# ── Panel en vivo: campo NFL / diamante MLB / goles / línea por periodo (se refresca cada 20 s) ── #}
         <div id="livePanel" class="live-panel" data-game-id="{{ game.id }}" data-sport="{{ game.sport }}" data-state="{{ game.status.state }}"
-             data-home-short="{{ game.home.short }}" data-away-short="{{ game.away.short }}" data-home-left="{{ '1' if home_left else '0' }}"></div>
+             data-home-short="{{ game.home.short }}" data-away-short="{{ game.away.short }}" data-home-left="{{ '1' if home_left else '0' }}"
+             data-start="{{ game.date }}"></div>
         <script id="liveInit" type="application/json">{{ (game.live or {})|tojson }}</script>
         {% endif %}
         <div class="channels-section">
@@ -1793,7 +1800,16 @@ function dvCopy() {
             setTimeout(tick, 20000);
         }).catch(function() { setTimeout(tick, 45000); });
     }
-    if (state === 'in') setTimeout(tick, 20000);
+    // Antes esto esperaba 20 s antes de la primera consulta, y solo arrancaba si
+    // el HTML venía ya marcado como 'in'. Dos problemas: durante esos 20 s se
+    // mostraba el marcador del HTML cacheado (por eso se reportó la ficha en la
+    // baja de la 8a mientras la portada iba en la alta de la 9a), y una ficha
+    // cacheada ANTES del pitazo inicial no consultaba nunca.
+    // Ahora se consulta de inmediato, y tambien si el partido ya debio empezar
+    // aunque el HTML todavia diga 'programado'.
+    var inicioMs = Date.parse(panel.dataset.start || '') || 0;
+    var yaDebioEmpezar = inicioMs && Date.now() > inicioMs - 60000;
+    if (state === 'in' || (state === 'pre' && yaDebioEmpezar)) tick();
 })();
 </script>
 </body>

@@ -86,7 +86,9 @@
                 "@type": "SportsEvent",
                 "name": "{% if game.home.name == 'TBD' or game.away.name == 'TBD' %}{{ game.name }}{% else %}{{ game.away.name }} vs {{ game.home.name }}{% endif %}",
                 "startDate": "{{ game.date }}",
-                "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.state == 'in' %}EventScheduled{% else %}EventScheduled{% endif %}",
+                {# Las dos ramas decían EventScheduled: copiar y pegar. Un partido
+                   en vivo se anunciaba como programado. #}
+                "eventStatus": "https://schema.org/{% if game.status.state == 'post' %}EventCompleted{% elif game.status.state == 'in' %}EventInProgress{% else %}EventScheduled{% endif %}",
                 "url": "{{ app_url }}{{ game|game_url }}",
                 "eventAttendanceMode": "https://schema.org/{% if game.venue %}MixedEventAttendanceMode{% else %}OnlineEventAttendanceMode{% endif %}",
                 "location": {% if game.venue %}[{"@type": "Place", "name": "{{ game.venue }}", "address": "{{ game.venue }}"}, {"@type": "VirtualLocation", "url": "{{ app_url }}{{ game|game_url }}"}]{% else %}{"@type": "VirtualLocation", "url": "{{ app_url }}{{ game|game_url }}"}{% endif %},
@@ -567,9 +569,12 @@
             color: #ea580c;
             border-bottom: 2px solid #ea580c;
         }
+        /* 0.55rem son 8.8 px reales: se reporto que las tarjetas de "Lo
+           imperdible" tienen texto demasiado chico y gris. Subimos tamano y
+           oscurecemos el gris; siguen siendo etiquetas secundarias. */
         .priority-section .game-card-league-tag {
-            font-size: 0.55rem;
-            color: #6b7280;
+            font-size: 0.66rem;
+            color: #4b5563;
             font-weight: 600;
             background: #f3f4f6;
             padding: 0.1rem 0.4rem;
@@ -690,7 +695,7 @@
         .game-card.live .team-score { color: #dc2626; font-size: 1.3rem; }
         .game-card.final .team-score { color: #4b5563; }
         .gc-time { font-size: 0.85rem; font-weight: 800; color: #f97316; }
-        .gc-sub { font-size: 0.62rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.03em; }
+        .gc-sub { font-size: 0.68rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.03em; }
         .countdown { font-size: 0.6rem; color: #9ca3af; font-weight: 600; margin-top: 1px; }
         .countdown.soon { color: #ef4444; font-weight: 700; }
 
@@ -731,7 +736,9 @@
         .channel-tag.broadcast::before { content: "📡 "; font-size: 0.55rem; }
         .channel-tag.free-mx { background: #059669; color: white; }
         .channel-tag.free-mx::before { content: "🆓 "; font-size: 0.55rem; }
-        .channel-tag.unknown { background: #f3f4f6; color: #9ca3af; }
+        /* #9ca3af sobre #f3f4f6 da un contraste de 2.2:1, por debajo del minimo
+           de 4.5:1. Es justo el gris que se reporto como ilegible. */
+        .channel-tag.unknown { background: #f3f4f6; color: #5b6472; }
         body.dark-mode .channel-tag.cable { background: #1e3a5f; color: #93c5fd; }
         body.dark-mode .channel-tag.streaming { background: #3b1f6e; color: #c4b5fd; }
         body.dark-mode .channel-tag.broadcast { background: #064e3b; color: #6ee7b7; }
@@ -1035,8 +1042,10 @@
         .gc-details-link {
             display: inline-block;
             background: #0f172a; color: #fff;
-            font-size: 0.55rem; font-weight: 700;
-            padding: 0.2rem 0.5rem; border-radius: 5px;
+            /* Es el CTA principal de la tarjeta ("Donde ver"): 8.8 px era
+               demasiado chico para lo que queremos que toquen. */
+            font-size: 0.7rem; font-weight: 700;
+            padding: 0.28rem 0.6rem; border-radius: 5px;
             text-decoration: none; transition: background 0.15s;
             margin-top: 0.3rem;
         }
@@ -1492,7 +1501,7 @@
 {%- endif -%}
 {%- endmacro %}
 <div class="sticky-brand" id="sticky-brand">
-    <a href="/"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" class="sticky-brand-logo"></a>
+    <a href="/" aria-label="DondeVer.app &mdash; inicio"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" class="sticky-brand-logo"></a>
     <span style="display:flex;align-items:center;gap:0.4rem;"><button class="dv-install-btn" onclick="dvShowInstall('sticky')" title="Instalar DondeVer en tu celular">&#128241; Instalar</button>
     <button class="sticky-brand-toggle" onclick="toggleDarkMode()" title="Modo oscuro">🌙</button></span>
 </div>
@@ -1509,7 +1518,7 @@
 {% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
 <div class="hero">
     <div class="hero-inner">
-        <a href="/"><img src="/static/logo-dondever-md.png" alt="DondeVer.app" class="hero-logo"></a>
+        <a href="/" aria-label="DondeVer.app &mdash; inicio"><img src="/static/logo-dondever-md.png" alt="DondeVer.app" class="hero-logo"></a>
         {% if is_historical %}
         <h1>Deportes del <span class="accent">{{ today_display }}</span></h1>
         {% else %}
@@ -2211,7 +2220,11 @@
         <div class="wa-cta-top">
             <div>
                 <div class="wa-cta-title">&#128242; Pregunta por WhatsApp qu&eacute; hay hoy y d&oacute;nde verlo</div>
-                <div class="wa-cta-sub">Escribe <b>HOY</b> y el bot te contesta al instante con los partidos del d&iacute;a, canal y hora de M&eacute;xico. Cada ma&ntilde;ana recibes el resumen con picks y momios; toca un bot&oacute;n para seguir recibi&eacute;ndolo. Gratis.</div>
+                {# Este bloque explicaba en tres pasos c&oacute;mo funciona el bot ANTES
+                   de que el visitante decidiera si le interesa. La conversaci&oacute;n de
+                   ejemplo lo ense&ntilde;a mejor y en menos espacio, as&iacute; que los pasos se
+                   fueron y el resto vive en /whatsapp. #}
+                <div class="wa-cta-sub">Escribe <b>HOY</b> y te contesta al instante con los partidos, el canal y la hora. Gratis.</div>
             </div>
         </div>
         <div class="wa-cta-features">
@@ -2221,11 +2234,6 @@
             <span><b>alerta tigres</b> &rarr; avisos</span>
         </div>
         <div class="wa-how">
-            <ol class="wa-steps">
-                <li><b>Toca el bot&oacute;n verde.</b> Se abre WhatsApp con el mensaje "hoy" ya escrito; solo env&iacute;alo.</li>
-                <li><b>El bot te contesta al instante</b> con los partidos de hoy, canal y hora de M&eacute;xico, y te deja <b>3 botones</b>: Juegos de hoy, Pick del d&iacute;a y Mis equipos. Toca y listo, no hay que escribir.</li>
-                <li><b>Cada ma&ntilde;ana</b> te llega el resumen con picks y momios. <b>Toca cualquier bot&oacute;n</b> del mensaje y sigues recibi&eacute;ndolo al d&iacute;a siguiente. Para tu equipo escribe <b>alerta tigres</b> (o el que sea); para salir, <b>SALIR</b>.</li>
-            </ol>
             <div class="wa-chat" aria-hidden="true">
                 <div class="m me">hoy</div>
                 <div class="m"><b>Juegos de hoy</b> 📺<br>⚽ Liga MX &middot; Am&eacute;rica vs Chivas<br>8:00 PM &middot; Canal 5, TUDN<br>🏈 NFL &middot; Cowboys vs Eagles<br>7:15 PM &middot; Fox Sports, ESPN
@@ -2235,7 +2243,7 @@
         </div>
         <a href="https://wa.me/15715463202?text=hoy" target="_blank" rel="noopener" class="wa-cta-btn" style="display:block;text-align:center;text-decoration:none;margin-top:0.6rem;" onclick="if(typeof gtag==='function'){gtag('event','wa_open_chat',{event_category:'whatsapp',event_label:'home_cta'});}">&#128172; ABRIR WHATSAPP Y ESCRIBIR "HOY"</a>
         <div style="text-align:center;font-size:0.7rem;margin-top:0.35rem;"><a href="/whatsapp" style="color:#059669;font-weight:700;text-decoration:none;">Ver todos los comandos del bot &rarr;</a></div>
-        <div class="wa-note">Gratis. Solo entretenimiento, +18. Escribe SALIR en cualquier momento para cancelar el resumen diario.</div>
+        <div class="wa-note">Gratis. Solo entretenimiento, +18. Escribe SALIR para cancelar.</div>
     </div>
 </div>
 
@@ -2335,7 +2343,10 @@
 <!-- Instalar app: hoja con pasos (iPhone Safari / iPhone otro navegador / Android) -->
 <div class="dv-install-overlay" id="dvInstall" onclick="if(event.target===this)dvHideInstall()">
     <div class="dv-install-sheet" role="dialog" aria-labelledby="dvInstallTitle">
-        <h3 id="dvInstallTitle"><img src="/static/icon-192.png?v=2" alt="">Instala DondeVer en tu celular</h3>
+        {# alt="" ya era correcto (el icono es decorativo, el texto lo dice todo),
+           pero las auditorias lo reportan como "imagen sin alt". aria-hidden deja
+           la intencion explicita. #}
+        <h3 id="dvInstallTitle"><img src="/static/icon-192.png?v=2" alt="" aria-hidden="true">Instala DondeVer en tu celular</h3>
         <p class="sub">No está en la App Store ni en Google Play: se instala desde el navegador en 10 segundos y queda como cualquier app.</p>
         <div class="dv-install-why"><span>&#128276; Alertas de goles y partidos</span><span>&#9889; Abre al instante</span><span>&#128176; Gratis, sin cuenta</span></div>
         <ol class="dv-steps" id="dvStepsIosSafari" style="display:none;">
