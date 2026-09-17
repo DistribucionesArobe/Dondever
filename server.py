@@ -2199,12 +2199,45 @@ LEAGUE_SEO_EXTRA = {
         "links": [],
     },
     "lvbp": {
-        "title": "Donde ver LVBP hoy en vivo — Liga Venezolana de Beisbol Profesional | DondeVer",
-        "meta_desc": "Donde ver la LVBP en vivo hoy: horarios, canales y resultados del beisbol venezolano. Magallanes, Caracas, Aragua, Lara, Zulia y mas. Televen, IVC, ByM Sport.",
+        "title": "Donde ver LVBP hoy en vivo: beisbol venezolano | DondeVer",
+        "meta_desc": "LVBP en vivo hoy: horarios y canales del beisbol venezolano. Magallanes, Caracas, Aragua, Lara y Zulia. Gratis por Meridiano, Televen, Venevision y TVES.",
         "h2": "Donde ver la LVBP (beisbol venezolano) en vivo",
         "paragraphs": [
             "La LVBP (Liga Venezolana de Beisbol Profesional) es la liga de beisbol invernal de Venezuela, una de las mas importantes del Caribe. Cuenta con 8 equipos: Navegantes del Magallanes, Leones del Caracas, Tigres de Aragua, Cardenales de Lara, Aguilas del Zulia, Tiburones de La Guaira, Caribes de Anzoategui y Bravos de Margarita.",
-            "Los juegos de la LVBP se transmiten en Venezuela por Televen (TV abierta los fines de semana), IVC, ByM Sport y SimpleTV. En el resto de Latinoamerica por DirecTV Sports y ESPN. La temporada va de octubre a febrero y el campeon representa a Venezuela en la Serie del Caribe. En DondeVer.app te mostramos donde ver cada juego de la LVBP.",
+            "Ocho canales transmiten la LVBP en Venezuela. En senal abierta y gratis: Meridiano TV, Televen, Venevision, TVES y Canal i. Por cable: IVC, ByM Sport y 1 Baseball. Tambien esta BeisbolPlay, que es la plataforma de streaming con todos los juegos de la temporada. Ojo con una confusion habitual: Inter y Simple TV son las operadoras de cable, no canales con derechos; quien las tiene ve la LVBP por Meridiano, IVC o ByM Sport. La temporada va de octubre a febrero y el campeon representa a Venezuela en la Serie del Caribe.",
+        ],
+        "links": [],
+    },
+    # Tenis y golf: son TORNEOS, no jornadas. El texto responde a lo que la gente
+    # escribe ("donde ver el US Open", "a que hora juega Alcaraz") y no a "partidos
+    # de hoy", que en estos deportes casi nunca existe como pregunta.
+    "atp": {
+        "title": "Donde ver tenis ATP: torneos, horarios y canales | DondeVer",
+        "meta_desc": "Tenis ATP en vivo: calendario de torneos con hora de Mexico, canales y streaming. US Open, Roland Garros, Wimbledon, Abierto de Australia y Masters 1000.",
+        "h2": "Donde ver el tenis ATP en vivo: proximos torneos",
+        "paragraphs": [
+            "El circuito ATP agrupa el tenis masculino profesional: los cuatro Grand Slams (Abierto de Australia, Roland Garros, Wimbledon y US Open), los nueve Masters 1000, los ATP 500 y 250, y las ATP Finals de noviembre. A diferencia del futbol, el tenis se organiza por torneos de una o dos semanas, no por jornadas: por eso aqui veras el calendario de torneos con su fecha de inicio y de cierre, y no un listado de partidos sueltos.",
+            "En Mexico y Latinoamerica el tenis ATP se transmite habitualmente por ESPN y Disney+. En Espana va por Movistar Plus+ y en Estados Unidos se reparte entre ESPN y Tennis Channel. Los derechos de los Grand Slams cambian de manos con frecuencia, asi que en cada torneo confirmamos el canal contra la parrilla real de tu pais antes de afirmarlo.",
+        ],
+        "links": [],
+    },
+    "wta": {
+        "title": "Donde ver tenis WTA: torneos, horarios y canales | DondeVer",
+        "meta_desc": "Tenis WTA en vivo: calendario de torneos con hora de Mexico, canales y streaming. Guadalajara Open, US Open, Roland Garros y WTA Finals.",
+        "h2": "Donde ver el tenis WTA en vivo: proximos torneos",
+        "paragraphs": [
+            "El circuito WTA es el tenis femenino profesional. Incluye los cuatro Grand Slams, los WTA 1000, los WTA 500 y 250, y las WTA Finals. Para Mexico tiene un torneo propio: el Guadalajara Open, un WTA 500 que se juega en septiembre en el Panamericano de Zapopan y que suele ser el evento de tenis mas visto del ano en el pais.",
+            "En Mexico y Latinoamerica la WTA se transmite habitualmente por ESPN y Disney+. En Espana por Movistar Plus+ y en Estados Unidos entre ESPN y Tennis Channel. Como los torneos duran varios dias, en cada uno mostramos cuando empieza y cuando termina, con hora del centro de Mexico.",
+        ],
+        "links": [],
+    },
+    "pga": {
+        "title": "Donde ver golf PGA Tour: torneos y horarios | DondeVer",
+        "meta_desc": "PGA Tour en vivo: calendario de torneos con hora de Mexico, canales y streaming. El Masters de Augusta, PGA Championship, US Open y The Open.",
+        "h2": "Donde ver el PGA Tour en vivo: proximos torneos",
+        "paragraphs": [
+            "El PGA Tour es el circuito principal del golf profesional masculino. Su temporada se arma alrededor de cuatro majors: el Masters de Augusta en abril, el PGA Championship en mayo, el US Open en junio y The Open Championship (el British Open) en julio. Cada torneo se juega de jueves a domingo, asi que la pregunta util no es que partido hay hoy, sino que torneo esta en curso y cuando son las rondas.",
+            "En Mexico y Latinoamerica el golf del PGA Tour se transmite habitualmente por ESPN y Disney+. En Estados Unidos se reparte entre Golf Channel, CBS y NBC segun la ronda y el torneo, y en Espana va por Movistar Plus+. Los majors se negocian aparte del resto del calendario, asi que conviene confirmar el canal torneo por torneo.",
         ],
         "links": [],
     },
@@ -2490,6 +2523,20 @@ async def league_page(request: Request, league_slug: str):
             h1 = f"IndyCar: {nxt['short_name']} — dónde ver y hora en México"
             desc = (f"Próxima carrera de IndyCar: {nxt['name']}, {_t} hora de México por {_ch}. "
                     f"Calendario completo, Pato O'Ward y canales en México y Latinoamérica.")
+        elif league_slug in _TOURNAMENT_KINDS:
+            # Un torneo dura días: la pregunta es "¿ya empezó?" y "¿hasta cuándo?",
+            # no "¿a qué hora es el partido?". Por eso el title lleva el rango y
+            # no una hora suelta, y dice "en curso" cuando ya arrancó.
+            _org = {"atp": "Tenis ATP", "wta": "Tenis WTA", "pga": "Golf PGA Tour"}[league_slug]
+            _ini = _fmt_local(nxt.get("start_date") or nxt["date"], "America/Mexico_City", True).split(" · ")[0]
+            _fin = _fmt_local(nxt.get("end_date") or nxt["date"], "America/Mexico_City", True).split(" · ")[0]
+            _rango = _ini if _ini == _fin else f"{_ini} al {_fin}"
+            _curso = nxt.get("status") == "in"
+            title = (f"{_org}: {nxt['name']} en vivo — dónde ver y horarios en México" if _curso
+                     else f"{_org}: {nxt['name']} ({_rango}) — dónde ver y horarios en México")
+            h1 = f"{nxt['name']}: dónde ver{' en vivo' if _curso else ''} y horarios en México"
+            desc = (f"{nxt['name']}{' está en curso' if _curso else f': del {_rango}'}. "
+                    f"Dónde verlo en México por {_ch}, horarios por país y calendario de los próximos torneos.")
         elif league_slug == "ufc":
             title = f"UFC {'hoy' if _today else 'próximo evento'}: {nxt['short_name']} {_t} MX en {_ch} — cartelera y dónde ver"
             h1 = f"UFC: {nxt['name']} — dónde ver, hora en México y cartelera"
@@ -3025,6 +3072,30 @@ async def daytona_500_redirect():
     return await _next_event_redirect("nascar", "/liga/nascar", match="daytona")
 
 # ── UFC SEO redirects ──
+# Tenis y golf: las formas en que la gente busca estos deportes en español. Van
+# como 301 a la página de liga, igual que /f1-hoy o /ufc-hoy, para no partir la
+# autoridad entre varias URLs con el mismo contenido.
+#
+# Se registran una por una a propósito. Una ruta comodín /{slug} habría tapado
+# cualquier ruta de un solo segmento declarada más abajo, porque FastAPI resuelve
+# por orden de registro: habría roto media web para ahorrar diez líneas.
+def _hub_301(path: str, destino: str) -> None:
+    async def _redir():
+        return RedirectResponse(url=destino, status_code=301)
+    app.add_api_route(f"/{path}", _redir, methods=["GET"], include_in_schema=False)
+
+
+for _p, _d in (
+    ("tenis-hoy", "/liga/atp"), ("tenis-en-vivo", "/liga/atp"),
+    ("donde-ver-tenis", "/liga/atp"), ("atp-hoy", "/liga/atp"),
+    ("wta-hoy", "/liga/wta"), ("tenis-femenil-hoy", "/liga/wta"),
+    ("guadalajara-open", "/liga/wta"),
+    ("golf-hoy", "/liga/pga"), ("golf-en-vivo", "/liga/pga"),
+    ("donde-ver-golf", "/liga/pga"), ("pga-hoy", "/liga/pga"),
+):
+    _hub_301(_p, _d)
+
+
 @app.get("/ufc-hoy")
 async def ufc_hoy_redirect():
     return RedirectResponse(url="/liga/ufc", status_code=301)
@@ -5111,7 +5182,9 @@ async def sitemap_core():
     urls.append(_sm_url(f'{APP_URL}/widget', _SM_STATIC_LASTMOD, "monthly", "0.5"))
     urls.append(_sm_url(f'{APP_URL}/contacto', _SM_STATIC_LASTMOD, "monthly", "0.4"))
     urls.append(_sm_url(f'{APP_URL}/whatsapp', _SM_STATIC_LASTMOD, "monthly", "0.6"))
-    for slug in ("nascar", "indycar"):  # motor en LEAGUES_INDIVIDUAL (no en portada) pero con página propia
+    # Ligas de LEAGUES_INDIVIDUAL: no salen en la portada (son deportes sin
+    # "equipo local vs visitante") pero tienen página propia y hay que indexarla.
+    for slug in ("nascar", "indycar", "atp", "wta", "pga"):
         urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.8", hreflang=True))
 
     # Sport-today hubs
