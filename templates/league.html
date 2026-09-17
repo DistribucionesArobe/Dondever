@@ -634,7 +634,13 @@
                 {% endif %}
                 <div style="flex:1;min-width:0;">
                     <div style="font-weight:600;font-size:0.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ player.name }}</div>
-                    {% if player.position %}<div style="font-size:0.6rem;color:#9ca3af;">{{ player.position }}{% if player.flag %} · {{ player.flag }}{% endif %}</div>{% endif %}
+                    {# Antes esta linea decia "F · Portugal" y se leia como si
+                       Paulinho jugara en Portugal: juega en Toluca. La
+                       nacionalidad no le sirve a nadie que busca donde ver un
+                       partido; el club si. El dato venia en la respuesta de
+                       ESPN, colgando de la entrada y no del atleta. #}
+                    {% set _sub = [player.position, player.team] | select | join(' · ') %}
+                    {% if _sub %}<div style="font-size:0.63rem;color:#6b7280;">{{ _sub }}</div>{% endif %}
                 </div>
                 <span style="font-weight:800;font-size:0.85rem;color:#1a1a2e;">{{ player.value }}</span>
             </div>

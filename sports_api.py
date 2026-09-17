@@ -2484,12 +2484,22 @@ async def fetch_league_leaders(sport: str, league: str, top_n: int = 5) -> list[
             ath = entry.get("athlete", {})
             flag_obj = ath.get("flag", {})
             headshot_obj = ath.get("headshot", {})
+            # El equipo NO cuelga del atleta, cuelga de la entrada. Por no
+            # leerlo de ahi mostrabamos la NACIONALIDAD donde el lector espera
+            # el club, y se lee como si Paulinho jugara en Portugal (juega en
+            # Toluca) o Helinho en Brasil (Toluca tambien). El dato correcto
+            # estaba en la respuesta todo este tiempo, sin usar.
+            team_obj = entry.get("team", {}) or ath.get("team", {}) or {}
             leaders.append({
                 "name": ath.get("displayName", ""),
                 "value": entry.get("displayValue", str(entry.get("value", ""))),
                 "num_value": entry.get("value", 0),
                 "position": ath.get("position", {}).get("abbreviation", ""),
                 "jersey": ath.get("jersey", ""),
+                "team": team_obj.get("displayName") or team_obj.get("name") or "",
+                "team_abbr": team_obj.get("abbreviation", ""),
+                "team_logo": (team_obj.get("logos") or [{}])[0].get("href", "")
+                             if team_obj.get("logos") else "",
                 "flag": flag_obj.get("alt", ""),
                 "flag_img": flag_obj.get("href", ""),
                 "headshot": headshot_obj.get("href", ""),
