@@ -2540,6 +2540,22 @@ async def league_page(request: Request, league_slug: str):
     if isinstance(league_leaders, Exception):
         league_leaders = []
 
+    # Tenis y golf: ESPN devuelve TORNEOS, no enfrentamientos. Su scoreboard trae
+    # el evento ("Guadalajara Open") con competitions vacío, así que el parser
+    # produce "TBD vs TBD" y /liga/wta terminaba enlazando a tres
+    # /partido/tbd-vs-tbd-…, que no le sirven a nadie y se comen presupuesto de
+    # rastreo. Se ocultan hasta que tenis y golf se traten como eventos
+    # (/evento/), igual que ya se hace con UFC, F1 y boxeo.
+    def _sin_tbd(lista):
+        return [g for g in lista
+                if (g.get("home") or {}).get("name") != "TBD"
+                and (g.get("away") or {}).get("name") != "TBD"]
+    games = _sin_tbd(games)
+    recent_results = [r for r in recent_results
+                      if r.get("home") != "TBD" and r.get("away") != "TBD"]
+    upcoming_games = [u for u in upcoming_games
+                      if u.get("home") != "TBD" and u.get("away") != "TBD"]
+
     # Related teams from POPULAR_TEAMS that play in this league
     league_teams = {
         slug: info for slug, info in POPULAR_TEAMS.items()

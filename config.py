@@ -777,8 +777,10 @@ LEAGUES = {
 LEAGUES_INDIVIDUAL = {
     "nascar":        ("racing", "nascar-premier", "NASCAR",          "🏁"),
     "indycar":       ("racing", "irl",           "IndyCar",          "🏎️"),
-    "atp":           ("tennis", "atp",           "ATP Tennis",       "TEN"),
-    "wta":           ("tennis", "wta",           "WTA Tennis",       "TEN"),
+    # El emoji decía literalmente "TEN", y así salía en el H1 de la página:
+    # "TEN ATP Tennis en vivo hoy". Las demás ligas sí traen emoji.
+    "atp":           ("tennis", "atp",           "ATP Tennis",       "\U0001F3BE"),
+    "wta":           ("tennis", "wta",           "WTA Tennis",       "\U0001F3BE"),
     "pga":           ("golf", "pga",             "PGA Tour",         "\u26f3"),
 }
 
