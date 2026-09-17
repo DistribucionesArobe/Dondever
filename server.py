@@ -1753,18 +1753,38 @@ async def game_semantic(request: Request, slug: str):
         # Nadie espera 12 s. Damos 2.5 s: si llega, se muestra; si no, la página
         # sale sin el bloque y la tarea SIGUE VIVA llenando la caché, así que la
         # siguiente visita —incluida la de Google— ya lo trae.
+        import epgshare as _epgshare
         _g_task = asyncio.ensure_future(_gatotv.channels_by_country_for_game(
             _g_date, game["home"]["name"], game["away"]["name"], _g_start,
             sport=game.get("sport"),
         ))
-        _done, _ = await asyncio.wait({_g_task}, timeout=2.5)
-        if _g_task in _done:
-            _by_country = _g_task.result()
-        else:
-            _by_country = {}
-            # Sin esto, si la tarea termina en excepción, asyncio la reporta
-            # como "never retrieved" y ensucia los logs.
-            _g_task.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
+        # Segunda fuente, complementaria. epgshare01 publica XMLTV ya armado
+        # (un archivo por país al día) y trae dos cosas que GatoTV no: béisbol
+        # —MLB fuera de México estaba en blanco— y las ligas locales completas.
+        # Van juntas y no en lugar de: GatoTV es el único que cubre Venezuela,
+        # que es nuestro primer país de LATAM.
+        _e_task = asyncio.ensure_future(_epgshare.channels_by_country_for_game(
+            game["home"]["name"], game["away"]["name"], _g_start,
+        ))
+        _tareas = {_g_task, _e_task}
+        _done, _ = await asyncio.wait(_tareas, timeout=2.5)
+        _by_country = {}
+        for _t in _tareas:
+            if _t in _done:
+                try:
+                    _res = _t.result()
+                except Exception:
+                    _res = {}
+                for _cc, _chs in (_res or {}).items():
+                    _b = _by_country.setdefault(_cc, [])
+                    for _ch in _chs:
+                        if _ch not in _b:
+                            _b.append(_ch)
+            else:
+                # Sin esto, si la tarea termina en excepción, asyncio la reporta
+                # como "never retrieved" y ensucia los logs. La dejamos viva:
+                # sigue llenando la caché para la siguiente visita.
+                _t.add_done_callback(lambda t: t.exception() if not t.cancelled() else None)
         if _by_country:
             _merged = dict(game.get("channels_by_country") or {})
             for _cc, _chs in _by_country.items():
