@@ -268,6 +268,18 @@
         .hero-stat-next { color: #f59e0b; }
 
         /* ── Sport Cards ──────────────────────── */
+        /* Estrella para marcar "mis deportes". Va dentro de la tarjeta, que es un
+           enlace, asi que el click se detiene en el JS para no navegar. */
+        .sport-card { position: relative; }
+        .sport-card .sc-star {
+            position: absolute; top: 1px; right: 3px; font-size: 0.72rem;
+            line-height: 1; color: #94a3b8; opacity: 0; transition: opacity .15s, color .15s;
+            padding: 3px; cursor: pointer;
+        }
+        .sport-card:hover .sc-star, .sport-card .sc-star.on { opacity: 1; }
+        .sport-card .sc-star.on { color: #fbbf24; }
+        /* En tactil no hay hover: la estrella se ve siempre, tenue. */
+        @media (hover: none) { .sport-card .sc-star { opacity: 0.45; } }
         .sport-cards {
             display: flex;
             gap: 0.45rem;
@@ -1515,46 +1527,68 @@
         <div id="teamPanel" class="team-panel" style="display:none;"></div>
 
         <!-- Sport Cards Grid -->
-        <div class="sport-cards">
+        <div class="sport-cards" id="sportCards">
             <a href="/" class="sport-card {% if not current_sport and not current_league %}active{% endif %}">
                 <span class="sc-emoji">&#127942;</span>
                 <span class="sc-label">Todos</span>
                 <span class="sc-count">{% if sport_counts.get('all') %}{{ sport_counts['all'] }} hoy{% endif %}</span>
             </a>
-            <a href="/?sport=soccer" class="sport-card {% if is_soccer %}active{% endif %}">
+            <a href="/?sport=soccer" class="sport-card {% if is_soccer %}active{% endif %}" data-sport="soccer">
+                <span class="sc-star" onclick="dvToggleSport('soccer',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#9917;</span>
                 <span class="sc-label">F&uacute;tbol</span>
                 <span class="sc-count">{% if sport_counts.get('soccer') %}{{ sport_counts['soccer'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=baseball" class="sport-card {% if current_sport == 'baseball' %}active{% endif %}">
+            <a href="/?sport=baseball" class="sport-card {% if current_sport == 'baseball' %}active{% endif %}" data-sport="baseball">
+                <span class="sc-star" onclick="dvToggleSport('baseball',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#9918;</span>
                 <span class="sc-label">B&eacute;isbol</span>
                 <span class="sc-count">{% if sport_counts.get('baseball') %}{{ sport_counts['baseball'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=basketball" class="sport-card {% if current_sport == 'basketball' %}active{% endif %}">
+            <a href="/?sport=basketball" class="sport-card {% if current_sport == 'basketball' %}active{% endif %}" data-sport="basketball">
+                <span class="sc-star" onclick="dvToggleSport('basketball',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127936;</span>
                 <span class="sc-label">B&aacute;squet</span>
                 <span class="sc-count">{% if sport_counts.get('basketball') %}{{ sport_counts['basketball'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=football" class="sport-card {% if current_sport == 'football' %}active{% endif %}">
+            <a href="/?sport=football" class="sport-card {% if current_sport == 'football' %}active{% endif %}" data-sport="football">
+                <span class="sc-star" onclick="dvToggleSport('football',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127944;</span>
                 <span class="sc-label">NFL</span>
                 <span class="sc-count">{% if sport_counts.get('football') %}{{ sport_counts['football'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=hockey" class="sport-card {% if current_sport == 'hockey' %}active{% endif %}">
+            <a href="/?sport=hockey" class="sport-card {% if current_sport == 'hockey' %}active{% endif %}" data-sport="hockey">
+                <span class="sc-star" onclick="dvToggleSport('hockey',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127954;</span>
                 <span class="sc-label">NHL</span>
                 <span class="sc-count">{% if sport_counts.get('hockey') %}{{ sport_counts['hockey'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=mma" class="sport-card {% if current_sport == 'mma' %}active{% endif %}">
+            <a href="/?sport=mma" class="sport-card {% if current_sport == 'mma' %}active{% endif %}" data-sport="mma">
+                <span class="sc-star" onclick="dvToggleSport('mma',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#129354;</span>
                 <span class="sc-label">UFC</span>
                 <span class="sc-count">{% if sport_counts.get('mma') %}{{ sport_counts['mma'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=motorsports" class="sport-card {% if current_sport == 'motorsports' %}active{% endif %}">
+            <a href="/?sport=motorsports" class="sport-card {% if current_sport == 'motorsports' %}active{% endif %}" data-sport="motorsports">
+                <span class="sc-star" onclick="dvToggleSport('motorsports',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127950;</span>
                 <span class="sc-label">F1</span>
                 <span class="sc-count">{% if sport_counts.get('motorsports') %}{{ sport_counts['motorsports'] }}{% endif %}</span>
+            </a>
+            {# Tenis y golf llevan a su p&aacute;gina, no filtran la portada: son TORNEOS de
+               varios d&iacute;as, no partidos de hoy. Un filtro ?sport=tennis devolver&iacute;a una
+               lista vac&iacute;a casi siempre, que es peor que no tener el bot&oacute;n. #}
+            <a href="/liga/atp" class="sport-card" data-sport="tennis">
+                <span class="sc-star" onclick="dvToggleSport('tennis',this,event)" title="Marcar como mi deporte">&#9734;</span>
+                <span class="sc-emoji">&#127934;</span>
+                <span class="sc-label">Tenis</span>
+                <span class="sc-count">torneos</span>
+            </a>
+            <a href="/liga/pga" class="sport-card" data-sport="golf">
+                <span class="sc-star" onclick="dvToggleSport('golf',this,event)" title="Marcar como mi deporte">&#9734;</span>
+                <span class="sc-emoji">&#9971;</span>
+                <span class="sc-label">Golf</span>
+                <span class="sc-count">torneos</span>
             </a>
         </div>
 
@@ -1622,7 +1656,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card live" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card live" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-sport="{{ game.sport }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
             <div class="gc-compact-top">
                 <div class="gc-compact-left">
                     <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
@@ -1745,7 +1779,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card" style="border-left:3px solid #ff6b35;" data-game-id="{{ game.id }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card" style="border-left:3px solid #ff6b35;" data-game-id="{{ game.id }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-sport="{{ game.sport }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
             <div class="gc-compact-top">
                 <div class="gc-compact-left">
                     {% if game.status.state == 'pre' %}
@@ -1879,7 +1913,9 @@
     <div id="hiddenLeagues" style="display:none;">
     {% endif %}
 
-    <section class="league-section" data-league-slug="{{ league_data.slug }}"{% if league_data.slug in ('lvbp',) %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %}>
+    {# data-sport permite ordenar las secciones por "mis deportes" sin volver a
+       consultar al servidor. Sale del primer partido, que siempre existe aqui. #}
+    <section class="league-section" data-league-slug="{{ league_data.slug }}" data-sport="{{ (league_data.games[0].sport if league_data.games else '') }}"{% if league_data.slug in ('lvbp',) %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %}>
         <h2 class="league-header">
             <span>{{ league_data.emoji }} {{ league_name }}</span>
             <span class="league-count">{{ active_games | length + finished_games | length }} partido{{ 's' if (active_games | length + finished_games | length) != 1 else '' }}</span>
@@ -1893,7 +1929,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-sport="{{ game.sport }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
 
             {# ── Compact top: badge + primary channel + toggle ── #}
             <div class="gc-compact-top">
@@ -2818,10 +2854,50 @@
     updateCountdowns();
     setInterval(updateCountdowns, 60000);
 
-    // ── Favorite Teams & Leagues ─────────────────────
+    // ── Favorite Teams, Leagues & Sports ─────────────
     let favTeams = JSON.parse(localStorage.getItem('dv_favs') || '[]');
     let favLeaguesList = JSON.parse(localStorage.getItem('dv_fav_leagues') || '[]');
     let favFilterActive = false;
+
+    // "Mis deportes": la capa que faltaba. Ya se podian marcar equipos y ligas,
+    // pero no el deporte, que es la primera decision que toma alguien ("a mi el
+    // beisbol y la NFL"). Con esto la portada se ordena sin obligar a nadie a
+    // marcar veinte equipos uno por uno.
+    let favSports = [];
+    try { favSports = JSON.parse(localStorage.getItem('dv_fav_sports') || '[]'); } catch (e) { favSports = []; }
+
+    function dvPaintSportStars() {
+        document.querySelectorAll('.sport-card[data-sport]').forEach(function (card) {
+            var star = card.querySelector('.sc-star');
+            if (!star) return;
+            var on = favSports.indexOf(card.dataset.sport) !== -1;
+            star.classList.toggle('on', on);
+            star.innerHTML = on ? '&#9733;' : '&#9734;';
+            star.title = on ? 'Quitar de mis deportes' : 'Marcar como mi deporte';
+        });
+    }
+
+    function dvOrderSportCards() {
+        var cont = document.getElementById('sportCards');
+        if (!cont || favSports.length === 0) return;
+        // "Todos" se queda fijo al principio: es la salida, no un deporte.
+        var cards = Array.from(cont.querySelectorAll('.sport-card[data-sport]'));
+        var mios = cards.filter(function (c) { return favSports.indexOf(c.dataset.sport) !== -1; });
+        var resto = cards.filter(function (c) { return favSports.indexOf(c.dataset.sport) === -1; });
+        mios.concat(resto).forEach(function (c) { cont.appendChild(c); });
+    }
+
+    window.dvToggleSport = function (sport, el, e) {
+        e.preventDefault();      // la tarjeta es un enlace: no navegar al marcar
+        e.stopPropagation();
+        var i = favSports.indexOf(sport);
+        if (i >= 0) favSports.splice(i, 1); else favSports.push(sport);
+        try { localStorage.setItem('dv_fav_sports', JSON.stringify(favSports)); } catch (err) {}
+        dvPaintSportStars();
+        dvOrderSportCards();
+        if (typeof reorderLeaguesForFavs === 'function') reorderLeaguesForFavs();
+        if (typeof personalizeMustWatch === 'function') personalizeMustWatch();
+    };
 
     function saveFavs() {
         localStorage.setItem('dv_favs', JSON.stringify(favTeams));
@@ -3139,12 +3215,13 @@
 
     // Also reorder league sections: fav leagues and leagues with fav teams first
     function reorderLeaguesForFavs() {
-        if (favTeams.length === 0 && favLeaguesList.length === 0) return;
+        if (favTeams.length === 0 && favLeaguesList.length === 0 && favSports.length === 0) return;
         var container = document.querySelector('.league-section') ? document.querySelector('.league-section').parentNode : null;
         if (!container) return;
         var sections = Array.from(container.querySelectorAll('.league-section'));
         var leagueFav = [];   // explicitly favorited league
         var teamFav = [];     // has a favorite team playing
+        var sportFav = [];    // del deporte que marcó como suyo
         var neither = [];
         sections.forEach(function(sec) {
             var slug = sec.dataset.leagueSlug || '';
@@ -3154,15 +3231,21 @@
                 var teams = (c.dataset.teams || '').split(',');
                 return teams.some(function(t) { return favTeams.includes(t); });
             });
-            if (hasFavTeam) teamFav.push(sec);
+            if (hasFavTeam) { teamFav.push(sec); return; }
+            // El deporte pesa menos que un equipo o una liga concretos: marcar
+            // "béisbol" es una preferencia amplia, seguir a los Dodgers no.
+            if (favSports.includes(sec.dataset.sport || '')) sportFav.push(sec);
             else neither.push(sec);
         });
-        leagueFav.concat(teamFav).concat(neither).forEach(function(sec) {
+        leagueFav.concat(teamFav).concat(sportFav).concat(neither).forEach(function(sec) {
             container.appendChild(sec);
         });
     }
 
     reorderLeaguesForFavs();
+    // Pintar y ordenar las tarjetas de deporte con lo que el usuario ya marcó.
+    dvPaintSportStars();
+    dvOrderSportCards();
 
     // ── Personalizar "Lo imperdible" según favoritos ──
     // Server sends up to 15 candidates; JS picks the best 5 for this user
@@ -3172,7 +3255,7 @@
         var cards = Array.from(sec.querySelectorAll('.game-card'));
         if (cards.length < 2) return;
 
-        var hasFavs = favTeams.length > 0 || favLeaguesList.length > 0;
+        var hasFavs = favTeams.length > 0 || favLeaguesList.length > 0 || favSports.length > 0;
 
         // Derive implicit preferred leagues from fav teams
         var implicitLeagues = new Set();
@@ -3185,13 +3268,18 @@
             });
         }
 
-        // Score: 3 = team match, 2 = explicit league fav, 1 = implicit league, 0 = server default
+        // 4 = mi equipo, 3 = mi liga, 2 = liga donde juega un equipo mío,
+        // 1 = mi deporte, 0 = lo que mandó el servidor.
+        // El deporte va al final de los criterios propios porque es la señal más
+        // amplia: decir "me gusta el fútbol" no debe pesar lo mismo que seguir
+        // al Cruz Azul.
         function scoreCard(c) {
             if (!hasFavs) return 0;
             var teams = (c.dataset.teams || '').split(',');
-            if (teams.some(function(t) { return favTeams.includes(t); })) return 3;
-            if (favLeaguesList.includes(c.dataset.league)) return 2;
-            if (implicitLeagues.has(c.dataset.league)) return 1;
+            if (teams.some(function(t) { return favTeams.includes(t); })) return 4;
+            if (favLeaguesList.includes(c.dataset.league)) return 3;
+            if (implicitLeagues.has(c.dataset.league)) return 2;
+            if (favSports.includes(c.dataset.sport || '')) return 1;
             return 0;
         }
 
