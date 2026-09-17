@@ -99,6 +99,52 @@ GATOTV_SPORTS_CHANNELS: dict[str, list[tuple[str, str]]] = {
     ],
 }
 
+# Canales que SOLO se consultan para fútbol.
+#
+# El fútbol europeo no vive en ESPN 1 y 2: está repartido por todo el abanico.
+# Verificado el 16/09/2026 en GatoTV:
+#   ESPN 3 Venezuela  → Rayo Vallecano-Espanyol, Villarreal-Betis, Lazio-Milan
+#   ESPN 5 Panamá     → Porto-Manchester City, Lille-Betis (Champions)
+#   ESPN 6 Venezuela  → Gaziantep-Fenerbahce, West Ham-Wrexham
+#   ESPN 7 Venezuela  → Sunderland-AZ Alkmaar, Omonia-Celta de Vigo
+#   ESPN 3 Panamá     → Liverpool-Tottenham, Everton-Wolverhampton
+# Sin estos canales, a un venezolano o un panameño le decíamos "no sabemos"
+# sobre media Champions y media Premier.
+#
+# Van aparte y no en la lista de arriba para no pedir diez parrillas de ESPN
+# por un juego de béisbol, donde no aportan nada.
+GATOTV_SOCCER_EXTRA: dict[str, list[tuple[str, str]]] = {
+    "VE": [("espn_4_venezuela", "ESPN 4"), ("espn_5_venezuela", "ESPN 5"),
+           ("espn_6_venezuela", "ESPN 6"), ("espn_7_venezuela", "ESPN 7"),
+           ("fox_sports_3_venezuela", "Fox Sports 3")],
+    "PA": [("espn_3_panama", "ESPN 3"), ("espn_4_panama", "ESPN 4"),
+           ("espn_5_panama", "ESPN 5"), ("espn_6_panama", "ESPN 6"),
+           ("fox_sports_3_panama", "Fox Sports 3")],
+    "DO": [("espn_3_republica_dominicana", "ESPN 3"), ("espn_4_republica_dominicana", "ESPN 4"),
+           ("espn_5_republica_dominicana", "ESPN 5"), ("espn_6_republica_dominicana", "ESPN 6"),
+           ("fox_sports_2_republica_dominicana", "Fox Sports 2"),
+           ("fox_sports_3_republica_dominicana", "Fox Sports 3")],
+    "CO": [("espn_3_colombia", "ESPN 3"), ("espn_4_colombia", "ESPN 4"),
+           ("espn_5_colombia", "ESPN 5"), ("espn_6_colombia", "ESPN 6"),
+           ("espn_7_colombia", "ESPN 7"), ("fox_sports_2_colombia", "Fox Sports 2"),
+           ("fox_sports_3_colombia", "Fox Sports 3"), ("win_sports", "Win Sports")],
+    "PE": [("espn_4_peru", "ESPN 4"), ("espn_5_peru", "ESPN 5"),
+           ("espn_6_peru", "ESPN 6"), ("espn_7_peru", "ESPN 7"),
+           ("fox_sports_2_peru", "Fox Sports 2"), ("fox_sports_3_peru", "Fox Sports 3")],
+    "EC": [("espn_3_ecuador", "ESPN 3"), ("espn_4_ecuador", "ESPN 4"),
+           ("espn_5_ecuador", "ESPN 5"), ("espn_6_ecuador", "ESPN 6"),
+           ("espn_7_ecuador", "ESPN 7"), ("fox_sports_2_ecuador", "Fox Sports 2"),
+           ("fox_sports_3_ecuador", "Fox Sports 3")],
+}
+
+
+def channels_for(cc: str, sport: str | None = None) -> list[tuple[str, str]]:
+    """Canales a consultar para ese país y deporte."""
+    base = list(GATOTV_SPORTS_CHANNELS.get(cc.upper(), []))
+    if (sport or "").lower() == "soccer":
+        base += GATOTV_SOCCER_EXTRA.get(cc.upper(), [])
+    return base
+
 # 6 h: la parrilla del día no cambia, y así una jornada entera cuesta una
 # petición por canal aunque la vean mil personas.
 _grid_cache: TTLCache = TTLCache(maxsize=400, ttl=21600)
@@ -247,9 +293,10 @@ def match_program(programs: list[dict], home: str, away: str,
 
 
 async def channels_for_game(cc: str, date_iso: str, home: str, away: str,
-                            game_start: datetime | None = None) -> list[str]:
+                            game_start: datetime | None = None,
+                            sport: str | None = None) -> list[str]:
     """Canales de ese país que transmiten este partido, según GatoTV."""
-    canales = GATOTV_SPORTS_CHANNELS.get(cc.upper())
+    canales = channels_for(cc, sport)
     if not canales:
         return []
     grids = await asyncio.gather(
@@ -267,11 +314,12 @@ async def channels_for_game(cc: str, date_iso: str, home: str, away: str,
 
 async def channels_by_country_for_game(date_iso: str, home: str, away: str,
                                        game_start: datetime | None = None,
-                                       countries: list[str] | None = None) -> dict[str, list[str]]:
+                                       countries: list[str] | None = None,
+                                       sport: str | None = None) -> dict[str, list[str]]:
     """{'VE': ['ESPN'], 'PA': ['Fox Sports']…} para un partido."""
     ccs = countries or list(GATOTV_SPORTS_CHANNELS)
     results = await asyncio.gather(
-        *(channels_for_game(cc, date_iso, home, away, game_start) for cc in ccs),
+        *(channels_for_game(cc, date_iso, home, away, game_start, sport) for cc in ccs),
         return_exceptions=True,
     )
     out: dict[str, list[str]] = {}

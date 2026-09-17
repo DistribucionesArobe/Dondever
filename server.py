@@ -1741,7 +1741,8 @@ async def game_semantic(request: Request, slug: str):
         # La parrilla es por día en hora local del canal (UTC-5).
         _g_date = _gatotv.grid_date_for(_g_start)
         _by_country = await _gatotv.channels_by_country_for_game(
-            _g_date, game["home"]["name"], game["away"]["name"], _g_start
+            _g_date, game["home"]["name"], game["away"]["name"], _g_start,
+            sport=game.get("sport"),
         )
         if _by_country:
             _merged = dict(game.get("channels_by_country") or {})
