@@ -280,6 +280,30 @@
         .sport-card .sc-star.on { color: #fbbf24; }
         /* En tactil no hay hover: la estrella se ve siempre, tenue. */
         @media (hover: none) { .sport-card .sc-star { opacity: 0.45; } }
+        /* La tarjeta marcada tiene que VERSE marcada. Con solo la estrellita
+           chica nadie notaba que habia pasado algo al tocarla. */
+        .sport-card.mine {
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 2px rgba(251,191,36,0.25);
+        }
+        /* Aviso corto al marcar/desmarcar: confirma que la portada se reordeno. */
+        #dvSportToast {
+            position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(10px);
+            background: #1a1a2e; color: #fff; font-size: 0.78rem; font-weight: 600;
+            padding: 0.55rem 0.95rem; border-radius: 10px; z-index: 9999;
+            opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25); max-width: 90vw; text-align: center;
+        }
+        #dvSportToast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        /* Por qu&eacute; esta liga est&aacute; arriba. Sin explicaci&oacute;n, reordenar la portada
+           parece ruido. */
+        .dv-why-tag {
+            display: inline-block; vertical-align: middle;
+            background: rgba(251,191,36,0.16); color: #b45309;
+            font-size: 0.6rem; font-weight: 700; letter-spacing: 0.02em;
+            padding: 0.1rem 0.4rem; border-radius: 999px; margin-left: 0.35rem;
+        }
+        .league-section.is-prioritized > .league-header { border-left: 3px solid #fbbf24; padding-left: 0.5rem; }
         .sport-cards {
             display: flex;
             gap: 0.45rem;
@@ -1527,6 +1551,12 @@
         <div id="teamPanel" class="team-panel" style="display:none;"></div>
 
         <!-- Sport Cards Grid -->
+        {# Sin este r&oacute;tulo la estrella no se entiende: la gente la ve y no sabe
+           qu&eacute; hace. Cambia de texto cuando ya hay deportes marcados, para que se
+           note que sirvi&oacute; de algo. #}
+        <div id="sportsHint" style="text-align:center;font-size:0.7rem;color:#64748b;margin:0 0 0.4rem;">
+            Toca la <span style="color:#fbbf24;">&#9733;</span> para elegir tus deportes favoritos y verlos primero
+        </div>
         <div class="sport-cards" id="sportCards">
             <a href="/" class="sport-card {% if not current_sport and not current_league %}active{% endif %}">
                 <span class="sc-emoji">&#127942;</span>
@@ -1892,7 +1922,7 @@
 
     {# Insert AdSense after league 1 (users scrolled past featured + first league) #}
     {% if league_idx[0] == 1 %}
-    <div style="max-width:728px;margin:0.5rem auto;text-align:center;max-height:100px;overflow:hidden;">
+    <div id="homeAdAfterLeague1" style="max-width:728px;margin:0.5rem auto;text-align:center;max-height:100px;overflow:hidden;">
         <ins class="adsbygoogle"
              style="display:block;max-height:90px;"
              data-ad-client="ca-pub-2576227882415709"
@@ -2866,15 +2896,47 @@
     let favSports = [];
     try { favSports = JSON.parse(localStorage.getItem('dv_fav_sports') || '[]'); } catch (e) { favSports = []; }
 
+    var DV_SPORT_ES = {
+        soccer: 'Fútbol', baseball: 'Béisbol', basketball: 'Básquet',
+        football: 'NFL', hockey: 'NHL', mma: 'UFC', motorsports: 'F1',
+        tennis: 'Tenis', golf: 'Golf'
+    };
+
     function dvPaintSportStars() {
         document.querySelectorAll('.sport-card[data-sport]').forEach(function (card) {
             var star = card.querySelector('.sc-star');
             if (!star) return;
             var on = favSports.indexOf(card.dataset.sport) !== -1;
             star.classList.toggle('on', on);
+            // La tarjeta entera se marca, no solo la estrellita: si no, tocarla
+            // no parecía hacer nada.
+            card.classList.toggle('mine', on);
             star.innerHTML = on ? '&#9733;' : '&#9734;';
             star.title = on ? 'Quitar de mis deportes' : 'Marcar como mi deporte';
         });
+        var hint = document.getElementById('sportsHint');
+        if (hint) {
+            if (favSports.length === 0) {
+                hint.innerHTML = 'Toca la <span style="color:#fbbf24;">&#9733;</span> para elegir tus deportes favoritos y verlos primero';
+            } else {
+                var nombres = favSports.map(function (s) { return DV_SPORT_ES[s] || s; });
+                hint.innerHTML = '<span style="color:#fbbf24;">&#9733;</span> Tus deportes: <b>' +
+                    nombres.join(', ') + '</b> &middot; aparecen primero en tu portada';
+            }
+        }
+    }
+
+    function dvSportToast(msg) {
+        var t = document.getElementById('dvSportToast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'dvSportToast';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t._h);
+        t._h = setTimeout(function () { t.classList.remove('show'); }, 2600);
     }
 
     function dvOrderSportCards() {
@@ -2891,12 +2953,17 @@
         e.preventDefault();      // la tarjeta es un enlace: no navegar al marcar
         e.stopPropagation();
         var i = favSports.indexOf(sport);
+        var agregado = i < 0;
         if (i >= 0) favSports.splice(i, 1); else favSports.push(sport);
         try { localStorage.setItem('dv_fav_sports', JSON.stringify(favSports)); } catch (err) {}
         dvPaintSportStars();
         dvOrderSportCards();
         if (typeof reorderLeaguesForFavs === 'function') reorderLeaguesForFavs();
         if (typeof personalizeMustWatch === 'function') personalizeMustWatch();
+        var nombre = DV_SPORT_ES[sport] || sport;
+        dvSportToast(agregado
+            ? nombre + ' es ahora uno de tus deportes — lo verás primero'
+            : nombre + ' ya no está en tus deportes');
     };
 
     function saveFavs() {
@@ -3214,16 +3281,27 @@
     buildMyTeamsSection();
 
     // Also reorder league sections: fav leagues and leagues with fav teams first
+    // Cuántas ligas se ven antes del botón "Mostrar más ligas".
+    var DV_MAX_VISIBLE_LEAGUES = {{ MAX_VISIBLE_LEAGUES | default(5) }};
+
     function reorderLeaguesForFavs() {
-        if (favTeams.length === 0 && favLeaguesList.length === 0 && favSports.length === 0) return;
-        var container = document.querySelector('.league-section') ? document.querySelector('.league-section').parentNode : null;
-        if (!container) return;
+        var first = document.querySelector('.league-section');
+        if (!first) return;
+        var container = first.parentNode;
+        var btn = document.getElementById('showMoreLeagues');
+        var hidden = document.getElementById('hiddenLeagues');
+
+        // querySelectorAll atraviesa #hiddenLeagues, así que aquí vienen TODAS
+        // las ligas, también las que estaban colapsadas.
         var sections = Array.from(container.querySelectorAll('.league-section'));
-        var leagueFav = [];   // explicitly favorited league
-        var teamFav = [];     // has a favorite team playing
+        if (!sections.length) return;
+
+        var leagueFav = [];   // liga marcada explícitamente
+        var teamFav = [];     // juega un equipo mío
         var sportFav = [];    // del deporte que marcó como suyo
         var neither = [];
         sections.forEach(function(sec) {
+            sec.classList.remove('is-prioritized');
             var slug = sec.dataset.leagueSlug || '';
             if (favLeaguesList.includes(slug)) { leagueFav.push(sec); return; }
             var cards = sec.querySelectorAll('.game-card');
@@ -3237,8 +3315,63 @@
             if (favSports.includes(sec.dataset.sport || '')) sportFav.push(sec);
             else neither.push(sec);
         });
-        leagueFav.concat(teamFav).concat(sportFav).concat(neither).forEach(function(sec) {
-            container.appendChild(sec);
+        var ordered = leagueFav.concat(teamFav).concat(sportFav).concat(neither);
+
+        // Antes esto hacía container.appendChild(sec) para cada sección, lo que
+        // las sacaba de #hiddenLeagues y las tiraba AL FINAL del contenedor,
+        // debajo del botón "Mostrar más" y de lo que viniera después. Por eso
+        // marcar un deporte no se notaba: la liga subía en el orden interno
+        // pero terminaba más abajo en la página. Ahora se respetan las dos
+        // zonas: las primeras van arriba, el resto queda colapsado.
+        var visibles = ordered.slice(0, DV_MAX_VISIBLE_LEAGUES);
+        var resto = ordered.slice(DV_MAX_VISIBLE_LEAGUES);
+
+        // El ancla marca DÓNDE empieza el bloque de ligas. Si no hay botón
+        // "Mostrar más" (pocas ligas), dejamos una marca invisible en el sitio
+        // original; sin ella volveríamos a mandar todo al final del contenedor,
+        // que es justo el bug que estamos arreglando.
+        var anchor = btn || hidden;
+        if (!anchor) {
+            if (!window.__dvLeagueAnchor || !window.__dvLeagueAnchor.parentNode) {
+                window.__dvLeagueAnchor = document.createComment('dv-ligas');
+                container.insertBefore(window.__dvLeagueAnchor, first);
+            }
+            anchor = window.__dvLeagueAnchor;
+        }
+        visibles.forEach(function(sec) { container.insertBefore(sec, anchor); });
+        if (hidden) {
+            resto.forEach(function(sec) { hidden.appendChild(sec); });
+            if (btn) btn.style.display = resto.length ? '' : 'none';
+        } else {
+            resto.forEach(function(sec) { container.appendChild(sec); });
+        }
+
+        // El anuncio vive entre la 1ª y la 2ª liga. Al mover las secciones se
+        // quedaba arriba de todas; lo devolvemos a su lugar.
+        var ad = document.getElementById('homeAdAfterLeague1');
+        if (ad && visibles.length >= 2 && visibles[0].nextSibling !== ad) {
+            container.insertBefore(ad, visibles[1]);
+        }
+
+        // Y que se VEA por qué está arriba.
+        leagueFav.concat(teamFav).concat(sportFav).forEach(function(sec) {
+            sec.classList.add('is-prioritized');
+        });
+        dvMarkPrioritized(sportFav);
+    }
+
+    // Etiqueta "★ Tu deporte" en el encabezado de la liga. Sin esto, la liga
+    // sube de posición y el usuario no tiene forma de saber que fue por él.
+    function dvMarkPrioritized(sportSections) {
+        document.querySelectorAll('.dv-why-tag').forEach(function(t) { t.remove(); });
+        sportSections.forEach(function(sec) {
+            var header = sec.querySelector('.league-header span');
+            if (!header) return;
+            var tag = document.createElement('span');
+            tag.className = 'dv-why-tag';
+            tag.innerHTML = '&#9733; Tu deporte';
+            header.appendChild(document.createTextNode(' '));
+            header.appendChild(tag);
         });
     }
 
