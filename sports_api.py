@@ -241,6 +241,8 @@ DEFAULT_LEAGUE_CHANNELS = {
     "liga-colombia": ["Win Sports+", "ESPN"],
     "liga-argentina": ["ESPN", "TNT Sports", "Disney+"],
     "liga-ecuador": ["GOLTV", "ESPN"],
+    # Se conserva para cuando haya fuente de la LPF: los canales son correctos,
+    # lo que falta es el calendario (ESPN no la publica).
     "liga-panama": ["TVMax", "RPC"],
     "liga-chile": ["TNT Sports", "ESPN"],
     "liga-peru": ["GOLPERU", "Liga1 Max"],

@@ -706,7 +706,7 @@ PROVIDERS = STREAMING_AFFILIATES
 LEAGUES = {
     # Futbol
     "liga-mx":       ("soccer", "mex.1",        "Liga MX",          "\u26bd"),
-    "liga-mx-femenil": ("soccer", "mex.w1",     "Liga MX Femenil",  "\u26bd"),
+    "liga-mx-femenil": ("soccer", "mex.w.1",     "Liga MX Femenil",  "\u26bd"),
     "mls":           ("soccer", "usa.1",         "MLS",              "\u26bd"),
     "liga-expansion": ("soccer", "mex.2",        "Liga Expansion MX","\u26bd"),
     "premier-league":("soccer", "eng.1",         "Premier League",   "\u26bd"),
@@ -724,7 +724,9 @@ LEAGUES = {
     "liga-colombia":  ("soccer", "col.1",         "Liga BetPlay",     "\u26bd"),
     "liga-argentina": ("soccer", "arg.1",         "Liga Argentina",   "\u26bd"),
     "liga-ecuador":   ("soccer", "ecu.1",         "LigaPro Ecuador",  "\u26bd"),
-    "liga-panama":    ("soccer", "pan.1",         "LPF Panam\u00e1",  "\u26bd"),
+    # "liga-panama": ESPN no publica la liga panamena (nueve codigos probados,
+    #   todos 400). Reactivar cuando haya fuente real, no antes.
+    # "liga-panama":    ("soccer", "pan.1",         "LPF Panam\u00e1",  "\u26bd"),
     "liga-chile":     ("soccer", "chi.1",         "Primera Chile",    "\u26bd"),
     "liga-peru":      ("soccer", "per.1",         "Liga 1 Per\u00fa", "\u26bd"),
     "libertadores":   ("soccer", "conmebol.libertadores", "Copa Libertadores", "\u26bd"),
@@ -751,7 +753,7 @@ LEAGUES = {
     "club-friendly": ("soccer", "fifa.friendly", "Amistosos",        "\u26bd"),
     # Futbol Americano
     "nfl":           ("football", "nfl",         "NFL",              "\U0001f3c8"),
-    "college-football": ("college-football", "college-football", "Fútbol Americano Universitario", "🏈"),
+    "college-football": ("football", "college-football", "Fútbol Americano Universitario", "🏈"),
     # Basquetbol
     "nba":           ("basketball", "nba",       "NBA",              "\U0001f3c0"),
     "wnba":          ("basketball", "wnba",      "WNBA",            "\U0001f3c0"),
