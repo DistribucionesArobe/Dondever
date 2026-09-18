@@ -2128,7 +2128,7 @@ _CLICKS_FILE = os.getenv("CLICKS_FILE", os.path.join(
 
 
 def _track_click(affiliate: str, source: str, sport: str = "", league: str = "",
-                 country: str = ""):
+                 country: str = "", match: str = "", market: str = ""):
     """Cuenta clics por día, afiliado y origen.
 
     Antes la clave era solo "afiliado:origen", que responde "¿convierte más la
@@ -2150,6 +2150,11 @@ def _track_click(affiliate: str, source: str, sport: str = "", league: str = "",
         if sport or league or country:
             detalle = f"{affiliate}:{source}:{sport or '-'}:{league or '-'}:{country or '-'}"
             data[today][detalle] = data[today].get(detalle, 0) + 1
+        # Clave por partido y mercado: responde "que encuentro y que mercado
+        # convierte", que es distinto de "que posicion de la pagina convierte".
+        if match or market:
+            fino = f"{affiliate}:{source}:{match or '-'}:{market or '-'}"
+            data[today][fino] = data[today].get(fino, 0) + 1
         with open(_CLICKS_FILE, "w") as f:
             _json.dump(data, f, indent=2)
     except Exception as e:
@@ -2198,7 +2203,8 @@ def _purge_click_junk() -> int:
 # Branded affiliate redirect — "dondever.app/go/betsson" en vez de links largos
 @app.get("/go/{key}")
 async def affiliate_redirect(key: str, s: str = "web", sport: str = "",
-                             league: str = "", request: Request = None):
+                             league: str = "", match: str = "", market: str = "",
+                             request: Request = None):
     """
     Redirige a la URL del afiliado con tracking de source.
     Uso: /go/betsson?s=twitter  →  link afiliado real + sub1=twitter
@@ -2226,6 +2232,10 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "",
     # saber QUE LIGA convierte. Se valida igual que el resto: esto viene de la
     # URL y el panel de admin ya vio intentos de inyeccion por estos parametros.
     league = league if re.fullmatch(r"[a-z0-9_-]{0,40}", league or "") else ""
+    # Partido y mercado: sin esto solo sabiamos "alguien toco los momios", no
+    # QUE partido ni si fue el ganador, el handicap o el total.
+    match = match if re.fullmatch(r"[a-z0-9_-]{0,80}", match or "") else ""
+    market = market if re.fullmatch(r"[a-z0-9_-]{0,20}", market or "") else ""
     _ua = (request.headers.get("user-agent", "") if request is not None else "").lower()
     _is_bot = any(b in _ua for b in ("bot", "crawl", "spider", "whatsapp", "facebookexternalhit",
                                      "preview", "curl", "python-requests", "sqlmap", "scanner", "headless"))
@@ -2264,7 +2274,8 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "",
         _pais = ((request.headers.get("cf-ipcountry")
                   or request.headers.get("x-vercel-ip-country") or "").upper()
                  if request is not None else "")
-        _track_click(key, s, sport=sport, league=league, country=_pais)
+        _track_click(key, s, sport=sport, league=league, country=_pais,
+                     match=match, market=market)
     target = get_affiliate_url(key, source=s, sport=sport)
     if target == "#":
         return RedirectResponse(url="/", status_code=302)
@@ -3934,20 +3945,47 @@ async def meta_whatsapp_webhook(request: Request):
 
 @app.post("/api/email-subscribe")
 async def api_email_subscribe(request: Request):
-    """Subscribe an email to the daily picks newsletter."""
+    """Alta al correo diario.
+
+    Acepta JSON (el camino normal, por JS) y TAMBIEN un formulario clasico.
+    Se reporto que el formulario no tenia respaldo: si el JS fallaba, el campo
+    no llevaba atributo name y el navegador mandaba un GET vacio a la portada,
+    asi que el visitante creia haberse suscrito y no pasaba nada. Ahora degrada:
+    sin JS el navegador hace POST normal y responde una pagina de gracias.
+    """
+    email_addr = ""
+    origen = ""
+    es_formulario = False
     try:
         data = await request.json()
-        email_addr = data.get("email", "").strip().lower()
+        email_addr = (data.get("email") or "").strip().lower()
+        origen = (data.get("source") or "").strip()[:40]
     except Exception:
-        return JSONResponse({"ok": False, "error": "invalid_request"}, status_code=400)
+        try:
+            form = await request.form()
+            email_addr = (form.get("email") or "").strip().lower()
+            origen = (form.get("source") or "").strip()[:40]
+            es_formulario = True
+        except Exception:
+            return JSONResponse({"ok": False, "error": "invalid_request"}, status_code=400)
 
     if not email_addr:
+        if es_formulario:
+            return RedirectResponse(url="/?email=falta#email-subscribe", status_code=303)
         return JSONResponse({"ok": False, "error": "email_required"}, status_code=400)
 
     result = email_subscribers.subscribe(email_addr)
+    if origen:
+        logger.info(f"Alta de correo desde: {origen}")
     if not result["success"]:
+        if es_formulario:
+            return RedirectResponse(url="/?email=error#email-subscribe", status_code=303)
         return JSONResponse({"ok": False, "error": result.get("error", "failed")}, status_code=400)
 
+    if es_formulario:
+        return RedirectResponse(
+            url=f"/?email={'listo' if result['is_new'] else 'ya'}#email-subscribe",
+            status_code=303)
     return {"ok": True, "is_new": result["is_new"]}
 
 

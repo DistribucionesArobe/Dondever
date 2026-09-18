@@ -2262,13 +2262,21 @@
             <span>6+ juegos</span>
             <span>Tips estadisticos</span>
         </div>
-        <form class="wa-form" id="emailForm" onsubmit="return emailSubscribe(event)">
-            <input type="email" id="emailInput" placeholder="tu@email.com" required
-                   style="font-size:15px;">
+        {# method/action y name="email" para que el formulario funcione AUNQUE el
+           JS falle: antes el campo no tenia name y el navegador mandaba un GET
+           vacio a la portada, asi que el visitante creia haberse suscrito y no
+           pasaba nada. Con JS se sigue enviando por fetch (emailSubscribe hace
+           preventDefault). #}
+        <form class="wa-form" id="emailForm" method="post" action="/api/email-subscribe"
+              onsubmit="return emailSubscribe(event)">
+            <input type="email" id="emailInput" name="email" autocomplete="email"
+                   placeholder="tu@email.com" required style="font-size:15px;">
+            <input type="hidden" name="source" value="portada">
             <button type="submit" class="wa-cta-btn" id="emailBtn" style="background:#2563eb;">SUSCRIBIRME GRATIS</button>
         </form>
         <div class="wa-msg" id="emailMsg"></div>
-        <div class="wa-note">Sin spam. Solo picks deportivos. Cancela cuando quieras.</div>
+        <div class="wa-note">Sin spam. Solo picks deportivos. Cancela cuando quieras.
+            <a href="/privacidad" style="color:#93c5fd;text-decoration:underline;">Aviso de privacidad</a>.</div>
     </div>
 </div>
 
@@ -3976,7 +3984,7 @@ function emailSubscribe(e) {
   fetch('/api/email-subscribe', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({email: email})
+    body: JSON.stringify({email: email, source: 'portada'})
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
