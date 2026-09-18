@@ -241,8 +241,6 @@ DEFAULT_LEAGUE_CHANNELS = {
     "liga-colombia": ["Win Sports+", "ESPN"],
     "liga-argentina": ["ESPN", "TNT Sports", "Disney+"],
     "liga-ecuador": ["GOLTV", "ESPN"],
-    # Se conserva para cuando haya fuente de la LPF: los canales son correctos,
-    # lo que falta es el calendario (ESPN no la publica).
     "liga-panama": ["TVMax", "RPC"],
     "liga-chile": ["TNT Sports", "ESPN"],
     "liga-peru": ["GOLPERU", "Liga1 Max"],
@@ -615,6 +613,9 @@ async def fetch_espn_event_summary(
 
 # Map ESPN league IDs to TheSportsDB league IDs
 SPORTSDB_LEAGUE_MAP = {
+    # LPF Panama: TheSportsDB es la unica fuente (ESPN devuelve 400 con los nueve
+    # codigos que probe). Sin esta entrada los partidos salen sin canal.
+    "liga-panama": "4819",
     "liga-mx": "4350",
     "mls": "4346",
     "premier-league": "4328",
@@ -2018,6 +2019,12 @@ def _get_sportsdb_season(league_id: str) -> str:
 
 
 async def compute_sportsdb_standings(league_id: str) -> list[dict]:
+    # OJO: estas cuatro funciones usaban SPORTSDB_API_KEY, que NO EXISTE — la
+    # constante se llama SPORTSDB_KEY. Y el f-string va ANTES del try, asi que
+    # el NameError ni siquiera se atrapaba: reventaban siempre, en silencio.
+    # Afectaba a TODAS las ligas de TheSportsDB (LMP, LMB, LVBP, LIDOM, LNBP):
+    # sin tabla, sin resultados, sin proximos partidos y sin datos de equipo.
+    # Los partidos DEL DIA si salian, porque vienen por otra funcion.
     """
     Compute W/L standings from TheSportsDB season events.
     Returns list of dicts compatible with fetch_standings() output.
@@ -2027,7 +2034,7 @@ async def compute_sportsdb_standings(league_id: str) -> list[dict]:
         return _sportsdb_standings_cache[cache_key]
 
     season = _get_sportsdb_season(league_id)
-    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_API_KEY}/eventsseason.php?id={league_id}&s={season}"
+    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_KEY}/eventsseason.php?id={league_id}&s={season}"
 
     async with httpx.AsyncClient(timeout=20) as client:
         try:
@@ -2108,7 +2115,7 @@ async def fetch_sportsdb_team_info(team_id: str) -> dict:
     if cache_key in _sportsdb_team_cache:
         return _sportsdb_team_cache[cache_key]
 
-    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_API_KEY}/lookupteam.php?id={team_id}"
+    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_KEY}/lookupteam.php?id={team_id}"
     async with httpx.AsyncClient(timeout=10) as client:
         try:
             resp = await client.get(url)
@@ -2149,7 +2156,7 @@ async def fetch_sportsdb_past_events(league_id: str) -> list[dict]:
     if cache_key in _sportsdb_events_cache:
         return _sportsdb_events_cache[cache_key]
 
-    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_API_KEY}/eventspastleague.php?id={league_id}"
+    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_KEY}/eventspastleague.php?id={league_id}"
     async with httpx.AsyncClient(timeout=12) as client:
         try:
             resp = await client.get(url)
@@ -2182,7 +2189,7 @@ async def fetch_sportsdb_next_events(league_id: str) -> list[dict]:
     if cache_key in _sportsdb_events_cache:
         return _sportsdb_events_cache[cache_key]
 
-    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_API_KEY}/eventsnextleague.php?id={league_id}"
+    url = f"https://www.thesportsdb.com/api/v1/json/{SPORTSDB_KEY}/eventsnextleague.php?id={league_id}"
     async with httpx.AsyncClient(timeout=12) as client:
         try:
             resp = await client.get(url)

@@ -1514,7 +1514,7 @@
 </header>
 
 <!-- Hero — ¿Qué deporte quieres ver hoy? -->
-{% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions', 'europa-league', 'liga-portugal', 'eredivisie', 'liga-colombia', 'liga-argentina', 'liga-ecuador', 'liga-chile', 'liga-peru', 'libertadores', 'sudamericana', 'mls', 'concacaf-cl'] %}
+{% set soccer_leagues = ['liga-mx', 'premier-league', 'la-liga', 'serie-a', 'bundesliga', 'ligue-1', 'champions', 'europa-league', 'liga-portugal', 'eredivisie', 'liga-colombia', 'liga-argentina', 'liga-ecuador', 'liga-panama', 'liga-chile', 'liga-peru', 'libertadores', 'sudamericana', 'mls', 'concacaf-cl'] %}
 {% set is_soccer = (current_sport == 'soccer') or (current_league in soccer_leagues) %}
 <div class="hero">
     <div class="hero-inner">
@@ -1652,7 +1652,7 @@
         <a href="/?league=liga-colombia" class="subfilter-pill {% if current_league == 'liga-colombia' %}active{% endif %}">BetPlay &#127464;&#127476;</a>
         <a href="/?league=liga-argentina" class="subfilter-pill {% if current_league == 'liga-argentina' %}active{% endif %}">Argentina &#127462;&#127479;</a>
         <a href="/?league=liga-ecuador" class="subfilter-pill {% if current_league == 'liga-ecuador' %}active{% endif %}">LigaPro &#127466;&#127464;</a>
-        {# LPF Panama: ESPN no la publica, el chip llevaba a una liga vacia. #}
+        <a href="/?league=liga-panama" class="subfilter-pill {% if current_league == 'liga-panama' %}active{% endif %}">LPF &#127477;&#127462;</a>
         <a href="/?league=liga-chile" class="subfilter-pill {% if current_league == 'liga-chile' %}active{% endif %}">Chile &#127464;&#127473;</a>
         <a href="/?league=liga-peru" class="subfilter-pill {% if current_league == 'liga-peru' %}active{% endif %}">Liga 1 &#127477;&#127466;</a>
         <a href="/?league=libertadores" class="subfilter-pill {% if current_league == 'libertadores' %}active{% endif %}">Libertadores</a>
@@ -2508,7 +2508,7 @@
         // Map country code → local league slug that should appear first
         var LOCAL_LEAGUE = {
             MX: 'liga-mx', CO: 'liga-colombia', AR: 'liga-argentina',
-            EC: 'liga-ecuador', CL: 'liga-chile',   /* PA fuera: ESPN no publica la LPF */
+            EC: 'liga-ecuador', PA: 'liga-panama', CL: 'liga-chile',
             PE: 'liga-peru', VE: 'liga-mx', // Venezuela: Liga MX is most watched
             US: 'mls', GT: 'liga-mx', HN: 'liga-mx', SV: 'liga-mx',
             CR: 'liga-mx', DO: 'liga-mx', NI: 'liga-mx',
@@ -2519,7 +2519,7 @@
         // European leagues — right after local league (most popular globally)
         var EU_SLUGS = ['champions','premier-league','la-liga','europa-league','serie-a','bundesliga','ligue-1','liga-portugal','eredivisie'];
         // LATAM leagues — after European
-        var LATAM_SLUGS = ['liga-colombia','liga-argentina','liga-ecuador','liga-chile','liga-peru'];
+        var LATAM_SLUGS = ['liga-colombia','liga-argentina','liga-ecuador','liga-panama','liga-chile','liga-peru'];
         // Continental — after LATAM
         var CONTI_SLUGS = ['libertadores','sudamericana','concacaf-cl','copa-america'];
 
