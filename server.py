@@ -28,7 +28,7 @@ from sports_api import (
     fetch_meli_product_image, fetch_espn_event_summary,
     generate_nfl_power_rankings, generate_nfl_picks, get_nfl_team_advanced_stats,
     fetch_sportsdb_team_info, compute_sportsdb_standings,
-    fetch_league_leaders,
+    fetch_league_leaders, fetch_team_form,
     DEFAULT_LEAGUE_CHANNELS,
 )
 from whatsapp_bot import handle_whatsapp_message
@@ -1753,6 +1753,26 @@ async def game_semantic(request: Request, slug: str):
                 is_home = away_name_lower in r.get("home", "").lower()
                 ts, os_ = (h_s, a_s) if is_home else (a_s, h_s)
                 away_form.append("W" if ts > os_ else ("L" if ts < os_ else "D"))
+
+            # La racha de arriba sale de una ventana de 10 días del marcador, y
+            # en ligas de un partido por semana da uno o dos juegos: el
+            # 17/09/2026 el Toluca aparecía con "últimos 2 partidos" siendo
+            # líder con 8 jugados. El calendario del equipo trae la temporada
+            # completa en UNA petición, así que si responde, manda.
+            try:
+                _ids = [(home_stats or {}).get("team_id", ""), (away_stats or {}).get("team_id", "")]
+                if any(_ids):
+                    _f_home, _f_away = await asyncio.gather(
+                        fetch_team_form(sport, espn_league, _ids[0]),
+                        fetch_team_form(sport, espn_league, _ids[1]),
+                        return_exceptions=True,
+                    )
+                    if isinstance(_f_home, list) and _f_home:
+                        home_form = [x["result"] for x in _f_home]
+                    if isinstance(_f_away, list) and _f_away:
+                        away_form = [x["result"] for x in _f_away]
+            except Exception as e:
+                logger.warning(f"Racha por calendario falló para {event_id}: {e}")
         except Exception as e:
             logger.warning(f"Form/upcoming fetch failed for game {event_id}: {e}")
 

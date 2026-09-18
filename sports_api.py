@@ -2339,6 +2339,74 @@ async def get_team_stats(team_slug: str) -> dict:
     return {}
 
 
+# 30 min: un partido termina y la racha cambia, pero no cada minuto.
+_form_cache = TTLCache(maxsize=400, ttl=1800)
+
+
+async def fetch_team_form(sport: str, league: str, team_id: str, n: int = 5) -> list[dict]:
+    """Últimos N partidos JUGADOS de un equipo, del más reciente al más viejo.
+
+    POR QUÉ NO SE USA LA VENTANA DE DÍAS
+    ------------------------------------
+    La racha se armaba recorriendo el marcador día por día con una ventana de
+    10 días. En ligas de un partido por semana eso da uno o dos juegos: el
+    17/09/2026 la ficha del Toluca decía "últimos 2 partidos" siendo el líder
+    con 8 jugados. No mentía, pero es una muestra pobre para hablar de racha.
+    Y ampliar la ventana costaba una petición HTTP POR DÍA.
+
+    Este endpoint devuelve el calendario completo del equipo en UNA petición.
+    Verificado el 17/09/2026 con Toluca (id 223): 8 partidos, todos de Liga MX,
+    y el arreglo viene en orden DESCENDENTE — el primero es el más reciente.
+    Ese detalle importa: leerlo al revés daba los cinco más viejos.
+    """
+    if not team_id or league.startswith("sportsdb:"):
+        return []
+    key = f"form:{sport}:{league}:{team_id}"
+    if key in _form_cache:
+        return _form_cache[key]
+
+    url = f"{ESPN_BASE}/{sport}/{league}/teams/{team_id}/schedule"
+    try:
+        async with httpx.AsyncClient(timeout=12) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+    except Exception as e:
+        logger.warning(f"Team form error {sport}/{league}/{team_id}: {e}")
+        return []
+
+    out: list[dict] = []
+    for ev in (data.get("events") or []):
+        comps = ev.get("competitions") or []
+        if not comps:
+            continue
+        comp = comps[0]
+        if not (comp.get("status", {}).get("type", {}) or {}).get("completed"):
+            continue
+        cs = comp.get("competitors") or []
+        yo = next((c for c in cs if str((c.get("team") or {}).get("id")) == str(team_id)), None)
+        rival = next((c for c in cs if c is not yo), None)
+        if not yo or not rival:
+            continue
+        try:
+            mia = int((yo.get("score") or {}).get("displayValue") or yo.get("score") or 0)
+            suya = int((rival.get("score") or {}).get("displayValue") or rival.get("score") or 0)
+        except (TypeError, ValueError):
+            continue
+        out.append({
+            "result": "W" if mia > suya else ("L" if mia < suya else "D"),
+            "date": (ev.get("date") or "")[:10],
+            "rival": (rival.get("team") or {}).get("displayName", ""),
+            "home": yo.get("homeAway") == "home",
+            "score": f"{mia}-{suya}",
+        })
+        if len(out) >= n:
+            break
+
+    _form_cache[key] = out
+    return out
+
+
 async def fetch_team_news(sport: str, league: str, team_name: str, limit: int = 6) -> list[dict]:
     """
     Fetch recent news articles for a team from ESPN.
