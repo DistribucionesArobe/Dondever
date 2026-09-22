@@ -96,15 +96,15 @@ def _game_url(game: dict) -> str:
 templates.env.filters["game_url"] = _game_url
 templates.env.globals["game_url"] = _game_url
 
-# ── hreflang tags for LATAM geo-targeting ──────────────
-HREFLANG_LOCALES = ["es-MX", "es-US", "es-AR", "es-CO", "es-CL", "es-PE", "es-EC", "es-VE", "es-PA", "es-DO"]
+# ── hreflang tags for LATAM + Spain geo-targeting ──────────────
+HREFLANG_LOCALES = ["es-MX", "es-US", "es-AR", "es-CO", "es-CL", "es-PE", "es-EC", "es-VE", "es-PA", "es-DO", "es-ES"]
 
 
 def _hreflang_tags(request_url: str) -> str:
-    """Generate hreflang link tags for all LATAM target countries.
+    """Generate hreflang link tags for all target countries.
 
     All tags point to the same URL because DondeVer is a single-language
-    site that covers channels for MX, USA, and all of LATAM.  This tells
+    site that covers channels for MX, USA, LATAM and Spain.  This tells
     Google the page is relevant in every listed market.
     """
     from markupsafe import Markup
@@ -5715,6 +5715,26 @@ COUNTRY_PAGES = {
         ],
         "tip": "El fútbol argentino (Liga Profesional) se transmite por TNT Sports y Disney+ (Star+). Para fútbol europeo, Disney+ tiene la mayoría de ligas. La Selección Argentina se pasa por TV Pública cuando juega de local.",
     },
+    # Derechos temporada 2026/27 verificados en sep 2026 (LaLiga.com, RTVE,
+    # DAZN España, Movistar, ACB). Revisar cada verano: los lotes cambian.
+    "espana": {
+        "name": "España",
+        "flag": "🇪🇸",
+        "desc": "Guía de dónde ver deportes en vivo en España: LaLiga, Champions, Liga Endesa, NBA, NFL, F1 y MotoGP. Canales de pago y qué se puede ver gratis en abierto.",
+        "channels": [
+            {"name": "Movistar Plus+", "type": "Cable/Streaming", "sports": "LaLiga (5 partidos por jornada), Champions League, Copa del Rey"},
+            {"name": "DAZN España", "type": "Streaming", "sports": "LaLiga (5 partidos por jornada), NFL, NBA, Liga Endesa"},
+            {"name": "Orange TV", "type": "Cable/Streaming", "sports": "Champions League, LaLiga"},
+            {"name": "La 1 / RTVE Play", "type": "TV Abierta (gratis)", "sports": "Selección española, Copa del Rey, final de Champions"},
+            {"name": "Teledeporte (TDP)", "type": "TV Abierta (gratis)", "sports": "Liga Endesa (un partido por jornada), Copa del Rey, atletismo, ciclismo"},
+            {"name": "DAZN F1", "type": "Streaming (dial 69)", "sports": "Fórmula 1: libres, clasificación, sprint y carrera"},
+            {"name": "DAZN MotoGP", "type": "Streaming (dial 70)", "sports": "MotoGP, Moto2 y Moto3"},
+            {"name": "Prime Video", "type": "Streaming", "sports": "NBA"},
+            {"name": "TV3, TVG, Aragón TV, EITB", "type": "TV Abierta (gratis)", "sports": "Liga Endesa y deporte autonómico"},
+            {"name": "Vodafone TV", "type": "Cable/Streaming", "sports": "LaLiga (revende los canales de Movistar y DAZN)"},
+        ],
+        "tip": "Para ver LaLiga completa necesitas Movistar Plus+ y DAZN: cada uno tiene 5 partidos por jornada. Gratis y sin suscripción puedes ver un partido de LaLiga por jornada en DAZN (solo con registro, y normalmente sin Real Madrid, Barça ni Atlético), un partido de Liga Endesa por jornada en Teledeporte, los partidos de la selección y la final de Champions en La 1. La Champions es exclusiva de Movistar y Orange: ni DAZN ni Vodafone la tienen.",
+    },
 }
 
 
@@ -5788,6 +5808,20 @@ COUNTRY_SPORT_PRIORITY = {
             {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
             {"label": "⚽ Dónde ver La Liga", "url": "/liga/la-liga"},
             {"label": "⚽ Dónde ver Serie A", "url": "/liga/serie-a"},
+        ],
+    },
+    "espana": {
+        "leagues": ["la-liga", "champions", "europa-league", "copa-del-rey",
+                    "liga-endesa", "premier-league", "f1", "motogp", "nba", "nfl"],
+        "links": [
+            {"label": "⚽ Dónde ver LaLiga", "url": "/liga/la-liga"},
+            {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
+            {"label": "🏀 Dónde ver Liga Endesa", "url": "/liga/liga-endesa"},
+            {"label": "🏎️ Dónde ver F1", "url": "/liga/f1"},
+            {"label": "🏍️ Dónde ver MotoGP", "url": "/liga/motogp"},
+            {"label": "🏀 Dónde ver NBA", "url": "/liga/nba"},
+            {"label": "🏈 Dónde ver NFL", "url": "/liga/nfl"},
+            {"label": "📺 Deporte gratis hoy", "url": "/gratis-hoy"},
         ],
     },
 }
@@ -6957,6 +6991,7 @@ TEAM_COUNTRY_SEO = {
     "chile": {"name": "Chile", "flag": "🇨🇱", "code": "CL"},
     "peru": {"name": "Perú", "flag": "🇵🇪", "code": "PE"},
     "ecuador": {"name": "Ecuador", "flag": "🇪🇨", "code": "EC"},
+    "espana": {"name": "España", "flag": "🇪🇸", "code": "ES"},
 }
 
 # Channels available per country for each league
@@ -7011,6 +7046,10 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
     },
     "Premier League": {
+        "espana": [
+            {"name": "DAZN España", "type": "Streaming", "sports": "Premier League íntegra (derechos hasta 2027/28)"},
+            {"name": "Movistar Plus+", "type": "Cable/Streaming", "sports": "Un partido por jornada"},
+        ],
         "mexico": [
             {"name": "Fox Sports MX", "type": "Cable", "sports": "Premier League en vivo"},
             {"name": "Max", "type": "Streaming", "sports": "Premier League completa"},
@@ -7055,6 +7094,12 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
     },
     "La Liga": {
+        "espana": [
+            {"name": "Movistar Plus+", "type": "Cable/Streaming", "sports": "LaLiga: 5 partidos por jornada (lote D1)"},
+            {"name": "DAZN España", "type": "Streaming", "sports": "LaLiga: 5 partidos por jornada (lote D2) + 1 gratis por jornada"},
+            {"name": "Orange TV", "type": "Cable/Streaming", "sports": "Un partido por jornada"},
+            {"name": "Vodafone TV", "type": "Cable/Streaming", "sports": "Revende los canales de Movistar y DAZN"},
+        ],
         "mexico": [
             {"name": "SKY", "type": "Cable", "sports": "La Liga en vivo"},
             {"name": "Blue To Go", "type": "Streaming", "sports": "La Liga completa"},
@@ -7097,6 +7142,11 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
     },
     "Champions League": {
+        "espana": [
+            {"name": "Movistar Plus+", "type": "Cable/Streaming", "sports": "Champions League: exclusiva junto a Orange"},
+            {"name": "Orange TV", "type": "Cable/Streaming", "sports": "Champions League: exclusiva junto a Movistar"},
+            {"name": "La 1 / RTVE Play", "type": "TV Abierta (gratis)", "sports": "Solo la final"},
+        ],
         "mexico": [
             {"name": "Fox Sports MX", "type": "Cable", "sports": "Champions League en vivo"},
             {"name": "Max", "type": "Streaming", "sports": "Champions League completa"},
@@ -7141,6 +7191,10 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
     },
     "NFL": {
+        "espana": [
+            {"name": "DAZN España", "type": "Streaming", "sports": "NFL en exclusiva: temporada regular, playoffs y Super Bowl"},
+            {"name": "NFL Game Pass", "type": "Streaming", "sports": "Todos los partidos"},
+        ],
         "mexico": [
             {"name": "ESPN MX / Disney+", "type": "Cable/Streaming", "sports": "MNF, SNF, Playoffs AFC"},
             {"name": "Fox Sports MX", "type": "Cable", "sports": "TNF, domingos, Playoffs NFC"},
@@ -7190,6 +7244,11 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
     },
     "NBA": {
+        "espana": [
+            {"name": "Prime Video", "type": "Streaming", "sports": "NBA en vivo"},
+            {"name": "DAZN España", "type": "Streaming", "sports": "NBA en vivo"},
+            {"name": "NBA League Pass", "type": "Streaming", "sports": "Todos los partidos"},
+        ],
         "mexico": [
             {"name": "ESPN MX / Disney+", "type": "Cable/Streaming", "sports": "NBA en vivo"},
             {"name": "Amazon Prime", "type": "Streaming", "sports": "NBA selectos"},
@@ -7235,6 +7294,9 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
     },
     "MLB": {
+        "espana": [
+            {"name": "MLB.TV", "type": "Streaming", "sports": "Todos los juegos de MLB"},
+        ],
         "mexico": [
             {"name": "ESPN MX / Disney+", "type": "Cable/Streaming", "sports": "MLB en vivo"},
             {"name": "Fox Sports MX", "type": "Cable", "sports": "MLB selectos"},
@@ -7287,6 +7349,9 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
     },
     "MLS": {
+        "espana": [
+            {"name": "Apple TV MLS Season Pass", "type": "Streaming", "sports": "Todos los partidos de la MLS"},
+        ],
         "mexico": [
             {"name": "ViX Premium", "type": "Streaming", "sports": "MLS completa"},
             {"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "Todos los juegos MLS"},
@@ -7495,6 +7560,7 @@ _COUNTRY_TZ = {
     "chile": "America/Santiago",
     "peru": "America/Lima",
     "ecuador": "America/Guayaquil",
+    "espana": "Europe/Madrid",
 }
 _COUNTRY_TZ_LABEL = {
     "mexico": "hora de México",
@@ -7507,12 +7573,27 @@ _COUNTRY_TZ_LABEL = {
     "chile": "hora de Chile",
     "peru": "hora de Perú",
     "ecuador": "hora de Ecuador",
+    "espana": "hora peninsular española",
 }
 
 # Default for leagues not mapped above
 _DEFAULT_LATAM_CHANNELS = [
     {"name": "ESPN Latinoamérica / Disney+", "type": "Cable/Streaming", "sports": "Deportes internacionales"},
 ]
+
+# ESPN no opera en España: el fallback de LATAM sería falso allí. Y como no
+# todas las ligas se emiten en España, preferimos "por confirmar" a inventar
+# un canal — mismo criterio que usamos con la NFL en México.
+_DEFAULT_CHANNELS_BY_COUNTRY = {
+    "espana": [
+        {"name": "Por confirmar", "type": "—",
+         "sports": "Esta competición no tiene emisor confirmado en España. Revisa la parrilla de Movistar Plus+ y DAZN."},
+    ],
+}
+
+
+def _default_channels(country_slug: str) -> list:
+    return _DEFAULT_CHANNELS_BY_COUNTRY.get(country_slug, _DEFAULT_LATAM_CHANNELS)
 
 
 @app.get("/equipo/{team_slug}/en/{country_slug}", response_class=HTMLResponse)
@@ -7556,7 +7637,7 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
 
     # Get channels for this league in this country
     league_channels = LEAGUE_CHANNELS_BY_COUNTRY.get(team_league, {})
-    country_channels = league_channels.get(country_slug, _DEFAULT_LATAM_CHANNELS)
+    country_channels = league_channels.get(country_slug) or _default_channels(country_slug)
 
     # Country tip from COUNTRY_PAGES if available
     cp = COUNTRY_PAGES.get(country_slug, {})
