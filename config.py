@@ -1688,6 +1688,34 @@ CHANNEL_ALIASES = {
     "DirecTV GO": {"name": "DirecTV GO", "country": "LATAM", "type": "streaming"},
     "DirecTV": {"name": "DirecTV", "country": "LATAM", "type": "cable"},
     "DAZN": {"name": "DAZN", "country": "LATAM", "type": "streaming"},
+
+    # ── ESPAÑA ────────────────────────────────────────────────────────────────
+    # Se reporto publico espanol creciendo. Revisado el 22/09/2026: NO teniamos
+    # ni un canal marcado como ES, y en 10 partidos de ese dia ningun visitante
+    # espanol habria visto un solo canal. No le dabamos un dato malo: no le
+    # dabamos nada.
+    #
+    # Estos no salen de mi memoria. Los derechos 2026-27 estan verificados:
+    #   LaLiga EA Sports -> Movistar Plus+ y Orange TV (todos los partidos),
+    #     DAZN (5 por jornada en 35 de 38) y Vodafone TV (los mismos 5). No hay
+    #     emision en abierto.
+    #   Champions, Europa, Conference y Copa del Rey -> Movistar Plus+ y Orange,
+    #     por los canales "Liga de Campeones por M+".
+    # Fuentes: OCU, Selectra y la nota de prensa de Movistar Plus+.
+    #
+    # Ninguno se marca como gratuito. DAZN regala un partido por jornada al
+    # registrarse, pero es UNO: ponerlo en "Gratis hoy" seria mentir en los otros.
+    "Movistar Plus+":    {"name": "Movistar Plus+", "country": "ES", "type": "cable"},
+    "Movistar Plus":     {"name": "Movistar Plus+", "country": "ES", "type": "cable"},
+    "Movistar LaLiga":   {"name": "Movistar LaLiga", "country": "ES", "type": "cable"},
+    "M+ LaLiga":         {"name": "Movistar LaLiga", "country": "ES", "type": "cable"},
+    "Liga de Campeones por M+": {"name": "Liga de Campeones por M+", "country": "ES", "type": "cable"},
+    "Movistar Liga de Campeones": {"name": "Liga de Campeones por M+", "country": "ES", "type": "cable"},
+    "Orange TV":         {"name": "Orange TV", "country": "ES", "type": "cable"},
+    "Vodafone TV":       {"name": "Vodafone TV", "country": "ES", "type": "cable"},
+    "DAZN España":       {"name": "DAZN España", "country": "ES", "type": "streaming"},
+    "DAZN Spain":        {"name": "DAZN España", "country": "ES", "type": "streaming"},
+    "DAZN LaLiga":       {"name": "DAZN LaLiga", "country": "ES", "type": "streaming"},
     "MLB.TV": {"name": "MLB.TV", "country": "LATAM", "type": "streaming"},
     "NBA League Pass": {"name": "NBA League Pass", "country": "LATAM", "type": "streaming"},
 }

@@ -208,14 +208,16 @@ DEFAULT_LEAGUE_CHANNELS = {
     "mls": ["Apple TV+", "ViX"],
     # ── Futbol Europa (2026-27 season) ──
     "premier-league": ["Fox Sports MX", "Max", "TNT Sports"],
-    "la-liga": ["SKY"],
+    # ES 2026-27 verificado: Movistar y Orange llevan todos los partidos;
+    # DAZN y Vodafone, cinco por jornada. No hay emision en abierto.
+    "la-liga": ["SKY", "Movistar Plus+", "Orange TV", "DAZN España", "Vodafone TV"],
     "serie-a": ["ESPN MX", "Disney+"],
     "bundesliga": ["Fox Sports MX"],
     "ligue-1": ["Fox Sports MX"],
-    "champions": ["Fox Sports MX", "Max", "TNT Sports"],
-    "europa-league": ["Fox Sports MX", "Max"],
+    "champions": ["Fox Sports MX", "Max", "TNT Sports", "Liga de Campeones por M+", "Orange TV"],
+    "europa-league": ["Fox Sports MX", "Max", "Liga de Campeones por M+", "Orange TV"],
     # ── Copas domésticas ──
-    "copa-del-rey": ["SKY"],
+    "copa-del-rey": ["SKY", "Movistar Plus+", "Orange TV"],
     "fa-cup": ["Fox Sports MX", "ESPN MX"],
     "carabao-cup": ["Fox Sports MX"],
     "dfb-pokal": ["Fox Sports MX"],
