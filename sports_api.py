@@ -251,10 +251,13 @@ DEFAULT_LEAGUE_CHANNELS = {
     "liga-portugal": ["ESPN MX"],
     "eredivisie": ["ESPN MX"],
     # ── NFL 2026 ──
-    "nfl": ["ESPN MX", "Fox Sports MX", "TUDN"],
+    # ES: DAZN en exclusiva. El acuerdo Movistar-DAZN no incluye futbol americano.
+    "nfl": ["ESPN MX", "Fox Sports MX", "TUDN", "DAZN España"],
     "college-football": ["ESPN MX"],
     # ── NBA 2025-26 ──
-    "nba": ["ESPN MX", "Disney+"],
+    # ES: Prime Video (Copa, Play-In, una final de conferencia y las Finales en
+    # anos pares) y DAZN (el grueso de la temporada).
+    "nba": ["ESPN MX", "Disney+", "Prime Video", "DAZN España"],
     "wnba": ["ESPN MX", "Disney+"],
     # ── MLB 2026 ──
     "mlb": ["ESPN MX", "Disney+", "Fox Sports MX"],
@@ -277,7 +280,14 @@ DEFAULT_LEAGUE_CHANNELS = {
     # ── Combate ──
     "ufc": ["Paramount+", "Fox Sports MX"],
     # ── Motorsport ──
-    "f1": ["Fox Sports MX", "Canal 5", "TUDN", "F1 TV"],
+    # ES: canal DAZN F1 (dial 69), tambien dentro de Movistar Plus+.
+    "f1": ["Fox Sports MX", "Canal 5", "TUDN", "F1 TV", "DAZN F1"],
+    # ACB: DAZN al completo; Teledeporte y autonomicas, un partido por jornada
+    # en abierto (por eso Teledeporte entra en "Gratis hoy" solo en Espana).
+    "liga-endesa": ["DAZN Baloncesto", "Teledeporte", "Movistar Plus+", "Orange TV"],
+    # ES: canal DAZN MotoGP (dial 70), estrenado en 2026. Jerez, Catalunya y
+    # Valencia se ven en abierto.
+    "motogp": ["DAZN MotoGP"],
 }
 
 # Liga MX Apertura 2026: broadcast rights per team (home matches)
@@ -618,6 +628,8 @@ SPORTSDB_LEAGUE_MAP = {
     # LPF Panama: TheSportsDB es la unica fuente (ESPN devuelve 400 con los nueve
     # codigos que probe). Sin esta entrada los partidos salen sin canal.
     "liga-panama": "4819",
+    # Liga Endesa (ACB): la liga grande de basquet en Espana.
+    "liga-endesa": "4408",
     "liga-mx": "4350",
     "mls": "4346",
     "premier-league": "4328",

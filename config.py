@@ -760,6 +760,9 @@ LEAGUES = {
     "nba":           ("basketball", "nba",       "NBA",              "\U0001f3c0"),
     "wnba":          ("basketball", "wnba",      "WNBA",            "\U0001f3c0"),
     "lnbp":          ("basketball", "sportsdb:5119", "LNBP",        "\U0001f3c0"),
+    # Liga Endesa (ACB): la liga grande de basquet de Espana. ESPN no la publica
+    # (basketball/esp.acb da 400); TheSportsDB si, con el id 4408.
+    "liga-endesa":   ("basketball", "sportsdb:4408", "Liga Endesa", "\U0001f3c0"),
     # Beisbol
     "mlb":           ("baseball", "mlb",         "MLB",              "\u26be"),
     "lmp":           ("baseball", "sportsdb:5109", "Liga Mexicana del Pac\u00edfico", "\u26be"),
@@ -1716,6 +1719,22 @@ CHANNEL_ALIASES = {
     "DAZN España":       {"name": "DAZN España", "country": "ES", "type": "streaming"},
     "DAZN Spain":        {"name": "DAZN España", "country": "ES", "type": "streaming"},
     "DAZN LaLiga":       {"name": "DAZN LaLiga", "country": "ES", "type": "streaming"},
+    # Deportes que YA tienen trafico en el sitio, pero cuyos canales espanoles
+    # son otros. Un espanol buscando "donde ver la NBA" recibia canales
+    # mexicanos. Derechos 2026-27 verificados uno por uno:
+    #   NBA   -> Prime Video y DAZN.
+    #   NFL   -> DAZN en exclusiva (el acuerdo Movistar-DAZN NO incluye NFL).
+    #   F1    -> canal DAZN F1 (dial 69), tambien dentro de Movistar Plus+.
+    #   MotoGP-> canal DAZN MotoGP (dial 70), estrenado en 2026.
+    #   ACB   -> DAZN al completo, mas Teledeporte y autonomicas en abierto.
+    "DAZN F1":           {"name": "DAZN F1", "country": "ES", "type": "cable"},
+    "DAZN MotoGP":       {"name": "DAZN MotoGP", "country": "ES", "type": "cable"},
+    "DAZN Baloncesto":   {"name": "DAZN Baloncesto", "country": "ES", "type": "cable"},
+    # Teledeporte SI es TV abierta: emite un partido de ACB por jornada sin
+    # suscripcion. Es el unico de esta tanda que entra en "Gratis hoy", y para
+    # un publico espanol ese es justo el dato que nadie mas le da masticado.
+    "Teledeporte":       {"name": "Teledeporte", "country": "ES", "type": "free"},
+    "TDP":               {"name": "Teledeporte", "country": "ES", "type": "free"},
     "MLB.TV": {"name": "MLB.TV", "country": "LATAM", "type": "streaming"},
     "NBA League Pass": {"name": "NBA League Pass", "country": "LATAM", "type": "streaming"},
 }

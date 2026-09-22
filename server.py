@@ -164,6 +164,17 @@ FREE_CHANNELS_PA = {
 }
 FREE_PREFIXES_PA = set()
 
+# España. Lo verificado el 22/09/2026: la ACB emite UN partido por jornada en
+# abierto por Teledeporte, y las autonomicas (TV3, TVG, Aragon TV, EITB) pasan
+# otro los domingos por la manana, con acuerdo hasta 2027-28. El futbol de
+# LaLiga NO se emite en abierto, asi que Movistar, Orange, DAZN y Vodafone se
+# quedan fuera de esta lista a proposito.
+FREE_CHANNELS_ES = {
+    "teledeporte", "tdp", "rtve", "la 1", "tve", "tve 1",
+    "tv3", "tvg", "aragón tv", "aragon tv", "eitb", "etb", "etb 1", "etb 2",
+}
+FREE_PREFIXES_ES = set()
+
 _LEAGUE_TIER = {
     "liga-mx": 30, "nfl": 30, "champions": 30, "copa-del-mundo": 30,
     "premier-league": 25, "la-liga": 25, "nba": 25, "serie-a": 25,
@@ -207,6 +218,7 @@ def _is_free_broadcast(channel_name: str, country: str = "MX") -> bool:
         "VE": (FREE_CHANNELS_VE, FREE_PREFIXES_VE),
         "DO": (FREE_CHANNELS_DO, FREE_PREFIXES_DO),
         "PA": (FREE_CHANNELS_PA, FREE_PREFIXES_PA),
+        "ES": (FREE_CHANNELS_ES, FREE_PREFIXES_ES),
     }
     channels, prefixes = _FREE_MAP.get(country, (FREE_CHANNELS_MX, FREE_PREFIXES_MX))
     # Exact match
