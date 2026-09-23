@@ -1939,6 +1939,7 @@ async def game_semantic(request: Request, slug: str):
             "home_form": home_form, "away_form": away_form,
             "implied_probs": implied_probs,
             "match_preview": match_preview,
+            "faq_items": _build_match_faq(game),
             "noindex": noindex,
         }
     )
@@ -5882,6 +5883,115 @@ def _slugify_team(name: str) -> str:
     s = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
     s = re.sub(r"[^\w\s-]", "", s.lower().strip())
     return re.sub(r"[-\s]+", "-", s)
+
+
+# Zonas de los países que nos dan clics, para responder "¿a qué hora?".
+_FAQ_TZ = [
+    ("MX", "America/Mexico_City"), ("VE", "America/Caracas"),
+    ("PA", "America/Panama"), ("CO", "America/Bogota"),
+    ("DO", "America/Santo_Domingo"), ("ES", "Europe/Madrid"),
+    ("US", "America/New_York"),
+]
+
+
+def _build_match_faq(game: dict) -> list[dict]:
+    """FAQ de una ficha de partido, armado SOLO con datos de ese partido.
+
+    Por qué existe: en el SERP real de "donde ver cruz azul hoy" lo que hay
+    arriba no son resultados, es un resumen de IA y un bloque "Más preguntas"
+    con cosas como "¿Dónde ver el partido Monterrey Cruz Azul?". Esas preguntas
+    son de enfrentamiento, que es justo lo que esta página responde — pero la
+    página no las tenía marcadas en ningún lado.
+
+    Regla, la de siempre: si el canal no viene del dato de ESTE partido, no se
+    nombra. Es preferible decir "por confirmar" que inventar un canal.
+    """
+    home = (game.get("home") or {}).get("name", "")
+    away = (game.get("away") or {}).get("name", "")
+    if not home or not away or "TBD" in (home, away):
+        return []
+
+    lg = game.get("league_name", "")
+    vs = f"{home} vs {away}"
+    faq = []
+
+    # ── 1. Dónde ver — la pregunta literal del bloque de Google ──
+    confirmado = game.get("channels_confirmed", True)
+    canales = []
+    if confirmado:
+        for b in (game.get("broadcasts") or []):
+            ch = b.get("channel") if isinstance(b, dict) else str(b)
+            if ch and ch not in canales:
+                canales.append(ch)
+    if canales:
+        faq.append({
+            "q": f"¿Dónde ver {vs}?",
+            "a": f"{vs} se transmite por {', '.join(canales[:4])}."
+                 + (f" Es partido de {lg}." if lg else "")
+        })
+    else:
+        faq.append({
+            "q": f"¿Dónde ver {vs}?",
+            "a": f"El canal de {vs} está por confirmar. En DondeVer.app lo publicamos "
+                 f"en cuanto la transmisión se anuncia."
+        })
+
+    # ── 2. A qué hora — en la hora de cada país, no solo México ──
+    #
+    # Ojo con España: un partido de Liga MX a las 4:50 PM de México cae a las
+    # 12:50 AM en Madrid, o sea del DÍA SIGUIENTE. Dar solo "12:50 AM" manda al
+    # español a prender la tele el día equivocado. Cuando la fecha local no
+    # coincide con la de México, la respuesta lleva el día.
+    iso = game.get("date", "")
+    if iso:
+        from zoneinfo import ZoneInfo as _ZI
+        try:
+            _utc = datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+            _dia_mx = _utc.astimezone(_ZI("America/Mexico_City")).date()
+        except Exception:
+            _utc, _dia_mx = None, None
+        horas = []
+        for cc, tz in _FAQ_TZ:
+            distinto = False
+            if _utc is not None:
+                try:
+                    distinto = _utc.astimezone(_ZI(tz)).date() != _dia_mx
+                except Exception:
+                    pass
+            t = _fmt_local(iso, tz, distinto)
+            if t:
+                horas.append(f"{COUNTRY_LABELS[cc][0]}, {t}")
+        if horas:
+            faq.append({
+                "q": f"¿A qué hora juega {home} contra {away}?",
+                "a": f"{vs} empieza a las {'; '.join(horas)}."
+            })
+
+    # ── 3. Gratis — solo si de verdad hay un canal abierto ──
+    gratis = [c for c in canales if _is_free_broadcast(c, "MX")]
+    if gratis:
+        faq.append({
+            "q": f"¿Se puede ver {vs} gratis?",
+            "a": f"Sí: en México se transmite por {', '.join(gratis)}, que es televisión "
+                 f"abierta y no requiere suscripción."
+        })
+
+    # ── 4. Canal por país — la mitad de nuestros clics no son de México ──
+    cbc = game.get("channels_by_country") or {}
+    for cc in ("VE", "PA", "DO", "CO", "ES"):
+        chs = cbc.get(cc) or []
+        if chs:
+            faq.append({
+                "q": f"¿Qué canal transmite {vs} en {COUNTRY_LABELS[cc][0]}?",
+                "a": f"En {COUNTRY_LABELS[cc][0]} se ve por {', '.join(chs[:3])}."
+            })
+
+    # ── 5. Dónde se juega ──
+    sede = game.get("venue", "")
+    if sede:
+        faq.append({"q": f"¿En qué estadio se juega {vs}?", "a": f"{vs} se juega en {sede}."})
+
+    return faq[:6]
 
 
 def _build_team_faq(*, team_name, team_sport, team_league, stats, games,

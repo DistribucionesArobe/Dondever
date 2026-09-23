@@ -73,10 +73,10 @@
         {% for faq in faq_items %}
         {
           "@type": "Question",
-          "name": "{{ faq.q }}",
+          "name": {{ faq.q | tojson }},
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "{{ faq.a }}"
+            "text": {{ faq.a | tojson }}
           }
         }{% if not loop.last %},{% endif %}
         {% endfor %}

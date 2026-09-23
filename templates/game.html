@@ -104,6 +104,25 @@
       ]
     }
     </script>
+    {# FAQPage: las preguntas que Google ya muestra en "Más preguntas" para este
+       tipo de búsqueda. Solo se emite si hay datos reales del partido. #}
+    {% if faq_items and not noindex %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {% for faq in faq_items %}
+        {
+          "@type": "Question",
+          "name": {{ faq.q | tojson }},
+          "acceptedAnswer": {"@type": "Answer", "text": {{ faq.a | tojson }}}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]
+    }
+    </script>
+    {% endif %}
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2576227882415709" crossorigin="anonymous"></script>
     <link rel="icon" type="image/png" href="/static/logo.png?v=2">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
@@ -1547,6 +1566,24 @@
                 <a href="/pronosticos-hoy" style="font-size:0.68rem;font-weight:600;color:white;background:#059669;padding:0.25rem 0.6rem;border-radius:5px;text-decoration:none;">Pron&oacute;sticos de hoy &rarr;</a>
                 <a href="/guia/mejores-casas-apuestas-liga-mx" style="font-size:0.68rem;font-weight:600;color:#10b981;background:var(--bg-muted,#f3f4f6);padding:0.25rem 0.6rem;border-radius:5px;text-decoration:none;">Casas de apuestas &rarr;</a>
             </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Preguntas frecuentes ──
+       Va visible a propósito: Google solo da el resultado enriquecido de FAQPage
+       si el usuario ve en la página lo mismo que dice el schema. Y de paso es el
+       bloque que un asistente de IA puede citar tal cual. #}
+    {% if faq_items %}
+    <div style="max-width:650px;margin:0 auto 1rem;padding:0 1rem;">
+        <div style="background:var(--bg-card,white);border:1px solid var(--border-main,#e5e7eb);border-radius:10px;padding:0.9rem 1rem;">
+            <h2 style="font-size:0.78rem;font-weight:800;letter-spacing:0.05em;color:var(--text-muted,#6b7280);text-transform:uppercase;margin:0 0 0.7rem;">Preguntas frecuentes</h2>
+            {% for faq in faq_items %}
+            <div style="padding:0.5rem 0;{% if not loop.last %}border-bottom:1px solid var(--border-main,#f1f5f9);{% endif %}">
+                <h3 style="font-size:0.82rem;font-weight:700;color:var(--text-main,#1a1a2e);margin:0 0 0.25rem;">{{ faq.q }}</h3>
+                <p style="font-size:0.78rem;line-height:1.5;color:var(--text-secondary,#4b5563);margin:0;">{{ faq.a }}</p>
+            </div>
+            {% endfor %}
         </div>
     </div>
     {% endif %}
