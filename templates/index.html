@@ -3902,28 +3902,6 @@
     }
 
     // ── Affiliate click tracking → GA4 events ───────────
-    /* DondeVer — GA4 affiliate_click estandarizado.
-   Params: provider, game, league, country, page, placement.
-   Placement viene del query ?s= del link /go/ o de data-placement. */
-(function(){
-  var ctx = window.DV_CTX || {};
-  document.addEventListener('click', function(e){
-    var a = e.target.closest ? e.target.closest('a[data-affiliate]') : null;
-    if (!a || typeof gtag !== 'function') return;
-    var placement = a.dataset.placement || '';
-    if (!placement) {
-      try { placement = new URL(a.href, location.origin).searchParams.get('s') || ''; } catch(err) {}
-    }
-    gtag('event', 'affiliate_click', {
-      provider: a.dataset.affiliate,
-      game: a.dataset.game || ctx.game || '',
-      league: a.dataset.league || ctx.league || '',
-      country: a.dataset.country || ctx.country || 'mx',
-      page: location.pathname,
-      placement: placement || 'unknown'
-    });
-  }, true);
-})();
 
 // ── WhatsApp Subscribe ────────────────────────────
 function waSubscribe(e) {
@@ -4241,5 +4219,6 @@ function emailSubscribe(e) {
     }, {passive: true});
 })();
 </script>
+<script src="/static/affiliate.js" defer></script>
 </body>
 </html>
