@@ -56,6 +56,44 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+# ── Red de seguridad: ninguna excepción suelta debe ser un 500 ──────────────
+#
+# Search Console reporta 49 páginas con error de servidor, subiendo desde
+# principios de agosto. Los ejemplos están repartidos por TODOS los tipos de
+# ruta (/canal/, /equipo/, /juego/, /partido/, /resultado/, /evento/), y al
+# recargarlas a mano funcionan. O sea: son intermitentes, no un bug de una
+# ruta concreta — algo de arriba (un timeout, un campo que un día no viene)
+# revienta y como no había manejador global, salía un 500 pelado.
+#
+# Un 500 repetido hace que Google termine sacando la página del índice. Un 503
+# con Retry-After le dice "esto es temporal, vuelve" y conserva el puesto.
+# Además el 503 es la verdad: la página existe, hoy no se pudo armar.
+#
+# OJO: esto trata el síntoma. La causa hay que buscarla en los logs de Render,
+# y por eso el handler registra ruta y tipo de excepción con traza completa —
+# la idea es poder arreglar el origen, no taparlo.
+@app.exception_handler(Exception)
+async def _error_no_previsto(request: Request, exc: Exception):
+    logger.exception(
+        "500 no previsto en %s %s — %s: %s",
+        request.method, request.url.path, type(exc).__name__, exc,
+    )
+    acepta_html = "text/html" in (request.headers.get("accept") or "")
+    if not acepta_html:
+        return JSONResponse({"error": "temporalmente no disponible"}, status_code=503,
+                            headers={"Retry-After": "120"})
+    try:
+        r = templates.TemplateResponse(
+            request, "404.html", status_code=503,
+            context={"message": "Estamos teniendo un problema para armar esta página. "
+                                "Vuelve a intentar en un momento."},
+        )
+    except Exception:  # si hasta la plantilla de error falla, algo muy raro pasa
+        r = HTMLResponse("<h1>Vuelve en un momento</h1>", status_code=503)
+    r.headers["Retry-After"] = "120"
+    return r
+
+
 # ── Semantic game slugs ─────────────────────────────────
 def _slugify(text: str) -> str:
     """Unicode-safe slugify: 'Club América' → 'club-america'."""
@@ -7052,6 +7090,35 @@ async def team_page(request: Request, team_slug: str):
         recent_results=recent_results,
         is_nfl=(team_sport == "futbol americano"),
     )
+
+    # ── ¿Esto es un equipo de verdad? ──────────────────────────────────────
+    #
+    # Hasta hoy /equipo/cualquier-cosa devolvía 200 con una página completa:
+    # /equipo/asdfghjkl salía titulada "Dónde ver Asdfghjkl hoy: horario, canal
+    # y streaming". Una fábrica de soft 404 — cada URL inventada que alguien
+    # enlace, o que Google adivine, se vuelve una página indexable y vacía.
+    # Search Console reporta 31 soft 404 y 731 "descubiertas: sin indexar";
+    # esto alimenta las dos, y de paso se come presupuesto de rastreo que
+    # hace falta para las páginas buenas.
+    #
+    # El filtro NO es una lista blanca: los equipos se autodescubren de los
+    # juegos del día y una lista fija rompería a los nuevos. La prueba es por
+    # datos — si no está en nuestros catálogos Y además no tiene absolutamente
+    # nada (ni juego hoy, ni resultados, ni próximos, ni stats, ni escudo),
+    # entonces no es un equipo, es ruido.
+    from sports_api import TEAM_LEAGUE_MAP as _TLM  # se importa por función en este archivo
+    _conocido = (team_slug in POPULAR_TEAMS
+                 or team_slug in _TLM
+                 or team_slug in EN_TEAMS)
+    _hay_datos = any((games, recent_results, upcoming_games, stats,
+                      team_logo, sportsdb_team_info))
+    if not _conocido and not _hay_datos:
+        logger.info("equipo inexistente: %s", team_slug)
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404,
+            context={"message": "No encontramos este equipo. "
+                                "Busca el tuyo desde la portada."},
+        )
 
     return templates.TemplateResponse(request, "team.html", {
         # Alterna en inglés (solo equipos de EE.UU. con versión traducida)

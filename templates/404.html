@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, follow">
-    <title>Juego no disponible - DondeVer.app</title>
+    {# El title decía siempre "Juego no disponible", aunque la página fuera un
+       equipo, un canal o una liga. En GA4 sale con 76 vistas: son personas
+       reales cayendo aquí, y el título no les decía qué pasó. Ahora sigue al
+       mensaje que sí sabe de qué se trata. #}
+    <title>{{ (message[:60] ~ ' | DondeVer.app') if message else 'Página no disponible - DondeVer.app' }}</title>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2576227882415709" crossorigin="anonymous"></script>
     <link rel="icon" type="image/png" href="/static/logo.png?v=2">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
