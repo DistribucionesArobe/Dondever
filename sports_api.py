@@ -260,7 +260,11 @@ DEFAULT_LEAGUE_CHANNELS = {
     "nba": ["ESPN MX", "Disney+", "Prime Video", "DAZN España"],
     "wnba": ["ESPN MX", "Disney+"],
     # ── MLB 2026 ──
-    "mlb": ["ESPN MX", "Disney+", "Fox Sports MX"],
+    # Postemporada 2026 (arranca 29 sep): en México va por ESPN, Fox y TUDN.
+    # TUDN faltaba, y es el que ve quien no paga cable premium. Verificado en
+    # Claro Sports y Milenio, sep 2026. Dodgers y Yankees son nuestras dos
+    # páginas de más tráfico: el canal incompleto pega justo donde más duele.
+    "mlb": ["ESPN MX", "Disney+", "Fox Sports MX", "TUDN"],
     # ── Béisbol México ──
     "lmp": ["TUDN", "ESPN MX", "Canal 5"],
     "lmb": ["ESPN MX", "TUDN"],
