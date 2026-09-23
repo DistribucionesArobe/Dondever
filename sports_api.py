@@ -274,8 +274,18 @@ DEFAULT_LEAGUE_CHANNELS = {
     # Fuente: El Estímulo, 23/12/2025 — temporada 2025-26. SimpleTV estaba aquí
     # por error: es una operadora de cable, no un canal con derechos; quien la
     # tiene ve la LVBP por Meridiano, IVC o ByM, no "por SimpleTV".
+    # Temporada 2026-27 (arranca el lunes 12 de octubre): la LVBP confirmó que
+    # repiten Televén, Venevisión, Canal i, Meridiano y TVES en señal abierta;
+    # 1Baseball, IVC y ByM Sport por cable; y BeisbolPlay por streaming con
+    # todos los juegos, nacional E INTERNACIONAL.
+    #
+    # BeisbolPlay faltaba, y es el que más falta hacía: es la única forma legal
+    # de ver la LVBP fuera de Venezuela. Buena parte de quien nos busca "LVBP
+    # en vivo" no está en Venezuela, y a esa gente los otros ocho canales no le
+    # sirven de nada. Va al final porque dentro del país la señal abierta es
+    # la respuesta correcta primero.
     "lvbp": ["Meridiano TV", "Televen", "Venevisión", "TVES", "Canal i",
-             "IVC", "ByM Sport", "1 Baseball"],
+             "IVC", "ByM Sport", "1 Baseball", "BeisbolPlay"],
     "lidom": ["CDN Deportes", "Teleantillas", "Coral 39", "Digital 15"],
     # ── Basquetbol México ──
     "lnbp": ["ESPN MX", "TUDN", "Claro Sports"],
