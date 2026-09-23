@@ -901,7 +901,14 @@
                         {% for row in league_standings %}
                         {% set is_this_team = (team_name|lower in row.team_name|lower) or (row.team_name|lower in team_name|lower) %}
                         <tr style="border-bottom:1px solid #f3f4f6;{% if is_this_team %}background:#ecfdf5;font-weight:700;{% endif %}">
-                            <td style="padding:0.45rem 0.4rem;text-align:center;color:#6b7280;font-size:0.7rem;">{{ row.rank or loop.index }}</td>
+                            {# Antes decía `row.rank or loop.index`: si ESPN no mandaba
+                               posición, se pintaba el NÚMERO DE FILA. Y como la lista
+                               llega concatenada por divisiones, salía una tabla "MLB"
+                               numerada 1-30 donde el #1 (NYY, 90-67) tenía peor récord
+                               que el #3 (TB, 96-61) y que el #16 (MIL, 98-59).
+                               Parecía un ranking de liga y no lo era. Un hueco es
+                               honesto; un número inventado no. #}
+                            <td style="padding:0.45rem 0.4rem;text-align:center;color:#6b7280;font-size:0.7rem;">{{ row.rank if row.rank else '·' }}</td>
                             <td style="padding:0.45rem 0.4rem;text-align:left;white-space:nowrap;">
                                 <div style="display:flex;align-items:center;gap:0.35rem;">
                                     {% if row.team_logo %}<img src="{{ row.team_logo }}" alt="" style="width:18px;height:18px;border-radius:50%;object-fit:contain;" loading="lazy">{% endif %}

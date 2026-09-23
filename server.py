@@ -6070,7 +6070,13 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
         if sport_type == "soccer":
             pts = stats.get("points", "")
             gd = stats.get("goal_diff", "")
-            answer = f"{team_name} está en la posición #{pos} de {team_league}"
+            # `pos` viene vacío cuando la tabla no trae posición (pasa seguido
+            # en ligas que no son de ESPN). Interpolarlo a ciegas producía
+            # "está en la posición # de MLB" — un gato suelto en medio de la
+            # frase. Y esto no se queda en la página: el FAQ va también al
+            # JSON-LD, así que una IA puede citar "posición #" tal cual.
+            answer = (f"{team_name} está en la posición #{pos} de {team_league}"
+                      if pos else f"{team_name} juega en {team_league}")
             if record:
                 answer += f" con récord {record}"
             if pts:
@@ -6081,7 +6087,10 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
             answer += ". Estos datos se actualizan automáticamente después de cada jornada."
             faq.append({"q": f"¿Cómo va {team_name} en la tabla de {team_league}?", "a": answer})
         elif record:
-            answer = f"{team_name} tiene récord de {record} (posición #{pos} en {team_league})"
+            # Mismo caso que arriba: sin posición quedaba "(posición # en MLB)".
+            # Comprobado hoy en producción en la página de Dodgers.
+            answer = (f"{team_name} tiene récord de {record} (posición #{pos} en {team_league})"
+                      if pos else f"{team_name} tiene récord de {record} en {team_league}")
             if wins or losses:
                 answer += f" — {wins} victorias y {losses} derrotas"
             answer += ". Las estadísticas se actualizan después de cada juego."
