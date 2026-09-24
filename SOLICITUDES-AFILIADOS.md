@@ -128,10 +128,22 @@ prácticamente nada. Disney+ LATAM convierte 6 veces mejor que Prime y
 además permite deeplink, que es lo que nos deja mandar a la persona a la
 página concreta del partido en vez de a la portada.
 
-**Lo que falta verificar y no pude:** si "Many GEOs" incluye México. El
-catálogo no expone la lista de países por programa. Se ve al abrir la
-ficha del programa. Si incluye México, ese es el bueno; si no, va
-Disney+ LATAM, que por nombre sí lo cubre.
+**Países, ya verificados abriendo cada ficha (24/09/2026). No se solapan:**
+
+| Programa | Cubre |
+|---|---|
+| Disney+ LATAM | **México**, Colombia, Argentina, Brasil, Chile |
+| DisneyPlus Many GEOs | **España** y 25 países más de Europa. **México NO.** |
+
+O sea: **hacen falta los dos.** El de LATAM cubre México y Colombia (2,571
+clics en 28 días). El europeo cubre España, que es el mercado que más
+rápido crece (+183%, 233 clics). Ninguno cubre Venezuela, Panamá,
+República Dominicana ni Estados Unidos.
+
+**Estado al 24/09/2026:**
+- Disney+ LATAM → **ya solicitado**, "Awaiting moderation of advertiser".
+  Nada que hacer más que esperar.
+- DisneyPlus Many GEOs → **falta solicitarlo** (botón "Apply" en su ficha).
 
 **Nada más sirve.** No existen en Admitad: ViX, Max, Paramount+, Peacock,
 ESPN+, MLB.TV, NFL+, Apple TV+, DAZN, Fubo ni Sling.
@@ -142,20 +154,33 @@ ESPN+, MLB.TV, NFL+, Apple TV+, DAZN, Fubo ni Sling.
 **Disney+ y ESPN MX** (las dos apuntan a disneyplus.com). Además se cambió
 `is_affiliate` para que se deduzca solo de si hay enlace de afiliado.
 
-Traducido: **el día que Disney apruebe, es UNA variable de entorno en
-Render y ya.** Sin deploy, sin tocar código. Pegas el enlace de Admitad en
-`AFFILIATE_DISNEYPLUS` y los dos proveedores se marcan, se declaran como
-publicidad y se miden en GA4 solos.
+Y como son dos programas por región distinta, `/go/disneyplus` ahora elige
+el enlace según el país del visitante (cabecera `cf-ipcountry`):
 
-### Cómo solicitarlo (10 minutos, lo tienes que hacer tú)
+| Visitante | A dónde va |
+|---|---|
+| MX, CO, AR, BR, CL | enlace de `AFFILIATE_DISNEYPLUS` (LATAM) |
+| ES + 25 de Europa | enlace de `AFFILIATE_DISNEYPLUS_ES` |
+| VE, PA, DO, US, resto | **disneyplus.com limpio, sin afiliar** |
 
-1. store.admitad.com → **Programs → All affiliate programs**
-2. Buscar `Disney`
-3. Abrir los dos y ver en cuál aparece México en la lista de países
-4. **Join / Add program** — ahí hay que aceptar los términos del anunciante,
-   y eso lo firmas tú, no yo
-5. Cuando aprueben: copiar el enlace y ponerlo en Render como
-   `AFFILIATE_DISNEYPLUS`
+Lo último no es un descuido: mandar a un venezolano por el enlace de México
+no genera comisión, solo le añade un salto y nos deja un clic marcado como
+publicidad que nunca lo fue.
+
+Probado con los ocho casos. Hoy, sin variables puestas, **no cambia nada**:
+todos siguen yendo a disneyplus.com como hasta ahora.
+
+### Lo que falta, y lo tienes que hacer tú
+
+1. **Solicitar DisneyPlus Many GEOs** para España — botón "Apply" en su
+   ficha. Ahí se aceptan los términos del anunciante y eso lo firmas tú.
+2. Esperar la aprobación de Disney+ LATAM (ya está pedido).
+3. Cuando aprueben, en Render:
+   - `AFFILIATE_DISNEYPLUS` = enlace del programa LATAM
+   - `AFFILIATE_DISNEYPLUS_ES` = enlace del programa europeo
+
+   Sin deploy. Se encienden solos Disney+ y ESPN MX, se declaran como
+   publicidad y se miden en GA4.
 
 ---
 

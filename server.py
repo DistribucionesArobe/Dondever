@@ -2345,7 +2345,15 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "",
                  if request is not None else "")
         _track_click(key, s, sport=sport, league=league, country=_pais,
                      match=match, market=market)
-    target = get_affiliate_url(key, source=s, sport=sport)
+    # El país decide el enlace, no solo la estadística: Disney+ tiene un
+    # programa para México/LATAM y otro distinto para España. Mandar a un
+    # español por el de LATAM no paga comisión — la venta cae fuera de la
+    # región del programa. Se recalcula aquí porque el _pais de arriba solo
+    # existe cuando el visitante no es un bot.
+    _pais_destino = ((request.headers.get("cf-ipcountry")
+                      or request.headers.get("x-vercel-ip-country") or "").upper()
+                     if request is not None else "")
+    target = get_affiliate_url(key, source=s, sport=sport, country=_pais_destino)
     if target == "#":
         return RedirectResponse(url="/", status_code=302)
     return RedirectResponse(url=target, status_code=302)

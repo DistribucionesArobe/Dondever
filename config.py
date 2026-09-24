@@ -822,10 +822,61 @@ _BETSSON_SPORTS = {
 }
 
 
-def get_affiliate_url(key: str, source: str = "web", sport: str = "") -> str:
+# ── Un mismo servicio, un programa distinto por país ─────────────────────────
+#
+# Disney+ tiene DOS programas en Admitad y no se solapan:
+#
+#   Disney+ LATAM (34712)      → México, Colombia, Argentina, Brasil, Chile
+#   DisneyPlus Many GEOs       → España y el resto de Europa
+#
+# Verificado en el panel el 24/09/2026, leyendo la lista de regiones de cada
+# ficha. Importa porque mandar a un español por el enlace de LATAM no paga:
+# la venta cae fuera de la región del programa y no se registra. Sería un
+# redirect de más que además no cobra.
+#
+# Y si el visitante está en un país que no cubre NINGÚN programa —Venezuela,
+# Panamá, República Dominicana, Estados Unidos— va al enlace normal. Meterlo
+# por un enlace de afiliado que no le corresponde no genera comisión, solo le
+# añade un salto y nos deja un clic marcado como publicidad que nunca lo fue.
+_PAISES_POR_PROGRAMA = {
+    "disneyplus": {
+        "limpio": "https://www.disneyplus.com/",
+        "programas": {
+            "AFFILIATE_DISNEYPLUS":    {"MX", "CO", "AR", "BR", "CL"},
+            "AFFILIATE_DISNEYPLUS_ES": {"ES", "PT", "IT", "FR", "DE", "GB", "IE", "NL",
+                                        "BE", "AT", "CH", "DK", "SE", "NO", "FI", "PL",
+                                        "CZ", "SK", "HU", "RO", "BG", "HR", "GR", "LT",
+                                        "LU", "TR"},
+        },
+    },
+}
+
+
+def url_afiliado_por_pais(key: str, country: str) -> str | None:
+    """Enlace de afiliado que corresponde a ese país, o None si ninguno.
+
+    None no es un error: significa "este visitante no entra en ningún
+    programa, mándalo al sitio normal".
+    """
+    config_key = _PAISES_POR_PROGRAMA.get(key)
+    if not config_key:
+        return None
+    pais = (country or "").upper()
+    if not pais:
+        return None
+    for variable, paises in config_key["programas"].items():
+        if pais in paises:
+            return os.getenv(variable, "") or None
+    return None
+
+
+def get_affiliate_url(key: str, source: str = "web", sport: str = "",
+                      country: str = "") -> str:
     """
     Get affiliate URL with source tracking and optional sport deep link.
     sport: ESPN sport key (soccer, baseball, basketball, etc.)
+    country: ISO-2 del visitante. Para los servicios con un programa por
+             región (ver _PAISES_POR_PROGRAMA) decide cuál enlace usar.
     """
     aff = AFFILIATES.get(key, {})
     url = aff.get("url", "")
@@ -835,6 +886,18 @@ def get_affiliate_url(key: str, source: str = "web", sport: str = "") -> str:
             if saff["key"] == key:
                 url = saff["url"]
                 break
+
+    # El enlace por país manda sobre el genérico cuando el servicio tiene
+    # programas separados por región.
+    if key in _PAISES_POR_PROGRAMA:
+        por_pais = url_afiliado_por_pais(key, country)
+        if por_pais:
+            url = por_pais
+        elif country:
+            # País conocido y fuera de todo programa: enlace limpio.
+            url = _PAISES_POR_PROGRAMA[key]["limpio"]
+        # Si no sabemos el país (country vacío), se queda el genérico: es lo
+        # que ya pasaba antes y no empeora nada.
     if not url or url == "#":
         return "#"
 
