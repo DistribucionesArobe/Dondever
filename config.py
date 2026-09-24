@@ -700,6 +700,22 @@ STREAMING_AFFILIATES = {
     },
 }
 
+# ── is_affiliate se deduce solo ──────────────────────────
+#
+# Antes había que tocar dos cosas para activar un afiliado: poner la variable
+# de entorno en Render Y cambiar `is_affiliate` a True aquí, con un deploy de
+# por medio. Dos pasos para una sola decisión es una forma segura de que algún
+# día quede la variable puesta y el flag en False: el enlace cobraría comisión
+# y el sitio seguiría sin declararlo como publicidad. Eso no es un descuido
+# cosmético, es publicidad sin declarar.
+#
+# Ahora la fuente de verdad es una sola: si hay `affiliate_url`, es afiliado.
+# Poner la variable en Render basta para que el enlace se marque, se declare y
+# se mida. Quitarla lo apaga entero, sin deploy.
+for _proveedor in STREAMING_AFFILIATES.values():
+    _proveedor["is_affiliate"] = bool(_proveedor.get("affiliate_url"))
+del _proveedor
+
 # Alias for new code — same object, clearer name
 PROVIDERS = STREAMING_AFFILIATES
 

@@ -97,14 +97,65 @@ Sundek, TGW (golf) y Withings. Cuatro son de golf, todas venden producto físico
 en EE.UU., ninguna es de televisión. Aunque las aprobaran mañana no habría
 dónde poner el enlace.
 
-### Admitad — ya la usas para Prime Video
-1. Entrar a admitad.com
-2. **Programas → Catálogo**, filtrar país **México** y categoría
-   *Servicios online / Entretenimiento*
-3. Ver qué hay de streaming además de Prime Video
+### Admitad — REVISADA A FONDO EL 24/09/2026. **Aquí sí hay algo.**
 
-Estas dos búsquedas son 10 minutos y probablemente den más que cualquier
-cuenta nueva.
+Se leyeron los **775 anunciantes** del catálogo de la cuenta (ad space
+"Donde Ver", id 2992605) y se buscó marca por marca. Resultado:
+
+**De los 11 servicios sin monetizar, solo uno tiene programa disponible:
+Disney+. Y resulta ser el que más importa.**
+
+En México, Disney+ es donde están ESPN, Liga MX, NFL y Champions. Es la
+respuesta que da el sitio en una parte enorme de sus páginas. No es un
+afiliado más: es *el* afiliado.
+
+Hay **dos programas**, los dos con `can_connect: true` (o sea, se puede
+solicitar hoy). Cifras sacadas del panel, no de un blog:
+
+| | Disney+ LATAM | DisneyPlus Many GEOs | *Prime Video (el que ya tienes)* |
+|---|---|---|---|
+| Comisión | $1.69 – $21.18 USD | **$17.50 USD fijos** | *2.10%* |
+| Conversión | 0.6% | **3.8%** | *0.1%* |
+| Aprobación de ventas | 94% | 88% | *100%* |
+| Días de pago | 40 | 63 | *78* |
+| Deeplink | **Sí** | No | No |
+| Moderación | manual | manual | — |
+| ID | 34712 | 147283 | — |
+
+Léelo bien: **DisneyPlus Many GEOs convierte 38 veces mejor que Prime
+Video**, y paga fijo. Prime Video convierte 0.1% a 2.1% de comisión —
+prácticamente nada. Disney+ LATAM convierte 6 veces mejor que Prime y
+además permite deeplink, que es lo que nos deja mandar a la persona a la
+página concreta del partido en vez de a la portada.
+
+**Lo que falta verificar y no pude:** si "Many GEOs" incluye México. El
+catálogo no expone la lista de países por programa. Se ve al abrir la
+ficha del programa. Si incluye México, ese es el bueno; si no, va
+Disney+ LATAM, que por nombre sí lo cubre.
+
+**Nada más sirve.** No existen en Admitad: ViX, Max, Paramount+, Peacock,
+ESPN+, MLB.TV, NFL+, Apple TV+, DAZN, Fubo ni Sling.
+
+### Lo que ya quedó listo en el código
+
+`config.py` ya leía `AFFILIATE_DISNEYPLUS`, y esa misma variable alimenta
+**Disney+ y ESPN MX** (las dos apuntan a disneyplus.com). Además se cambió
+`is_affiliate` para que se deduzca solo de si hay enlace de afiliado.
+
+Traducido: **el día que Disney apruebe, es UNA variable de entorno en
+Render y ya.** Sin deploy, sin tocar código. Pegas el enlace de Admitad en
+`AFFILIATE_DISNEYPLUS` y los dos proveedores se marcan, se declaran como
+publicidad y se miden en GA4 solos.
+
+### Cómo solicitarlo (10 minutos, lo tienes que hacer tú)
+
+1. store.admitad.com → **Programs → All affiliate programs**
+2. Buscar `Disney`
+3. Abrir los dos y ver en cuál aparece México en la lista de países
+4. **Join / Add program** — ahí hay que aceptar los términos del anunciante,
+   y eso lo firmas tú, no yo
+5. Cuando aprueben: copiar el enlace y ponerlo en Render como
+   `AFFILIATE_DISNEYPLUS`
 
 ---
 
