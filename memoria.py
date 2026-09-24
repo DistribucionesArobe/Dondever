@@ -31,7 +31,8 @@ from __future__ import annotations
 import gc
 import logging
 import sys
-from typing import Any, Callable
+import time as _time
+from typing import Any
 
 logger = logging.getLogger("dondever")
 
@@ -43,6 +44,15 @@ UMBRAL_MB = 400.0
 # que esto, el problema no está en los cachés y conviene decirlo en el log en
 # vez de purgar en vano cada minuto.
 MINIMO_LIBERADO_MB = 20.0
+
+# Cuánto esperar antes de volver a vaciar cachés si vaciarlos no sirvió.
+# Media hora es a propósito: reconstruir los cachés cuesta decenas de
+# peticiones a ESPN y GatoTV y deja páginas de tres segundos. Hacerlo cada
+# minuto sin ganar memoria —que es lo que pasó el 24/09— es puro daño.
+DESCANSO_TRAS_FRACASO_S = 1800
+
+# Hasta cuándo no volver a intentar el paso caro.
+_no_purgar_hasta = 0.0
 
 
 def rss_mb() -> float:
@@ -175,16 +185,88 @@ def inventario() -> dict:
     }
 
 
-def purgar(limite_mb: float = UMBRAL_MB) -> dict | None:
-    """Vacía cachés hasta bajar del umbral. None si no hizo falta.
+def devolver_al_sistema() -> bool:
+    """Pide a glibc que devuelva al sistema la memoria que Python ya liberó.
 
-    Se vacían de mayor a menor y se para en cuanto la memoria baja: no tiene
-    sentido tirar el caché del EPG (que cuesta una descarga de varios MB
-    reconstruir) si con soltar el HTML ya alcanzó.
+    Esto es lo que faltaba, y explica por qué la primera versión de este
+    módulo no servía de nada. En producción se vieron 65 purgas seguidas:
+    vaciaba los catorce cachés y la memoria residente no se movía ni un MB
+    (443.4 → 443.4). La conclusión fácil era "hay una fuga en otro lado".
+    La conclusión correcta es otra.
+
+    `gc.collect()` libera los objetos de Python, pero el que le pidió la
+    memoria al sistema operativo no es Python: es malloc. Y glibc se queda
+    con los bloques libres en sus arenas para reutilizarlos, sin devolverlos.
+    Desde fuera —que es donde mira Render— el proceso sigue ocupando lo
+    mismo aunque por dentro esté medio vacío. Por eso te matan el contenedor
+    con memoria que ya no usas.
+
+    `malloc_trim(0)` es la forma de pedirle a glibc que suelte esas arenas.
+    Devuelve True si liberó algo.
+
+    Si no hay glibc (macOS, Alpine) simplemente no hace nada y devuelve
+    False; el resto del módulo sigue funcionando igual.
     """
+    try:
+        import ctypes
+        import ctypes.util
+        nombre = ctypes.util.find_library("c")
+        if not nombre:
+            return False
+        libc = ctypes.CDLL(nombre)
+        if not hasattr(libc, "malloc_trim"):
+            return False
+        return bool(libc.malloc_trim(0))
+    except Exception:
+        return False
+
+
+def purgar(limite_mb: float = UMBRAL_MB) -> dict | None:
+    """Baja la memoria por debajo del umbral. None si no hizo falta.
+
+    Dos pasos, en este orden y a propósito:
+
+      1. Recolectar y pedirle a glibc que devuelva lo que ya está libre.
+         Es gratis y no le quita nada a nadie.
+      2. Solo si con eso no alcanzó, vaciar cachés — que sí cuesta: cada
+         caché vaciado son decenas de peticiones a ESPN y GatoTV para
+         reconstruirlo, y páginas de tres segundos mientras tanto.
+
+    La primera versión hacía el paso 2 sin el paso 1, y como el paso 2 solo
+    no baja la memoria residente, vaciaba todo cada minuto para nada. El
+    sitio quedó más lento sin ganar un MB.
+    """
+    global _no_purgar_hasta
+
     antes = rss_mb()
     if antes < limite_mb:
         return None
+
+    # Paso 1: lo barato.
+    gc.collect()
+    devolvio = devolver_al_sistema()
+    tras_trim = rss_mb()
+    if tras_trim < limite_mb:
+        logger.info("memoria: %.1f MB → %.1f MB solo con recolectar y devolver "
+                    "al sistema. No hizo falta tocar los cachés.", antes, tras_trim)
+        return {
+            "antes_mb": round(antes, 1),
+            "después_mb": round(tras_trim, 1),
+            "liberado_mb": round(antes - tras_trim, 1),
+            "vaciados": [],
+            "malloc_trim": devolvio,
+        }
+
+    # Paso 2: lo caro, y solo si no está en penitencia por no haber servido.
+    if _time.time() < _no_purgar_hasta:
+        return {
+            "antes_mb": round(antes, 1),
+            "después_mb": round(tras_trim, 1),
+            "liberado_mb": round(antes - tras_trim, 1),
+            "vaciados": [],
+            "malloc_trim": devolvio,
+            "nota": "sobre el umbral, pero vaciar cachés ya se probó y no sirvió",
+        }
 
     vaciados: list[str] = []
     for nombre, caché in sorted(_cachés(), key=lambda par: _pesar(par[1]), reverse=True):
@@ -202,6 +284,7 @@ def purgar(limite_mb: float = UMBRAL_MB) -> dict | None:
             break
 
     gc.collect()
+    devolver_al_sistema()
     después = rss_mb()
     liberado = round(antes - después, 1)
 
@@ -210,15 +293,21 @@ def purgar(limite_mb: float = UMBRAL_MB) -> dict | None:
         "después_mb": round(después, 1),
         "liberado_mb": liberado,
         "vaciados": vaciados,
+        "malloc_trim": devolvio,
     }
 
     if liberado < MINIMO_LIBERADO_MB:
-        # Dato importante, no ruido: significa que lo que crece no son los
-        # cachés, y que este parche no va a salvar al proceso la próxima vez.
+        # Vaciar cachés no sirvió. Repetirlo cada minuto es lo peor de los dos
+        # mundos: el sitio va lento reconstruyéndolos y la memoria sigue igual.
+        # Se deja de intentar un buen rato; el paso barato (recolectar y
+        # devolver al sistema) se sigue haciendo en cada vuelta.
+
+        _no_purgar_hasta = _time.time() + DESCANSO_TRAS_FRACASO_S
         logger.error(
             "memoria: vacié %d cachés y solo bajé %.1f MB (%.1f → %.1f). "
-            "Lo que crece NO son los cachés — hay que buscar la fuga en otro lado.",
-            len(vaciados), liberado, antes, después)
+            "Los cachés NO son el problema — no vuelvo a vaciarlos en %d min.",
+            len(vaciados), liberado, antes, después,
+            DESCANSO_TRAS_FRACASO_S // 60)
     else:
         logger.warning(
             "memoria: %.1f MB era demasiado, vacié %s y bajé a %.1f MB",
