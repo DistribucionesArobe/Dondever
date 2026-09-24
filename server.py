@@ -4874,22 +4874,6 @@ try:
 
     @app.on_event("startup")
     async def start_scheduler():
-        # ── Vigilante de memoria ──
-        # Va primero a propósito: si algo de lo que sigue falla, esto ya quedó
-        # corriendo. Render mató la instancia cuatro veces el 24/09/2026 por
-        # pasarse de 512 MB, y cada muerte son 503 para todos más medio minuto
-        # de arranque en frío. Vaciar cachés cuesta lentitud unos minutos;
-        # que te maten el contenedor cuesta la visita entera.
-        try:
-            import memoria as _mem
-            scheduler.add_job(_mem.vigilar, "interval", minutes=1,
-                              id="vigilante_memoria", max_instances=1,
-                              coalesce=True, replace_existing=True)
-            logger.info("Vigilante de memoria activo (umbral %.0f MB, RSS actual %.0f MB)",
-                        _mem.UMBRAL_MB, _mem.rss_mb())
-        except Exception as e:
-            logger.warning(f"No se pudo activar el vigilante de memoria: {e}")
-
         # ── Init database tables ──
         try:
             await init_db()
@@ -8572,37 +8556,15 @@ async def health():
         mem_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024 * 1024)
     from sports_api import _cache, _tv_cache, _odds_cache, _summary_cache, _standings_cache, _meli_cache
     from og_image import _og_cache
-    import memoria as _mem
     return {
         "status": "ok",
-        # ru_maxrss es la marca MÁS ALTA desde el arranque y nunca baja: dice
-        # si alguna vez rozamos el límite, no cuánto ocupamos ahora.
         "memory_mb": round(mem_mb, 1),
-        "memoria_actual_mb": round(_mem.rss_mb(), 1),
-        "purgas": _mem.purgas_totales,
-        "ultima_purga": _mem.ultima_purga,
         "caches": {
             "espn": len(_cache), "tv": len(_tv_cache), "odds": len(_odds_cache),
             "summary": len(_summary_cache), "standings": len(_standings_cache),
             "meli": len(_meli_cache), "og_images": len(_og_cache),
         },
     }
-
-
-@app.get("/admin/memoria")
-async def admin_memoria(token: str = ""):
-    """Bytes reales por caché, de mayor a menor.
-
-    Render mató la instancia cuatro veces el 24/09/2026 y ningún dato del
-    proceso decía por qué: /health contaba entradas, no bytes, y un dict de
-    400 páginas HTML reporta unos pocos KB si se pregunta con getsizeof.
-    Esta es la medición que faltaba. Lleva token porque recorrer todos los
-    cachés cuesta CPU y el plan tiene media.
-    """
-    if token != os.getenv("ADMIN_TOKEN", "dondever2026"):
-        return JSONResponse({"error": "unauthorized"}, 401)
-    import memoria as _mem
-    return JSONResponse(_mem.inventario())
 
 
 # ── Run ──────────────────────────────────────────────────
