@@ -2262,7 +2262,11 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "",
 
     /go/bet = link geo-inteligente: decide el casino según el país
     del visitante (Cloudflare / Vercel header / Accept-Language).
-    MX → Jubilee/Vivento, US → Betsson, LATAM → 1xBet.
+    MX → Jubilee/Vivento, LATAM/resto → 1xBet.
+    EE.UU. y tráfico en inglés: sin CTA de apuestas desde que Betsson
+    terminó el programa (24-sep-2026). Ninguno de nuestros socios tiene
+    licencia allá, y mandar a alguien a apostar sin licencia en su estado
+    sería peor que no mandarlo a ningún lado.
     """
     from fastapi.responses import RedirectResponse
     from config import get_affiliate_url, AFFILIATES, STREAMING_AFFILIATES
@@ -2290,9 +2294,13 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "",
     _ua = (request.headers.get("user-agent", "") if request is not None else "").lower()
     _is_bot = any(b in _ua for b in ("bot", "crawl", "spider", "whatsapp", "facebookexternalhit",
                                      "preview", "curl", "python-requests", "sqlmap", "scanner", "headless"))
-    # Legacy: strendus fue removido — redirigir links viejos a betsson
-    if key == "strendus":
-        key = "betsson"
+    # Betsson terminó el programa de afiliados el 24 de septiembre de 2026.
+    # Todo enlace suyo ya no paga nada, así que mandarle tráfico es regalar
+    # clics. Los enlaces viejos (incluido strendus, que ya redirigía aquí) van
+    # al comparador: el usuario llegó buscando dónde apostar y ahí lo
+    # encuentra, en vez de caer en una casa que ya no es socia.
+    if key in ("betsson", "strendus"):
+        return RedirectResponse(url="/casinos", status_code=302)
     # Smart geo link: /go/bet
     if key == "bet":
         country = ""
@@ -2303,11 +2311,21 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "",
             al = (request.headers.get("accept-language") or "").lower()
         LATAM_COUNTRIES = {"VE","PA","DO","CO","NI","CL","AR","PE","CR","EC",
                            "GT","HN","SV","CU","BO","PY","UY","BR","ES","PR"}
+        # Estados Unidos y el tráfico en inglés los cubría Betsson. Ahora no
+        # hay con qué cubrirlos, y la salida fácil —mandarlos a 1xBet— sería
+        # peor que no hacer nada: en EE.UU. las apuestas se licencian estado
+        # por estado y 1xBet no es un operador licenciado ahí. Mandar a un
+        # gringo a apostar en un sitio sin licencia en su estado es un
+        # problema para él y para nosotros, con AdSense mirando.
+        #
+        # Así que ese tráfico no ve CTA de apuestas hasta que haya un socio
+        # que sí opere legalmente allá. Se pierde el clic; se conserva el
+        # sitio. `None` hace que la ruta mande a la home sin registrar nada.
         if country:
             if country == "MX":
                 key = _random.choice(["jubilee", "vivento"])
             elif country == "US":
-                key = "betsson"
+                return RedirectResponse(url="/", status_code=302)
             elif country in LATAM_COUNTRIES:
                 key = "1xbet"
             else:
@@ -2317,7 +2335,7 @@ async def affiliate_redirect(key: str, s: str = "web", sport: str = "",
             if "es-mx" in al:
                 key = _random.choice(["jubilee", "vivento"])
             elif "en-us" in al or "en-gb" in al or al.startswith("en"):
-                key = "betsson"
+                return RedirectResponse(url="/", status_code=302)
             else:
                 key = "1xbet"  # español genérico u otro → 1xBet
     if not _is_bot:
@@ -5528,7 +5546,6 @@ async def casinos_page(request: Request):
     """Casino comparison landing — for SEO + affiliate conversion."""
     from config import get_affiliate_url
     return templates.TemplateResponse(request, "casinos.html", {
-        "betsson_url": get_affiliate_url("betsson", source="casinos"),
         "jubilee_url": get_affiliate_url("jubilee", source="casinos"),
         "vivento_url": get_affiliate_url("vivento", source="casinos"),
     })

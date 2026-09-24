@@ -101,7 +101,9 @@ AFFILIATES = {
 # Bookmaker keys (the-odds-api) that correspond to paying affiliates.
 # Only these appear in odds comparison / bookmaker counts.
 # (Jubilee/Vivento are too small to appear in the API, but included for completeness.)
-PAYING_BOOKMAKER_KEYS = {"betsson", "1xbet", "jubilee", "vivento"}
+# Betsson salió el 24-sep-2026 (terminaron el programa de afiliados).
+# Mientras no pague, no tiene por qué ocupar espacio en los momios.
+PAYING_BOOKMAKER_KEYS = {"1xbet", "jubilee", "vivento"}
 
 # ── MercadoLibre Afiliados (Mexico / LATAM) ──────────────
 # Profile: Distribuciones Arobe — tracked short links via meli.la

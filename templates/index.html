@@ -2160,13 +2160,9 @@
         <a href="/go/jubilee?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" class="promo-inter-cta" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Ver bono &#8599;</a>
         <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
     </div>
-    {# US: Betsson #}
-    <div class="promo-interstitial" style="border-color:#ea580c;display:none;" data-geo="us" data-nosnippet>
-        <div class="promo-inter-title">&#127942; {{ affiliates.betsson.name }} &mdash; {{ affiliates.betsson.bonus }}</div>
-        <div class="promo-inter-sub">Bono de bienvenida disponible para nuevos usuarios. Verifica siempre que el operador tenga permiso vigente en tu pa&iacute;s.</div>
-        <a href="/go/betsson?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" class="promo-inter-cta" style="background:linear-gradient(135deg,#ea580c,#dc2626);">Ver bono &#8599;</a>
-        <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
-    </div>
+    {# El promo de EE.UU. era de Betsson. Terminaron el programa el 24-sep-2026,
+       y a ese publico NO se le pone otra casa: en EE.UU. las apuestas se
+       licencian estado por estado y ninguno de nuestros socios opera ahi. #}
     {# LATAM/resto: 1xBet #}
     <div class="promo-interstitial" style="border-color:#1a5276;display:none;" data-geo="latam" data-nosnippet>
         <div class="promo-inter-title">&#127942; {{ affiliates['1xbet'].name }} &mdash; {{ affiliates['1xbet'].bonus }}</div>
@@ -3893,7 +3889,6 @@
         // ── Action buttons ──
         html += '<div class="tp-actions">';
         html += '<a href="/equipo/' + d.slug + '" class="tp-btn tp-btn-primary">Ver todo sobre ' + d.name + ' ↗</a>';
-        var _betLabel = window.__geoRegion === 'us' ? 'Betsson' : window.__geoRegion === 'latam' ? '1xBet' : 'Jubilee';
         html += '<a href="/go/bet?s=search-panel" target="_blank" rel="sponsored nofollow noopener" class="tp-btn tp-btn-bet" data-affiliate="bet" data-placement="search-panel">Ver momios ↗</a>';
         html += '</div>';
 
