@@ -523,6 +523,46 @@ _HTML_CACHE = _TTLCache(maxsize=800, ttl=300)
 # ya mentiría. Con 60 s el HTML puede quedar un minuto viejo, pero los
 # marcadores en vivo se refrescan aparte desde /api/live-scores.
 _HOME_CACHE = _TTLCache(maxsize=64, ttl=60)
+
+# La portada de OTRO día vive aparte, y mucho más tiempo.
+#
+# Medido en producción el 26/09/2026: la portada de hoy responde en 135-250 ms,
+# pero picarle a otro día tarda 3,700-4,000 ms. La segunda vez que se pide ese
+# mismo día baja a 163 ms. O sea: el caché funciona, pero con 60 s de vida y
+# casi nadie pidiendo el mismo día dos veces en ese minuto, prácticamente todos
+# los clics caen en reconstruir la página entera.
+#
+# Y 60 s ahí no protege de nada: la parrilla del sábado que viene no cambia
+# cada minuto. Los 60 s existen porque la portada de HOY muestra marcadores en
+# vivo. Otro día no tiene marcadores que envejezcan.
+#
+# Media hora es conservador a propósito: deja margen para que un canal se
+# confirme o un horario se mueva, y aun así convierte los 3.7 s en 163 ms para
+# todos menos el primero. Ocupa poco: unos 35 KB comprimidos por día, 48 días
+# como mucho — menos de 2 MB, que en un contenedor de 512 MB no es nada.
+_HOME_OTRO_DIA_CACHE = _TTLCache(maxsize=48, ttl=1800)
+
+
+def _es_portada_de_otro_dia(request) -> bool:
+    """¿Es la portada pidiendo un día que no es hoy en México?
+
+    Se compara contra hoy en hora de México porque es la zona en que el sitio
+    decide qué es "hoy". Si el parámetro viene raro, se contesta que no: ante
+    la duda, el caché corto, que es el que nunca miente.
+    """
+    dia = request.query_params.get("date")
+    if not dia:
+        return False
+    # Tiene que ser una fecha de verdad. Si viene basura, la ruta acaba
+    # mostrando HOY, y guardar eso media hora congelaría los marcadores en
+    # vivo. Ante la duda, caché corto: el que nunca miente.
+    try:
+        datetime.strptime(dia, "%Y-%m-%d")
+    except ValueError:
+        return False
+    return dia != datetime.now(TZ_MX).strftime("%Y-%m-%d")
+
+
 _HTML_CACHE_PREFIXES = ("/equipo/", "/liga/", "/partido/", "/evento/", "/canal/", "/donde-ver/",
                         "/guia/", "/resultado/", "/donde-ver-en-", "/equipos", "/widget/")
 _HTML_CACHE_HUBS = {"/playoffs-mlb", "/gratis-hoy", "/pronosticos-hoy", "/futbol-hoy",
@@ -544,7 +584,11 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
         if not cacheable:
             return await call_next(request)
 
-        store = _HOME_CACHE if is_home else _HTML_CACHE
+        if is_home:
+            store = (_HOME_OTRO_DIA_CACHE if _es_portada_de_otro_dia(request)
+                     else _HOME_CACHE)
+        else:
+            store = _HTML_CACHE
         key = path + ("?" + str(request.query_params) if request.query_params else "")
         hit = store.get(key)
         if hit is not None and len(hit) == 3 and hit[2] is not None and _mono() > hit[2]:
