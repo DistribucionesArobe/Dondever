@@ -3520,7 +3520,7 @@ async def api_instagram_image(date: Optional[str] = None):
     """
     from generate_instagram import (
         get_todays_games as ig_get_games,
-        pick_best_games, generate_image,
+        pick_best_games, generate_images,
     )
 
     now = datetime.now(TZ_MX)
@@ -3538,26 +3538,24 @@ async def api_instagram_image(date: Optional[str] = None):
 
     selected = pick_best_games(games, 7)
 
-    # Generate image with Playwright (HTML → PNG)
+    # Generate same-league carousel slides (max 3 games per image).
     filename = f"juegos_{date_nice}.png"
     static_path = os.path.join("static", "instagram", filename)
     os.makedirs(os.path.dirname(static_path), exist_ok=True)
-    await generate_image(selected, date_str, False, static_path)
+    slide_paths = await generate_images(selected, date_str, static_path)
+    slide_urls = [f"{APP_URL}/static/instagram/{os.path.basename(path)}" for path in slide_paths]
+    public_url = slide_urls[0]
 
-    public_url = f"{APP_URL}/static/instagram/{filename}"
-
-    # Build caption
-    lines = [f"⚽🏀⚾ Juegos de hoy — {date_nice}\n"]
-    for g in selected:
-        emoji = g.get("emoji", "⚽")
-        ch = g.get("channel", "")
-        lines.append(f"{g['time']} {g['away']['name']} vs {g['home']['name']} — {ch}")
-    lines.append("\n📺 Todos los horarios y canales en DondeVer.app")
-    lines.append("\n#DondeVer #DeportesEnVivo #LigaMX #MLB #NBA #NFL #FutbolMexicano #DeportesHoy")
-    caption = "\n".join(lines)
+    # Keep the caption short; verified channel detail is in the image.
+    if len(selected) == 1:
+        caption = f"¿Dónde ver a {selected[0]['home']['name']}?\nConsulta horarios y canales en DondeVer.app 📺\n\n#DondeVer #DeportesEnVivo"
+    else:
+        leagues = list(dict.fromkeys(g["league"] for g in selected))
+        caption = f"Partidos de {', '.join(leagues[:2])} para seguir hoy.\nConsulta dónde ver cada juego en DondeVer.app 📺\n\n#DondeVer #DeportesEnVivo"
 
     return JSONResponse({
         "image_url": public_url,
+        "image_urls": slide_urls,
         "filename": filename,
         "date": date_nice,
         "games_count": len(selected),

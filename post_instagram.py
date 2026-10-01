@@ -123,6 +123,36 @@ def create_media_container(image_url: str, caption: str) -> str:
     return container_id
 
 
+def create_carousel_container(image_urls: list[str], caption: str) -> str:
+    """Create a Meta carousel from the generated schedule slides."""
+    if not 2 <= len(image_urls) <= 10:
+        raise ValueError("Instagram carousel requires 2–10 slides.")
+    if not INSTAGRAM_USER_ID or not INSTAGRAM_ACCESS_TOKEN:
+        raise ValueError("Missing INSTAGRAM_USER_ID or INSTAGRAM_ACCESS_TOKEN.")
+    children = []
+    with httpx.Client(timeout=45) as client:
+        for image_url in image_urls:
+            resp = client.post(
+                f"{GRAPH_API}/{INSTAGRAM_USER_ID}/media",
+                data={"image_url": image_url, "is_carousel_item": "true",
+                      "access_token": INSTAGRAM_ACCESS_TOKEN},
+            )
+            data = resp.json()
+            if "error" in data or not data.get("id"):
+                raise RuntimeError(f"Failed to create carousel item: {data.get('error', {}).get('message', 'No ID returned')}")
+            children.append(data["id"])
+        resp = client.post(
+            f"{GRAPH_API}/{INSTAGRAM_USER_ID}/media",
+            data={"media_type": "CAROUSEL", "children": ",".join(children),
+                  "caption": caption, "access_token": INSTAGRAM_ACCESS_TOKEN},
+        )
+        data = resp.json()
+    if "error" in data or not data.get("id"):
+        raise RuntimeError(f"Failed to create carousel: {data.get('error', {}).get('message', 'No ID returned')}")
+    log.info("Carousel container created with %s slides", len(children))
+    return data["id"]
+
+
 def wait_for_container(container_id: str, max_wait: int = 60) -> bool:
     """Wait for the media container to finish processing."""
     url = f"{GRAPH_API}/{container_id}"
@@ -255,9 +285,10 @@ def main():
         return
 
     image_url = result["image_url"]
+    image_urls = result.get("image_urls", [image_url])
     caption = result["caption"]
 
-    log.info(f"\nImage URL: {image_url}")
+    log.info(f"\nImage URLs ({len(image_urls)} slides): {', '.join(image_urls)}")
     log.info(f"Caption preview:\n{caption[:200]}...")
 
     if dry_run:
@@ -277,7 +308,8 @@ def main():
 
     # Step 3: Create media container
     try:
-        container_id = create_media_container(image_url, caption)
+        container_id = (create_carousel_container(image_urls, caption) if len(image_urls) > 1
+                        else create_media_container(image_url, caption))
     except Exception as e:
         log.error(f"Failed to create container: {e}")
         return

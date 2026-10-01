@@ -15,30 +15,14 @@ Output: instagram_juegos_YYYY-MM-DD.png in current directory
 import asyncio
 import sys
 import os
-import json
-import locale
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import Optional
 
-try:
-    import httpx
-except ImportError:
-    print("Installing httpx...")
-    os.system(f"{sys.executable} -m pip install httpx -q")
-    import httpx
+import httpx
+from jinja2 import Environment, FileSystemLoader
+from playwright.async_api import async_playwright
 
-try:
-    from jinja2 import Environment, FileSystemLoader
-except ImportError:
-    os.system(f"{sys.executable} -m pip install jinja2 -q")
-    from jinja2 import Environment, FileSystemLoader
-
-try:
-    from playwright.async_api import async_playwright
-except ImportError:
-    os.system(f"{sys.executable} -m pip install playwright -q")
-    from playwright.async_api import async_playwright
+from config import CHANNEL_ALIASES, ESPN_CHANNEL_NORMALIZE
 
 
 # ── Config ──────────────────────────────────────────────────
@@ -169,6 +153,45 @@ def parse_channel(broadcasts: list) -> str:
     return ""
 
 
+OPEN_TV_CHANNELS = {"canal 5", "azteca 7", "las estrellas", "canal nueve"}
+
+
+def parse_channels(comp: dict) -> tuple[list[str], list[str], list[str]]:
+    """Return country-separated channels and verified Mexican open TV.
+
+    Open TV is marked only when the event itself includes a broadcast on a
+    known Mexican over-the-air network. League defaults never count as proof.
+    """
+    mx, us, open_tv = [], [], []
+    broadcasts = comp.get("geoBroadcasts", [])
+    for item in broadcasts:
+        media = item.get("media") or {}
+        raw = media.get("shortName") or media.get("name") or ""
+        if not raw:
+            names = item.get("names") or []
+            raw = names[0] if names else ""
+        normalized = ESPN_CHANNEL_NORMALIZE.get(raw, raw).strip()
+        alias_info = CHANNEL_ALIASES.get(normalized, {})
+        name = alias_info.get("name") or CHANNEL_NORMALIZE.get(normalized, normalized)
+        region = item.get("country", {})
+        country = ((region.get("code") or region.get("abbreviation") or "") if isinstance(region, dict)
+                   else str(region)).upper()
+        alias_info = alias_info or CHANNEL_ALIASES.get(name, {})
+        if not country:
+            country = str(alias_info.get("country", "")).upper()
+        market = (item.get("market") or {}).get("type", "")
+        if not country and market in ("Home", "Away"):
+            country = "US"
+        bucket = mx if country in ("MX", "MEXICO", "MÉXICO") else us if country in ("US", "USA", "UNITED STATES") else None
+        if bucket is not None and name and name not in bucket:
+            bucket.append(name)
+        if (bucket is mx and name not in open_tv and
+                (name.lower() in OPEN_TV_CHANNELS or
+                 (alias_info.get("country") == "MX" and alias_info.get("type") == "broadcast"))):
+            open_tv.append(name)
+    return mx, us, open_tv
+
+
 def parse_events(data: dict, league_slug: str, league_name: str, emoji: str) -> list:
     """Parse ESPN events into our format."""
     games = []
@@ -201,14 +224,15 @@ def parse_events(data: dict, league_slug: str, league_name: str, emoji: str) -> 
             dt = datetime.fromisoformat(date_utc.replace("Z", "+00:00"))
             dt_mx = dt.astimezone(TZ_MX)
             time_str = dt_mx.strftime("%H:%M")
+            day_names = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"]
+            date_label = f"{day_names[dt_mx.weekday()]} {dt_mx.day:02d}"
         except Exception:
-            time_str = "TBD"
+            time_str = ""
+            date_label = "Fecha por confirmar"
 
         # Parse channel
-        broadcasts = comp.get("broadcasts", [])
-        channel = parse_channel(broadcasts)
-        if not channel:
-            channel = DEFAULT_CHANNELS.get(league_slug, "")
+        mx_channels, us_channels, open_channels = parse_channels(comp)
+        channel = ", ".join(mx_channels or us_channels)
 
         # Status
         status = event.get("status", {}).get("type", {}).get("name", "STATUS_SCHEDULED")
@@ -220,7 +244,12 @@ def parse_events(data: dict, league_slug: str, league_name: str, emoji: str) -> 
             "home": home,
             "away": away,
             "time": time_str,
+            "date_label": date_label,
             "channel": channel,
+            "mx_channels": mx_channels,
+            "us_channels": us_channels,
+            "open_channels": open_channels,
+            "channel_verified": bool(mx_channels or us_channels),
             "status": status,
             "season": str(event.get("season", {}).get("year", "")),
         })
@@ -325,77 +354,35 @@ LEAGUE_SHORT_NAMES = {
 
 
 def _process_game(game: dict) -> dict:
-    """Process a single game dict into template-ready format."""
+    """Prepare one real game for the reusable Instagram card."""
     slug = game["league_slug"]
-    league_name = game["league"]
-    league_display = LEAGUE_SHORT_NAMES.get(league_name, league_name).upper()
-    if len(league_display) > 12:
-        league_display = league_display[:12]
-
-    # Season display
-    season = game.get("season", "")
-    if season:
-        if "Regular" in str(season) or season.isdigit():
-            season_display = f"Temporada {season}" if season.isdigit() else "Temporada 2026"
-        elif "Post" in str(season):
-            season_display = "Playoffs"
-        elif "Pre" in str(season):
-            season_display = "Pretemporada"
-        elif "All" in str(season):
-            season_display = "All-Star"
-        else:
-            season_display = str(season)
-    else:
-        season_display = ""
-
-    # Status
-    status = game["status"]
-    is_live = status in ("STATUS_IN_PROGRESS", "STATUS_HALFTIME")
-    is_final = status in ("STATUS_FINAL", "STATUS_FULL_TIME")
-    show_score = is_live or is_final
-
-    # Channel display (truncate if too long)
-    channel = game.get("channel", "")
-    channel_display = channel[:14] if len(channel) > 14 else channel
-
-    # Team display names (use full if short enough, otherwise abbreviation)
-    max_name = 20
-    away_display = game["away"]["name"].upper() if len(game["away"]["name"]) <= max_name else game["away"]["short"].upper()
-    home_display = game["home"]["name"].upper() if len(game["home"]["name"]) <= max_name else game["home"]["short"].upper()
-
+    def team(which):
+        data = game.get(which) or {}
+        name = data.get("name") or data.get("displayName") or "Equipo por confirmar"
+        initials = (data.get("short") or "").strip() or "?"
+        return {"name": name, "initial": initials[:3].upper(), "logo": data.get("logo") or ""}
+    date_label = game.get("date_label") or ""
+    mx = game.get("mx_channels")
+    us = game.get("us_channels")
+    if mx is None and game.get("channel"):
+        # Legacy defaults may be shown as a Mexico listing, but are never
+        # eligible for the TV ABIERTA badge.
+        mx = [part.strip() for part in str(game["channel"]).split("/") if part.strip()]
     return {
+        "league": game.get("league") or "Partido",
         "league_slug": slug,
-        "league_display": league_display,
-        "league_color": LEAGUE_COLORS_HEX.get(slug, "#10b981"),
-        "season_display": season_display,
-        "time": game["time"],
-        "is_live": is_live,
-        "is_final": is_final,
-        "show_score": show_score,
-        "away": {
-            "display_name": away_display,
-            "logo": game["away"].get("logo", ""),
-            "score": game["away"].get("score"),
-        },
-        "home": {
-            "display_name": home_display,
-            "logo": game["home"].get("logo", ""),
-            "score": game["home"].get("score"),
-        },
-        "channel": channel,
-        "channel_display": channel_display,
+        "day_label": date_label or game.get("weekday") or "",
+        "time": game.get("time") or "",
+        "timezone": game.get("timezone") or "Hora CDMX (UTC−6)",
+        "away": team("away"), "home": team("home"),
+        "mx_channels": mx or [], "us_channels": us or [],
+        "open_channels": game.get("open_channels", []),
     }
 
 
-def prepare_template_data(games: list, date_str: str, is_stories: bool = False):
-    """Prepare game data for the HTML template.
-
-    Groups games by league and assigns layout types:
-    - 'featured': 1-2 games shown side by side with big logos (top-priority league)
-    - 'compact': 2-4 games in a compact row with small logos
-    - 'highlight': single game shown as a horizontal card with medium logos
-    """
-    # Parse date
+def prepare_template_data(games: list, date_str: str, is_stories: bool = False,
+                          headline: str = "", page_index: int = 1, page_total: int = 1):
+    """Prepare one slide; fit no more than three games on a slide."""
     try:
         dt = datetime.strptime(date_str, "%Y%m%d")
         day_num = dt.strftime("%d")
@@ -408,179 +395,29 @@ def prepare_template_data(games: list, date_str: str, is_stories: bool = False):
     except Exception:
         day_num, month_str, weekday = "??", "???", "---"
 
-    # Process all games
-    processed = [_process_game(g) for g in games]
-
-    # Group by league (preserving order from pick_best_games which is by time)
-    from collections import OrderedDict
-    league_order = []
-    league_map = OrderedDict()
-    for g in processed:
-        slug = g["league_slug"]
-        if slug not in league_map:
-            league_map[slug] = []
-            league_order.append(slug)
-        league_map[slug].append(g)
-
-    # Sort leagues by priority so the most important league gets 'featured'
-    LEAGUE_PRIORITY = {
-        "liga-mx": 100, "world-cup": 99, "champions": 95,
-        "copa-america": 90, "nfl": 90, "nba": 85, "mlb": 80,
-        "premier-league": 75, "la-liga": 70, "mls": 65,
-        "serie-a": 60, "ufc": 55, "europa-league": 50,
-        "bundesliga": 45, "ligue-1": 40, "nhl": 35,
-    }
-    league_order.sort(key=lambda s: -LEAGUE_PRIORITY.get(s, 20))
-
-    # Assign layouts based on number of games and priority
-    league_groups = []
-    featured_assigned = False
-
-    for slug in league_order:
-        lg_games = league_map[slug]
-        color = LEAGUE_COLORS_HEX.get(slug, "#10b981")
-        name_raw = lg_games[0]["league_display"]
-
-        num = len(lg_games)
-
-        if not featured_assigned and num >= 2:
-            # Top-priority league with 2+ games gets featured (big logos, side by side)
-            layout = "featured"
-            lg_games = lg_games[:2]  # max 2 for featured row
-            featured_assigned = True
-        elif not featured_assigned and num == 1:
-            # Top-priority league with 1 game gets highlight
-            layout = "highlight"
-            featured_assigned = True
-        elif num >= 3:
-            # 3+ games → compact row (max 4)
-            layout = "compact"
-            lg_games = lg_games[:4]
-        elif num == 2:
-            # 2 games → featured (side by side)
-            layout = "featured"
-        else:
-            # 1 game → highlight
-            layout = "highlight"
-
-        league_groups.append({
-            "name": name_raw,
-            "color": color,
-            "layout": layout,
-            "games": lg_games,
-        })
-
-    # ── Sparse mode: pocos juegos → tarjetas gigantes verticales (hero) ──
-    # Evita el hueco vacío cuando solo hay 2-4 juegos en el día
-    total_games = sum(len(lg["games"]) for lg in league_groups)
-    sparse = total_games <= 4
-    if sparse:
-        for lg in league_groups:
-            lg["layout"] = "hero"
-
-    # Calculate height
-    height = 1920 if is_stories else 1350
-
-    return {
-        "league_groups": league_groups,
-        "day_num": day_num,
-        "month_str": month_str,
-        "weekday": weekday,
-        "height": height,
-        "sparse": sparse,
-    }
-
-
-# ── AI Background (gpt-image-1 / DALL-E) ───────────────────
-
-# Escenas por deporte — SIN texto, el texto real va encima con HTML
-_AI_SCENE_BY_SPORT = {
-    "soccer": "epic empty soccer stadium at night seen from field level, dramatic floodlights cutting through light mist, lush green pitch in foreground",
-    "baseball": "epic empty baseball stadium at night, dramatic floodlights, view from behind home plate looking out at the diamond, light atmospheric haze",
-    "basketball": "dramatic empty NBA basketball arena, spotlights on the glossy court, dark atmospheric upper stands, light haze in the beams",
-    "football": "epic empty american football stadium at night, dramatic stadium lights, yard lines visible in foreground, atmospheric fog",
-    "hockey": "dramatic empty ice hockey arena, spotlights reflecting on fresh ice, cold blue-teal atmosphere, light mist over the rink",
-    "mma": "dramatic empty MMA octagon cage under a single overhead spotlight, dark arena around it, atmospheric haze",
-}
-
-
-async def generate_ai_background(league_groups: list, date_str: str) -> Optional[str]:
-    """Generate a cinematic AI background for the day's image using
-    OpenAI's image API (gpt-image-1, fallback dall-e-3).
-
-    Returns a data-URI string, or None (→ template uses default bg).
-    Cached per-date in /tmp so retries don't re-bill.
-    """
-    api_key = os.getenv("OPENAI_API_KEY", "")
-    if not api_key or not league_groups:
-        return None
-
-    cache_path = Path(f"/tmp/ig_bg_{date_str}.png")
-    if cache_path.exists():
-        import base64
-        b64 = base64.b64encode(cache_path.read_bytes()).decode()
-        return f"data:image/png;base64,{b64}"
-
-    # Sport of the top-priority league of the day
-    slug_to_sport = {l[0]: l[1] for l in INSTAGRAM_LEAGUES}
-    top_slug = None
-    for lg in league_groups:
-        for g in lg.get("games", []):
-            top_slug = g.get("league_slug")
-            break
-        if top_slug:
-            break
-    sport = slug_to_sport.get(top_slug, "soccer")
-    scene = _AI_SCENE_BY_SPORT.get(sport, _AI_SCENE_BY_SPORT["soccer"])
-
-    prompt = (
-        f"{scene}. Cinematic sports photography style, photorealistic, "
-        "moody dark navy blue and emerald green color grading, "
-        "high contrast, dramatic volumetric lighting, wide angle, "
-        "mostly dark composition with empty dark space in the middle "
-        "(a schedule will be overlaid there). "
-        "Absolutely NO text, NO words, NO letters, NO numbers, NO logos, "
-        "NO scoreboards with visible digits, NO people in the foreground."
-    )
-
-    import base64
+    league = games[0].get("league", "") if games else ""
+    title = headline or (f"Dónde ver a {games[0].get('home', {}).get('name')}" if len(games) == 1
+                         else f"{league} este fin de semana" if "fin de semana" in weekday.lower()
+                         else f"Agenda de {league}" if league and all(g.get("league") == league for g in games)
+                         else "Partidos para ver hoy")
     try:
-        async with httpx.AsyncClient(timeout=120) as client:
-            # gpt-image-1 (modelo actual)
-            r = await client.post(
-                "https://api.openai.com/v1/images/generations",
-                headers={"Authorization": f"Bearer {api_key}"},
-                json={"model": "gpt-image-1", "prompt": prompt,
-                      "size": "1024x1536", "quality": "medium", "n": 1},
-            )
-            if r.status_code != 200:
-                print(f"  gpt-image-1 failed ({r.status_code}), trying dall-e-3...")
-                r = await client.post(
-                    "https://api.openai.com/v1/images/generations",
-                    headers={"Authorization": f"Bearer {api_key}"},
-                    json={"model": "dall-e-3", "prompt": prompt,
-                          "size": "1024x1792", "quality": "standard",
-                          "response_format": "b64_json", "n": 1},
-                )
-            if r.status_code != 200:
-                print(f"  AI background failed: {r.status_code} {r.text[:200]}")
-                return None
-            data = r.json()
-            b64 = data["data"][0].get("b64_json")
-            if not b64:
-                # dall-e-3 may return URL instead
-                url = data["data"][0].get("url")
-                if url:
-                    img = await client.get(url)
-                    b64 = base64.b64encode(img.content).decode()
-            if not b64:
-                return None
-            cache_path.write_bytes(base64.b64decode(b64))
-            print(f"  AI background generated ({sport})")
-            return f"data:image/png;base64,{b64}"
-    except Exception as e:
-        print(f"  AI background error: {e}")
-        return None
+        logo_path = Path(__file__).parent / "static" / "logo-dondever-sm.png"
+        import base64
+        brand_logo = "data:image/png;base64," + base64.b64encode(logo_path.read_bytes()).decode("ascii")
+    except Exception:
+        brand_logo = ""
+    date_label = f"{weekday.title()} {day_num} {month_str.title()}"
+    return {
+        "games": [_process_game(g) for g in games[:3]],
+        "date_label": date_label,
+        "eyebrow": (("VISTA PREVIA · " if games and games[0].get("preview") else "")
+                    + (games[0].get("league", "Agenda deportiva") if games else "Agenda deportiva")),
+        "title": title,
+        "subtitle": f"{len(games)} partido" + ("s" if len(games) != 1 else "") + " · Horarios en hora del centro de México",
+        "brand_logo": brand_logo,
+        "slide_label": f"LÁMINA {page_index} DE {page_total}" if page_total > 1 else "",
+        "height": 1350,
+    }
 
 
 async def generate_image(
@@ -593,40 +430,56 @@ async def generate_image(
 
     Returns the output file path.
     """
-    # Prepare template data
-    data = prepare_template_data(games, date_str, is_stories)
+    paths = await generate_images(games, date_str, output_path, headline="", is_stories=is_stories)
+    return paths[0]
 
-    # AI background (si hay OPENAI_API_KEY; si falla usa el fondo default)
-    data["ai_bg"] = await generate_ai_background(data["league_groups"], date_str)
 
-    # Render HTML from template
+async def generate_images(games: list, date_str: str, output_path: str,
+                          headline: str = "", is_stories: bool = False) -> list[str]:
+    """Render same-league slides, at most three games per slide."""
+    leagues = {}
+    for game in games:
+        leagues.setdefault(game.get("league_slug", game.get("league", "")), []).append(game)
+    pages = []
+    for league_games in leagues.values():
+        pages.extend(league_games[i:i + 3] for i in range(0, len(league_games), 3))
+    pages = pages or [[]]
+    paths = []
+    base = Path(output_path)
     template_dir = Path(__file__).parent / "templates"
-    env = Environment(loader=FileSystemLoader(str(template_dir)))
+    env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
     template = env.get_template("instagram_image.html")
-    html_content = template.render(**data)
-
-    # Render HTML to PNG with Playwright
     async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            args=["--no-sandbox", "--disable-gpu"],
-        )
-        page = await browser.new_page(
-            viewport={"width": 1080, "height": data["height"]},
-            device_scale_factor=1,
-        )
-
-        await page.set_content(html_content, wait_until="networkidle")
-
-        # Wait for Google Fonts to load
-        await page.wait_for_timeout(2000)
-
-        # Screenshot the full page
-        await page.screenshot(path=output_path, full_page=False)
+        chrome_bin = os.getenv("CHROME_BIN", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+        launch_args = {"headless": True, "args": ["--no-sandbox", "--disable-gpu"]}
+        if Path(chrome_bin).exists():
+            launch_args["executable_path"] = chrome_bin
+        browser = await p.chromium.launch(**launch_args)
+        for index, page_games in enumerate(pages, 1):
+            path = str(base) if index == 1 else str(base.with_name(f"{base.stem}_{index}{base.suffix}"))
+            page_headline = headline
+            is_weekend = False
+            try:
+                is_weekend = datetime.strptime(date_str, "%Y%m%d").weekday() >= 5
+            except ValueError:
+                pass
+            if not page_headline and is_weekend and len(page_games) == 3 and page_games[0].get("league"):
+                page_headline = f"{page_games[0]['league']} este fin de semana"
+            data = prepare_template_data(page_games, date_str, headline=page_headline,
+                                         page_index=index, page_total=len(pages))
+            data["height"] = 1920 if is_stories else 1350
+            html_content = template.render(**data)
+            page = await browser.new_page(viewport={"width": 1080, "height": data["height"]}, device_scale_factor=1)
+            await page.set_content(html_content, wait_until="networkidle")
+            await page.evaluate("document.fonts.ready")
+            await page.evaluate("Promise.all([...document.images].map(i => i.decode().catch(() => null)))")
+            await page.screenshot(path=path, full_page=False)
+            await page.close()
+            paths.append(path)
         await browser.close()
-
-    print(f"  Image saved: {output_path}")
-    return output_path
+    for path in paths:
+        print(f"  Image saved: {path}")
+    return paths
 
 
 # ── Main ────────────────────────────────────────────────────
@@ -681,13 +534,11 @@ async def main():
     suffix = "_stories" if is_stories else ""
     filename = f"instagram_juegos_{date_nice}{suffix}.png"
 
-    await generate_image(selected, date_str, is_stories, filename)
-
-    output_path = Path(filename)
-    print(f"\n  Image saved: {output_path}")
-    print(f"   File: {output_path.stat().st_size / 1024:.0f} KB")
-
-    return str(output_path)
+    outputs = await generate_images(selected, date_str, filename, is_stories=is_stories)
+    for output in outputs:
+        path = Path(output)
+        print(f"  Image: {path} ({path.stat().st_size / 1024:.0f} KB)")
+    return outputs
 
 
 if __name__ == "__main__":

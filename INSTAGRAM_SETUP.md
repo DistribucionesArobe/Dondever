@@ -113,6 +113,13 @@ python post_instagram.py
 
 ## Paso 9: Automatizar (Cron Job)
 
+**Usa un solo publicador automático por fecha.** `post_instagram.py` publica en
+Instagram; `/api/instagram-image` únicamente genera imágenes. Configura Render
+Cron o el cron de la Mac, pero no ambos. Si otra automatización (por ejemplo,
+Claude) también ejecuta `post_instagram.py` o llama a Meta para publicar en
+@dondeverapp, desactívala o cámbiala a generación de borradores antes de activar
+este cron: el publicador no deduplica publicaciones por fecha.
+
 ### Opcion A: Render Cron Job
 1. En Render, crea un nuevo "Cron Job"
 2. Repo: el mismo de DondeVer
