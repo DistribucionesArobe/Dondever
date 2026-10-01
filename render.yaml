@@ -33,7 +33,7 @@ services:
   - type: cron
     name: dondever-x-publisher
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements-x-cron.txt
     startCommand: python twitter_bot.py --publish-daily
     schedule: "0 15 * * *"
     envVars:
