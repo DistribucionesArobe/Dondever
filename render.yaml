@@ -23,7 +23,33 @@ services:
         sync: false
       - key: APP_URL
         value: https://dondever.app
+      - key: TWITTER_SCHEDULER_MODE
+        value: cron
       - key: AFFILIATE_BETSSON
         sync: false
       - key: AFFILIATE_CJ
+        sync: false
+
+  - type: cron
+    name: dondever-x-publisher
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python twitter_bot.py --publish-daily
+    schedule: "0 15 * * *"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: APP_URL
+        value: https://dondever.app
+      - key: SPORTSDB_API_KEY
+        sync: false
+      - key: TWITTER_LEAGUES
+        value: liga-mx,champions,nfl
+      - key: TWITTER_API_KEY
+        sync: false
+      - key: TWITTER_API_SECRET
+        sync: false
+      - key: TWITTER_ACCESS_TOKEN
+        sync: false
+      - key: TWITTER_ACCESS_SECRET
         sync: false

@@ -1482,13 +1482,84 @@ async def _preview_cli(count: int = 6, days: int = 14) -> None:
     print(f"\nTotal: {len(examples)} ejemplos de vista previa; no se publicó en X.")
 
 
+def _x_published_today() -> bool:
+    """Fail closed if today's X timeline already contains a DondeVer tracked link."""
+    client = get_twitter_client()
+    if client is None:
+        raise RuntimeError("Faltan credenciales X para revisar duplicados")
+    me = client.get_me(user_auth=True)
+    if not me or not me.data:
+        raise RuntimeError("X no devolvió la cuenta autenticada; se cancela para evitar duplicados")
+    timeline = client.get_users_tweets(
+        id=me.data.id,
+        max_results=100,
+        tweet_fields=["created_at", "entities"],
+        user_auth=True,
+    )
+    today = datetime.now(TZ_MX).date()
+    for tweet in (timeline.data or []) if timeline else []:
+        created = getattr(tweet, "created_at", None)
+        if not created or created.astimezone(TZ_MX).date() != today:
+            continue
+        urls = (getattr(tweet, "entities", None) or {}).get("urls", [])
+        if any("utm_campaign=dondever_x" in (url.get("expanded_url") or url.get("url") or "")
+               for url in urls):
+            return True
+    return False
+
+
+async def post_daily_guide() -> dict:
+    """Publish one verified, non-betting guide from the daily Render Cron."""
+    if not twitter_credentials_valid():
+        raise RuntimeError("Faltan las cuatro credenciales de X")
+    sentinel = f"__daily_guide__{datetime.now(TZ_MX):%Y-%m-%d}"
+    if _already_posted(sentinel) or _x_published_today():
+        logger.info("Daily X guide skipped: already published today")
+        return {"success": True, "skipped": "duplicate"}
+
+    games = await get_todays_games()
+    candidates = _relevant_upcoming(games)
+    if not candidates:
+        logger.info("Daily X guide skipped: no verified upcoming games")
+        return {"success": True, "skipped": "no_upcoming_games"}
+
+    weekday = datetime.now(TZ_MX).weekday()
+    if weekday == 3:  # Thursday: only confirmed Mexican open-air broadcasts.
+        tweet, content = compose_free_tv_tweet(games), "free_tv"
+    elif weekday in {1, 5}:  # Tuesday and Saturday: short agenda.
+        tweet, content = compose_daily_summary_tweet(games), "agenda"
+    else:
+        tweet, content = _compose_featured_tweet(candidates[0], "featured"), "featured"
+    if not tweet:
+        tweet, content = compose_daily_summary_tweet(games), "agenda"
+    if not tweet:
+        logger.info("Daily X guide skipped: no eligible format")
+        return {"success": True, "skipped": "no_eligible_format"}
+
+    result = post_tweet(tweet)
+    if not result.get("success"):
+        raise RuntimeError(f"X rechazó la publicación: {result.get('error', 'error desconocido')}")
+    _mark_posted(sentinel)
+    _mark_posted(str(candidates[0].get("id") or candidates[0].get("name") or ""))
+    logger.info("Daily X guide posted: format=%s tweet_id=%s", content, result.get("tweet_id"))
+    return result
+
+
+async def _publish_daily_cli() -> None:
+    print(json.dumps(await post_daily_guide(), ensure_ascii=False))
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Vista previa local de las publicaciones de DondeVer en X")
     parser.add_argument("--preview", action="store_true", help="Obtiene partidos próximos y solo imprime ejemplos")
+    parser.add_argument("--publish-daily", action="store_true", help="Publica una guía diaria; reservado para el Cron de Render")
     parser.add_argument("--count", type=int, default=6)
     parser.add_argument("--days", type=int, default=14)
     args = parser.parse_args()
-    if not args.preview:
-        parser.error("Este comando solo admite --preview; no publica mensajes")
-    asyncio.run(_preview_cli(args.count, args.days))
+    if args.preview == args.publish_daily:
+        parser.error("Elige exactamente una opción: --preview (no publica) o --publish-daily")
+    if args.publish_daily:
+        asyncio.run(_publish_daily_cli())
+    else:
+        asyncio.run(_preview_cli(args.count, args.days))

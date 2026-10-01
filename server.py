@@ -4940,9 +4940,13 @@ try:
         except Exception as e:
             logger.warning(f"Failed to seed admin subscriber: {e}")
 
-        # Twitter bot (only if credentials set)
-        if os.getenv("TWITTER_API_KEY"):
+        # Twitter can run here (legacy mode) or as a separate Render Cron.
+        # In cron mode, this prevents the web process from duplicating posts.
+        twitter_scheduler_mode = os.getenv("TWITTER_SCHEDULER_MODE", "web").strip().lower()
+        if os.getenv("TWITTER_API_KEY") and twitter_scheduler_mode == "web":
             setup_twitter_scheduler(scheduler)
+        elif twitter_scheduler_mode == "cron":
+            logger.info("Twitter scheduler disabled in web service; Render Cron owns X publishing")
 
         # Facebook bot (only if credentials set)
         if os.getenv("FB_PAGE_ACCESS_TOKEN"):
