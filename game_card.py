@@ -165,7 +165,7 @@ def generate_game_card(
     draw.rectangle([0, 0, CARD_WIDTH, 6], fill=ACCENT_COLOR)
 
     # ── League badge ─────────────────────────────────────
-    league_text = f"{emoji} {league_name}" if emoji else league_name
+    league_text = league_name
     league_bbox = draw.textbbox((0, 0), league_text, font=font_league)
     league_w = league_bbox[2] - league_bbox[0]
     _draw_rounded_rect(
@@ -198,7 +198,7 @@ def generate_game_card(
 
     # ── Time ─────────────────────────────────────────────
     if time_str:
-        time_display = f"{time_str} MX"
+        time_display = time_str
         time_bbox = draw.textbbox((0, 0), time_display, font=font_time)
         tw = time_bbox[2] - time_bbox[0]
         draw.text(
@@ -208,7 +208,7 @@ def generate_game_card(
 
     # ── Channels ─────────────────────────────────────────
     if channels:
-        ch_text = f"📺 {channels}"
+        ch_text = channels
         ch_bbox = draw.textbbox((0, 0), ch_text, font=font_channel)
         cw = ch_bbox[2] - ch_bbox[0]
         draw.text(
@@ -254,8 +254,8 @@ def generate_game_card(
     brand = "dondever.app"
     draw.text((30, CARD_HEIGHT - 45), brand, fill=ACCENT_COLOR, font=font_brand)
 
-    # WhatsApp CTA right
-    wa_text = "📲 Picks gratis: wa.me/15715463202"
+    # Product CTA right: keep the visual focused on finding the broadcast.
+    wa_text = "Horarios · canales · streaming"
     wa_bbox = draw.textbbox((0, 0), wa_text, font=font_brand)
     wa_w = wa_bbox[2] - wa_bbox[0]
     draw.text(

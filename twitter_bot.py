@@ -1,8 +1,4 @@
-"""
-Twitter/X bot for DondeVer.app
-Auto-posts before each game with where to watch + affiliate links.
-Includes: game alerts, daily summary, pick del dia.
-"""
+"""DondeVer X publishing: verified fixtures, viewing details, images, and polls."""
 
 import tweepy
 import asyncio
@@ -12,7 +8,7 @@ import os
 import json
 import re
 import unicodedata
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from config import AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS, get_affiliate_url, get_short_affiliate_url
@@ -379,9 +375,10 @@ async def compose_game_tweet(game: dict) -> str:
     return _compose_featured_tweet(game)
 
 
-def compose_free_tv_tweet(games: list[dict]) -> str:
+def compose_free_tv_tweet(games: list[dict], content: str = "free_tv", *, include_posted: bool = False) -> str:
     """Agenda corta de encuentros con señal abierta confirmada en México."""
-    candidates = [g for g in _relevant_upcoming(games) if _confirmed_free_mx_channels(g)]
+    candidates = [g for g in _relevant_upcoming(games, include_posted=include_posted)
+                  if _confirmed_free_mx_channels(g)]
     if not candidates:
         return ""
     lines = ["📡 Partidos por TV abierta en México (confirmado)"]
@@ -391,7 +388,7 @@ def compose_free_tv_tweet(games: list[dict]) -> str:
         addition = [
             f"{game.get('league_name', '')}: {first} vs {second} · {format_game_time_mx(game['date'])}",
             f"México: {channels}",
-            _event_page_url(game, "free_tv"),
+            _event_page_url(game, content),
         ]
         if _tweet_length("\n".join(lines + addition)) > 280:
             break
@@ -448,16 +445,18 @@ DAILY_OPENERS = [
 ]
 
 
-def compose_daily_summary_tweet(games: list[dict]) -> str:
+def compose_daily_summary_tweet(
+    games: list[dict], content: str = "agenda", *, include_posted: bool = False
+) -> str:
     """Agenda breve con hasta dos encuentros relevantes y enlaces individuales."""
-    upcoming = _relevant_upcoming(games)
+    upcoming = _relevant_upcoming(games, include_posted=include_posted)
     if not upcoming:
         return ""
     lines = [f"📅 Próximos partidos · hora CDMX"]
     for game in upcoming[:2]:
         first, second = get_team_order(game)
         addition = [f"{game.get('league_name', '')}: {first} vs {second} · {format_game_time_mx(game['date'])}"]
-        addition += _country_channel_lines(game) + [_event_page_url(game, "agenda")]
+        addition += _country_channel_lines(game) + [_event_page_url(game, content)]
         if len(lines) > 1 and _tweet_length("\n".join(lines + addition)) > 280:
             break
         lines.extend(addition)
@@ -552,7 +551,11 @@ def _make_game_card(game: dict, pick_team: str = "", pick_reason: str = "") -> b
     try:
         sport = game.get("sport", "")
         home_left = sport in HOME_LEFT_SPORTS
-        channels = format_broadcast_short(game["broadcasts"])
+        by_country = _event_channels_by_country(game)
+        channels = " · ".join(
+            f"{label}: {', '.join(by_country[code][:1]) if by_country.get(code) else 'por confirmar'}"
+            for code, label in (("MX", "MX"), ("US", "EE.UU."))
+        )
         time_str = format_game_time_mx(game["date"])
 
         # ESPN logo URLs (if available in game data)
@@ -567,7 +570,7 @@ def _make_game_card(game: dict, pick_team: str = "", pick_reason: str = "") -> b
             league_name=game.get("league_name", ""),
             emoji=game.get("emoji", ""),
             time_str=time_str,
-            channels=channels if channels != "Por confirmar" else "",
+            channels=channels,
             pick_team=pick_team,
             pick_reason=pick_reason,
             sport=sport,
@@ -1472,6 +1475,63 @@ async def preview_examples(count: int = 6, days: int = 14) -> list[dict]:
     return examples[:max(count, 6)]
 
 
+async def preview_daily_slots() -> list[dict]:
+    """Show the morning, midday, and night formats without calling any X API method."""
+    games = _relevant_upcoming(await get_todays_games(), include_posted=True)
+    if not games:
+        return []
+    morning_games = games[:2]
+    previews = [{
+        "slot": "09:00 · agenda con tarjeta",
+        "text": compose_daily_summary_tweet(morning_games, "agenda_morning", include_posted=True),
+        "media": "Tarjeta de partido 1200 × 675",
+        "games": morning_games,
+    }]
+    used_paths = {urlparse(_event_page_url(game, "preview")).path.rstrip("/") for game in morning_games}
+    remaining = [game for game in games if urlparse(_event_page_url(game, "preview")).path.rstrip("/") not in used_paths]
+    if remaining:
+        midday = remaining.pop(0)
+        previews.append({
+            "slot": "13:00 · partido destacado con tarjeta",
+            "text": _compose_featured_tweet(midday, "featured_midday"),
+            "media": "Tarjeta de partido 1200 × 675",
+            "games": [midday],
+        })
+    free_tv = [game for game in remaining if _confirmed_free_mx_channels(game)]
+    if free_tv:
+        previews.append({
+            "slot": "19:00 · TV abierta confirmada",
+            "text": compose_free_tv_tweet(free_tv, "free_tv_night", include_posted=True),
+            "media": "Solo partidos con señal abierta confirmada en México",
+            "games": free_tv[:2],
+        })
+    elif remaining:
+        night = remaining[0]
+        poll_text, poll_options = _compose_viewing_poll(night, "night")
+        previews.append({
+            "slot": "19:00 · encuesta",
+            "text": poll_text,
+            "options": poll_options,
+            "media": "Encuesta de X (12 horas)",
+            "games": [night],
+        })
+    if len(previews) == 1:
+        previews.append({
+            "slot": "13:00 · se omite si no hay otro partido distinto",
+            "text": "No se repiten eventos ya incluidos en la agenda de la mañana.",
+            "media": "Sin publicación",
+            "games": [],
+        })
+    if len(previews) < 3:
+        previews.append({
+            "slot": "19:00 · se omite si no hay otro partido distinto",
+            "text": "No se repiten eventos ya incluidos en la agenda de la mañana.",
+            "media": "Sin publicación",
+            "games": [],
+        })
+    return previews
+
+
 async def _preview_cli(count: int = 6, days: int = 14) -> None:
     examples = await preview_examples(count=count, days=days)
     for index, example in enumerate(examples, 1):
@@ -1480,10 +1540,20 @@ async def _preview_cli(count: int = 6, days: int = 14) -> None:
         for game in example["games"]:
             print(f"Verificación de evento: {game.get('league_name')} | ESPN id {game.get('id')} | {game.get('date')} | canales_confirmed={game.get('channels_confirmed', True)}")
     print(f"\nTotal: {len(examples)} ejemplos de vista previa; no se publicó en X.")
+    print("\n=== Secuencia diaria propuesta ===")
+    daily_previews = await preview_daily_slots()
+    if not daily_previews:
+        print("No hay eventos próximos confirmados para publicar hoy.")
+    for preview in daily_previews:
+        print(f"--- {preview['slot']} ---")
+        print(preview["text"])
+        print(f"Formato visual: {preview['media']}")
+        if preview.get("options"):
+            print("Opciones: " + " · ".join(preview["options"]))
 
 
-def _x_published_today() -> bool:
-    """Fail closed if today's X timeline already contains a DondeVer tracked link."""
+def _x_tracked_tweets_today() -> list:
+    """Fetch today's DondeVer campaign tweets once for slot/event deduplication."""
     client = get_twitter_client()
     if client is None:
         raise RuntimeError("Faltan credenciales X para revisar duplicados")
@@ -1497,6 +1567,7 @@ def _x_published_today() -> bool:
         user_auth=True,
     )
     today = datetime.now(TZ_MX).date()
+    tracked = []
     for tweet in (timeline.data or []) if timeline else []:
         created = getattr(tweet, "created_at", None)
         if not created or created.astimezone(TZ_MX).date() != today:
@@ -1504,45 +1575,132 @@ def _x_published_today() -> bool:
         urls = (getattr(tweet, "entities", None) or {}).get("urls", [])
         if any("utm_campaign=dondever_x" in (url.get("expanded_url") or url.get("url") or "")
                for url in urls):
+            tracked.append(tweet)
+    return tracked
+
+
+def _publishing_slot(now: datetime | None = None) -> str:
+    """Map Render's UTC cron runs to morning, midday, and evening in Monterrey."""
+    local = (now or datetime.now(TZ_MX)).astimezone(TZ_MX)
+    if 5 <= local.hour < 11:
+        return "morning"
+    if 11 <= local.hour < 17:
+        return "midday"
+    return "night"
+
+
+def _tracked_tweet_urls(tweet) -> list[str]:
+    urls = (getattr(tweet, "entities", None) or {}).get("urls", [])
+    return [str(url.get("expanded_url") or url.get("url") or "") for url in urls]
+
+
+def _x_published_in_slot(tweets: list, slot: str) -> bool:
+    """Use explicit UTM slot labels; classify older campaign links by local post time."""
+    for tweet in tweets:
+        created = getattr(tweet, "created_at", None)
+        for url in _tracked_tweet_urls(tweet):
+            content = parse_qs(urlparse(url).query).get("utm_content", [""])[0]
+            if content.endswith(f"_{slot}"):
+                return True
+        if created and _publishing_slot(created) == slot:
             return True
     return False
 
 
+def _x_published_event_paths(tweets: list) -> set[str]:
+    """Return event pages linked by today's tracked posts so fixtures aren't repeated."""
+    paths = set()
+    for tweet in tweets:
+        for url in _tracked_tweet_urls(tweet):
+            path = urlparse(url).path.rstrip("/")
+            if path.startswith(("/partido/", "/evento/")):
+                paths.add(path)
+    return paths
+
+
+def _compose_viewing_poll(game: dict, slot: str) -> tuple[str, list[str]]:
+    first, second = get_team_order(game)
+    league = game.get("league_name") or "Partido"
+    channels = _event_channels_by_country(game)
+    channel_lines = [
+        "🇲🇽 México: " + (", ".join(channels["MX"][:1]) if channels["MX"] else "por confirmar"),
+        "🇺🇸 EE.UU.: " + (", ".join(channels["US"][:1]) if channels["US"] else "por confirmar"),
+    ]
+    prompt = "📊 ¿A quién apoyas?" if game.get("sport") == "soccer" else "📊 ¿Quién gana?"
+    lines = [prompt, f"{first} vs {second} · {league}", format_game_time_mx(str(game.get("date", "")))]
+    lines.extend(channel_lines)
+    lines.append(_event_page_url(game, f"poll_{slot}"))
+    text = "\n".join(line for line in lines if line)
+    if _tweet_length(text) > 280:
+        lines = [prompt, f"{first} vs {second} · {format_game_time_mx(str(game.get('date', '')))}"]
+        lines.append(_event_page_url(game, f"poll_{slot}"))
+        text = "\n".join(lines)
+    options = [first, second]
+    if game.get("sport") == "soccer":
+        options.append("Empate")
+    return text, options
+
+
 async def post_daily_guide() -> dict:
-    """Publish one verified, non-betting guide from the daily Render Cron."""
+    """Publish one verified slot-specific guide; Render calls this at 9, 13, and 19 MX."""
     if not twitter_credentials_valid():
         raise RuntimeError("Faltan las cuatro credenciales de X")
-    sentinel = f"__daily_guide__{datetime.now(TZ_MX):%Y-%m-%d}"
-    if _already_posted(sentinel) or _x_published_today():
-        logger.info("Daily X guide skipped: already published today")
-        return {"success": True, "skipped": "duplicate"}
+    now_local = datetime.now(TZ_MX)
+    slot = _publishing_slot(now_local)
+    sentinel = f"__daily_guide__{now_local:%Y-%m-%d}_{slot}"
+    tracked_tweets = _x_tracked_tweets_today()
+    if _already_posted(sentinel) or _x_published_in_slot(tracked_tweets, slot):
+        logger.info("Daily X guide skipped: slot=%s already published", slot)
+        return {"success": True, "skipped": "duplicate_slot", "slot": slot}
 
     games = await get_todays_games()
-    candidates = _relevant_upcoming(games)
+    posted_paths = _x_published_event_paths(tracked_tweets)
+    candidates = [
+        game for game in _relevant_upcoming(games, include_posted=True)
+        if urlparse(_event_page_url(game, "slot")).path.rstrip("/") not in posted_paths
+    ]
     if not candidates:
-        logger.info("Daily X guide skipped: no verified upcoming games")
-        return {"success": True, "skipped": "no_upcoming_games"}
+        logger.info("Daily X guide skipped: no verified, unposted upcoming games")
+        return {"success": True, "skipped": "no_upcoming_games", "slot": slot}
 
-    weekday = datetime.now(TZ_MX).weekday()
-    if weekday == 3:  # Thursday: only confirmed Mexican open-air broadcasts.
-        tweet, content = compose_free_tv_tweet(games), "free_tv"
-    elif weekday in {1, 5}:  # Tuesday and Saturday: short agenda.
-        tweet, content = compose_daily_summary_tweet(games), "agenda"
+    if slot == "morning":
+        content = "agenda_morning"
+        tweet = compose_daily_summary_tweet(candidates, content, include_posted=True)
+        image_game = candidates[0]
+        post_as_poll = False
+    elif slot == "midday":
+        content = "featured_midday"
+        image_game = candidates[0]
+        tweet = _compose_featured_tweet(image_game, content)
+        post_as_poll = False
     else:
-        tweet, content = _compose_featured_tweet(candidates[0], "featured"), "featured"
-    if not tweet:
-        tweet, content = compose_daily_summary_tweet(games), "agenda"
+        open_tv_games = [game for game in candidates if _confirmed_free_mx_channels(game)]
+        if open_tv_games:
+            content = "free_tv_night"
+            tweet = compose_free_tv_tweet(open_tv_games, content, include_posted=True)
+            image_game = open_tv_games[0]
+            post_as_poll = False
+        else:
+            content = "poll_night"
+            image_game = None
+            tweet, poll_options = _compose_viewing_poll(candidates[0], "night")
+            post_as_poll = True
     if not tweet:
         logger.info("Daily X guide skipped: no eligible format")
-        return {"success": True, "skipped": "no_eligible_format"}
+        return {"success": True, "skipped": "no_eligible_format", "slot": slot}
 
-    result = post_tweet(tweet)
+    if post_as_poll:
+        result = post_poll(tweet, poll_options, duration_min=720)
+    elif image_game:
+        card = _make_game_card(image_game)
+        result = post_tweet_with_media(tweet, card) if card else post_tweet(tweet)
+    else:
+        result = post_tweet(tweet)
     if not result.get("success"):
         raise RuntimeError(f"X rechazó la publicación: {result.get('error', 'error desconocido')}")
     _mark_posted(sentinel)
-    _mark_posted(str(candidates[0].get("id") or candidates[0].get("name") or ""))
-    logger.info("Daily X guide posted: format=%s tweet_id=%s", content, result.get("tweet_id"))
-    return result
+    logger.info("Daily X guide posted: slot=%s format=%s tweet_id=%s", slot, content, result.get("tweet_id"))
+    return {**result, "slot": slot, "format": content}
 
 
 async def _publish_daily_cli() -> None:
