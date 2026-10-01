@@ -20,7 +20,11 @@ from pathlib import Path
 
 import httpx
 from jinja2 import Environment, FileSystemLoader
-from playwright.async_api import async_playwright
+try:
+    from playwright.async_api import async_playwright
+except ModuleNotFoundError:
+    # Keep data preparation importable on lightweight local preview/test setups.
+    async_playwright = None
 
 from config import CHANNEL_ALIASES, ESPN_CHANNEL_NORMALIZE
 
@@ -396,10 +400,21 @@ def prepare_template_data(games: list, date_str: str, is_stories: bool = False,
         day_num, month_str, weekday = "??", "???", "---"
 
     league = games[0].get("league", "") if games else ""
-    title = headline or (f"Dónde ver a {games[0].get('home', {}).get('name')}" if len(games) == 1
-                         else f"{league} este fin de semana" if "fin de semana" in weekday.lower()
-                         else f"Agenda de {league}" if league and all(g.get("league") == league for g in games)
-                         else "Partidos para ver hoy")
+    one_league = bool(league) and all(g.get("league") == league for g in games)
+    try:
+        is_weekend = datetime.strptime(date_str, "%Y%m%d").weekday() >= 5
+    except ValueError:
+        is_weekend = False
+    if headline:
+        title = headline
+    elif len(games) == 1:
+        title = f"Dónde ver a {games[0].get('home', {}).get('name')}"
+    elif one_league and is_weekend:
+        title = f"{league} este fin de semana"
+    elif one_league:
+        title = f"Agenda de {league} hoy"
+    else:
+        title = "Partidos para ver hoy"
     try:
         logo_path = Path(__file__).parent / "static" / "logo-dondever-sm.png"
         import base64
@@ -437,6 +452,8 @@ async def generate_image(
 async def generate_images(games: list, date_str: str, output_path: str,
                           headline: str = "", is_stories: bool = False) -> list[str]:
     """Render same-league slides, at most three games per slide."""
+    if async_playwright is None:
+        raise RuntimeError("Image rendering needs Playwright; install the project requirements first.")
     leagues = {}
     for game in games:
         leagues.setdefault(game.get("league_slug", game.get("league", "")), []).append(game)
