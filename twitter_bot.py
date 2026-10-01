@@ -9,12 +9,29 @@ import asyncio
 import logging
 import random
 import os
+import json
+import re
+import unicodedata
+from urllib.parse import urlencode
+from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from config import AFFILIATES, APP_URL, TZ_MX, HOME_LEFT_SPORTS, get_affiliate_url, get_short_affiliate_url
 from game_card import generate_game_card, generate_live_card
 from sports_api import get_todays_games, fetch_odds, match_odds_to_game
 
 logger = logging.getLogger("dondever.twitter")
+
+# League scope is configurable without changing the deployment schedule.
+TWITTER_LEAGUES = {
+    slug.strip() for slug in os.getenv("TWITTER_LEAGUES", "liga-mx,champions,nfl").split(",")
+    if slug.strip()
+}
+_POSTS_FILE = Path(os.getenv("TWITTER_POSTS_FILE", os.path.join(
+    os.path.dirname(os.getenv("SUBSCRIBERS_FILE", ".")), "twitter_posts.json"
+)))
+_POSTED_FILE = Path(os.getenv("TWITTER_POSTED_FILE", os.path.join(
+    os.path.dirname(os.getenv("SUBSCRIBERS_FILE", ".")), "twitter_posted.json"
+)))
 
 # ── Twitter API Setup ────────────────────────────────────
 
@@ -62,21 +79,122 @@ def get_twitter_client() -> tweepy.Client | None:
 # ── Tweet Formatters ─────────────────────────────────────
 
 def format_broadcast_short(broadcasts: list[dict]) -> str:
-    """Short channel list for tweets."""
-    if not broadcasts:
-        return "Por confirmar"
-    channels = [b["channel"] for b in broadcasts[:3]]
-    return " / ".join(channels)
+    """Legacy helper: return only confirmed Mexican channels."""
+    return " / ".join(_event_channels_by_country({"broadcasts": broadcasts}).get("MX", [])[:3]) or "Por confirmar"
 
 
 def format_game_time_mx(date_str: str) -> str:
-    """Convert to MX time string."""
+    """Convert to a date and time explicitly labeled as Mexico City time."""
     try:
         dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
         mx = dt.astimezone(TZ_MX)
-        return mx.strftime("%I:%M %p")
+        days = ("lun", "mar", "mié", "jue", "vie", "sáb", "dom")
+        months = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
+        return f"{days[mx.weekday()]} {mx.day} {months[mx.month - 1]} · {mx:%H:%M} h CDMX"
     except Exception:
         return ""
+
+
+def _event_channels_by_country(game: dict) -> dict[str, list[str]]:
+    """Only expose channels whose per-game data confirms their country."""
+    country_names = {
+        "MX", "US", "GT", "SV", "HN", "NI", "CR", "CU", "VE", "PA", "DO",
+        "HT", "CO", "PE", "EC", "BO", "BR", "PY", "UY", "AR", "CL", "PR", "ES", "*",
+    }
+    result: dict[str, list[str]] = {"MX": [], "US": []}
+    for country, channels in (game.get("channels_by_country") or {}).items():
+        if country not in country_names:
+            continue
+        bucket = result.setdefault(country, [])
+        for channel in channels:
+            if channel and channel not in result[country]:
+                bucket.append(channel)
+    for broadcast in game.get("broadcasts") or []:
+        if isinstance(broadcast, str):
+            continue
+        source = broadcast.get("source", "")
+        if source in {"rights_estimate", "league_default"}:
+            continue
+        if source not in {"espn", "sportsdb_event"} and not game.get("channels_confirmed", False):
+            continue
+        channel = str(broadcast.get("channel") or "").strip()
+        info = broadcast.get("info") or {}
+        country = info.get("country")
+        if not country and (broadcast.get("is_us_regional") or broadcast.get("market") in ("Home", "Away")):
+            country = "US"
+        if channel and country in country_names:
+            bucket = result.setdefault(country, [])
+            if channel not in bucket:
+                bucket.append(channel)
+    return result
+
+
+def _confirmed_free_mx_channels(game: dict) -> list[str]:
+    return list(dict.fromkeys(
+        str(b.get("channel") or "").strip()
+        for b in game.get("broadcasts") or []
+        if isinstance(b, dict) and str(b.get("channel") or "").strip()
+        and b.get("source", "") not in {"rights_estimate", "league_default"}
+        and (b.get("source") in {"espn", "sportsdb_event"} or game.get("channels_confirmed", False))
+        and (b.get("info") or {}).get("country") == "MX"
+        and (b.get("info") or {}).get("type") == "free"
+    ))
+
+
+def _slugify(text: str) -> str:
+    text = unicodedata.normalize("NFKD", str(text or ""))
+    text = text.encode("ascii", "ignore").decode("ascii").lower()
+    return re.sub(r"-{2,}", "-", re.sub(r"[^a-z0-9]+", "-", text).strip("-"))
+
+
+def _event_page_url(game: dict, content: str) -> str:
+    """Build the same canonical event path as server._game_url, with GA4 UTMs."""
+    if game.get("event_slug") and game.get("sport") in ("mma", "racing"):
+        path = f"/evento/{game['event_slug']}"
+    else:
+        home = _slugify((game.get("home") or {}).get("name") or "home")
+        away = _slugify((game.get("away") or {}).get("name") or "away")
+        first, second = (home, away) if game.get("sport") in ("soccer", "boxing", "mma") else (away, home)
+        try:
+            dt = datetime.fromisoformat(str(game.get("date", "")).replace("Z", "+00:00"))
+            game_day = dt.astimezone(TZ_MX).strftime("%Y-%m-%d")
+        except Exception:
+            game_day = ""
+        path = f"/partido/{first}-vs-{second}-{game_day}"
+    params = urlencode({
+        "utm_source": "twitter", "utm_medium": "organic_social",
+        "utm_campaign": "dondever_x", "utm_content": content,
+    })
+    return f"{APP_URL.rstrip('/')}{path}?{params}"
+
+
+def _tweet_length(text: str) -> int:
+    """Approximate X's 280-character rule, where every URL counts as 23."""
+    return sum(23 if re.match(r"https?://", part) else len(part)
+               for part in re.split(r"(https?://\S+)", text) if part)
+
+
+def _country_channel_lines(game: dict) -> list[str]:
+    by_country = _event_channels_by_country(game)
+    flags = {
+        "MX": "🇲🇽", "US": "🇺🇸", "GT": "🇬🇹", "SV": "🇸🇻", "HN": "🇭🇳", "NI": "🇳🇮",
+        "CR": "🇨🇷", "CU": "🇨🇺", "VE": "🇻🇪", "PA": "🇵🇦", "DO": "🇩🇴", "HT": "🇭🇹",
+        "CO": "🇨🇴", "PE": "🇵🇪", "EC": "🇪🇨", "BO": "🇧🇴", "BR": "🇧🇷", "PY": "🇵🇾",
+        "UY": "🇺🇾", "AR": "🇦🇷", "CL": "🇨🇱", "PR": "🇵🇷", "ES": "🇪🇸", "*": "🌎",
+    }
+    lines = [
+        "🇲🇽 México: " + (", ".join(by_country["MX"][:2]) if by_country["MX"] else "por confirmar"),
+        "🇺🇸 EE.UU.: " + (", ".join(by_country["US"][:2]) if by_country["US"] else "por confirmar"),
+    ]
+    latam_codes = ("GT", "SV", "HN", "NI", "CR", "CU", "VE", "PA", "DO", "HT", "CO", "PE", "EC", "BO", "BR", "PY", "UY", "AR", "CL", "PR")
+    latam = [f"{flags[code]} {code}: {', '.join(by_country[code][:1])}" for code in latam_codes if by_country.get(code)]
+    if latam:
+        lines.append("🌎 LATAM (por país): " + " · ".join(latam))
+    if by_country.get("ES"):
+        lines.append("🇪🇸 España: " + ", ".join(by_country["ES"][:2]))
+    if by_country.get("*"):
+        lines.append("🌐 Global: " + ", ".join(by_country["*"][:2]))
+    return lines
 
 
 def get_betting_affiliate_text() -> str:
@@ -246,75 +364,39 @@ def get_pick_line(game: dict) -> str:
     return f"🎯 Pick: {pick} ({reason})"
 
 
-async def compose_game_tweet(game: dict) -> str:
-    """
-    Compose a tweet for a single game.
-    Max 280 chars. Rotates templates, usa 1 hashtag, incluye pick con razón.
-    Betting CTA solo 1 de cada 3 (evita shadowban por spam).
-    ~40% incluye momios para variedad.
-    """
-    emoji = game.get("emoji", "")
-    league = game.get("league_name", "")
+def _compose_featured_tweet(game: dict, content: str = "featured") -> str:
     first, second = get_team_order(game)
-    time_str = format_game_time_mx(game["date"])
-    channels = format_broadcast_short(game["broadcasts"])
-    hashtag = HASHTAG_MAP.get(league, "#DondeVer")
+    event_time = format_game_time_mx(str(game.get("date", ""))) or "Horario por confirmar"
+    league = game.get("league_name") or "Partido"
+    parts = [f"📺 {first} vs {second} · {league}", event_time]
+    parts.extend(_country_channel_lines(game))
+    parts.append(_event_page_url(game, content))
+    return "\n".join(parts)
 
-    pick_team = get_pick_team(game)
-    reason = random.choice(PICK_REASONS)
 
-    opener_tpl = random.choice(PRE_GAME_OPENERS)
-    headline = opener_tpl.format(
-        emoji=emoji, first=first, second=second,
-        time=time_str, channels=channels, league=league,
-        pick=pick_team,
-    )
+async def compose_game_tweet(game: dict) -> str:
+    """Post centrado en el encuentro, la hora local, canales confirmados y su ficha."""
+    return _compose_featured_tweet(game)
 
-    # Si el opener ya incluye el pick, no repetirlo
-    if "{pick}" in opener_tpl:
-        pick_line = f"({reason})"
-    else:
-        pick_line = f"🎯 Pick: {pick_team} ({reason})"
 
-    parts = [headline, "", pick_line]
-
-    # ~40% de las veces incluir momios (variedad)
-    if should_include_odds():
-        odds_line = await get_odds_line(game)
-        if odds_line:
-            parts.append(odds_line)
-
-    # Agregar canales solo si el opener no los incluye
-    if "{channels}" not in opener_tpl and channels and channels != "Por confirmar":
-        parts.append(f"📺 {channels}")
-
-    # Betting CTA solo 1 de cada 3, el resto lleva CTA suave (WA/sitio)
-    if should_include_betting():
-        betting = get_betting_affiliate_text()
-        if betting:
-            parts.append("")
-            parts.append(betting)
-    else:
-        soft = get_soft_cta()
-        if soft:
-            parts.append("")
-            parts.append(soft)
-
-    parts.append(f"\n{hashtag}")
-    tweet = "\n".join(parts)
-
-    # Trim progresivo si se pasa de 280
-    if len(tweet) > 280:
-        parts = [headline, "", pick_line, "", get_soft_cta() or f"📲 wa.me/15715463202", f"\n{hashtag}"]
-        tweet = "\n".join(parts)
-    if len(tweet) > 280:
-        parts = [headline, pick_line, f"\n{hashtag}"]
-        tweet = "\n".join(parts)
-    if len(tweet) > 280:
-        tweet = f"{headline}\n{pick_line}\n{hashtag}"
-
-    return tweet[:280]
-
+def compose_free_tv_tweet(games: list[dict]) -> str:
+    """Agenda corta de encuentros con señal abierta confirmada en México."""
+    candidates = [g for g in _relevant_upcoming(games) if _confirmed_free_mx_channels(g)]
+    if not candidates:
+        return ""
+    lines = ["📡 Partidos por TV abierta en México (confirmado)"]
+    for game in candidates[:2]:
+        first, second = get_team_order(game)
+        channels = ", ".join(_confirmed_free_mx_channels(game)[:2])
+        addition = [
+            f"{game.get('league_name', '')}: {first} vs {second} · {format_game_time_mx(game['date'])}",
+            f"México: {channels}",
+            _event_page_url(game, "free_tv"),
+        ]
+        if _tweet_length("\n".join(lines + addition)) > 280:
+            break
+        lines.extend(addition)
+    return "\n".join(lines)
 
 PROMO_TWEETS = [
     "📺 Te decimos dónde ver cualquier partido en México y USA.\nPicks gratis todos los días 👉 wa.me/15715463202",
@@ -367,101 +449,23 @@ DAILY_OPENERS = [
 
 
 def compose_daily_summary_tweet(games: list[dict]) -> str:
-    """Resumen diario con opener variado + top 3 ligas + pregunta final."""
-    count = len(games)
-    now = datetime.now(TZ_MX)
-    date_str = now.strftime("%d/%m")
-
-    # Top ligas del día (las más frecuentes)
-    from collections import Counter
-    league_counts = Counter(g.get("league_name", "") for g in games if g.get("league_name"))
-    top_leagues = [lg for lg, _ in league_counts.most_common(3)]
-    leagues_text = " · ".join(top_leagues) if top_leagues else ""
-
-    opener = random.choice(DAILY_OPENERS)
-
-    # Top 3 partidos CONCRETOS — la gente reacciona a equipos, no a números
-    _PRIORITY = ["liga-mx", "world-cup", "champions", "premier-league",
-                 "la-liga", "nfl", "nba", "mlb", "mls"]
-    upcoming = [g for g in games if g.get("status", {}).get("state") == "pre"] or games
-    ranked = sorted(
-        upcoming,
-        key=lambda g: (_PRIORITY.index(g["league_slug"])
-                       if g.get("league_slug") in _PRIORITY else 99),
-    )
-    top3 = ranked[:3]
-
-    game_lines = []
-    for g in top3:
-        first, second = get_team_order(g)
-        emoji = g.get("emoji", "⚽")
-        t = format_game_time_mx(g.get("date", ""))
-        game_lines.append(f"{emoji} {first} vs {second} — {t}")
-    games_text = "\n".join(game_lines)
-
-    # Pregunta para engagement
-    questions = [
-        "¿Cuál vas a ver hoy? 👇",
-        "¿A quién le vas? 👇",
-        "Dime cuál no te pierdes 👇",
-    ]
-    q = random.choice(questions)
-
-    tweet = f"{opener} ({date_str})\n\n"
-    if games_text:
-        tweet += f"{games_text}\n"
-        if count > len(top3):
-            tweet += f"+{count - len(top3)} juegos más\n"
-    else:
-        tweet += f"{count} juegos en vivo\n"
-        if leagues_text:
-            tweet += f"{leagues_text}\n"
-    tweet += f"\n{q}\n\ndondever.app"
-
-    return tweet[:280]
-
+    """Agenda breve con hasta dos encuentros relevantes y enlaces individuales."""
+    upcoming = _relevant_upcoming(games)
+    if not upcoming:
+        return ""
+    lines = [f"📅 Próximos partidos · hora CDMX"]
+    for game in upcoming[:2]:
+        first, second = get_team_order(game)
+        addition = [f"{game.get('league_name', '')}: {first} vs {second} · {format_game_time_mx(game['date'])}"]
+        addition += _country_channel_lines(game) + [_event_page_url(game, "agenda")]
+        if len(lines) > 1 and _tweet_length("\n".join(lines + addition)) > 280:
+            break
+        lines.extend(addition)
+    return "\n".join(lines)
 
 def compose_pick_tweet(game: dict) -> str:
-    """Compose a PICK DEL DIA tweet — the money tweet."""
-    emoji = game.get("emoji", "")
-    league = game.get("league_name", "")
-    first, second = get_team_order(game)
-    time_str = format_game_time_mx(game["date"])
-    channels = format_broadcast_short(game["broadcasts"])
-    hashtag = HASHTAG_MAP.get(league, "")
-    betting = get_betting_affiliate_text()
-
-    tweet = (
-        f"PICK DEL DIA\n\n"
-        f"{emoji} {first} vs {second}\n"
-        f"{league} - {time_str} (MX)\n"
-        f"Donde verlo: {channels}\n"
-    )
-
-    if betting:
-        tweet += f"\n{betting}\n"
-
-    tweet += f"\n{get_wa_cta()}\n\n"
-
-    if hashtag:
-        tweet += f"{hashtag} #DondeVer"
-    else:
-        tweet += "#DondeVer"
-
-    # Trim disclaimer text first if too long
-    if len(tweet) > 280:
-        tweet = (
-            f"PICK DEL DIA\n\n"
-            f"{emoji} {first} vs {second}\n"
-            f"{league} - {time_str} (MX)\n"
-            f"Donde verlo: {channels}\n"
-        )
-        if betting:
-            tweet += f"\n{betting}\n"
-        tweet += f"\n{APP_URL}\n{hashtag} #DondeVer" if hashtag else f"\n{APP_URL}\n#DondeVer"
-
-    return tweet[:280]
-
+    """Compatibility wrapper: the old scheduled "pick" is now a game guide."""
+    return _compose_featured_tweet(game, "featured")
 
 # ── Post Functions ───────────────────────────────────────
 
@@ -506,6 +510,26 @@ def get_twitter_api_v1() -> tweepy.API | None:
     auth = tweepy.OAuthHandler(TWITTER_API_KEY, TWITTER_API_SECRET)
     auth.set_access_token(TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_SECRET)
     return tweepy.API(auth)
+
+
+def _record_tweet(tweet_id: str, text: str, post_type: str = "") -> None:
+    """Keep a small durable publication log; GA4 UTMs attribute incoming visits."""
+    try:
+        try:
+            records = json.loads(_POSTS_FILE.read_text())
+            if not isinstance(records, list):
+                records = []
+        except (OSError, json.JSONDecodeError):
+            records = []
+        match = re.search(r"utm_content=([a-z_]+)", text)
+        records.append({
+            "tweet_id": str(tweet_id), "published_at": datetime.now(timezone.utc).isoformat(),
+            "format": post_type or (match.group(1) if match else "other"),
+        })
+        _POSTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _POSTS_FILE.write_text(json.dumps(records[-500:], indent=2))
+    except OSError as exc:
+        logger.warning("Could not persist X publication record: %s", exc)
 
 
 def _upload_media(image_bytes: bytes) -> str | None:
@@ -599,6 +623,7 @@ def post_tweet(text: str, reply_to: str | None = None) -> dict:
             kwargs["in_reply_to_tweet_id"] = reply_to
         response = client.create_tweet(**kwargs)
         _tweet_timestamps.append(_time.time())
+        _record_tweet(response.data["id"], text)
         logger.info(f"Tweet posted: {response.data['id']} ({len(_tweet_timestamps)}/{MAX_TWEETS_PER_DAY} hoy)")
         return {"success": True, "tweet_id": response.data["id"]}
     except Exception as e:
@@ -619,6 +644,7 @@ def post_tweet_with_media(text: str, image_bytes: bytes) -> dict:
                 return {"success": False, "error": "Twitter credentials not configured"}
             response = client.create_tweet(text=text, media_ids=[media_id])
             _tweet_timestamps.append(_time.time())
+            _record_tweet(response.data["id"], text)
             logger.info(f"Tweet+media posted: {response.data['id']}")
             return {"success": True, "tweet_id": response.data["id"], "has_media": True}
         except Exception as e:
@@ -649,6 +675,7 @@ def post_poll(text: str, options: list[str], duration_min: int = 720) -> dict:
             poll_duration_minutes=duration_min,
         )
         _tweet_timestamps.append(_time.time())
+        _record_tweet(response.data["id"], text, "poll")
         logger.info(f"Poll posted: {response.data['id']}")
         return {"success": True, "tweet_id": response.data["id"]}
     except Exception as e:
@@ -657,55 +684,61 @@ def post_poll(text: str, options: list[str], duration_min: int = 720) -> dict:
 
 
 async def post_daily_poll():
-    """Encuesta diaria sobre el partido top del día. Alto engagement garantizado."""
+    """Daily viewing question linked to the relevant event; contains no betting pick."""
     today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     sentinel = f"__daily_poll__{today_key}"
-    if sentinel in _posted_games.get(today_key, set()):
+    if _already_posted(sentinel):
         return None
 
     games = await get_todays_games()
-    priority = ["liga-mx", "champions", "premier-league", "la-liga", "nfl", "nba", "mlb"]
-    upcoming = [g for g in games if g["status"]["state"] == "pre"]
-
-    pick = None
-    for pl in priority:
-        pick = next((g for g in upcoming if g.get("league_slug") == pl), None)
-        if pick:
-            break
-    if not pick and upcoming:
-        pick = upcoming[0]
-    if not pick:
+    relevant = _relevant_upcoming(games)
+    if not relevant:
         logger.info("No daily poll: sin juegos upcoming")
         return None
+    game = relevant[0]
 
-    first, second = get_team_order(pick)
-    emoji = pick.get("emoji", "")
-    league = pick.get("league_name", "")
-    time_str = format_game_time_mx(pick["date"])
-    hashtag = HASHTAG_MAP.get(league, "#DondeVer")
+    first, second = get_team_order(game)
+    league = game.get("league_name", "")
+    time_str = format_game_time_mx(game["date"])
 
     text = (
-        f"{emoji} ¿Quién gana hoy?\n"
+        f"📺 ¿Qué partido vas a ver hoy?\n"
         f"{first} vs {second}\n"
-        f"{league} — {time_str} MX\n\n"
-        f"{hashtag}"
+        f"{league} — {time_str}\n"
+        f"{' | '.join(_country_channel_lines(game))}\n"
+        f"{_event_page_url(game, 'poll')}"
     )
 
     options = [first, second]
-    if pick.get("sport") == "soccer":
+    if game.get("sport") == "soccer":
         options.append("Empate")
     result = post_poll(text, options, duration_min=720)
     if result["success"]:
         _mark_posted(sentinel)
+        _mark_posted(str(game.get("id") or game.get("name") or ""))
     return result
 
 
 # Dedup: game IDs already tweeted (resets cada dia con la fecha)
 _posted_games: dict[str, set] = {}  # {"2026-04-14": {"game_id_1", ...}}
+try:
+    _posted_store = json.loads(_POSTED_FILE.read_text())
+    if not isinstance(_posted_store, dict):
+        _posted_store = {}
+except (OSError, json.JSONDecodeError):
+    _posted_store = {}
 
 def _already_posted(game_id: str) -> bool:
     today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    return game_id in _posted_games.get(today_key, set())
+    if game_id in _posted_games.get(today_key, set()):
+        return True
+    posted_at = _posted_store.get(str(game_id))
+    if not posted_at:
+        return False
+    try:
+        return (datetime.now(timezone.utc) - datetime.fromisoformat(posted_at)).days < 45
+    except (TypeError, ValueError):
+        return False
 
 def _mark_posted(game_id: str) -> None:
     today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -714,6 +747,46 @@ def _mark_posted(game_id: str) -> None:
         if k != today_key:
             del _posted_games[k]
     _posted_games.setdefault(today_key, set()).add(game_id)
+    _posted_store[str(game_id)] = datetime.now(timezone.utc).isoformat()
+    cutoff = datetime.now(timezone.utc) - timedelta(days=45)
+    for key, stamp in list(_posted_store.items()):
+        try:
+            if datetime.fromisoformat(stamp) < cutoff:
+                del _posted_store[key]
+        except (TypeError, ValueError):
+            del _posted_store[key]
+    try:
+        _POSTED_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _POSTED_FILE.write_text(json.dumps(_posted_store, indent=2))
+    except OSError as exc:
+        logger.warning("Could not persist X duplicate guard: %s", exc)
+
+
+def _relevant_upcoming(games: list[dict], *, include_posted: bool = False) -> list[dict]:
+    """Configured competitions only; skip unknown teams, completed and past events."""
+    now = datetime.now(timezone.utc)
+    league_order = {slug: i for i, slug in enumerate(("liga-mx", "champions", "nfl"))}
+    upcoming = []
+    for game in games or []:
+        if game.get("league_slug") not in TWITTER_LEAGUES:
+            continue
+        if game.get("status", {}).get("state") != "pre":
+            continue
+        home = (game.get("home") or {}).get("name", "")
+        away = (game.get("away") or {}).get("name", "")
+        if not home or not away or "TBD" in (home.upper(), away.upper()):
+            continue
+        try:
+            starts = datetime.fromisoformat(str(game.get("date", "")).replace("Z", "+00:00"))
+            if starts <= now:
+                continue
+        except (TypeError, ValueError):
+            continue
+        gid = str(game.get("id") or game.get("name") or "")
+        if not gid or (not include_posted and _already_posted(gid)):
+            continue
+        upcoming.append((league_order.get(game.get("league_slug"), 99), starts, game))
+    return [item[2] for item in sorted(upcoming, key=lambda item: (item[0], item[1]))]
 
 
 ENGAGEMENT_REPLIES = [
@@ -813,29 +886,12 @@ async def post_game_tweets(minutes_before: int = 60, max_tweets: int = 8):
     Solo ligas relevantes para audiencia MX.
     max_tweets: cuántos tweets postear como máximo en esta corrida.
     """
-    # Solo tuitear pre-game de ligas que importan
-    pregame_leagues = {
-        "liga-mx", "champions", "premier-league", "la-liga",
-        "nba", "nfl", "mlb", "serie-a", "europa-league",
-        "concacaf-cl", "bundesliga",
-    }
-
     games = await get_todays_games()
     now = datetime.now(timezone.utc)
 
     posted = []
-    for game in games:
-        if game["status"]["state"] != "pre":
-            continue
-
-        # Filtrar por liga relevante
-        if game.get("league_slug", "") not in pregame_leagues:
-            continue
-
+    for game in _relevant_upcoming(games):
         gid = str(game.get("id", "")) or game.get("name", "")
-        if _already_posted(gid):
-            continue
-
         try:
             game_time = datetime.fromisoformat(
                 game["date"].replace("Z", "+00:00")
@@ -847,14 +903,7 @@ async def post_game_tweets(minutes_before: int = 60, max_tweets: int = 8):
         diff = (game_time - now).total_seconds() / 60
         if 0 < diff <= minutes_before:
             tweet_text = await compose_game_tweet(game)
-            # Generate game card image
-            pick = get_pick_team(game)
-            reason = random.choice(PICK_REASONS)
-            card = _make_game_card(game, pick_team=pick, pick_reason=reason)
-            if card:
-                result = post_tweet_with_media(tweet_text, card)
-            else:
-                result = post_tweet(tweet_text)
+            result = post_tweet(tweet_text)
             if result["success"]:
                 _mark_posted(gid)
                 _pregame_tweet_ids[gid] = result["tweet_id"]  # guardar para quote-tweet al final
@@ -862,8 +911,6 @@ async def post_game_tweets(minutes_before: int = 60, max_tweets: int = 8):
                     "game": game["name"],
                     "tweet_id": result["tweet_id"],
                 })
-                # Reply thread: pregunta de engagement
-                _post_engagement_reply(result["tweet_id"], game)
                 # Respetar max_tweets
                 if len(posted) >= max_tweets:
                     break
@@ -878,7 +925,7 @@ async def post_next_top_game():
     """
     today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     sentinel = f"__next_top__{today_key}"
-    if sentinel in _posted_games.get(today_key, set()):
+    if _already_posted(sentinel):
         return None  # ya se posteo hoy
 
     games = await get_todays_games()
@@ -897,12 +944,8 @@ async def post_next_top_game():
         return 99
 
     upcoming = []
-    for g in games:
-        if g["status"]["state"] != "pre":
-            continue
+    for g in _relevant_upcoming(games):
         gid = str(g.get("id", "")) or g.get("name", "")
-        if _already_posted(gid):
-            continue
         try:
             gt = datetime.fromisoformat(g["date"].replace("Z", "+00:00"))
             diff_min = (gt - now).total_seconds() / 60
@@ -917,10 +960,7 @@ async def post_next_top_game():
     upcoming.sort(key=lambda x: (x[0], x[1]))  # mejor liga + mas pronto
     _, _, best = upcoming[0]
     tweet_text = await compose_game_tweet(best)
-    pick = get_pick_team(best)
-    reason = random.choice(PICK_REASONS)
-    card = _make_game_card(best, pick_team=pick, pick_reason=reason)
-    result = post_tweet_with_media(tweet_text, card) if card else post_tweet(tweet_text)
+    result = post_tweet(tweet_text)
     if result["success"]:
         gid = str(best.get("id", "")) or best.get("name", "")
         _mark_posted(gid)
@@ -930,31 +970,24 @@ async def post_next_top_game():
 
 
 async def post_pick_del_dia():
-    """Post the pick del dia tweet — best upcoming game with betting CTA."""
+    """Scheduled slot retained; now highlights a relevant game with viewing info."""
+    today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    sentinel = f"__featured_game__{today_key}"
+    if _already_posted(sentinel):
+        return None
     games = await get_todays_games()
-    priority = ["liga-mx", "premier-league", "champions", "nfl", "nba", "la-liga"]
-
-    # Find best upcoming game with broadcasts
-    upcoming = [g for g in games if g["status"]["state"] == "pre" and g["broadcasts"]]
-    pick = None
-    for pl in priority:
-        pick = next((g for g in upcoming if g["league_slug"] == pl), None)
-        if pick:
-            break
-    if not pick and upcoming:
-        pick = upcoming[0]
-
-    if not pick:
-        logger.info("No pick del dia available — no upcoming games with broadcasts")
+    upcoming = _relevant_upcoming(games)
+    if not upcoming:
+        logger.info("No featured game available — no relevant upcoming game")
         return None
 
-    tweet_text = compose_pick_tweet(pick)
-    pick_team = get_pick_team(pick)
-    reason = random.choice(PICK_REASONS)
-    card = _make_game_card(pick, pick_team=pick_team, pick_reason=reason)
-    result = post_tweet_with_media(tweet_text, card) if card else post_tweet(tweet_text)
+    game = upcoming[0]
+    tweet_text = _compose_featured_tweet(game, "featured")
+    result = post_tweet(tweet_text)
     if result["success"]:
-        logger.info(f"Pick del dia posted: {pick['name']}")
+        _mark_posted(str(game.get("id") or game.get("name") or ""))
+        _mark_posted(sentinel)
+        logger.info("Featured game posted: %s", game.get("name"))
     return result
 
 
@@ -1321,12 +1354,28 @@ def setup_twitter_scheduler(scheduler):
         logger.warning("Twitter credentials incomplete — scheduler NOT started")
         return
 
-    # 1) Daily summary at 9 AM MX (15:00 UTC) — "Juegos de hoy"
+    # 1) Daily agenda at 9 AM MX (15:00 UTC)
     async def post_daily():
+        today_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        sentinel = f"__daily_agenda__{today_key}"
+        if _already_posted(sentinel):
+            return
         games = await get_todays_games()
-        if games:
-            tweet = compose_daily_summary_tweet(games)
-            post_tweet(tweet)
+        candidates = _relevant_upcoming(games)
+        if not candidates:
+            return
+        free_tv = compose_free_tv_tweet(games)
+        # Alternate agendas with confirmed Mexican open-air listings when available.
+        use_free_tv = bool(free_tv and datetime.now(TZ_MX).day % 2 == 0)
+        tweet = free_tv if use_free_tv else compose_daily_summary_tweet(games)
+        result = post_tweet(tweet) if tweet else {"success": False}
+        if result.get("success"):
+            _mark_posted(sentinel)
+            content_key = "free_tv" if use_free_tv else "agenda"
+            selected = [g for g in candidates
+                        if _event_page_url(g, content_key) in tweet]
+            for game in selected:
+                _mark_posted(str(game.get("id") or game.get("name") or ""))
 
     scheduler.add_job(
         post_daily,
@@ -1336,7 +1385,7 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    # 2) Encuesta at 10 AM MX (16:00 UTC) — engagement
+    # 2) Encuesta at 10 AM MX (16:00 UTC) — qué partido verá la audiencia
     scheduler.add_job(
         post_daily_poll,
         CronTrigger(hour=16, minute=0),
@@ -1345,12 +1394,12 @@ def setup_twitter_scheduler(scheduler):
         replace_existing=True,
     )
 
-    # 3) Pick del dia at 12 PM MX (18:00 UTC) — el tweet principal
+    # 3) Partido destacado at 12 PM MX (18:00 UTC)
     scheduler.add_job(
         post_pick_del_dia,
         CronTrigger(hour=18, minute=0),
         id="twitter_pick_del_dia",
-        name="Pick del dia (12PM MX)",
+        name="Partido destacado (12PM MX)",
         replace_existing=True,
     )
 
@@ -1380,4 +1429,66 @@ def setup_twitter_scheduler(scheduler):
     # - maybe_post_thread — contenido excesivo
     # Reactivar cuando la cuenta tenga +500 followers
 
-    logger.info("Twitter bot scheduler: MODO BALANCEADO (5-7 tweets/dia: summary 9AM, poll 10AM, pick 12PM, previews 3PM+7PM)")
+    logger.info("Twitter bot scheduler: agenda 9AM, encuesta 10AM, partido destacado 12PM, previas 3PM+7PM MX")
+
+
+async def fetch_preview_games(days: int = 14) -> list[dict]:
+    """Read upcoming ESPN schedules for configured leagues; no posting or state writes."""
+    start = datetime.now(TZ_MX).date()
+    all_games: dict[str, dict] = {}
+    for offset in range(max(1, min(days, 21))):
+        date_str = (start + timedelta(days=offset)).strftime("%Y%m%d")
+        for league in sorted(TWITTER_LEAGUES):
+            try:
+                for game in await get_todays_games(date_str=date_str, league_filter=league):
+                    key = str(game.get("id") or game.get("name") or "")
+                    if key:
+                        all_games[key] = game
+            except Exception as exc:
+                logger.warning("Preview schedule unavailable for %s %s: %s", league, date_str, exc)
+    return _relevant_upcoming(list(all_games.values()), include_posted=True)
+
+
+async def preview_examples(count: int = 6, days: int = 14) -> list[dict]:
+    """Build preview examples without calling any X/Twitter publishing method."""
+    games = await fetch_preview_games(days)
+    if not games:
+        return []
+    examples: list[dict] = []
+    examples.append({"format": "featured", "text": _compose_featured_tweet(games[0], "featured"), "games": [games[0]]})
+    if len(games) > 1:
+        examples.append({"format": "agenda", "text": compose_daily_summary_tweet(games[:2]), "games": games[:2]})
+    free_tv_games = [g for g in games if _confirmed_free_mx_channels(g)]
+    if free_tv_games:
+        examples.append({"format": "free_tv", "text": compose_free_tv_tweet(free_tv_games), "games": free_tv_games[:2]})
+    for game in games[1:]:
+        examples.append({"format": "featured", "text": _compose_featured_tweet(game, "featured"), "games": [game]})
+        if len(examples) >= count:
+            break
+    for game in games[1:]:
+        if len(examples) >= count:
+            break
+        examples.append({"format": "agenda", "text": compose_daily_summary_tweet([game]), "games": [game]})
+    return examples[:max(count, 6)]
+
+
+async def _preview_cli(count: int = 6, days: int = 14) -> None:
+    examples = await preview_examples(count=count, days=days)
+    for index, example in enumerate(examples, 1):
+        print(f"--- Ejemplo {index} · {example['format']} ---")
+        print(example["text"])
+        for game in example["games"]:
+            print(f"Verificación de evento: {game.get('league_name')} | ESPN id {game.get('id')} | {game.get('date')} | canales_confirmed={game.get('channels_confirmed', True)}")
+    print(f"\nTotal: {len(examples)} ejemplos de vista previa; no se publicó en X.")
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Vista previa local de las publicaciones de DondeVer en X")
+    parser.add_argument("--preview", action="store_true", help="Obtiene partidos próximos y solo imprime ejemplos")
+    parser.add_argument("--count", type=int, default=6)
+    parser.add_argument("--days", type=int, default=14)
+    args = parser.parse_args()
+    if not args.preview:
+        parser.error("Este comando solo admite --preview; no publica mensajes")
+    asyncio.run(_preview_cli(args.count, args.days))

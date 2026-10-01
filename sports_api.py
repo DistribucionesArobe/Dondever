@@ -1191,6 +1191,7 @@ async def parse_espn_events_enriched(
                 "market": market,
                 "info": info,
                 "is_us_regional": is_us_regional,
+                "source": "espn",
             })
 
         # 2) Smart MX channel merging — per-game, not per-league
@@ -1208,6 +1209,7 @@ async def parse_espn_events_enriched(
 
         # Determine MX channels to add
         mx_defaults = []
+        mx_confirmed_names = set()
         # ¿Los canales salen de un dato real (ESPN, TheSportsDB, la tabla curada
         # de Liga MX) o de un default de liga? Solo lo primero se puede afirmar.
         channels_confirmed = True
@@ -1229,12 +1231,16 @@ async def parse_espn_events_enriched(
                         team_channels = channels
                         break
             mx_defaults = team_channels or ["TUDN", "ViX"]
+            # Team rights describe possible home broadcasters, not the confirmed
+            # outlet for this specific fixture.
+            if not has_mx_channel:
+                channels_confirmed = False
         elif league_slug == "nfl":
             # NFL: rights-based mapping (TNF→Fox Sports MX, MNF/SNF→ESPN MX/Disney+, todos→Game Pass)
             mx_defaults = nfl_mx_channels([b["channel"] for b in espn_broadcasts])
             # Sin datos de ESPN, nfl_mx_channels devuelve el reparto genérico de
             # derechos, no el canal de ESTE partido: es suposición.
-            if not espn_broadcasts:
+            if not has_mx_channel:
                 channels_confirmed = False
         elif not has_mx_channel:
             # Try TheSportsDB first — match this game in pre-fetched schedule
@@ -1253,6 +1259,7 @@ async def parse_espn_events_enriched(
                                 final_name = alias.get("name", ch) if alias else ch
                                 if final_name not in mx_defaults:
                                     mx_defaults.append(final_name)
+                                mx_confirmed_names.add(final_name)
                     # Also try detailed TV lookup if schedule had no TV data
                     if not mx_defaults:
                         sdb_event_id = str(sdb_ev.get("idEvent", ""))
@@ -1275,6 +1282,8 @@ async def parse_espn_events_enriched(
                                         bucket.append(final_name)
                                     if cc in ("MX", "*") and final_name not in mx_defaults:
                                         mx_defaults.append(final_name)
+                                    if cc in ("MX", "*"):
+                                        mx_confirmed_names.add(final_name)
                             except Exception:
                                 pass
                     break
@@ -1291,6 +1300,8 @@ async def parse_espn_events_enriched(
                     if mx_ch and mx_ch not in mapped:
                         mapped.add(mx_ch)
                         mx_defaults.append(mx_ch)
+                if mx_defaults and not has_mx_channel:
+                    channels_confirmed = False
             elif not mx_defaults and not espn_broadcasts:
                 # Nada de ESPN ni de TheSportsDB. Los defaults de liga son una
                 # SUPOSICIÓN, no un dato: se marcan como no confirmados para que
@@ -1312,6 +1323,9 @@ async def parse_espn_events_enriched(
                 "channel": display_name,
                 "market": "National",
                 "info": info,
+                "source": "sportsdb_event" if display_name in mx_confirmed_names else (
+                    "league_default" if not channels_confirmed else "rights_estimate"
+                ),
             })
 
         # Orden: primero por PAÍS, después por tipo (abierta → cable → streaming).
@@ -1585,6 +1599,7 @@ async def parse_sportsdb_standalone_events(
                             "channel": display_name,
                             "market": "National",
                             "info": info,
+                            "source": "sportsdb_event",
                         })
 
         # Add league defaults if no specific TV info
@@ -1599,6 +1614,7 @@ async def parse_sportsdb_standalone_events(
                         "channel": display_name,
                         "market": "National",
                         "info": info,
+                        "source": "league_default",
                     })
 
         # Sort: free TV first, cable, streaming last
@@ -2957,12 +2973,18 @@ async def get_recent_league_results(sport: str, league: str, days: int = 5, limi
 # DO 4%, CO 4%, ES 4%, PE/EC/PR ~2% cada uno.
 SPORTSDB_COUNTRY_CODE = {
     "Mexico": "MX", "México": "MX", "MX": "MX",
+    "Guatemala": "GT", "GT": "GT", "El Salvador": "SV", "SV": "SV",
+    "Honduras": "HN", "HN": "HN", "Nicaragua": "NI", "NI": "NI",
+    "Costa Rica": "CR", "CR": "CR", "Cuba": "CU", "CU": "CU",
     "Venezuela": "VE", "VE": "VE",
     "Panama": "PA", "Panamá": "PA", "PA": "PA",
     "Dominican Republic": "DO", "República Dominicana": "DO", "DO": "DO",
+    "Haiti": "HT", "Haití": "HT", "HT": "HT",
     "Colombia": "CO", "CO": "CO",
     "Peru": "PE", "Perú": "PE", "PE": "PE",
     "Ecuador": "EC", "EC": "EC",
+    "Bolivia": "BO", "BO": "BO", "Brazil": "BR", "Brasil": "BR", "BR": "BR",
+    "Paraguay": "PY", "PY": "PY", "Uruguay": "UY", "UY": "UY",
     "Argentina": "AR", "AR": "AR",
     "Chile": "CL", "CL": "CL",
     "Spain": "ES", "España": "ES", "ES": "ES",
