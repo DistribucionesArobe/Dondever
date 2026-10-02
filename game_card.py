@@ -10,7 +10,7 @@ import os
 import hashlib
 import urllib.request
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 logger = logging.getLogger("dondever.gamecard")
 
@@ -37,7 +37,9 @@ def _get_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold
         else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         # macOS
-        "/System/Library/Fonts/Helvetica.ttc",
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf" if bold
+        else "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/System/Library/Fonts/HelveticaNeue.ttc",
         "/System/Library/Fonts/SFPro.ttf",
     ]
     for fp in font_paths:
@@ -94,31 +96,46 @@ def _draw_team_block(
     x_center: int,
     y_top: int,
     font_name: ImageFont.FreeTypeFont,
+    logo_size: int = 100,
 ):
-    """Draw a team logo + name centered at x_center."""
-    # Logo
-    logo = _fetch_logo(logo_url, size=100)
+    """Draw a team logo or monogram with a centered, wrapping team label."""
+    logo = _fetch_logo(logo_url, size=logo_size)
     if logo:
-        logo_x = x_center - 50
-        img.paste(logo, (logo_x, y_top), logo)
+        img.paste(logo, (x_center - logo_size // 2, y_top), logo)
     else:
-        # Placeholder circle
+        radius = logo_size // 2 - 3
         draw.ellipse(
-            [x_center - 45, y_top + 5, x_center + 45, y_top + 95],
-            fill="#334155",
+            [x_center - radius, y_top + 3, x_center + radius, y_top + logo_size - 3],
+            fill="#E4F3E8",
         )
+        initials = "".join(word[0] for word in str(team_name).split()[:2]).upper() or "?"
+        initials_font = _get_font(26, bold=True)
+        bbox = draw.textbbox((0, 0), initials, font=initials_font)
+        draw.text((x_center - (bbox[2] - bbox[0]) // 2, y_top + logo_size // 2 - 15),
+                  initials, fill="#17613A", font=initials_font)
 
-    # Team name (below logo)
-    name_y = y_top + 110
-    bbox = draw.textbbox((0, 0), team_name, font=font_name)
-    tw = bbox[2] - bbox[0]
-    # Truncate if too wide
-    display_name = team_name
-    if tw > 380:
-        display_name = team_name[:18] + "..."
-        bbox = draw.textbbox((0, 0), display_name, font=font_name)
-        tw = bbox[2] - bbox[0]
-    draw.text((x_center - tw // 2, name_y), display_name, fill=TEXT_WHITE, font=font_name)
+    words = str(team_name).split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if draw.textbbox((0, 0), candidate, font=font_name)[2] <= 405:
+            current = candidate
+        else:
+            if current:
+                lines.append(current)
+            current = word
+            if len(lines) >= 2:
+                lines[-1] = lines[-1].rstrip("…") + "…"
+                current = ""
+                break
+    if current and len(lines) < 2:
+        lines.append(current)
+    name_y = y_top + logo_size + 8
+    for index, line in enumerate(lines[:2]):
+        bbox = draw.textbbox((0, 0), line, font=font_name)
+        draw.text((x_center - (bbox[2] - bbox[0]) // 2, name_y + index * 31),
+                  line, fill="#1D2A22", font=font_name)
 
 
 def generate_game_card(
@@ -135,140 +152,108 @@ def generate_game_card(
     sport: str = "soccer",
     home_left: bool = True,
 ) -> bytes:
-    """
-    Generate a game card image as PNG bytes.
-
-    Returns PNG image bytes ready for Twitter media upload.
-    """
-    img = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), BG_COLOR)
+    """Generate a polished, Instagram-inspired horizontal X card as PNG bytes."""
+    bg = Image.new("RGB", (CARD_WIDTH, CARD_HEIGHT), "#F5F7F4")
+    glow = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).ellipse((790, -330, 1430, 310), fill=(205, 239, 216, 170))
+    glow = glow.filter(ImageFilter.GaussianBlur(95))
+    img = Image.alpha_composite(bg.convert("RGBA"), glow).convert("RGB")
     draw = ImageDraw.Draw(img)
 
-    # Fonts
-    font_league = _get_font(22)
-    font_team = _get_font(28, bold=True)
-    font_vs = _get_font(36, bold=True)
-    font_time = _get_font(40, bold=True)
-    font_channel = _get_font(20)
-    font_pick = _get_font(22, bold=True)
-    font_pick_reason = _get_font(18)
-    font_brand = _get_font(18, bold=True)
+    ink, muted = "#18231D", "#647169"
+    green, dark_green = "#16834B", "#173B29"
+    white, pale, border = "#FFFFFF", "#F0F6F1", "#DFE8E0"
+    font_brand = _get_font(21, bold=True)
+    font_date = _get_font(18, bold=True)
+    font_eyebrow = _get_font(16, bold=True)
+    font_title = _get_font(39, bold=True)
+    font_subtitle = _get_font(17)
+    font_league = _get_font(17, bold=True)
+    font_team = _get_font(27, bold=True)
+    font_vs = _get_font(17, bold=True)
+    font_time = _get_font(23, bold=True)
+    font_channel_label = _get_font(13, bold=True)
+    font_channel = _get_font(17, bold=True)
+    font_footer = _get_font(21, bold=True)
+    font_footer_small = _get_font(14)
 
-    # Determine display order
+    shadow = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle((51, 237, 1151, 554), radius=25, fill=(24, 49, 34, 34))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(13))
+    img = Image.alpha_composite(img.convert("RGBA"), shadow).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    draw.rectangle((0, 0, CARD_WIDTH, 7), fill="#10B981")
+    draw.rounded_rectangle((54, 28, 280, 82), radius=16, fill=dark_green)
+    try:
+        logo_path = Path(__file__).parent / "static" / "logo-dondever-sm.png"
+        brand_logo = Image.open(logo_path).convert("RGBA")
+        brand_logo.thumbnail((188, 38), Image.Resampling.LANCZOS)
+        img.paste(brand_logo, (72, 36), brand_logo)
+        draw = ImageDraw.Draw(img)
+    except Exception:
+        draw.text((74, 43), "DondeVer.app", fill=white, font=font_brand)
+
+    date_parts = str(time_str or "").split("·")
+    day_label = date_parts[0].strip().upper() if len(date_parts) > 1 else "PRÓXIMO PARTIDO"
+    draw.rounded_rectangle((900, 35, 1146, 76), radius=14, fill="#E3F2E7")
+    bbox = draw.textbbox((0, 0), day_label, font=font_date)
+    draw.text((1023 - (bbox[2] - bbox[0]) / 2, 46), day_label, fill="#526158", font=font_date)
+    draw.text((58, 111), f"PARTIDO DESTACADO  ·  {league_name or 'DEPORTES'}".upper(), fill=green, font=font_eyebrow)
+    draw.text((55, 137), "¿Dónde verlo?", fill=ink, font=font_title)
+    draw.text((58, 190), "Horarios y transmisiones por país", fill=muted, font=font_subtitle)
+
+    draw.rounded_rectangle((50, 230, 1150, 545), radius=25, fill=white, outline=border, width=2)
+    draw.rounded_rectangle((76, 248, 295, 281), radius=10, fill=pale)
+    league_text = (league_name or "PARTIDO").upper()
+    bbox = draw.textbbox((0, 0), league_text, font=font_league)
+    if bbox[2] - bbox[0] > 195:
+        font_league = _get_font(14, bold=True)
+        bbox = draw.textbbox((0, 0), league_text, font=font_league)
+    draw.text((185 - (bbox[2] - bbox[0]) / 2, 255), league_text, fill=green, font=font_league)
+
     if home_left:
         left_name, left_logo = home_name, home_logo_url
         right_name, right_logo = away_name, away_logo_url
     else:
         left_name, left_logo = away_name, away_logo_url
         right_name, right_logo = home_name, home_logo_url
+    _draw_team_block(img, draw, left_name, left_logo, 330, 284, font_team, logo_size=84)
+    _draw_team_block(img, draw, right_name, right_logo, 870, 284, font_team, logo_size=84)
+    draw.text((586, 328), "VS", fill="#89958C", font=font_vs)
 
-    # ── Top bar (accent stripe) ──────────────────────────
-    draw.rectangle([0, 0, CARD_WIDTH, 6], fill=ACCENT_COLOR)
+    time_display = date_parts[-1].strip() if len(date_parts) > 1 else str(time_str or "Horario pendiente")
+    draw.rounded_rectangle((480, 365, 720, 406), radius=13, fill="#E8F5EC")
+    bbox = draw.textbbox((0, 0), time_display, font=font_time)
+    draw.text((600 - (bbox[2] - bbox[0]) / 2, 373), time_display, fill=dark_green, font=font_time)
 
-    # ── League badge ─────────────────────────────────────
-    league_text = league_name
-    league_bbox = draw.textbbox((0, 0), league_text, font=font_league)
-    league_w = league_bbox[2] - league_bbox[0]
-    _draw_rounded_rect(
-        draw,
-        (CARD_WIDTH // 2 - league_w // 2 - 16, 24,
-         CARD_WIDTH // 2 + league_w // 2 + 16, 58),
-        radius=14,
-        fill="#1E293B",
-    )
-    draw.text(
-        (CARD_WIDTH // 2 - league_w // 2, 28),
-        league_text, fill=ACCENT_COLOR, font=font_league,
-    )
+    channel_parts = [part.strip() for part in str(channels or "").split("·")]
+    mx_channel = next((part.split(":", 1)[1].strip() for part in channel_parts if part.startswith("MX:")), "Por confirmar")
+    us_channel = next((part.split(":", 1)[1].strip() for part in channel_parts if part.startswith("EE.UU.:")), "Por confirmar")
+    for x0, x1, label, value in (
+        (76, 583, "MÉXICO", mx_channel),
+        (617, 1124, "ESTADOS UNIDOS", us_channel),
+    ):
+        draw.rounded_rectangle((x0, 425, x1, 526), radius=14, fill="#F3F7F3", outline="#E5ECE6", width=1)
+        draw.text((x0 + 17, 439), label, fill=green, font=font_channel_label)
+        bbox = draw.textbbox((0, 0), value, font=font_channel)
+        display_channel = value
+        while bbox[2] - bbox[0] > (x1 - x0 - 34) and len(display_channel) > 4:
+            display_channel = display_channel[:-2].rstrip() + "…"
+            bbox = draw.textbbox((0, 0), display_channel, font=font_channel)
+        draw.text((x0 + 17, 464), display_channel, fill="#26352B", font=font_channel)
 
-    # ── Team blocks ──────────────────────────────────────
-    team_y = 80
-    left_center = CARD_WIDTH // 4
-    right_center = 3 * CARD_WIDTH // 4
+    draw.rounded_rectangle((50, 570, 1150, 649), radius=18, fill=dark_green)
+    draw.text((78, 584), "Consulta dónde ver este partido", fill=white, font=font_footer)
+    draw.text((80, 614), "Horarios y canales actualizados para ti", fill="#C5DFCC", font=font_footer_small)
+    domain = "DondeVer.app  →"
+    bbox = draw.textbbox((0, 0), domain, font=font_footer)
+    draw.text((1110 - (bbox[2] - bbox[0]), 597), domain, fill="#A9EDBD", font=font_footer)
 
-    _draw_team_block(img, draw, left_name, left_logo, left_center, team_y, font_team)
-    _draw_team_block(img, draw, right_name, right_logo, right_center, team_y, font_team)
-
-    # ── VS ───────────────────────────────────────────────
-    vs_bbox = draw.textbbox((0, 0), "vs", font=font_vs)
-    vs_w = vs_bbox[2] - vs_bbox[0]
-    draw.text(
-        (CARD_WIDTH // 2 - vs_w // 2, team_y + 50),
-        "vs", fill=TEXT_GRAY, font=font_vs,
-    )
-
-    # ── Time ─────────────────────────────────────────────
-    if time_str:
-        time_display = time_str
-        time_bbox = draw.textbbox((0, 0), time_display, font=font_time)
-        tw = time_bbox[2] - time_bbox[0]
-        draw.text(
-            (CARD_WIDTH // 2 - tw // 2, 290),
-            time_display, fill=ACCENT_COLOR, font=font_time,
-        )
-
-    # ── Channels ─────────────────────────────────────────
-    if channels:
-        ch_text = channels
-        ch_bbox = draw.textbbox((0, 0), ch_text, font=font_channel)
-        cw = ch_bbox[2] - ch_bbox[0]
-        draw.text(
-            (CARD_WIDTH // 2 - cw // 2, 345),
-            ch_text, fill=TEXT_GRAY, font=font_channel,
-        )
-
-    # ── Divider ──────────────────────────────────────────
-    draw.rectangle([80, 385, CARD_WIDTH - 80, 387], fill=DIVIDER_COLOR)
-
-    # ── Pick section ─────────────────────────────────────
-    if pick_team:
-        # Pick badge
-        pick_text = f"🎯 Pick: {pick_team}"
-        pick_bbox = draw.textbbox((0, 0), pick_text, font=font_pick)
-        pw = pick_bbox[2] - pick_bbox[0]
-        badge_x = CARD_WIDTH // 2 - pw // 2 - 20
-        _draw_rounded_rect(
-            draw,
-            (badge_x, 405, badge_x + pw + 40, 445),
-            radius=12,
-            fill=PICK_BG,
-        )
-        draw.text(
-            (CARD_WIDTH // 2 - pw // 2, 410),
-            pick_text, fill=TEXT_WHITE, font=font_pick,
-        )
-
-        # Reason
-        if pick_reason:
-            reason_bbox = draw.textbbox((0, 0), pick_reason, font=font_pick_reason)
-            rw = reason_bbox[2] - reason_bbox[0]
-            draw.text(
-                (CARD_WIDTH // 2 - rw // 2, 460),
-                pick_reason, fill=TEXT_GRAY, font=font_pick_reason,
-            )
-
-    # ── Bottom bar ───────────────────────────────────────
-    # Background strip
-    draw.rectangle([0, CARD_HEIGHT - 60, CARD_WIDTH, CARD_HEIGHT], fill="#0B1120")
-
-    # Brand left
-    brand = "dondever.app"
-    draw.text((30, CARD_HEIGHT - 45), brand, fill=ACCENT_COLOR, font=font_brand)
-
-    # Product CTA right: keep the visual focused on finding the broadcast.
-    wa_text = "Horarios · canales · streaming"
-    wa_bbox = draw.textbbox((0, 0), wa_text, font=font_brand)
-    wa_w = wa_bbox[2] - wa_bbox[0]
-    draw.text(
-        (CARD_WIDTH - wa_w - 30, CARD_HEIGHT - 45),
-        wa_text, fill=TEXT_LIGHT, font=font_brand,
-    )
-
-    # Export to PNG bytes
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     buf.seek(0)
     return buf.getvalue()
-
 
 def generate_live_card(
     home_name: str,
