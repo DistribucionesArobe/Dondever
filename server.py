@@ -52,6 +52,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+from reel_storage import router as reel_router
+app.include_router(reel_router)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 

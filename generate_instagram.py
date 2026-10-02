@@ -239,7 +239,7 @@ def parse_events(data: dict, league_slug: str, league_name: str, emoji: str) -> 
         channel = ", ".join(mx_channels or us_channels)
 
         # Status
-        status = event.get("status", {}).get("type", {}).get("name", "STATUS_SCHEDULED")
+        status = event.get("status", {}).get("type", {}).get("name", "STATUS_UNKNOWN")
 
         games.append({
             "league": league_name,
@@ -249,6 +249,8 @@ def parse_events(data: dict, league_slug: str, league_name: str, emoji: str) -> 
             "away": away,
             "time": time_str,
             "date_label": date_label,
+            "starts_at": date_utc,
+            "event_id": str(event.get("id", "")),
             "channel": channel,
             "mx_channels": mx_channels,
             "us_channels": us_channels,
