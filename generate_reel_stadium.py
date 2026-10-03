@@ -86,6 +86,7 @@ def layer(game, index, badges, date, preview=False):
 
 
 def render(metadata,output):
+    print("Reel: preparing artwork",flush=True)
     game=metadata['game']
     width, height = 720, 1280
     scale = width / W
@@ -101,8 +102,10 @@ def render(metadata,output):
     bounds=[(0,3),(3,6),(6,14),(14,20)]
     with tempfile.TemporaryDirectory(prefix='dv-stadium-') as tmp:
         audio=Path(tmp)/'music.wav'
-        subprocess.run([ffmpeg_binary(),'-y','-loglevel','error','-ss','96.79','-i',str(ROOT/'static/reels/audio/all-this-kevin-macleod.mp3'),'-t','20','-af','aresample=48000,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,afade=t=in:d=0.25,afade=t=out:st=19:d=1','-ar','48000',str(audio)],check=True)
-        p=subprocess.Popen([ffmpeg_binary(),'-y','-loglevel','error','-f','rawvideo','-pix_fmt','rgb24',
+        print('Reel: preparing audio',flush=True)
+        subprocess.run([ffmpeg_binary(),'-y','-loglevel','error','-threads','1','-filter_threads','1','-ss','96.79','-i',str(ROOT/'static/reels/audio/all-this-kevin-macleod.mp3'),'-t','20','-af','aresample=48000,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,afade=t=in:d=0.25,afade=t=out:st=19:d=1','-ar','48000',str(audio)],check=True,timeout=90)
+        print('Reel: encoding video',flush=True)
+        p=subprocess.Popen([ffmpeg_binary(),'-y','-loglevel','error','-threads','1','-filter_threads','1','-f','rawvideo','-pix_fmt','rgb24',
                             '-s',f'{width}x{height}','-r',str(FPS),'-i','-','-i',str(audio),'-c:v','libx264',
                             '-threads','1','-preset','ultrafast','-tune','zerolatency','-x264-params','rc-lookahead=0:sync-lookahead=0','-crf','21','-pix_fmt','yuv420p','-c:a','aac','-b:a','128k','-ar','48000',
                             '-movflags','+faststart','-t',str(DURATION),str(output)],stdin=subprocess.PIPE)
@@ -114,6 +117,7 @@ def render(metadata,output):
                 if index != current_index:
                     if overlay is not None:
                         overlay.close()
+                    print(f'Reel: scene {index+1}/4',flush=True)
                     full = layer(game,index,badges,date,metadata.get('preview',False))
                     overlay = full.resize((width,height),Image.Resampling.LANCZOS)
                     full.close()
@@ -143,7 +147,9 @@ def render(metadata,output):
                 p.stdin.write(frame.convert('RGB').tobytes())
         finally:
             p.stdin.close()
-        if p.wait(): raise RuntimeError('Video encoding failed')
+            if overlay is not None:
+                overlay.close()
+        if p.wait(timeout=90): raise RuntimeError('Video encoding failed')
     metadata.update({'design':'stadium-v2','width':width,'height':height,'preview':metadata.get('preview',False),'duration':20,'music':'All This — Kevin MacLeod (CC BY 4.0)'})
     output.with_suffix('.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2))
     return output
