@@ -11,3 +11,8 @@ Videos and publication checkpoints live on existing /data/reels disk. Videos exp
 Validation: `python test_reels.py`; `python post_reel.py --dry-run` checks private storage when configured and selects games without uploading/publishing. Official flow: https://www.postman.com/meta/instagram/folder/y6xustx/reels-publishing
 
 Facebook Reel publication is not enabled by this Instagram cron.
+
+## Memory fix and independent carousel
+720x1280 output; only the current overlay is retained. x264 uses one thread, ultrafast, zerolatency and no lookahead. Audio is resampled to 48 kHz before and after normalization.
+Render test: `python post_reel.py --render-test` generates a synthetic preview locally and never publishes.
+Existing cron: `python post_daily_instagram.py`, schedule `0 13,18 * * *`: carousel at 13:00 UTC and Reel at 18:00 UTC (07:00 and 12:00 Monterrey). No second paid service.

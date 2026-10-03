@@ -87,53 +87,64 @@ def layer(game, index, badges, date, preview=False):
 
 def render(metadata,output):
     game=metadata['game']
+    width, height = 720, 1280
+    scale = width / W
     date_parts=metadata['date'].split('-')
     months=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC']
     date=f'{date_parts[2]} {months[int(date_parts[1])-1]} {date_parts[0]}'
     bg=ImageOps.fit(Image.open(ROOT/'static/reels/stadium-v2.png').convert('RGB'),(W+60,H+108)) if game['league_slug']=='nfl' else Image.new('RGB',(W+60,H+108),'#10251d')
-    bg=bg.convert('RGBA')
+    bg=bg.resize((width+40,height+72), Image.Resampling.LANCZOS).convert('RGBA')
     # Dark veil allows the literal data to remain readable over cinematic lighting.
     veil=Image.new('RGBA',bg.size,(0,4,8,58)); bg=Image.alpha_composite(bg,veil)
     badges={k:load_badge(game[k]) for k in ('home','away')}
-    layers=[layer(game,i,badges,date,metadata.get("preview",False)) for i in range(4)]
     output=Path(output); output.parent.mkdir(parents=True,exist_ok=True)
-    for i,l in enumerate(layers):
-        still=bg.crop((30,54,30+W,54+H)); still.alpha_composite(l)
-        still.convert('RGB').save(output.with_name(output.stem+f'-scene-{i+1}.jpg'),quality=93)
     bounds=[(0,3),(3,6),(6,14),(14,20)]
     with tempfile.TemporaryDirectory(prefix='dv-stadium-') as tmp:
         audio=Path(tmp)/'music.wav'
-        subprocess.run([ffmpeg_binary(),'-y','-loglevel','error','-ss','96.79','-i',str(ROOT/'static/reels/audio/all-this-kevin-macleod.mp3'),'-t','20','-af','loudnorm=I=-16:TP=-1.5:LRA=11,afade=t=in:d=0.25,afade=t=out:st=19:d=1',str(audio)],check=True)
+        subprocess.run([ffmpeg_binary(),'-y','-loglevel','error','-ss','96.79','-i',str(ROOT/'static/reels/audio/all-this-kevin-macleod.mp3'),'-t','20','-af','aresample=48000,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,afade=t=in:d=0.25,afade=t=out:st=19:d=1','-ar','48000',str(audio)],check=True)
         p=subprocess.Popen([ffmpeg_binary(),'-y','-loglevel','error','-f','rawvideo','-pix_fmt','rgb24',
-                            '-s',f'{W}x{H}','-r',str(FPS),'-i','-','-i',str(audio),'-c:v','libx264',
-                            '-threads','1','-preset','fast','-crf','21','-pix_fmt','yuv420p','-c:a','aac','-b:a','128k','-ar','48000',
+                            '-s',f'{width}x{height}','-r',str(FPS),'-i','-','-i',str(audio),'-c:v','libx264',
+                            '-threads','1','-preset','ultrafast','-tune','zerolatency','-x264-params','rc-lookahead=0:sync-lookahead=0','-crf','21','-pix_fmt','yuv420p','-c:a','aac','-b:a','128k','-ar','48000',
                             '-movflags','+faststart','-t',str(DURATION),str(output)],stdin=subprocess.PIPE)
+        current_index = None
+        overlay = None
         try:
             for n in range(FPS*DURATION):
                 t=n/FPS; index=next(i for i,(a,b) in enumerate(bounds) if a<=t<b)
+                if index != current_index:
+                    if overlay is not None:
+                        overlay.close()
+                    full = layer(game,index,badges,date,metadata.get('preview',False))
+                    overlay = full.resize((width,height),Image.Resampling.LANCZOS)
+                    full.close()
+                    still = bg.crop((20,36,20+width,36+height))
+                    still.alpha_composite(overlay)
+                    still.convert('RGB').save(output.with_name(output.stem+f'-scene-{index+1}.jpg'),quality=93)
+                    still.close()
+                    current_index = index
                 start,end=bounds[index]; elapsed=t-start
-                x=int(30+18*math.sin(t*.2)); y=int(54-32*t/DURATION)
-                frame=bg.crop((x,y,x+W,y+H))
+                x=int((30+18*math.sin(t*.2))*scale); y=int((54-32*t/DURATION)*scale)
+                frame=bg.crop((x,y,x+width,y+height))
                 # Text enters in 0.35 seconds, synchronized to major musical beats.
                 ease=1-(1-min(1,elapsed/.35))**3
-                shifted=Image.new('RGBA',(W,H),(0,0,0,0))
-                shifted.alpha_composite(layers[index],(0,int((1-ease)*85)))
+                shifted=Image.new('RGBA',(width,height),(0,0,0,0))
+                shifted.alpha_composite(overlay,(0,int((1-ease)*85*scale)))
                 if ease<1:
                     shifted.putalpha(shifted.getchannel('A').point(lambda a:int(a*ease)))
                 frame=Image.alpha_composite(frame,shifted)
                 d=ImageDraw.Draw(frame)
                 # Small sequence markers leave the action area clear.
                 for dot in range(4):
-                    d.rounded_rectangle((430+dot*60,1570,470+dot*60,1577),radius=3,
+                    d.rounded_rectangle(tuple(int(v*scale) for v in (430+dot*60,1570,470+dot*60,1577)),radius=2,
                                         fill=GREEN if dot==index else '#50645a')
                 if 0<elapsed<.09 and index:
-                    flash=Image.new('RGBA',(W,H),(255,255,255,int(70*(1-elapsed/.09))))
+                    flash=Image.new('RGBA',(width,height),(255,255,255,int(70*(1-elapsed/.09))))
                     frame=Image.alpha_composite(frame,flash)
                 p.stdin.write(frame.convert('RGB').tobytes())
         finally:
             p.stdin.close()
         if p.wait(): raise RuntimeError('Video encoding failed')
-    metadata.update({'design':'stadium-v2','preview':metadata.get('preview',False),'duration':20,'music':'All This — Kevin MacLeod (CC BY 4.0)'})
+    metadata.update({'design':'stadium-v2','width':width,'height':height,'preview':metadata.get('preview',False),'duration':20,'music':'All This — Kevin MacLeod (CC BY 4.0)'})
     output.with_suffix('.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2))
     return output
 

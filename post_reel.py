@@ -80,6 +80,21 @@ async def main(dry_run=False):
         checked(client.post(endpoint+'/checkpoint',headers=private,json={'status':'published','media':media}))
         print('Instagram Reel published: '+media)
 
+def render_test():
+    """Exercise the full NFL renderer without storage, credentials or publication."""
+    game = {'league':'NFL','league_slug':'nfl', 'time':'18:15',
+            'away':{'name':'Equipo visitante','short':'VIS'},
+            'home':{'name':'Equipo local','short':'LOC'},
+            'mx_channels':['Canal de muestra'], 'us_channels':['Canal de muestra']}
+    with tempfile.TemporaryDirectory() as folder:
+        output = render({'date':'2026-10-02','game':game,'preview':True},Path(folder)/'test.mp4')
+        print(f'Render test completed: 720x1280, 20 seconds, {output.stat().st_size} bytes',flush=True)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(); parser.add_argument('--dry-run',action='store_true')
-    asyncio.run(main(parser.parse_args().dry_run))
+    parser.add_argument('--render-test',action='store_true')
+    args = parser.parse_args()
+    if args.render_test:
+        render_test()
+    else:
+        asyncio.run(main(args.dry_run))
