@@ -105,10 +105,11 @@ def render(metadata,output):
         print('Reel: preparing audio',flush=True)
         subprocess.run([ffmpeg_binary(),'-y','-loglevel','error','-threads','1','-filter_threads','1','-ss','96.79','-i',str(ROOT/'static/reels/audio/all-this-kevin-macleod.mp3'),'-t','20','-af','aresample=48000,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,afade=t=in:d=0.25,afade=t=out:st=19:d=1','-ar','48000',str(audio)],check=True,timeout=90)
         print('Reel: encoding video',flush=True)
+        silent=Path(tmp)/'silent.mp4'
         p=subprocess.Popen([ffmpeg_binary(),'-y','-loglevel','error','-threads','1','-filter_threads','1','-f','rawvideo','-pix_fmt','rgb24',
-                            '-s',f'{width}x{height}','-r',str(FPS),'-i','-','-i',str(audio),'-c:v','libx264',
-                            '-threads','1','-preset','ultrafast','-tune','zerolatency','-x264-params','rc-lookahead=0:sync-lookahead=0','-crf','21','-pix_fmt','yuv420p','-c:a','aac','-b:a','128k','-ar','48000',
-                            '-movflags','+faststart','-t',str(DURATION),str(output)],stdin=subprocess.PIPE)
+                            '-s',f'{width}x{height}','-r',str(FPS),'-i','-','-c:v','libx264',
+                            '-threads','1','-preset','ultrafast','-tune','zerolatency','-x264-params','rc-lookahead=0:sync-lookahead=0','-crf','21','-pix_fmt','yuv420p','-an',
+                            '-movflags','+faststart','-t',str(DURATION),str(silent)],stdin=subprocess.PIPE)
         current_index = None
         overlay = None
         try:
@@ -150,6 +151,11 @@ def render(metadata,output):
             if overlay is not None:
                 overlay.close()
         if p.wait(timeout=90): raise RuntimeError('Video encoding failed')
+        print('Reel: adding music',flush=True)
+        subprocess.run([ffmpeg_binary(),'-y','-loglevel','error','-threads','1',
+                        '-i',str(silent),'-i',str(audio),'-map','0:v:0','-map','1:a:0',
+                        '-c:v','copy','-c:a','aac','-b:a','128k','-ar','48000',
+                        '-movflags','+faststart','-t',str(DURATION),str(output)],check=True,timeout=90)
     metadata.update({'design':'stadium-v2','width':width,'height':height,'preview':metadata.get('preview',False),'duration':20,'music':'All This — Kevin MacLeod (CC BY 4.0)'})
     output.with_suffix('.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2))
     return output
