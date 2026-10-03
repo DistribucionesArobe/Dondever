@@ -1443,7 +1443,9 @@ async def fetch_preview_games(days: int = 14) -> list[dict]:
         date_str = (start + timedelta(days=offset)).strftime("%Y%m%d")
         for league in sorted(TWITTER_LEAGUES):
             try:
-                for game in await get_todays_games(date_str=date_str, league_filter=league):
+                for game in await get_todays_games(
+                    date_str=date_str, league_filter=league, persist=False
+                ):
                     key = str(game.get("id") or game.get("name") or "")
                     if key:
                         all_games[key] = game
@@ -1476,8 +1478,8 @@ async def preview_examples(count: int = 6, days: int = 14) -> list[dict]:
 
 
 async def preview_daily_slots() -> list[dict]:
-    """Show the morning, midday, and night formats without calling any X API method."""
-    games = _relevant_upcoming(await get_todays_games(), include_posted=True)
+    """Preview slot formats from the next week without calling X or persisting data."""
+    games = await fetch_preview_games(days=7)
     if not games:
         return []
     morning_games = games[:2]
@@ -1552,8 +1554,8 @@ async def _preview_cli(count: int = 6, days: int = 14) -> None:
             print("Opciones: " + " · ".join(preview["options"]))
 
 
-def _x_tracked_tweets_today() -> list:
-    """Fetch today's DondeVer campaign tweets once for slot/event deduplication."""
+def _x_recent_tracked_tweets(days: int = 7) -> list:
+    """Fetch recent DondeVer campaign tweets for slot and event deduplication."""
     client = get_twitter_client()
     if client is None:
         raise RuntimeError("Faltan credenciales X para revisar duplicados")
@@ -1566,11 +1568,11 @@ def _x_tracked_tweets_today() -> list:
         tweet_fields=["created_at", "entities"],
         user_auth=True,
     )
-    today = datetime.now(TZ_MX).date()
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     tracked = []
     for tweet in (timeline.data or []) if timeline else []:
         created = getattr(tweet, "created_at", None)
-        if not created or created.astimezone(TZ_MX).date() != today:
+        if not created or created < cutoff:
             continue
         urls = (getattr(tweet, "entities", None) or {}).get("urls", [])
         if any("utm_campaign=dondever_x" in (url.get("expanded_url") or url.get("url") or "")
@@ -1595,9 +1597,12 @@ def _tracked_tweet_urls(tweet) -> list[str]:
 
 
 def _x_published_in_slot(tweets: list, slot: str) -> bool:
-    """Use explicit UTM slot labels; classify older campaign links by local post time."""
+    """Detect this slot on the current local date, using UTM labels where available."""
+    today = datetime.now(TZ_MX).date()
     for tweet in tweets:
         created = getattr(tweet, "created_at", None)
+        if not created or created.astimezone(TZ_MX).date() != today:
+            continue
         for url in _tracked_tweet_urls(tweet):
             content = parse_qs(urlparse(url).query).get("utm_content", [""])[0]
             if content.endswith(f"_{slot}"):
@@ -1608,7 +1613,7 @@ def _x_published_in_slot(tweets: list, slot: str) -> bool:
 
 
 def _x_published_event_paths(tweets: list) -> set[str]:
-    """Return event pages linked by today's tracked posts so fixtures aren't repeated."""
+    """Return event pages linked recently so future fixtures aren't repeated."""
     paths = set()
     for tweet in tweets:
         for url in _tracked_tweet_urls(tweet):
@@ -1648,15 +1653,17 @@ async def post_daily_guide() -> dict:
     now_local = datetime.now(TZ_MX)
     slot = _publishing_slot(now_local)
     sentinel = f"__daily_guide__{now_local:%Y-%m-%d}_{slot}"
-    tracked_tweets = _x_tracked_tweets_today()
+    tracked_tweets = _x_recent_tracked_tweets()
     if _already_posted(sentinel) or _x_published_in_slot(tracked_tweets, slot):
         logger.info("Daily X guide skipped: slot=%s already published", slot)
         return {"success": True, "skipped": "duplicate_slot", "slot": slot}
 
-    games = await get_todays_games()
+    # Plan over the next week so slots remain useful on dates without fixtures.
+    # This helper queries only configured competitions and does not persist preview data.
+    games = await fetch_preview_games(days=7)
     posted_paths = _x_published_event_paths(tracked_tweets)
     candidates = [
-        game for game in _relevant_upcoming(games, include_posted=True)
+        game for game in _relevant_upcoming(games)
         if urlparse(_event_page_url(game, "slot")).path.rstrip("/") not in posted_paths
     ]
     if not candidates:
@@ -1667,11 +1674,13 @@ async def post_daily_guide() -> dict:
         content = "agenda_morning"
         tweet = compose_daily_summary_tweet(candidates, content, include_posted=True)
         image_game = candidates[0]
+        included_games = candidates[:2]
         post_as_poll = False
     elif slot == "midday":
         content = "featured_midday"
         image_game = candidates[0]
         tweet = _compose_featured_tweet(image_game, content)
+        included_games = [image_game]
         post_as_poll = False
     else:
         open_tv_games = [game for game in candidates if _confirmed_free_mx_channels(game)]
@@ -1679,11 +1688,13 @@ async def post_daily_guide() -> dict:
             content = "free_tv_night"
             tweet = compose_free_tv_tweet(open_tv_games, content, include_posted=True)
             image_game = open_tv_games[0]
+            included_games = open_tv_games[:2]
             post_as_poll = False
         else:
             content = "poll_night"
             image_game = None
             tweet, poll_options = _compose_viewing_poll(candidates[0], "night")
+            included_games = [candidates[0]]
             post_as_poll = True
     if not tweet:
         logger.info("Daily X guide skipped: no eligible format")
@@ -1699,6 +1710,10 @@ async def post_daily_guide() -> dict:
     if not result.get("success"):
         raise RuntimeError(f"X rechazó la publicación: {result.get('error', 'error desconocido')}")
     _mark_posted(sentinel)
+    for game in included_games:
+        game_id = str(game.get("id") or game.get("name") or "")
+        if game_id:
+            _mark_posted(game_id)
     logger.info("Daily X guide posted: slot=%s format=%s tweet_id=%s", slot, content, result.get("tweet_id"))
     return {**result, "slot": slot, "format": content}
 

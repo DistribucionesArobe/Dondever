@@ -1668,6 +1668,7 @@ async def get_todays_games(
     date_str: Optional[str] = None,
     league_filter: Optional[str] = None,
     sport_filter: Optional[str] = None,
+    persist: bool = True,
 ) -> list[dict]:
     """
     Fetch today's games across all configured leagues.
@@ -1728,11 +1729,12 @@ async def get_todays_games(
     all_events.sort(key=lambda e: e.get("date", ""))
 
     # ── Persist to DB (fire-and-forget) ──
-    try:
-        from db import persist_games
-        asyncio.create_task(persist_games(all_events, date_str))
-    except Exception:
-        pass  # DB unavailable — degrade gracefully
+    if persist:
+        try:
+            from db import persist_games
+            asyncio.create_task(persist_games(all_events, date_str))
+        except Exception:
+            pass  # DB unavailable — degrade gracefully
 
     return all_events
 
