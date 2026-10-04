@@ -193,6 +193,22 @@ def _country_channel_lines(game: dict) -> list[str]:
     return lines
 
 
+def _hashtags_for_games(games: list[dict]) -> str:
+    """Add competition discovery plus the DondeVer brand, keeping tags concise."""
+    competition_tags = {
+        "liga-mx": "#LigaMX",
+        "champions": "#ChampionsLeague",
+        "nfl": "#NFL",
+    }
+    tags = []
+    for game in games:
+        tag = competition_tags.get(str(game.get("league_slug") or "").lower())
+        if tag and tag not in tags:
+            tags.append(tag)
+    tags.append("#DondeVer")
+    return " ".join(tags)
+
+
 def get_betting_affiliate_text() -> str:
     """
     BETTING affiliate CTA con link geo-inteligente /go/bet.
@@ -366,6 +382,7 @@ def _compose_featured_tweet(game: dict, content: str = "featured") -> str:
     league = game.get("league_name") or "Partido"
     parts = [f"📺 {first} vs {second} · {league}", event_time]
     parts.extend(_country_channel_lines(game))
+    parts.append(_hashtags_for_games([game]))
     parts.append(_event_page_url(game, content))
     return "\n".join(parts)
 
@@ -382,6 +399,7 @@ def compose_free_tv_tweet(games: list[dict], content: str = "free_tv", *, includ
     if not candidates:
         return ""
     lines = ["📡 Partidos por TV abierta en México (confirmado)"]
+    included = []
     for game in candidates[:2]:
         first, second = get_team_order(game)
         channels = ", ".join(_confirmed_free_mx_channels(game)[:2])
@@ -390,9 +408,13 @@ def compose_free_tv_tweet(games: list[dict], content: str = "free_tv", *, includ
             f"México: {channels}",
             _event_page_url(game, content),
         ]
-        if _tweet_length("\n".join(lines + addition)) > 280:
+        tags = _hashtags_for_games(included + [game])
+        if _tweet_length("\n".join(lines + addition + [tags])) > 280:
             break
         lines.extend(addition)
+        included.append(game)
+    if included:
+        lines.append(_hashtags_for_games(included))
     return "\n".join(lines)
 
 PROMO_TWEETS = [
@@ -453,13 +475,18 @@ def compose_daily_summary_tweet(
     if not upcoming:
         return ""
     lines = [f"📅 Próximos partidos · hora CDMX"]
+    included = []
     for game in upcoming[:2]:
         first, second = get_team_order(game)
         addition = [f"{game.get('league_name', '')}: {first} vs {second} · {format_game_time_mx(game['date'])}"]
         addition += _country_channel_lines(game) + [_event_page_url(game, content)]
-        if len(lines) > 1 and _tweet_length("\n".join(lines + addition)) > 280:
+        tags = _hashtags_for_games(included + [game])
+        if _tweet_length("\n".join(lines + addition + [tags])) > 280:
             break
         lines.extend(addition)
+        included.append(game)
+    if included:
+        lines.append(_hashtags_for_games(included))
     return "\n".join(lines)
 
 def compose_pick_tweet(game: dict) -> str:
@@ -789,7 +816,8 @@ def _relevant_upcoming(games: list[dict], *, include_posted: bool = False) -> li
         if not gid or (not include_posted and _already_posted(gid)):
             continue
         upcoming.append((league_order.get(game.get("league_slug"), 99), starts, game))
-    return [item[2] for item in sorted(upcoming, key=lambda item: (item[0], item[1]))]
+    # Prefer the next kickoff first; league priority breaks ties on the same date.
+    return [item[2] for item in sorted(upcoming, key=lambda item: (item[1], item[0]))]
 
 
 ENGAGEMENT_REPLIES = [
@@ -1634,10 +1662,12 @@ def _compose_viewing_poll(game: dict, slot: str) -> tuple[str, list[str]]:
     prompt = "📊 ¿A quién apoyas?" if game.get("sport") == "soccer" else "📊 ¿Quién gana?"
     lines = [prompt, f"{first} vs {second} · {league}", format_game_time_mx(str(game.get("date", "")))]
     lines.extend(channel_lines)
+    lines.append(_hashtags_for_games([game]))
     lines.append(_event_page_url(game, f"poll_{slot}"))
     text = "\n".join(line for line in lines if line)
     if _tweet_length(text) > 280:
         lines = [prompt, f"{first} vs {second} · {format_game_time_mx(str(game.get('date', '')))}"]
+        lines.append(_hashtags_for_games([game]))
         lines.append(_event_page_url(game, f"poll_{slot}"))
         text = "\n".join(lines)
     options = [first, second]
