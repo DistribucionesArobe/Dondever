@@ -1169,6 +1169,19 @@ async def parse_espn_events_enriched(
             "apple tv+ mls season pass": "apple tv+",
         }
         for geo_broadcast in comp.get("geoBroadcasts", []):
+            # ESPN mete RADIO en la misma lista que la televisión.
+            #
+            # Verificado el 04/10/2026 contra la API: los cuatro partidos de
+            # playoffs de MLB traían {"media": {"shortName": "ERADM"},
+            # "type": {"id": "5", "shortName": "Radio"}}. ERADM es ESPN Radio.
+            # Como nunca se miraba `type`, esa señal salía impresa como si
+            # fuera un canal de TV — y "ERADM" aparecía en /equipo/dodgers,
+            # la página con más tráfico del sitio (129 mil impresiones).
+            #
+            # Un sitio que se llama DondeVer no puede mandarte a una estación
+            # de radio cuando preguntas en qué canal VER el partido.
+            if (geo_broadcast.get("type", {}).get("shortName") or "").lower() == "radio":
+                continue
             market = geo_broadcast.get("market", {}).get("type", "")
             media = geo_broadcast.get("media", {})
             raw_channel = media.get("shortName", "")
@@ -3090,6 +3103,10 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
             channels = []
             seen_ch = set()
             for geo in comp.get("geoBroadcasts", []):
+                # Radio fuera (ver el comentario largo en el otro lector de
+                # geoBroadcasts). ESPN mezcla radio y TV en la misma lista.
+                if (geo.get("type", {}).get("shortName") or "").lower() == "radio":
+                    continue
                 raw = geo.get("media", {}).get("shortName", "")
                 if not raw:
                     continue
