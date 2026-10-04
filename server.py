@@ -3550,11 +3550,22 @@ async def api_instagram_image(date: Optional[str] = None):
     public_url = slide_urls[0]
 
     # Keep the caption short; verified channel detail is in the image.
+    # Add only league hashtags represented in this day's actual games.
+    hashtags = ["#DondeVer", "#DeportesEnVivo"]
+    for game in selected:
+        league = game.get("league", "")
+        normalized = unicodedata.normalize("NFKD", league).encode("ascii", "ignore").decode()
+        tag = "#" + "".join(re.findall(r"[A-Za-z0-9]+", normalized))
+        if tag != "#" and tag not in hashtags:
+            hashtags.append(tag)
+        if len(hashtags) == 5:  # Brand plus at most three relevant leagues.
+            break
+    hashtag_line = " ".join(hashtags)
     if len(selected) == 1:
-        caption = f"¿Dónde ver a {selected[0]['home']['name']}?\nConsulta horarios y canales en DondeVer.app 📺\n\n#DondeVer #DeportesEnVivo"
+        caption = f"¿Dónde ver a {selected[0]['home']['name']}?\nConsulta horarios y canales en DondeVer.app 📺\n\n{hashtag_line}"
     else:
         leagues = list(dict.fromkeys(g["league"] for g in selected))
-        caption = f"Partidos de {', '.join(leagues[:2])} para seguir hoy.\nConsulta dónde ver cada juego en DondeVer.app 📺\n\n#DondeVer #DeportesEnVivo"
+        caption = f"Partidos de {', '.join(leagues[:2])} para seguir hoy.\nConsulta dónde ver cada juego en DondeVer.app 📺\n\n{hashtag_line}"
 
     return JSONResponse({
         "image_url": public_url,
