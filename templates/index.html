@@ -3793,9 +3793,12 @@
             html += '<div class="tp-matchup">' + lg.second;
             if (lg.second_logo) html += '<img src="' + lg.second_logo + '" alt="">';
             html += '</div></div>';
+            // Mismo criterio que las cards de la portada: si el canal viene
+            // del default de la liga, se marca como probable.
             if (lg.channels && lg.channels.length) {
+                var lgProb = lg.channels_confirmed === false ? ' &middot; probable' : '';
                 html += '<div class="tp-channels">';
-                lg.channels.forEach(function(ch) { html += '<span class="tp-ch">' + ch + '</span>'; });
+                lg.channels.forEach(function(ch) { html += '<span class="tp-ch">' + ch + lgProb + '</span>'; });
                 html += '</div>';
             }
             html += '</div>';
@@ -3816,8 +3819,9 @@
             html += '<div class="tp-meta">Hora CDMX &middot; ' + ng.league + '</div></div>';
             html += '</div>';
             if (ng.channels && ng.channels.length) {
+                var ngProb = ng.channels_confirmed === false ? ' &middot; probable' : '';
                 html += '<div class="tp-channels">';
-                ng.channels.forEach(function(ch) { html += '<span class="tp-ch">' + ch + '</span>'; });
+                ng.channels.forEach(function(ch) { html += '<span class="tp-ch">' + ch + ngProb + '</span>'; });
                 html += '</div>';
             }
             if (ng.odds) {

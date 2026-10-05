@@ -7,7 +7,7 @@
     {% set first_team = game.home.name if home_left else game.away.name %}
     {% set second_team = game.away.name if home_left else game.home.name %}
     <title>Donde ver {{ first_team }} vs {{ second_team }} hoy en vivo - {{ game.league_name }} | DondeVer</title>
-    <meta name="description" content="Donde ver {{ first_team }} vs {{ second_team }} en vivo hoy. {{ game.league_name }}{% if game.status.state == 'pre' %}, {{ format_mx_time(game.date) }} hora Mexico{% endif %}. Canales de TV y streaming para Mexico, USA y Latinoamerica. {% if game.broadcasts %}Transmite: {{ game.broadcasts[:3]|map(attribute='channel')|join(', ') }}{% endif %}">
+    <meta name="description" content="Donde ver {{ first_team }} vs {{ second_team }} en vivo hoy. {{ game.league_name }}{% if game.status.state == 'pre' %}, {{ format_mx_time(game.date) }} hora Mexico{% endif %}. Canales de TV y streaming para Mexico, USA y Latinoamerica. {% if game.broadcasts %}{% if game.get('channels_confirmed', True) %}Transmite{% else %}Suele verse por{% endif %}: {{ game.broadcasts[:3]|map(attribute='channel')|join(', ') }}{% endif %}">
     <!-- Open Graph -->
     <meta property="og:title" content="Donde ver {{ first_team }} vs {{ second_team }} hoy en vivo">
     <meta property="og:description" content="{{ game.league_name }} en vivo. Canales de TV y streaming en Mexico, USA y Latinoamerica.">
@@ -314,7 +314,15 @@
 
         <!-- Channels grouped by MX/US with type badges -->
         <div class="channels-section">
-            <h3>DONDE VERLO</h3>
+            {# Mismo criterio que game.html: el aviso va una vez arriba del
+               bloque, no colgado de cada pastilla. #}
+            {% set _probable = not game.get('channels_confirmed', True) %}
+            <h3>{{ 'DONDE SUELE VERSE' if _probable else 'DONDE VERLO' }}</h3>
+            {% if _probable and game.broadcasts %}
+            <p style="font-size:0.8rem;color:#6b7280;margin:-0.4rem 0 0.75rem;">
+                Canales habituales de {{ game.league_name }}. Para este partido todav&iacute;a no hay transmisi&oacute;n confirmada.
+            </p>
+            {% endif %}
             {% if game.broadcasts %}
                 {% set mx_channels = [] %}
                 {% set us_channels = [] %}

@@ -33,7 +33,11 @@
     {% for g in rows %}
     <a class="g" href="{{ app_url }}{{ g.url }}?utm_source=widget&utm_medium=embed" rel="noopener">
       {% if g.logo %}<img src="{{ g.logo }}" alt="" loading="lazy">{% endif %}
-      <span class="t">{{ g.title }}<small>{{ g.league }}{% if g.channels %} &middot; {{ g.channels }}{% endif %}</small></span>
+      {#- Este widget vive incrustado en sitios ajenos, donde nadie puede
+          corregirlo. Si el canal sale del reparto de derechos de la liga y no
+          de la transmisión confirmada de ESTE partido, tiene que decirlo aquí
+          mismo: el medio que lo incrusta pone su propia credibilidad. -#}
+      <span class="t">{{ g.title }}<small>{{ g.league }}{% if g.channels %} &middot; {{ g.channels }}{% if not g.get('channels_confirmed', True) %} <span style="color:#9ca3af;">(probable)</span>{% endif %}{% endif %}</small></span>
       <span class="r{% if g.live %} live{% endif %}">{{ g.when }}<small>{{ g.sub }}</small></span>
     </a>
     {% endfor %}

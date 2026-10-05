@@ -194,7 +194,9 @@
             {% endif %}
         </div>
         {% if game.broadcasts %}
-        <div class="gc-channels">{{ game.broadcasts | map(attribute='channel') | join(', ') }}</div>
+        {#- Mismo criterio que la portada: cuando el canal sale del default de
+            la liga, aquí también se dice. -#}
+        <div class="gc-channels">{{ game.broadcasts | map(attribute='channel') | join(', ') }}{% if not game.get('channels_confirmed', True) %} <span style="opacity:0.7;">&middot; probable</span>{% endif %}</div>
         {% endif %}
     </a>
     {% endfor %}
