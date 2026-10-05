@@ -194,7 +194,13 @@
                 html += '<div class="gr-time">' + timeHtml + '</div>';
                 html += '<div><div class="gr-teams">' + (g.away_name || '?') + ' vs ' + (g.home_name || '?') + '</div>';
                 html += '<div class="gr-league">' + (g.league_name || '') + '</div></div>';
-                if (channel) html += '<div class="gr-channel">' + channel + '</div>';
+                // Mismo criterio que la portada: si el canal viene del default
+                // de la liga y no de la transmisión confirmada, se dice.
+                if (channel) {
+                    var probable = g.channels_confirmed === false
+                        ? ' <span style="opacity:0.7;">&middot; probable</span>' : '';
+                    html += '<div class="gr-channel">' + channel + probable + '</div>';
+                }
                 html += '</a>';
             });
             html += '</div>';

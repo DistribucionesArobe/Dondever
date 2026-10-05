@@ -389,15 +389,24 @@
             </div>
         </div>
     </a>
+    {#- Canal confirmado vs canal habitual de la liga.
+        La portada ya distinguía las dos cosas desde hace meses: cuando
+        `channels_confirmed` es falso pinta el canal con "· probable". Esta
+        página no lo hacía, y es la de MÁS tráfico del sitio (/equipo/dodgers
+        acumula 128,908 impresiones). Resultado: la portada decía "probable" y
+        aquí el mismo partido salía como un hecho.
+        Cuando no sabemos, decirlo cuesta un adjetivo. No decirlo cuesta que
+        alguien prenda un canal equivocado y no vuelva. -#}
+    {%- set _probable = not game.get('channels_confirmed', True) -%}
     <div class="channels" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem;">
-        <span>Donde verlo:</span>
+        <span>{{ 'Suele verse en:' if _probable else 'Donde verlo:' }}</span>
         {% if game.broadcasts %}
             {% for b in game.broadcasts[:4] %}
             {% set saff = streaming_aff.get(b.channel) %}
             {% if saff %}
             <a href="/go/{{ saff.key }}?s=team-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" data-league="{{ game.league_slug }}" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
             {% else %}
-            <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;font-weight:600;">{{ b.channel }}</span>
+            <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;font-weight:600;{% if _probable %}opacity:0.78;{% endif %}"{% if _probable %} title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}{% if _probable %} <span style="opacity:0.75;">· probable</span>{% endif %}</span>
             {% endif %}
             {% endfor %}
         {% else %}

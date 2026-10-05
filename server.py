@@ -462,13 +462,22 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
             # Botón de contacto en el pie de TODAS las páginas (publicidad, ideas, opiniones).
             # En las páginas en inglés (/en/) va en inglés: si el usuario de EE.UU. ve texto en
             # español se va, que es justo el problema que estas páginas vienen a resolver.
-            if b"</footer>" in body and not request.url.path.startswith(("/widget", "/contacto")):
+            if b"</footer>" in body and not request.url.path.startswith(("/widget", "/contacto", "/publicidad")):
                 _label = ('&#128172; Contact us &middot; advertising, ideas and feedback' if _is_en
                           else '&#128172; Cont&aacute;ctanos &middot; publicidad, ideas y opiniones')
+                # Debajo del botón, un enlace de texto al media kit. Va aparte y
+                # en pequeño a propósito: quien busca anunciarse quiere ver
+                # cifras antes de escribir, pero al lector normal no le estorba
+                # ni le quita espacio a los anuncios que ya están en la página.
+                _kit = ('Media kit &middot; audience and figures' if _is_en
+                        else 'Anúnciate aquí &middot; audiencia y cifras')
                 contact_btn = (
                     '<p style="margin:0.6rem 0 0.2rem;"><a href="/contacto" style="display:inline-block;padding:0.45rem 0.95rem;'
                     'background:#10b981;color:#fff;border-radius:999px;font-weight:800;font-size:0.78rem;text-decoration:none;">'
                     f'{_label}</a></p>'
+                    '<p style="margin:0.35rem 0 0.2rem;"><a href="/publicidad" rel="nofollow" '
+                    'style="color:#94a3b8;font-size:0.72rem;text-decoration:none;">'
+                    f'{_kit}</a></p>'
                 ).encode("utf-8")
                 body = body.replace(b"</footer>", contact_btn + b"</footer>", 1)
 
@@ -1219,6 +1228,10 @@ def _widget_row(g: dict) -> dict:
     chans = [b.get("channel", "") for b in (g.get("broadcasts") or [])[:2]]
     return {"title": f"{first['name']} vs {second['name']}", "league": g.get("league_name", ""),
             "channels": ", ".join(c for c in chans if c), "when": when, "sub": sub, "live": live,
+            # El widget es lo que vive incrustado en sitios ajenos, donde nadie
+            # puede entrar a corregirlo. Si el canal sale del default de la liga
+            # tiene que decirlo ahí mismo.
+            "channels_confirmed": g.get("channels_confirmed", True),
             "logo": first.get("logo", ""), "url": f"/partido/{_make_game_slug(g)}"}
 
 
@@ -1237,6 +1250,7 @@ async def widget_team(request: Request, team_slug: str):
         sh, sa = g.get("score_home", ""), g.get("score_away", "")
         score = f"{sh}-{sa}" if soccer_like else f"{sa}-{sh}"
         rows.append({"title": f"{first} vs {second}", "league": g.get("league_name", ""), "channels": g.get("channels", ""),
+                     "channels_confirmed": g.get("channels_confirmed", True),
                      "when": score if g["state"] != "pre" else g.get("time_mx", "").lstrip("0"),
                      "sub": {"in": "EN VIVO", "post": "Final"}.get(g["state"], "Hoy"), "live": g["state"] == "in",
                      "logo": g.get("home_logo", ""), "url": g.get("url") or f"/equipo/{team_slug}"})
@@ -1244,7 +1258,8 @@ async def widget_team(request: Request, team_slug: str):
         if len(rows) >= 4:
             break
         rows.append({"title": f"{g['home_name']} vs {g['away_name']}", "league": g.get("league_name", ""),
-                     "channels": g.get("channels", ""), "when": format_mx_time(g["date"]).lstrip("0") if g.get("date") else "",
+                     "channels": g.get("channels", ""), "channels_confirmed": g.get("channels_confirmed", True),
+                     "when": format_mx_time(g["date"]).lstrip("0") if g.get("date") else "",
                      "sub": format_mx_day_time(g["date"]).split(" · ")[0] if g.get("date") else "", "live": False,
                      "logo": g.get("home_logo", ""), "url": f"/equipo/{team_slug}"})
     resp = templates.TemplateResponse(request, "widget.html", {
@@ -1935,6 +1950,48 @@ async def game_semantic(request: Request, slug: str):
                         _bucket.append(_ch)
                 _merged[_cc] = _bucket
             game["channels_by_country"] = _merged
+
+            # ── Esto es lo que vuelve el canal CONFIRMADO ──────────────────
+            # ESPN nunca trae México: verificado el 05/10/2026 contra
+            # site.api.espn.com — los geoBroadcasts de MLB traen region "us"
+            # en TODAS las entradas, sin una sola de México. Por eso el canal
+            # mexicano venía siempre del reparto de derechos de la liga, y por
+            # eso todo el sitio dice "probable".
+            #
+            # GatoTV y epgshare son distintos: son la PARRILLA PUBLICADA de un
+            # canal, y el match es por nombre de los dos equipos dentro de una
+            # ventana de horario. Que "Dodgers vs Brewers" aparezca a las 19:00
+            # en la parrilla de Fox Sports 2 México no es una estimación: es el
+            # dato que buscaba quien entró a la página.
+            #
+            # Así que cuando la parrilla encuentra ESTE partido en México, el
+            # canal pasa a broadcasts y channels_confirmed se vuelve verdadero.
+            # Es el único camino que tenemos hoy para que deje de decir
+            # "probable" sin mentir.
+            _mx_grid = [c for c in (_merged.get("MX") or []) if c]
+            if _mx_grid:
+                from sports_api import CHANNEL_ALIASES as _ALIAS
+                _bcs = list(game.get("broadcasts") or [])
+                _ya = {(b.get("channel") or "").lower() for b in _bcs}
+                _nuevos = []
+                for _ch in _mx_grid:
+                    _info = dict(_ALIAS.get(_ch, {"name": _ch, "type": "cable"}))
+                    # La parrilla es de un canal mexicano; si el alias no dice
+                    # país, es México, no Estados Unidos.
+                    _info.setdefault("country", "MX")
+                    _disp = _info.get("name", _ch)
+                    if _disp.lower() in _ya:
+                        continue
+                    _ya.add(_disp.lower())
+                    _nuevos.append({"channel": _disp, "market": "National",
+                                    "info": _info, "source": "grid_mx"})
+                # Los de la parrilla van primero: son los únicos confirmados.
+                # Los estimados que ya estaban se quedan abajo, no se borran:
+                # un partido puede ir por cable y por streaming a la vez y la
+                # parrilla solo ve los canales que consultamos.
+                if _nuevos:
+                    game["broadcasts"] = _nuevos + _bcs
+                game["channels_confirmed"] = True
     except Exception as e:
         logger.warning(f"GatoTV por país falló para {event_id}: {e}")
 
@@ -3683,6 +3740,9 @@ async def api_team_quick(team_slug: str):
             "time_mx": format_mx_time(g["date"]),
             "league": g.get("league_name", ""),
             "channels": channels,
+            # El panel de equipo de la portada se arma en JS con esto; sin el
+            # dato pintaba el default de la liga como canal confirmado.
+            "channels_confirmed": g.get("channels_confirmed", True),
             "state": g["status"]["state"],
             "status_display": g["status"].get("display", ""),
         }
@@ -3828,6 +3888,10 @@ async def api_mis_equipos(teams: str = Query("", description="Comma-separated te
                     "league_slug": g.get("league_slug", ""),
                     "emoji": g.get("emoji", ""),
                     "channels": channels_str,
+                    # Viaja hasta el widget y hasta "Mis equipos". Sin esto, el
+                    # canal del default de la liga llega a los dos sitios como
+                    # si estuviera confirmado.
+                    "channels_confirmed": g.get("channels_confirmed", True),
                     "url": f"/partido/{_make_game_slug(g)}",
                 })
                 break
@@ -3889,6 +3953,7 @@ async def api_mis_equipos(teams: str = Query("", description="Comma-separated te
                     "date": g.get("date", ""),
                     "state": "pre",
                     "channels": ", ".join(channels[:4]) if channels else "",
+                    "channels_confirmed": g.get("channels_confirmed", True),
                     "league_name": team_map[matched_slug]["league_name"],
                     "url": "",
                 })
@@ -5511,6 +5576,18 @@ async def sitemap_core():
 @app.get("/sobre-nosotros", response_class=HTMLResponse)
 async def about_page(request: Request):
     return templates.TemplateResponse(request, "about.html")
+
+
+@app.get("/publicidad", response_class=HTMLResponse)
+async def publicidad_page(request: Request):
+    """Media kit: cifras de audiencia para quien quiera anunciarse.
+
+    Va sin indexar (noindex en la plantilla) y fuera del sitemap a propósito.
+    Nadie la va a encontrar buscando en Google, y AdSense ya rechazó el sitio
+    una vez por "contenido de poco valor": no conviene sumar páginas delgadas
+    al índice por una que no trae tráfico. Se llega por el enlace del pie.
+    """
+    return templates.TemplateResponse(request, "publicidad.html")
 
 
 # ── Contacto: publicidad, ideas, opiniones, correcciones ──

@@ -111,7 +111,9 @@
             "awayTeam": {"@type": "SportsTeam", "name": "{{ game.away.name }}"},
             {% endif %}
             "organizer": {"@type": "SportsOrganization", "name": "{{ league_name }}"}
-            {% if game.broadcasts %},
+            {#- Igual que en game.html: el dato estructurado solo afirma el
+                canal cuando está confirmado para ese partido. -#}
+            {% if game.broadcasts and game.get('channels_confirmed', True) %},
             "broadcast": [{% for bc in game.broadcasts[:3] %}{% if not loop.first %},{% endif %}{"@type": "BroadcastEvent", "isLiveBroadcast": true, "publishedOn": {"@type": "BroadcastService", "name": "{{ bc.channel }}"}}{% endfor %}]
             {% endif %}
           }
@@ -455,10 +457,16 @@
                 </div>
             </div>
             <div class="game-channels">
+                {#- Mismo criterio que la portada (ver index.html): si
+                    `channels_confirmed` es falso, el canal viene del default de
+                    la liga. La etiqueta sola no distingue las dos cosas, y en
+                    una lista de 20 partidos todos se leen igual de ciertos. -#}
+                {%- set _probable = not game.get('channels_confirmed', True) -%}
                 {% if game.broadcasts %}
                     {% for b in game.broadcasts %}
-                    <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}">{{ b.channel }}</span>
+                    <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}"{% if _probable %} style="opacity:0.8;" title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}</span>
                     {% endfor %}
+                    {% if _probable %}<div style="font-size:0.6rem;color:#9ca3af;font-weight:600;letter-spacing:0.02em;">canal probable</div>{% endif %}
                 {% else %}
                     <span class="channel-tag unknown">Por confirmar</span>
                 {% endif %}

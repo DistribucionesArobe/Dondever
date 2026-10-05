@@ -7,7 +7,7 @@
     {% set first_team = game.home.name if home_left_meta else game.away.name %}
     {% set second_team = game.away.name if home_left_meta else game.home.name %}
     <title>{{ first_team }} vs {{ second_team }}: d&oacute;nde ver{{ " " + mx_when_label(game.date) if mx_when_label(game.date) }}{% if odds %}, momios y pron&oacute;stico{% endif %} — {{ game.league_name }} | DondeVer</title>
-    <meta name="description" content="Dónde ver {{ first_team }} vs {{ second_team }} en vivo: hora, canales de TV y streaming para México, USA y Latinoamérica.{% if game.broadcasts %} Transmite: {{ game.broadcasts[0].channel }}.{% endif %}{% if odds %} Momios, pronóstico y picks actualizados.{% endif %}">
+    <meta name="description" content="Dónde ver {{ first_team }} vs {{ second_team }} en vivo: hora, canales de TV y streaming para México, USA y Latinoamérica.{% if game.broadcasts %}{% if game.get('channels_confirmed', True) %} Transmite: {{ game.broadcasts[0].channel }}.{% else %} Suele verse por {{ game.broadcasts[0].channel }}.{% endif %}{% endif %}{% if odds %} Momios, pronóstico y picks actualizados.{% endif %}">
     <!-- Open Graph -->
     <meta property="og:title" content="{{ first_team }} vs {{ second_team }}: dónde ver{{ " " + mx_when_label(game.date) if mx_when_label(game.date) }}{% if odds %} — momios y pronóstico{% endif %}">
     <meta property="og:description" content="{{ game.league_name }} en vivo — canales de TV y streaming en México, USA y Latinoamérica.{% if odds %} Cuotas y pronóstico.{% endif %}">
@@ -74,7 +74,11 @@
         }
       ],
       {% endif %}
-      {% if game.broadcasts %}"broadcast": [{% for bc in game.broadcasts %}
+      {#- Solo declaramos BroadcastEvent cuando el canal está confirmado para
+          ESTE partido. Un dato estructurado es una afirmación dirigida a
+          Google, no a una persona que puede leer "probable" al lado: si el
+          canal viene del default de la liga, callarlo es lo correcto. -#}
+      {% if game.broadcasts and game.get('channels_confirmed', True) %}"broadcast": [{% for bc in game.broadcasts %}
         {
           "@type": "BroadcastEvent",
           "isLiveBroadcast": true,
@@ -476,7 +480,18 @@
         <script id="liveInit" type="application/json">{{ (game.live or {})|tojson }}</script>
         {% endif %}
         <div class="channels-section">
-            <h3>D&Oacute;NDE VERLO</h3>
+            {#- Mismo criterio que la portada: cuando `channels_confirmed` es
+                falso, los canales vienen del default de la liga, no de la API
+                del partido. Aquí van en pastillas grandes y con enlace, que es
+                lo que más parece un hecho confirmado de todo el sitio, así que
+                el aviso va arriba del bloque y no colgado de cada pastilla. -#}
+            {%- set _probable = not game.get('channels_confirmed', True) -%}
+            <h3>{{ 'D&Oacute;NDE SUELE VERSE'|safe if _probable else 'D&Oacute;NDE VERLO'|safe }}</h3>
+            {% if _probable and game.broadcasts %}
+            <p style="font-size:0.8rem;color:#6b7280;margin:-0.4rem 0 0.75rem;">
+                Canales habituales de {{ game.league_name }}. Para este partido todav&iacute;a no hay transmisi&oacute;n confirmada.
+            </p>
+            {% endif %}
             {% if game.broadcasts %}
                 {% set mx_channels = [] %}
                 {% set us_channels = [] %}

@@ -332,9 +332,11 @@
                     </div>
                 </div>
                 <div class="game-channels">
+                    {# Mismo criterio que la portada (ver index.html). #}
                     {% if game.broadcasts %}
+                        {% set _probable = not game.get('channels_confirmed', True) %}
                         {% for b in game.broadcasts %}
-                        <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}">{{ b.channel }}</span>
+                        <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}"{% if _probable %} style="opacity:0.8;" title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}{% if _probable %} &middot; probable{% endif %}</span>
                         {% endfor %}
                     {% else %}
                         <span class="channel-tag unknown">Por confirmar</span>

@@ -3019,7 +3019,20 @@ US_TO_MX_CHANNEL = {
     "CBS": "Fox Sports MX", "CBSSN": "Fox Sports MX",
     "Univision": "TUDN", "UniMas": "TUDN",
     "Telemundo": "Telemundo",
-    "TNT": "TNT Sports", "TBS": "TNT Sports",
+    # TNT y TBS NO se traducen. Estaban mapeados a "TNT Sports", que en
+    # CHANNEL_ALIASES es un canal de MÉXICO, y el resultado fue que la ficha de
+    # Yankees vs Rays del 5/10/2026 publicaba "MX: TNT Sports" — un canal que
+    # en México transmite Champions League, no beisbol.
+    #
+    # Verificado el 05/10/2026: TNT Sports llegó a México en agosto de 2021 con
+    # los derechos de la UEFA Champions League y el Mundial de Clubes, y es lo
+    # que transmite (Goal, Xataka México, SensaCine). De MLB, nada. Los que
+    # llevan los playoffs son TNT y TBS de ESTADOS UNIDOS, que comparten marca
+    # con el mexicano y nada más.
+    #
+    # Para las ligas donde TNT Sports México sí transmite —Champions y Mundial
+    # de Clubes— ya está puesto en DEFAULT_LEAGUE_CHANNELS, así que quitarlo de
+    # aquí no pierde nada y deja de inventar un canal mexicano.
     "Max": "Max", "HBO Max": "Max",
     "Peacock": "Disney+",
     "Amazon Prime": "Amazon Prime", "Prime Video": "Amazon Prime",
@@ -3129,14 +3142,20 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
             # Canales de México con las MISMAS reglas que usa la ficha del partido
             _home_nm = home_c.get("team", {}).get("displayName", "")
             _away_nm = away_c.get("team", {}).get("displayName", "")
-            if not any(c.get("country") == "MX" for c in channels):
+            # Mismo criterio que parse_espn_events_enriched: si ESPN no dio un
+            # canal de México para ESTE partido y hay que caer al reparto de
+            # derechos de la liga, el canal es probable, no confirmado. Las
+            # páginas de liga y equipo lo pintaban como un hecho.
+            channels_confirmed = any(c.get("country") == "MX" for c in channels)
+            if not channels_confirmed:
                 for mx in mx_channels_for_game(league_slug_hint, _home_nm, _away_nm,
                                                [c["name"] for c in channels]):
                     info = CHANNEL_ALIASES.get(mx, {})
                     display = info.get("name", mx)
                     if display.lower() not in seen_ch:
                         seen_ch.add(display.lower())
-                        channels.append({"name": display, "country": info.get("country", "MX")})
+                        channels.append({"name": display, "country": info.get("country", "MX"),
+                                         "confirmed": False})
 
             upcoming.append({
                 "id": event.get("id", ""),
@@ -3146,6 +3165,7 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
                 "away_logo": away_c.get("team", {}).get("logo", ""),
                 "date": event.get("date", ""),
                 "channels": channels[:8],
+                "channels_confirmed": channels_confirmed,
             })
 
     upcoming.sort(key=lambda x: x.get("date", ""))
