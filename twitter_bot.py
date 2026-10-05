@@ -385,9 +385,13 @@ def _compose_featured_tweet(game: dict, content: str = "featured") -> str:
     if event_time:
         parts.append(event_time)
     parts.extend(_country_channel_lines(game))
-    parts.append(_hashtags_for_games([game]))
-    parts.append(_event_page_url(game, content))
-    return "\n".join(parts)
+    prompt = "¿Desde qué país lo vas a ver? 👇"
+    tags = _hashtags_for_games([game])
+    url = _event_page_url(game, content)
+    with_prompt = "\n".join(parts + [prompt, tags, url])
+    if _tweet_length(with_prompt) <= 280:
+        return with_prompt
+    return "\n".join(parts + [tags, url])
 
 
 async def compose_game_tweet(game: dict) -> str:
@@ -479,15 +483,18 @@ def compose_daily_summary_tweet(
         return ""
     lines = [f"📅 Próximos partidos · hora CDMX"]
     included = []
+    prompt = "¿Qué partido agregamos a la próxima agenda? 👇"
     for game in upcoming[:2]:
         first, second = get_team_order(game)
         addition = [f"{game.get('league_name', '')}: {first} vs {second} · {format_game_time_mx(game['date'])}"]
         addition += _country_channel_lines(game) + [_event_page_url(game, content)]
         tags = _hashtags_for_games(included + [game])
-        if _tweet_length("\n".join(lines + addition + [tags])) > 280:
+        if _tweet_length("\n".join(lines + addition + [prompt, tags])) > 280:
             break
         lines.extend(addition)
         included.append(game)
+    if included:
+        lines.append(prompt)
     if included:
         lines.append(_hashtags_for_games(included))
     return "\n".join(lines)
@@ -1663,11 +1670,13 @@ def _compose_viewing_poll(game: dict, slot: str) -> tuple[str, list[str]]:
     prompt = "📊 ¿A quién apoyas?" if game.get("sport") == "soccer" else "📊 ¿Quién gana?"
     lines = [prompt, f"{first} vs {second} · {league}", format_game_time_mx(str(game.get("date", "")))]
     lines.extend(channel_lines)
+    lines.append("¿Desde qué país lo vas a ver? 👇")
     lines.append(_hashtags_for_games([game]))
     lines.append(_event_page_url(game, f"poll_{slot}"))
     text = "\n".join(line for line in lines if line)
     if _tweet_length(text) > 280:
         lines = [prompt, f"{first} vs {second} · {format_game_time_mx(str(game.get('date', '')))}"]
+        lines.append("¿Desde qué país lo vas a ver? 👇")
         lines.append(_hashtags_for_games([game]))
         lines.append(_event_page_url(game, f"poll_{slot}"))
         text = "\n".join(lines)
