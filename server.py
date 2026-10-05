@@ -1228,6 +1228,10 @@ def _widget_row(g: dict) -> dict:
     chans = [b.get("channel", "") for b in (g.get("broadcasts") or [])[:2]]
     return {"title": f"{first['name']} vs {second['name']}", "league": g.get("league_name", ""),
             "channels": ", ".join(c for c in chans if c), "when": when, "sub": sub, "live": live,
+            # El widget es lo que vive incrustado en sitios ajenos, donde nadie
+            # puede entrar a corregirlo. Si el canal sale del default de la liga
+            # tiene que decirlo ahí mismo.
+            "channels_confirmed": g.get("channels_confirmed", True),
             "logo": first.get("logo", ""), "url": f"/partido/{_make_game_slug(g)}"}
 
 
@@ -1246,6 +1250,7 @@ async def widget_team(request: Request, team_slug: str):
         sh, sa = g.get("score_home", ""), g.get("score_away", "")
         score = f"{sh}-{sa}" if soccer_like else f"{sa}-{sh}"
         rows.append({"title": f"{first} vs {second}", "league": g.get("league_name", ""), "channels": g.get("channels", ""),
+                     "channels_confirmed": g.get("channels_confirmed", True),
                      "when": score if g["state"] != "pre" else g.get("time_mx", "").lstrip("0"),
                      "sub": {"in": "EN VIVO", "post": "Final"}.get(g["state"], "Hoy"), "live": g["state"] == "in",
                      "logo": g.get("home_logo", ""), "url": g.get("url") or f"/equipo/{team_slug}"})
@@ -1253,7 +1258,8 @@ async def widget_team(request: Request, team_slug: str):
         if len(rows) >= 4:
             break
         rows.append({"title": f"{g['home_name']} vs {g['away_name']}", "league": g.get("league_name", ""),
-                     "channels": g.get("channels", ""), "when": format_mx_time(g["date"]).lstrip("0") if g.get("date") else "",
+                     "channels": g.get("channels", ""), "channels_confirmed": g.get("channels_confirmed", True),
+                     "when": format_mx_time(g["date"]).lstrip("0") if g.get("date") else "",
                      "sub": format_mx_day_time(g["date"]).split(" · ")[0] if g.get("date") else "", "live": False,
                      "logo": g.get("home_logo", ""), "url": f"/equipo/{team_slug}"})
     resp = templates.TemplateResponse(request, "widget.html", {
@@ -3692,6 +3698,9 @@ async def api_team_quick(team_slug: str):
             "time_mx": format_mx_time(g["date"]),
             "league": g.get("league_name", ""),
             "channels": channels,
+            # El panel de equipo de la portada se arma en JS con esto; sin el
+            # dato pintaba el default de la liga como canal confirmado.
+            "channels_confirmed": g.get("channels_confirmed", True),
             "state": g["status"]["state"],
             "status_display": g["status"].get("display", ""),
         }
@@ -3837,6 +3846,10 @@ async def api_mis_equipos(teams: str = Query("", description="Comma-separated te
                     "league_slug": g.get("league_slug", ""),
                     "emoji": g.get("emoji", ""),
                     "channels": channels_str,
+                    # Viaja hasta el widget y hasta "Mis equipos". Sin esto, el
+                    # canal del default de la liga llega a los dos sitios como
+                    # si estuviera confirmado.
+                    "channels_confirmed": g.get("channels_confirmed", True),
                     "url": f"/partido/{_make_game_slug(g)}",
                 })
                 break
@@ -3898,6 +3911,7 @@ async def api_mis_equipos(teams: str = Query("", description="Comma-separated te
                     "date": g.get("date", ""),
                     "state": "pre",
                     "channels": ", ".join(channels[:4]) if channels else "",
+                    "channels_confirmed": g.get("channels_confirmed", True),
                     "league_name": team_map[matched_slug]["league_name"],
                     "url": "",
                 })
