@@ -3019,7 +3019,20 @@ US_TO_MX_CHANNEL = {
     "CBS": "Fox Sports MX", "CBSSN": "Fox Sports MX",
     "Univision": "TUDN", "UniMas": "TUDN",
     "Telemundo": "Telemundo",
-    "TNT": "TNT Sports", "TBS": "TNT Sports",
+    # TNT y TBS NO se traducen. Estaban mapeados a "TNT Sports", que en
+    # CHANNEL_ALIASES es un canal de MÉXICO, y el resultado fue que la ficha de
+    # Yankees vs Rays del 5/10/2026 publicaba "MX: TNT Sports" — un canal que
+    # en México transmite Champions League, no beisbol.
+    #
+    # Verificado el 05/10/2026: TNT Sports llegó a México en agosto de 2021 con
+    # los derechos de la UEFA Champions League y el Mundial de Clubes, y es lo
+    # que transmite (Goal, Xataka México, SensaCine). De MLB, nada. Los que
+    # llevan los playoffs son TNT y TBS de ESTADOS UNIDOS, que comparten marca
+    # con el mexicano y nada más.
+    #
+    # Para las ligas donde TNT Sports México sí transmite —Champions y Mundial
+    # de Clubes— ya está puesto en DEFAULT_LEAGUE_CHANNELS, así que quitarlo de
+    # aquí no pierde nada y deja de inventar un canal mexicano.
     "Max": "Max", "HBO Max": "Max",
     "Peacock": "Disney+",
     "Amazon Prime": "Amazon Prime", "Prime Video": "Amazon Prime",

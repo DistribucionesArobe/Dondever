@@ -1950,6 +1950,48 @@ async def game_semantic(request: Request, slug: str):
                         _bucket.append(_ch)
                 _merged[_cc] = _bucket
             game["channels_by_country"] = _merged
+
+            # ── Esto es lo que vuelve el canal CONFIRMADO ──────────────────
+            # ESPN nunca trae México: verificado el 05/10/2026 contra
+            # site.api.espn.com — los geoBroadcasts de MLB traen region "us"
+            # en TODAS las entradas, sin una sola de México. Por eso el canal
+            # mexicano venía siempre del reparto de derechos de la liga, y por
+            # eso todo el sitio dice "probable".
+            #
+            # GatoTV y epgshare son distintos: son la PARRILLA PUBLICADA de un
+            # canal, y el match es por nombre de los dos equipos dentro de una
+            # ventana de horario. Que "Dodgers vs Brewers" aparezca a las 19:00
+            # en la parrilla de Fox Sports 2 México no es una estimación: es el
+            # dato que buscaba quien entró a la página.
+            #
+            # Así que cuando la parrilla encuentra ESTE partido en México, el
+            # canal pasa a broadcasts y channels_confirmed se vuelve verdadero.
+            # Es el único camino que tenemos hoy para que deje de decir
+            # "probable" sin mentir.
+            _mx_grid = [c for c in (_merged.get("MX") or []) if c]
+            if _mx_grid:
+                from sports_api import CHANNEL_ALIASES as _ALIAS
+                _bcs = list(game.get("broadcasts") or [])
+                _ya = {(b.get("channel") or "").lower() for b in _bcs}
+                _nuevos = []
+                for _ch in _mx_grid:
+                    _info = dict(_ALIAS.get(_ch, {"name": _ch, "type": "cable"}))
+                    # La parrilla es de un canal mexicano; si el alias no dice
+                    # país, es México, no Estados Unidos.
+                    _info.setdefault("country", "MX")
+                    _disp = _info.get("name", _ch)
+                    if _disp.lower() in _ya:
+                        continue
+                    _ya.add(_disp.lower())
+                    _nuevos.append({"channel": _disp, "market": "National",
+                                    "info": _info, "source": "grid_mx"})
+                # Los de la parrilla van primero: son los únicos confirmados.
+                # Los estimados que ya estaban se quedan abajo, no se borran:
+                # un partido puede ir por cable y por streaming a la vez y la
+                # parrilla solo ve los canales que consultamos.
+                if _nuevos:
+                    game["broadcasts"] = _nuevos + _bcs
+                game["channels_confirmed"] = True
     except Exception as e:
         logger.warning(f"GatoTV por país falló para {event_id}: {e}")
 
