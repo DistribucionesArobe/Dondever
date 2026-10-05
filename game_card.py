@@ -222,18 +222,29 @@ def generate_game_card(
     _draw_team_block(img, draw, right_name, right_logo, 870, 284, font_team, logo_size=84)
     draw.text((586, 328), "VS", fill="#89958C", font=font_vs)
 
-    time_display = date_parts[-1].strip() if len(date_parts) > 1 else str(time_str or "Horario pendiente")
-    draw.rounded_rectangle((480, 365, 720, 406), radius=13, fill="#E8F5EC")
-    bbox = draw.textbbox((0, 0), time_display, font=font_time)
-    draw.text((600 - (bbox[2] - bbox[0]) / 2, 373), time_display, fill=dark_green, font=font_time)
+    time_display = date_parts[-1].strip() if len(date_parts) > 1 else str(time_str or "")
+    if time_display:
+        draw.rounded_rectangle((480, 365, 720, 406), radius=13, fill="#E8F5EC")
+        bbox = draw.textbbox((0, 0), time_display, font=font_time)
+        draw.text((600 - (bbox[2] - bbox[0]) / 2, 373), time_display, fill=dark_green, font=font_time)
 
     channel_parts = [part.strip() for part in str(channels or "").split("·")]
-    mx_channel = next((part.split(":", 1)[1].strip() for part in channel_parts if part.startswith("MX:")), "Por confirmar")
-    us_channel = next((part.split(":", 1)[1].strip() for part in channel_parts if part.startswith("EE.UU.:")), "Por confirmar")
-    for x0, x1, label, value in (
-        (76, 583, "MÉXICO", mx_channel),
-        (617, 1124, "ESTADOS UNIDOS", us_channel),
-    ):
+    confirmed_channels = [
+        ("MÉXICO", next((part.split(":", 1)[1].strip() for part in channel_parts if part.startswith("MX:")), "")),
+        ("ESTADOS UNIDOS", next((part.split(":", 1)[1].strip() for part in channel_parts if part.startswith("EE.UU.:")), "")),
+    ]
+    confirmed_channels = [(label, value) for label, value in confirmed_channels if value]
+    if len(confirmed_channels) == 2:
+        channel_boxes = [(76, 583, *confirmed_channels[0]), (617, 1124, *confirmed_channels[1])]
+    elif len(confirmed_channels) == 1:
+        channel_boxes = [(347, 853, *confirmed_channels[0])]
+    else:
+        channel_boxes = []
+        info = "Consulta la ficha del partido para más información"
+        bbox = draw.textbbox((0, 0), info, font=font_channel)
+        draw.text((600 - (bbox[2] - bbox[0]) / 2, 464), info, fill=muted, font=font_channel)
+
+    for x0, x1, label, value in channel_boxes:
         draw.rounded_rectangle((x0, 425, x1, 526), radius=14, fill="#F3F7F3", outline="#E5ECE6", width=1)
         draw.text((x0 + 17, 439), label, fill=green, font=font_channel_label)
         bbox = draw.textbbox((0, 0), value, font=font_channel)

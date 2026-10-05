@@ -76,7 +76,7 @@ def get_twitter_client() -> tweepy.Client | None:
 
 def format_broadcast_short(broadcasts: list[dict]) -> str:
     """Legacy helper: return only confirmed Mexican channels."""
-    return " / ".join(_event_channels_by_country({"broadcasts": broadcasts}).get("MX", [])[:3]) or "Por confirmar"
+    return " / ".join(_event_channels_by_country({"broadcasts": broadcasts}).get("MX", [])[:3])
 
 
 def format_game_time_mx(date_str: str) -> str:
@@ -178,10 +178,11 @@ def _country_channel_lines(game: dict) -> list[str]:
         "CO": "🇨🇴", "PE": "🇵🇪", "EC": "🇪🇨", "BO": "🇧🇴", "BR": "🇧🇷", "PY": "🇵🇾",
         "UY": "🇺🇾", "AR": "🇦🇷", "CL": "🇨🇱", "PR": "🇵🇷", "ES": "🇪🇸", "*": "🌎",
     }
-    lines = [
-        "🇲🇽 México: " + (", ".join(by_country["MX"][:2]) if by_country["MX"] else "por confirmar"),
-        "🇺🇸 EE.UU.: " + (", ".join(by_country["US"][:2]) if by_country["US"] else "por confirmar"),
-    ]
+    lines = []
+    if by_country["MX"]:
+        lines.append("🇲🇽 México: " + ", ".join(by_country["MX"][:2]))
+    if by_country["US"]:
+        lines.append("🇺🇸 EE.UU.: " + ", ".join(by_country["US"][:2]))
     latam_codes = ("GT", "SV", "HN", "NI", "CR", "CU", "VE", "PA", "DO", "HT", "CO", "PE", "EC", "BO", "BR", "PY", "UY", "AR", "CL", "PR")
     latam = [f"{flags[code]} {code}: {', '.join(by_country[code][:1])}" for code in latam_codes if by_country.get(code)]
     if latam:
@@ -378,9 +379,11 @@ def get_pick_line(game: dict) -> str:
 
 def _compose_featured_tweet(game: dict, content: str = "featured") -> str:
     first, second = get_team_order(game)
-    event_time = format_game_time_mx(str(game.get("date", ""))) or "Horario por confirmar"
+    event_time = format_game_time_mx(str(game.get("date", "")))
     league = game.get("league_name") or "Partido"
-    parts = [f"📺 {first} vs {second} · {league}", event_time]
+    parts = [f"📺 {first} vs {second} · {league}"]
+    if event_time:
+        parts.append(event_time)
     parts.extend(_country_channel_lines(game))
     parts.append(_hashtags_for_games([game]))
     parts.append(_event_page_url(game, content))
@@ -580,8 +583,9 @@ def _make_game_card(game: dict, pick_team: str = "", pick_reason: str = "") -> b
         home_left = sport in HOME_LEFT_SPORTS
         by_country = _event_channels_by_country(game)
         channels = " · ".join(
-            f"{label}: {', '.join(by_country[code][:1]) if by_country.get(code) else 'por confirmar'}"
+            f"{label}: {', '.join(by_country[code][:1])}"
             for code, label in (("MX", "MX"), ("US", "EE.UU."))
+            if by_country.get(code)
         )
         time_str = format_game_time_mx(game["date"])
 
@@ -628,7 +632,7 @@ def _make_live_card(game: dict, event_type: str) -> bytes | None:
             league_name=game.get("league_name", ""),
             emoji=game.get("emoji", ""),
             event_type=event_type,
-            channels=channels if channels != "Por confirmar" else "",
+            channels=channels,
             sport=sport,
             home_left=home_left,
         )
@@ -1655,10 +1659,7 @@ def _compose_viewing_poll(game: dict, slot: str) -> tuple[str, list[str]]:
     first, second = get_team_order(game)
     league = game.get("league_name") or "Partido"
     channels = _event_channels_by_country(game)
-    channel_lines = [
-        "🇲🇽 México: " + (", ".join(channels["MX"][:1]) if channels["MX"] else "por confirmar"),
-        "🇺🇸 EE.UU.: " + (", ".join(channels["US"][:1]) if channels["US"] else "por confirmar"),
-    ]
+    channel_lines = _country_channel_lines(game)
     prompt = "📊 ¿A quién apoyas?" if game.get("sport") == "soccer" else "📊 ¿Quién gana?"
     lines = [prompt, f"{first} vs {second} · {league}", format_game_time_mx(str(game.get("date", "")))]
     lines.extend(channel_lines)
