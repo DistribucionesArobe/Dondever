@@ -1,0 +1,71 @@
+name: SEO semanal
+
+# Lunes 8:00 AM en Ciudad Victoria. Tamaulipas va en UTC-6 todo el año desde
+# que México eliminó el horario de verano en 2022, así que 14:00 UTC es 8:00
+# en punto sin que haya que moverlo dos veces al año.
+on:
+  schedule:
+    - cron: "0 14 * * 1"
+  workflow_dispatch:
+
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Historial completo: la skill crea una rama seo/<fecha> y necesita
+          # poder ramificar desde main.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar cliente de Google
+        run: pip install google-api-python-client google-auth
+
+      - name: Preparar credenciales de Search Console
+        env:
+          # El secreto se pasa por env y no interpolado en el script: así no
+          # acaba escrito en el YAML del job ni en un `set -x`.
+          GSC_KEY_JSON: ${{ secrets.GSC_KEY_JSON }}
+        run: |
+          if [ -z "$GSC_KEY_JSON" ]; then
+            echo "Falta el secreto GSC_KEY_JSON." >&2
+            exit 1
+          fi
+          printf '%s' "$GSC_KEY_JSON" > /tmp/gsc.json
+          echo "GSC_KEY=/tmp/gsc.json" >> "$GITHUB_ENV"
+
+      # Si esto falla, el job entero falla y Claude NO corre. Es a propósito:
+      # la skill prohíbe estimar o inventar datos de Search Console, y la forma
+      # más segura de cumplirlo es que sin datos no haya sesión.
+      - name: Descargar datos de Search Console
+        run: |
+          python .claude/skills/seo-semanal/scripts/gsc_pull.py \
+            --site "https://dondever.app/" \
+            --out gsc/
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+
+            Corre la skill seo-semanal (.claude/skills/seo-semanal/SKILL.md).
+            Los datos de Search Console ya están descargados en gsc/.
+
+            Máximo 5 cambios. Trabaja en una rama seo/<fecha de hoy AAAA-MM-DD>,
+            abre un PR contra main y actualiza seo-log.md.
+
+            Nunca hagas merge ni deploy. Si esta semana no hay nada con
+            evidencia suficiente, la respuesta correcta es "sin cambios" y se
+            dice en el PR.
+          claude_args: |
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(python:*)"

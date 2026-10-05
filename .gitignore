@@ -12,3 +12,6 @@ static/instagram/
 subscribers.json
 .instagram_token
 logs/
+
+# Datos descargados de Search Console (no se versionan)
+gsc/
