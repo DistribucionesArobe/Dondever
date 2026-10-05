@@ -1,0 +1,138 @@
+{# Media kit. Las cifras están escritas a mano y cada una dice de dónde sale y
+   de qué fecha es. Se actualizan cuando alguien las revise, no solas.
+
+   La fecha visible no es decoración: un anunciante que ve números sin fecha
+   asume que son de hoy, y a los tres meses eso es una mentira sin querer.
+   Si la fecha está vieja, el lector lo sabe y pregunta — que es lo correcto. #}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {# Sin indexar: es una página de negocio, no de búsqueda. Nadie busca esto
+       en Google, y AdSense ya rechazó el sitio una vez por "contenido de poco
+       valor" — no vale la pena arriesgar por una página que no trae tráfico. #}
+    <meta name="robots" content="noindex, follow">
+    <title>Anúnciate en DondeVer.app — audiencia y cifras</title>
+    <meta name="description" content="Datos de audiencia de DondeVer.app: tráfico, países, páginas principales y formatos disponibles para anunciantes.">
+    <link rel="canonical" href="{{ app_url }}/publicidad">
+    <link rel="icon" type="image/png" href="/static/logo.png?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f8f9fb; color: #1a1a2e; line-height: 1.6; }
+        .header { background: #1a1a2e; padding: 0.6rem 0; }
+        .header-inner { max-width: 760px; margin: 0 auto; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: #10b981; text-decoration: none; }
+        .logo span { color: #f8f9fb; }
+        .main { max-width: 760px; margin: 1.5rem auto 3rem; padding: 0 1rem; }
+        h1 { font-size: 1.7rem; line-height: 1.25; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.1rem; margin: 2rem 0 0.7rem; }
+        .lead { color: #4b5563; margin-bottom: 1.5rem; }
+        .cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.7rem; margin: 1rem 0; }
+        .cifra { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.9rem; }
+        .cifra b { display: block; font-size: 1.5rem; color: #059669; line-height: 1.2; }
+        .cifra span { font-size: 0.8rem; color: #6b7280; }
+        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; font-size: 0.9rem; }
+        th, td { padding: 0.55rem 0.7rem; text-align: left; border-bottom: 1px solid #eef0f3; }
+        th { background: #f3f4f6; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; color: #6b7280; }
+        td.n { text-align: right; font-variant-numeric: tabular-nums; }
+        .fuente { font-size: 0.78rem; color: #6b7280; margin-top: 0.45rem; }
+        ul { margin: 0.5rem 0 0 1.1rem; }
+        li { margin-bottom: 0.35rem; }
+        .cta { display: inline-block; margin-top: 0.8rem; padding: 0.7rem 1.4rem; background: #10b981; color: #fff;
+               border-radius: 999px; font-weight: 800; text-decoration: none; }
+        .nota { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 0.9rem; font-size: 0.88rem; margin-top: 1.2rem; }
+        footer { text-align: center; padding: 2rem 1rem; color: #6b7280; font-size: 0.82rem; }
+        footer a { color: #059669; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-inner">
+        <a href="/" class="logo">DondeVer<span>.app</span></a>
+    </div>
+</div>
+
+<div class="main">
+    <h1>Anúnciate en DondeVer.app</h1>
+    <p class="lead">
+        DondeVer responde una sola pregunta: <strong>en qué canal y a qué hora se transmite cada partido</strong>.
+        Quien llega está a minutos de sentarse a ver deporte. Aquí están las cifras, con su fuente y su fecha.
+    </p>
+
+    <h2>Audiencia</h2>
+    <div class="cifras">
+        <div class="cifra"><b>10,000</b><span>usuarios en 28 días</span></div>
+        <div class="cifra"><b>12,900</b><span>clics desde Google (3 meses)</span></div>
+        <div class="cifra"><b>923,000</b><span>impresiones en Google (3 meses)</span></div>
+        <div class="cifra"><b>33 s</b><span>interacción media</span></div>
+    </div>
+    <p class="fuente">
+        Usuarios e interacción: Google Analytics 4, del 7 de septiembre al 4 de octubre de 2026.<br>
+        Clics e impresiones: Google Search Console, del 4 de julio al 3 de octubre de 2026.
+    </p>
+
+    <h2>De dónde llega la gente</h2>
+    <table>
+        <tr><th>Canal</th><th class="n">Sesiones / 28 días</th></tr>
+        <tr><td>Búsqueda orgánica (Google)</td><td class="n">5,700</td></tr>
+        <tr><td>Directo</td><td class="n">2,400</td></tr>
+        <tr><td>Búsqueda orgánica (Bing)</td><td class="n">1,300</td></tr>
+    </table>
+    <p class="fuente">Google Analytics 4, últimos 28 días. Más del 70% del tráfico es búsqueda: gente con una intención concreta, no navegación casual.</p>
+
+    <h2>Páginas con más tráfico</h2>
+    <table>
+        <tr><th>Página</th><th class="n">Clics</th><th class="n">Impresiones</th></tr>
+        <tr><td>/equipo/dodgers</td><td class="n">2,637</td><td class="n">128,908</td></tr>
+        <tr><td>/equipo/yankees</td><td class="n">1,383</td><td class="n">47,393</td></tr>
+        <tr><td>/equipo/phillies</td><td class="n">460</td><td class="n">15,683</td></tr>
+        <tr><td>/equipo/padres</td><td class="n">388</td><td class="n">16,886</td></tr>
+        <tr><td>/equipo/mets</td><td class="n">381</td><td class="n">28,549</td></tr>
+        <tr><td>/liga/wnba</td><td class="n">350</td><td class="n">6,894</td></tr>
+        <tr><td>/equipo/tigres</td><td class="n">215</td><td class="n">22,886</td></tr>
+        <tr><td>/equipo/cruz-azul</td><td class="n">162</td><td class="n">13,577</td></tr>
+    </table>
+    <p class="fuente">
+        Google Search Console, últimos 28 días al 4 de octubre de 2026.
+        El tráfico es estacional y sigue el calendario deportivo: en octubre pesan los playoffs de MLB,
+        en otros meses pesan la Liga MX y la NFL.
+    </p>
+
+    <h2>Qué cubre el sitio</h2>
+    <ul>
+        <li>Más de 40 ligas: Liga MX, MLB, NFL, NBA, Champions, LaLiga, F1, MotoGP, UFC, WNBA y las ligas invernales de béisbol.</li>
+        <li>Canales y horarios diferenciados por país: México, Venezuela, Panamá, Colombia, República Dominicana, España y Estados Unidos.</li>
+        <li>Público hispanohablante, principalmente México y audiencia hispana en Estados Unidos.</li>
+    </ul>
+
+    <h2>Formatos</h2>
+    <ul>
+        <li><strong>Display</strong> en portada, páginas de equipo, liga y partido.</li>
+        <li><strong>Patrocinio de sección</strong> (por ejemplo una liga o un torneo durante su temporada).</li>
+        <li><strong>Widget de datos</strong>: licenciamos la información de "dónde ver" para que otros sitios la publiquen.</li>
+    </ul>
+    <p class="fuente">Precios según formato, duración y temporada. Escríbenos y armamos una propuesta con números concretos.</p>
+
+    <div class="nota">
+        <strong>Dos cosas antes de escribir.</strong>
+        El sitio publica aviso de juego responsable y declara sus relaciones de afiliación;
+        cualquier campaña tiene que convivir con eso.
+        Y no publicamos contenido pagado disfrazado de editorial: la publicidad va marcada como publicidad.
+    </div>
+
+    <h2>Hablemos</h2>
+    <p>Cuéntanos qué buscas y te respondemos en 24–48 horas.</p>
+    <a class="cta" href="/contacto?motivo=publicidad">Escríbenos &rarr;</a>
+</div>
+
+<footer>
+    <p><a href="/">Inicio</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a> &middot; <a href="/contacto">Contacto</a></p>
+    <p style="margin-top:0.4rem">&copy; 2026 DondeVer.app</p>
+</footer>
+<script src="/static/dark-mode.js" defer></script>
+</body>
+</html>
