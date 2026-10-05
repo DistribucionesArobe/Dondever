@@ -3562,10 +3562,15 @@ async def api_instagram_image(date: Optional[str] = None):
             break
     hashtag_line = " ".join(hashtags)
     if len(selected) == 1:
-        caption = f"¿Dónde ver a {selected[0]['home']['name']}?\nConsulta horarios y canales en DondeVer.app 📺\n\n{hashtag_line}"
+        game = selected[0]
+        away = game.get("away", {}).get("name", "")
+        home = game.get("home", {}).get("name", "")
+        question = f"¿A quién apoyas: {away} o {home}? Cuéntanos si lo verás en México o EE. UU."
+        caption = f"{question}\nGuarda esta publicación para consultar horarios y canales en DondeVer.app 📺\n\n{hashtag_line}"
     else:
         leagues = list(dict.fromkeys(g["league"] for g in selected))
-        caption = f"Partidos de {', '.join(leagues[:2])} para seguir hoy.\nConsulta dónde ver cada juego en DondeVer.app 📺\n\n{hashtag_line}"
+        question = "¿Cuál de estos partidos vas a ver? Comenta tu equipo y si lo sigues desde México o EE. UU."
+        caption = f"{question}\nGuarda la agenda para consultar horarios y canales en DondeVer.app 📺\n\n{hashtag_line}"
 
     return JSONResponse({
         "image_url": public_url,
