@@ -296,6 +296,26 @@
     {% endif %}
 </div>
 
+{#- Plataforma con TODOS los partidos de esta competencia, si existe.
+    Va aquí, justo bajo el H1 y FUERA de cualquier condicional, porque la
+    primera vez lo puse dentro del bloque de carreras y solo salía en F1.
+    Sin etiqueta de "probable": cuando una plataforma lleva todos los
+    partidos, la afirmación vale para cualquiera de ellos. Es la única
+    respuesta segura cuando el canal de cada juego no se puede confirmar.
+    Ver sports_api.PLATAFORMAS_TODOS_LOS_PARTIDOS. -#}
+{%- set _pl = PLATAFORMAS_TODOS.get(league_slug) if PLATAFORMAS_TODOS else none -%}
+{% if _pl %}
+<div style="max-width:1100px;margin:0.6rem auto 0;padding:0 1rem;">
+  <div style="display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:0.6rem 0.8rem;">
+    <span style="font-size:0.6rem;font-weight:800;letter-spacing:0.04em;color:#065f46;text-transform:uppercase;">Todos los partidos</span>
+    <strong style="font-size:0.9rem;">{{ _pl.nombre }}</strong>
+    {% if _pl.via %}<span style="font-size:0.75rem;color:#4b5563;">v&iacute;a {{ _pl.via }}</span>{% endif %}
+    {% if _pl.precio %}<span style="font-size:0.75rem;color:#4b5563;">&middot; {{ _pl.precio }}</span>{% endif %}
+    {% if _pl.nota %}<div style="flex-basis:100%;font-size:0.7rem;color:#6b7280;">{{ _pl.nota }}</div>{% endif %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Other leagues -->
 <div class="league-links">
     <a href="/" class="league-link">Todos</a>

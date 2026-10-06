@@ -747,6 +747,18 @@ def format_us_time(iso_date: str) -> str:
         return ""
 
 
+# Plataformas que llevan TODOS los partidos de una competencia (ver el
+# comentario largo en sports_api.PLATAFORMAS_TODOS_LOS_PARTIDOS).
+#
+# Va como global de Jinja y no en el contexto de cada ruta a propósito: así lo
+# ven la ficha, la liga, el equipo y la portada sin que haya que acordarse de
+# pasarlo en cada una. El error que esto evita ya lo cometí: puse el bloque
+# solo en game.html, quité los canales sin confirmar de WNBA, y /liga/wnba
+# quedó diciendo "MX: por confirmar" sin ofrecer la alternativa que sí existe.
+# Dejé la página peor de como estaba.
+from sports_api import PLATAFORMAS_TODOS_LOS_PARTIDOS as _PLAT_TODOS
+templates.env.globals["PLATAFORMAS_TODOS"] = _PLAT_TODOS
+
 templates.env.globals["format_mx_time"] = format_mx_time
 templates.env.globals["format_mx_day_time"] = format_mx_day_time
 templates.env.globals["format_mx_date_short"] = format_mx_date_short

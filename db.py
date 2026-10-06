@@ -180,7 +180,32 @@ async def get_team_history(team_name: str, limit: int = 10) -> list[dict]:
 
 
 async def get_team_upcoming(team_name: str, limit: int = 5) -> list[dict]:
-    """Get upcoming (pre-state) games for a team."""
+    """Próximos partidos de un equipo. Próximo = EN EL FUTURO, no solo state='pre'.
+
+    El filtro de fecha faltaba y el daño era grande. Medido en producción el
+    06/10/2026:
+
+      /equipo/tigres  → "Próximos partidos" con juegos del 26 de AGOSTO
+      /equipo/dodgers → "Próximos partidos" con juegos del 24 de SEPTIEMBRE
+      /liga/liga-mx   → "Próxima jornada" con la jornada del 25 de septiembre
+
+    Por qué pasaba: persist_games solo actualiza los partidos que trae
+    get_todays_games ESE día. Si una fila se escribió como 'pre' y el día del
+    partido nadie la volvió a escribir —el proceso se reinició, la escritura
+    falló, nadie abrió la página—, se queda en 'pre' para siempre. Y como la
+    consulta ordenaba por fecha ASCENDENTE, esas filas zombi salían PRIMERO.
+
+    Y arrastraban su channels_json viejo. De ahí venía "Fox Sports MX" en las
+    páginas de Tigres y de Liga MX después de que lo quitamos del código: el
+    canal caduco no estaba en el código, estaba congelado en la base de datos.
+
+    El arreglo va en la consulta y no en el pipeline a propósito: un partido
+    que ya pasó no es un próximo partido, diga lo que diga su columna state.
+    Así queda bien aunque la escritura vuelva a fallar algún día.
+
+    Las 4 horas de gracia son para que un partido en curso siga apareciendo
+    mientras se juega, en lugar de desaparecer al minuto de empezar.
+    """
     async with async_session() as session:
         result = await session.execute(
             text("""
@@ -190,6 +215,8 @@ async def get_team_upcoming(team_name: str, limit: int = 5) -> list[dict]:
                        channels_json, date_utc
                 FROM games
                 WHERE state = 'pre'
+                  AND date_utc IS NOT NULL
+                  AND date_utc >= NOW() - INTERVAL '4 hours'
                   AND (home_name ILIKE :team OR away_name ILIKE :team)
                 ORDER BY date_utc ASC
                 LIMIT :lim
@@ -201,7 +228,23 @@ async def get_team_upcoming(team_name: str, limit: int = 5) -> list[dict]:
 
 
 async def get_team_channels(team_name: str) -> list[tuple[str, int]]:
-    """Get most frequent channels for a team's games."""
+    """Canales en los que más se ha transmitido un equipo, del último año.
+
+    La ventana de 12 meses faltaba, y sin ella el bloque "Canales donde más se
+    transmite" cuenta toda la historia — incluidos canales que ya perdieron los
+    derechos. Visto en producción el 06/10/2026:
+
+      /equipo/tigres    → "Fox Sports MX (42)" en PRIMER LUGAR
+      /equipo/dodgers   → "Fox Sports MX (60)"
+      /equipo/cruz-azul → "Fox Sports MX (15)"
+
+    Fox Sports México perdió Liga MX y MLB; para el lector de hoy ese primer
+    lugar es una recomendación equivocada, aunque históricamente sea cierto
+    que ahí se vieron esos partidos.
+
+    Doce meses es el compromiso: suficiente para que el conteo signifique algo
+    y poco para que un cambio de derechos salga de la lista en una temporada.
+    """
     async with async_session() as session:
         result = await session.execute(
             text("""
@@ -209,6 +252,8 @@ async def get_team_channels(team_name: str) -> list[tuple[str, int]]:
                 FROM games,
                      LATERAL jsonb_array_elements_text(channels_json::jsonb) AS ch
                 WHERE (home_name ILIKE :team OR away_name ILIKE :team)
+                  AND date_utc IS NOT NULL
+                  AND date_utc >= NOW() - INTERVAL '12 months'
                 GROUP BY ch
                 ORDER BY cnt DESC
                 LIMIT 5
