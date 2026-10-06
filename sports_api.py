@@ -76,11 +76,23 @@ def _translate_status(desc: str) -> str:
     return desc
 
 def nfl_mx_channels(us_channels: list[str]) -> list[str]:
-    """Infer Mexico channels for an NFL game from its US broadcasters.
+    """Canales de México para un juego de NFL, a partir de quién lo pasa en EE.UU.
 
-    Rights in Mexico (temporada 2026): ESPN MX / Disney+ tienen MNF y SNF;
-    Fox Sports MX tiene TNF y ventanas dominicales; NFL Game Pass (DAZN)
-    transmite todos los juegos. Netflix: juegos navideños.
+    Derechos en México, temporada 2026 (verificado el 06/10/2026):
+      · ESPN y Disney+        → 19 Sunday Night + 19 Monday Night + 6 playoffs
+                                (El Financiero 08/09/2026)
+      · FOX, FOX+ y FOX One   → Thursday Night, 4 dominicales, playoffs de la
+                                Liga Nacional, Thanksgiving, Pro Bowl y Super
+                                Bowl (Récord 14/08/2026, Infobae 12/08/2026)
+      · Canal 5 y ViX         → 23 de fase regular y 12 de playoffs en abierto,
+                                más 15 exclusivos de ViX y el Super Bowl
+      · Netflix               → Australia, Thanksgiving, Navidad, semana 18
+      · NFL Game Pass (DAZN)  → TODOS los partidos
+
+    CORREGIDO el 06/10/2026: decía "Fox Sports MX", que es el canal lineal
+    viejo de Lauman. La NFL pasó al FOX nuevo, cuya plataforma es FOX One.
+    Mandar al lector a Fox Sports MX es mandarlo a un canal que no tiene el
+    partido. Misma confusión que ya había costado dos veces hoy.
     """
     out: list[str] = []
 
@@ -93,14 +105,17 @@ def nfl_mx_channels(us_channels: list[str]) -> list[str]:
     if "netflix" in joined:
         add("Netflix")
     if "prime" in joined or "amazon" in joined:           # Thursday Night Football
-        add("Fox Sports MX")
+        add("FOX One")
     if "espn" in joined or "abc" in joined:               # Monday Night Football
         add("ESPN MX", "Disney+")
     if "nbc" in joined or "peacock" in joined:            # Sunday Night Football
         add("ESPN MX", "Disney+")
-    if "cbs" in joined or "fox" in joined:                # Sunday afternoon windows
-        add("Fox Sports MX")
-    add("NFL Game Pass")                                  # todos los juegos
+    if "cbs" in joined or "fox" in joined:                # ventanas dominicales
+        add("FOX One")
+    # Todos los partidos, siempre. Va al final porque es el último recurso
+    # para el lector, pero es el único renglón de esta función que es un HECHO
+    # y no una inferencia: ver PLATAFORMAS_TODOS_LOS_PARTIDOS.
+    add("NFL Game Pass")
     return out
 
 
@@ -301,7 +316,13 @@ DEFAULT_LEAGUE_CHANNELS = {
     "serie-a": ["ESPN MX", "Disney+"],
     "bundesliga": ["Fox Sports MX"],
     "ligue-1": ["Fox Sports MX"],
-    "champions": ["Fox Sports MX", "Max", "TNT Sports", "Liga de Campeones por M+", "Orange TV"],
+    # Champions: se quitó "Fox Sports MX". En México la Champions es de TNT
+    # Sports y se ve por TNT, Cinemax y HBO Max — Xataka México lo publicó como
+    # "TNT Sports llega a México con la Champions League EN EXCLUSIVA por HBO
+    # Max", y de10.com.mx (21/08/2025) lista la Concacaf Champions Cup entre lo
+    # que Fox Sports México perdió. Dos señales en el mismo sentido.
+    # Max y TNT Sports se quedan (México); M+ y Orange son de España.
+    "champions": ["Max", "TNT Sports", "Liga de Campeones por M+", "Orange TV"],
     "europa-league": ["Fox Sports MX", "Max", "Liga de Campeones por M+", "Orange TV"],
     # ── Copas domésticas ──
     "copa-del-rey": ["SKY", "Movistar Plus+", "Orange TV"],
@@ -3262,31 +3283,54 @@ SPORTSDB_COUNTRY_CODE = {
     "World": "*", "Worldwide": "*", "International": "*",
 }
 
+# ── Traducción de canal de EE.UU. a canal de México ─────────────────────────
+#
+# LA REGLA, y es una sola: aquí solo se traduce cuando la MISMA empresa o la
+# MISMA marca opera en México. Nunca cuando es una apuesta sobre quién compró
+# los derechos.
+#
+# Por qué hizo falta escribirla. Esta tabla se llenó con pares que "suenan
+# equivalentes" (FOX de EE.UU. → Fox Sports MX, CBS → Fox Sports MX, NBC →
+# ESPN MX) y eso no es una traducción: es adivinar un contrato. El 05 y el 06
+# de octubre de 2026 esa adivinanza nos reventó dos veces en la cara, las dos
+# en las páginas de más tráfico del sitio:
+#
+#   · "TNT" → "TNT Sports" publicaba "MX: TNT Sports" en los playoffs de MLB.
+#     TNT Sports México transmite Champions League, no beisbol.
+#   · "FS1" → "Fox Sports MX" publicaba "MX: Fox Sports MX" en Dodgers vs
+#     Braves. Fox Sports México PERDIÓ los derechos de MLB en agosto de 2025
+#     (de10.com.mx 21/08/2025), junto con Liga MX, Champions, F1 y Premier.
+#     Se arregló el default de MLB y el canal volvió a salir por aquí, porque
+#     esta tabla no pasa por los defaults.
+#
+# QUÉ SE QUEDA (misma empresa o misma marca en México):
+#   ESPN, ESPN2, ESPNU, ESPNews, ABC → ESPN MX   (Disney; ESPN Internacional
+#                                                 simultanea buena parte)
+#   ESPN+                            → Disney+   (misma casa)
+#   Univision, UniMas                → TUDN      (TelevisaUnivision)
+#   Telemundo, Max, Prime Video, Netflix → su propia marca en México
+#
+# QUÉ SE QUITÓ, y por qué cada uno:
+#   FOX, FS1, FS2   → "Fox Sports MX" es el canal lineal viejo de Lauman, que
+#                     perdió casi todo. Y el FOX nuevo de México (FOX, FOX+,
+#                     FOX One) tiene NFL y Liga MX, no MLB. Donde el FOX nuevo
+#                     sí transmite, ya está en DEFAULT_LEAGUE_CHANNELS.
+#   NBC, NBCSN      → NBC y ESPN MX son empresas distintas. Que NBC pase un
+#                     juego en EE.UU. no dice nada de México.
+#   CBS, CBSSN      → igual, y además apuntaban al canal que perdió todo.
+#   Peacock         → Peacock es de NBCUniversal; Disney+ es de Disney.
+#   TNT, TBS        → ver arriba.
+#
+# Quitarlas no pierde información: donde de verdad sabemos el canal mexicano,
+# está en DEFAULT_LEAGUE_CHANNELS con fuente y fecha. Lo que se pierde es la
+# invención, y eso era el problema.
 US_TO_MX_CHANNEL = {
     "ESPN": "ESPN MX", "ESPN2": "ESPN MX", "ESPNU": "ESPN MX",
     "ESPNews": "ESPN MX", "ABC": "ESPN MX",
     "ESPN+": "Disney+",
-    "FOX": "Fox Sports MX", "FS1": "Fox Sports MX", "FS2": "Fox Sports MX",
-    "NBC": "ESPN MX", "NBCSN": "ESPN MX",
-    "CBS": "Fox Sports MX", "CBSSN": "Fox Sports MX",
     "Univision": "TUDN", "UniMas": "TUDN",
     "Telemundo": "Telemundo",
-    # TNT y TBS NO se traducen. Estaban mapeados a "TNT Sports", que en
-    # CHANNEL_ALIASES es un canal de MÉXICO, y el resultado fue que la ficha de
-    # Yankees vs Rays del 5/10/2026 publicaba "MX: TNT Sports" — un canal que
-    # en México transmite Champions League, no beisbol.
-    #
-    # Verificado el 05/10/2026: TNT Sports llegó a México en agosto de 2021 con
-    # los derechos de la UEFA Champions League y el Mundial de Clubes, y es lo
-    # que transmite (Goal, Xataka México, SensaCine). De MLB, nada. Los que
-    # llevan los playoffs son TNT y TBS de ESTADOS UNIDOS, que comparten marca
-    # con el mexicano y nada más.
-    #
-    # Para las ligas donde TNT Sports México sí transmite —Champions y Mundial
-    # de Clubes— ya está puesto en DEFAULT_LEAGUE_CHANNELS, así que quitarlo de
-    # aquí no pierde nada y deja de inventar un canal mexicano.
     "Max": "Max", "HBO Max": "Max",
-    "Peacock": "Disney+",
     "Amazon Prime": "Amazon Prime", "Prime Video": "Amazon Prime",
     "Netflix": "Netflix",
 }
