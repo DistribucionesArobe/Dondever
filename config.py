@@ -1656,6 +1656,13 @@ CHANNEL_ALIASES = {
     "TNT Sports": {"name": "TNT Sports", "country": "MX", "type": "cable"},
     "TNT Sports MX": {"name": "TNT Sports", "country": "MX", "type": "cable"},
     "Canal 9": {"name": "Canal 9", "country": "MX", "type": "broadcast"},
+    # FOX One: la plataforma de streaming del nuevo FOX en México, que es
+    # quien tiene Liga MX (León, Pachuca, Querétaro, Tijuana, Necaxa, Juárez)
+    # y parte de la NFL desde 2026. NO es "Fox Sports MX", el canal lineal
+    # viejo de Lauman que perdió Liga MX, MLB, F1, Premier y Champions.
+    # Confundirlos manda al lector a un canal que ya no tiene el partido.
+    "FOX One": {"name": "FOX One", "country": "MX", "type": "streaming"},
+    "FOX+": {"name": "FOX One", "country": "MX", "type": "streaming"},
     # ── Canales que devuelve la parrilla mexicana de GatoTV ────────────────
     # Se activó México en GATOTV_SPORTS_CHANNELS (ver el comentario largo en
     # gatotv.py). Estos nombres salen de ahí y no estaban en esta tabla, así

@@ -492,6 +492,23 @@
                 Canales habituales de {{ game.league_name }}. Para este partido todav&iacute;a no hay transmisi&oacute;n confirmada.
             </p>
             {% endif %}
+            {#- Plataforma con TODOS los partidos de la competencia.
+                Va arriba y SIN la etiqueta "probable" porque no lo es: cuando
+                una plataforma lleva todos los partidos, la afirmación es
+                cierta para este partido sin necesidad de dato por partido.
+                Es la única respuesta segura cuando el canal lineal no se
+                puede confirmar — y para NHL, NBA o un amistoso raro suele ser
+                la única respuesta útil que existe. -#}
+            {%- set _pt = game.get('plataforma_todos') -%}
+            {% if _pt %}
+            <div style="display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:0.6rem 0.8rem;margin:0 0 0.9rem;">
+                <span style="font-size:0.62rem;font-weight:800;letter-spacing:0.04em;color:#065f46;text-transform:uppercase;">Todos los partidos</span>
+                <strong style="font-size:0.95rem;">{{ _pt.nombre }}</strong>
+                {% if _pt.via %}<span style="font-size:0.78rem;color:#4b5563;">v&iacute;a {{ _pt.via }}</span>{% endif %}
+                {% if _pt.precio %}<span style="font-size:0.78rem;color:#4b5563;">&middot; {{ _pt.precio }}</span>{% endif %}
+                {% if _pt.nota %}<div style="flex-basis:100%;font-size:0.72rem;color:#6b7280;">{{ _pt.nota }}</div>{% endif %}
+            </div>
+            {% endif %}
             {% if game.broadcasts %}
                 {% set mx_channels = [] %}
                 {% set us_channels = [] %}

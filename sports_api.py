@@ -201,6 +201,93 @@ ODDS_PRIORITY_LEAGUES = [
 # ── Default TV channels per league (fallback when ESPN has no broadcast info) ──
 # Default TV channels per league (fallback when ESPN has no broadcast info)
 # Updated Aug 2026 — sources: RÉCORD, Infobae, Mediotiempo
+# ── Plataformas que llevan TODOS los partidos de una competencia en México ──
+#
+# Por qué esto existe aparte de DEFAULT_LEAGUE_CHANNELS:
+#
+# El diccionario de abajo contesta "¿en qué canal va ESTE partido?", y cuando
+# no lo sabemos la respuesta es una suposición que hay que marcar como
+# probable. Esta tabla contesta otra cosa: "¿hay una plataforma donde estén
+# TODOS los partidos de esta competencia?".
+#
+# Y esa segunda afirmación, cuando es cierta, es cierta PARA CADA PARTIDO.
+# "Todos los partidos de la NFL están en NFL Game Pass" no necesita dato por
+# partido para ser verdad. Así que esto SÍ se puede publicar como hecho,
+# mientras el canal lineal sigue diciendo "probable".
+#
+# De aquí salió la idea: el 06/10/2026 medimos los 43 partidos del día y
+# México salió al 5%. El techo no era la fuente — era que las parrillas de TV
+# solo listan televisión, y lo que falta (NHL, NBA, amistosos, UEFA) está en
+# streaming, que no tiene parrilla que raspar. Para esos partidos la respuesta
+# honesta y útil no es un canal mexicano: es la plataforma de la liga.
+#
+# REGLAS PARA AGREGAR UN RENGLÓN AQUÍ:
+#   1. Tiene que ser TODOS los partidos, no "casi todos". Si quedan juegos
+#      fuera, va abajo en DEFAULT_LEAGUE_CHANNELS, no aquí.
+#   2. Tiene que estar disponible EN MÉXICO. Cuidado con las notas del
+#      mercado hispano de Estados Unidos: Fox Deportes, UniMás y ESPN
+#      Deportes son señales gringas, no mexicanas.
+#   3. Fuente y fecha obligatorias. Sin eso no se pone.
+#
+# Lo de UEFA Nations League enseñó por qué: un default sin fuente ni fecha se
+# vuelve mentira en silencio y nadie se da cuenta durante meses.
+PLATAFORMAS_TODOS_LOS_PARTIDOS: dict[str, dict] = {
+    "nfl": {
+        "nombre": "NFL Game Pass",
+        "via": "DAZN",
+        "precio": "$3,600 MXN la temporada",
+        "nota": "Señal estadounidense, en inglés.",
+        # Tres fuentes mexicanas independientes, todas de 2026:
+        #   Infobae 12/08/2026: "DAZN — Todos los juegos de temporada con
+        #     suscripción a NFL Game Pass."
+        #   El Financiero 08/09/2026: "tienen acceso a todos los partidos de
+        #     la temporada mediante NFL Game Pass… En México se puede
+        #     contratar mediante proveedores como DAZN o Prime Video."
+        #   Expansión 11/09/2026: "3,600 pesos por todos los partidos de la
+        #     temporada"; "Transmisión de la señal estadounidense nativa".
+        "fuente": "Infobae 12/08/2026, El Financiero 08/09/2026, Expansión 11/09/2026",
+        "verificado": "2026-10-06",
+        "revisar": "2027-08",
+    },
+    "wnba": {
+        "nombre": "WNBA League Pass",
+        "via": "wnba.com o Prime Video México",
+        "precio": "USD 39.99 al año",
+        # Esta es la mejor verificada de las tres, porque sale del soporte
+        # oficial de la WNBA y no de prensa:
+        #   support.wnba.com (act. 12/08/2026): "In countries where WNBA
+        #     League Pass is available, all games are available live, except
+        #     in the US and Canada, where local and national blackouts apply."
+        #   support.wnba.com (act. 17/03/2026): lista los países excluidos y
+        #     México NO está en ella.
+        #   support.wnba.com (act. 09/06/2026): confirma la compra vía
+        #     Prime Video en México.
+        # O sea: en México se ven TODOS en vivo, sin los bloqueos de EE.UU.
+        "nota": "Sin bloqueos en México; los blackouts aplican solo en EE.UU. y Canadá.",
+        "fuente": "support.wnba.com (blackouts 12/08/2026; disponibilidad 17/03/2026)",
+        "verificado": "2026-10-06",
+        "revisar": "2027-05",
+    },
+    # ── Investigadas y NO calificaron ──────────────────────────────────────
+    #
+    # MLB — MLB.TV NO entra. Sí está disponible fuera de Estados Unidos, pero
+    # la propia MLB dice que no lleva todo (mlb.com/es, 10/02/2026): "ciertos
+    # juegos de temporada regular y postemporada que son exclusivos de los
+    # socios de medios nacionales de MLB estarán disponibles a través de las
+    # plataformas de los socios y NO a través de una suscripción de MLB.TV".
+    # Infobae afirma que sí lleva todos, pero contradice a la fuente oficial.
+    # Entre las dos, le creo a MLB. Regla 1: si quedan juegos fuera, no entra.
+    #
+    # LIGA MX — no existe tal plataforma, y no por falta de búsqueda: los
+    # derechos se negocian POR CLUB. Publimetro (16/07/2026): "un mismo
+    # aficionado podría necesitar acceso a Canal 5, TV Azteca, TUDN, FOX, ViX,
+    # FOX One, Disney+, Prime Video y Claro Sports, dependiendo del equipo al
+    # que siga". En la jornada 10 los 9 partidos se repartieron entre seis
+    # plataformas distintas. ViX Premium lleva solo a los clubes de
+    # TelevisaUnivision. Para Liga MX la respuesta es por equipo, no por liga.
+}
+
+
 DEFAULT_LEAGUE_CHANNELS = {
     # ── Futbol México ──
     "liga-mx-femenil": ["TUDN", "ViX"],
@@ -268,20 +355,93 @@ DEFAULT_LEAGUE_CHANNELS = {
     "liga-portugal": ["ESPN MX"],
     "eredivisie": ["ESPN MX"],
     # ── NFL 2026 ──
+    # ACTUALIZADO el 06/10/2026. Decía ["ESPN MX", "Fox Sports MX", "TUDN",
+    # "DAZN España"] y dos de esos estaban mal para México:
+    #
+    #   · "Fox Sports MX" → la NFL pasó al NUEVO FOX (FOX, FOX+ y FOX One).
+    #     Récord 14/08/2026: "A partir de la temporada 2026, FOX transmitirá un
+    #     amplio paquete de partidos de la NFL en territorio nacional… llegará
+    #     a FOX y FOX+ en televisión, además del streaming mediante FOX One".
+    #     Infobae 12/08/2026 detalla el paquete: Thursday Night Football, 4
+    #     juegos dominicales, playoffs de la Liga Nacional, Thanksgiving,
+    #     Pro Bowl y Super Bowl.
+    #   · "TUDN" → el detalle del paquete de TelevisaUnivision es Canal 5 y
+    #     ViX, no el canal TUDN. El Financiero 08/09/2026: "los juegos se
+    #     reparten entre Canal 5, ViX, ESPN, Disney+"; el paquete son 23 de
+    #     fase regular y 12 de playoffs en abierto, 15 más en ViX, y el Super
+    #     Bowl. N+ 11/09/2026 documenta partidos concretos en Canal 5.
+    #   · ESPN se queda: 19 Sunday Night, 19 Monday Night y 6 de playoffs
+    #     (El Financiero 08/09/2026).
+    #   · "ViX" va a secas, no "ViX Premium": está verificado que los juegos de
+    #     la NFL van en la cuenta gratuita (la nota de N+ se titula "dónde ver
+    #     NFL gratis"). Es lo contrario de Liga MX, que es ViX Premium.
+    #
+    # NO se pone "Netflix" aunque tiene juegos (Australia, Thanksgiving,
+    # Navidad, uno de la semana 18): son fechas concretas, no un canal para
+    # cualquier partido. Un default es para el partido genérico.
+    #
+    # Y lo más útil para el lector no está en esta lista: todos los partidos
+    # están en NFL Game Pass vía DAZN. Eso vive en
+    # PLATAFORMAS_TODOS_LOS_PARTIDOS, porque es un hecho y no una suposición.
+    #
     # ES: DAZN en exclusiva. El acuerdo Movistar-DAZN no incluye futbol americano.
-    "nfl": ["ESPN MX", "Fox Sports MX", "TUDN", "DAZN España"],
+    # Revisar: al arrancar la temporada 2027.
+    "nfl": ["Canal 5", "ViX", "ESPN MX", "FOX One", "DAZN España"],
     "college-football": ["ESPN MX"],
     # ── NBA 2025-26 ──
     # ES: Prime Video (Copa, Play-In, una final de conferencia y las Finales en
     # anos pares) y DAZN (el grueso de la temporada).
     "nba": ["ESPN MX", "Disney+", "Prime Video", "DAZN España"],
-    "wnba": ["ESPN MX", "Disney+"],
+    # WNBA: SIN default de canal lineal. Decía ["ESPN MX", "Disney+"] y no se
+    # pudo verificar ni uno. Todo lo que publica la prensa sobre WNBA en
+    # español es del mercado de ESTADOS UNIDOS: el comunicado de ESPN dice
+    # "ESPN Deportes will provide Spanish-language coverage", y ESPN Deportes
+    # es la señal gringa, no ESPN México. No hay una sola página mexicana que
+    # lo confirme.
+    #
+    # Y aquí no hace falta adivinar, porque la respuesta buena existe y está
+    # verificada en PLATAFORMAS_TODOS_LOS_PARTIDOS: WNBA League Pass lleva
+    # TODOS los partidos en vivo en México. El soporte oficial de la WNBA
+    # (act. 12/08/2026): "all games are available live, except in the US and
+    # Canada, where local and national blackouts apply" — y México no está en
+    # la lista de países excluidos.
+    #
+    # O sea: cambiamos dos canales inventados por una plataforma comprobada.
+    # Revisar: al arrancar la temporada 2027 (mayo).
+    # "wnba": [...],
     # ── MLB 2026 ──
-    # Postemporada 2026 (arranca 29 sep): en México va por ESPN, Fox y TUDN.
-    # TUDN faltaba, y es el que ve quien no paga cable premium. Verificado en
-    # Claro Sports y Milenio, sep 2026. Dodgers y Yankees son nuestras dos
-    # páginas de más tráfico: el canal incompleto pega justo donde más duele.
-    "mlb": ["ESPN MX", "Disney+", "Fox Sports MX", "TUDN"],
+    # CORREGIDO el 06/10/2026. Decía ["ESPN MX", "Disney+", "Fox Sports MX",
+    # "TUDN"] y dos de esos cuatro están mal:
+    #
+    #   · Fox Sports México PERDIÓ los derechos de MLB en agosto de 2025.
+    #     (de10.com.mx, 21/08/2025: "han perdido los derechos de Liga MX,
+    #     Concacaf Champions Cup, Fórmula 1, Premier League, WWE y más
+    #     recientemente MLB"). Lo seguíamos publicando un año después.
+    #   · TUDN no transmite juegos en vivo: el acuerdo TelevisaUnivision–MLB
+    #     le da "programas de análisis, highlights y contenidos especiales"
+    #     (Récord, 11/02/2026). Los juegos van por Canal 5, NU9VE y ViX.
+    #
+    # Lo verificado para 2026, con fuente y fecha:
+    #   · ESPN y Disney+ → juegos de Liga Americana en esta postemporada.
+    #     (Infobae 28/09/2026; El Informador 03/10/2026; Diario de México
+    #     05/10/2026, los tres listando juego por juego)
+    #   · Canal 5 y Canal 9 / NU9VE → acuerdo TelevisaUnivision 2026-2028:
+    #     55 juegos de temporada regular, los partidos de FIN DE SEMANA de
+    #     Divisionales y Campeonato, y la Serie Mundial completa.
+    #     (Récord 11/02/2026; N+ 25/03/2026)
+    #   · ViX → parte del mismo paquete de TelevisaUnivision.
+    #
+    # Lo que NO se pudo verificar y por eso no está aquí: quién lleva la Liga
+    # Nacional en México. Varios medios dicen "Fox Sports" o "Grupo Imagen",
+    # pero Fox perdió MLB en 2025 e Imagen fue sustituida por
+    # TelevisaUnivision en 2026 — ambas cosas verificadas. Una de esas notas
+    # además declara estar "redactada con ayuda de inteligencia artificial".
+    # Mejor "Por confirmar" que repetir un canal que ya no tiene el derecho.
+    #
+    # Dodgers y Yankees son nuestras dos páginas de más tráfico, así que este
+    # renglón es el que más importa de todo el diccionario.
+    # Revisar: al arrancar la temporada 2027.
+    "mlb": ["ESPN MX", "Disney+", "Canal 5", "Canal 9", "ViX"],
     # ── Béisbol México ──
     "lmp": ["TUDN", "ESPN MX", "Canal 5"],
     "lmb": ["ESPN MX", "TUDN"],
@@ -321,40 +481,102 @@ DEFAULT_LEAGUE_CHANNELS = {
     "motogp": ["DAZN MotoGP"],
 }
 
-# Liga MX Apertura 2026: broadcast rights per team (home matches)
-# Source: infobae.com Jul 17, 2026
+# ── Liga MX: derechos por club (partidos como LOCAL) ────────────────────────
+#
+# Apertura 2026 / temporada 2026-27. Reconstruida el 06/10/2026.
+#
+# En Liga MX los derechos se negocian POR CLUB, así que la respuesta depende de
+# quién es local. Publimetro (16/07/2026): "un mismo aficionado podría
+# necesitar acceso a Canal 5, TV Azteca, TUDN, FOX, ViX, FOX One, Disney+,
+# Prime Video y Claro Sports, dependiendo del equipo al que siga".
+#
+# DE DÓNDE SALE ESTA TABLA. Las guías de pretemporada de julio se contradecían
+# entre sí en Atlante, Necaxa y Santos, así que no se usó ninguna como base.
+# Se reconstruyó con listados PARTIDO POR PARTIDO de jornadas ya jugadas, que
+# son evidencia de lo que de verdad pasó:
+#   · Infobae 28/09/2026 — jornada 11, partido por partido
+#   · Infobae 21/09/2026 — jornada 10, partido por partido
+#   · El Informador 12/09/2026 — jornada 8, partido por partido
+#
+# QUÉ CAMBIÓ RESPECTO A LO QUE TENÍAMOS, Y ERA MUCHO:
+#   · "Fox Sports MX" → "FOX One". El canal lineal viejo ya no tiene Liga MX;
+#     Lauman perdió esos derechos (verificado, de10.com.mx 21/08/2025).
+#   · Tigres: tenía Azteca 7 + Fox Sports MX. Es Azteca 7 + FOX / FOX One.
+#   · Necaxa: tenía Fox Sports MX + Azteca 7. Es FOX One, sin TV Azteca.
+#   · Juárez: tenía Azteca 7 primero. Es FOX One (TV Azteca solo a veces).
+#   · Puebla: tenía Azteca 7 + Fox. Es Azteca 7 + ESPN y Disney+.
+#   · Santos: tenía TUDN + ViX. Es ViX + ESPN y Disney+.
+#   · Atlante: tenía Azteca 7 + Fox Sports MX. Es TV Azteca (Canal 7).
+#   · MAZATLÁN YA NO EXISTE en Liga MX: el Atlante compró la franquicia y
+#     volvió tras 12 años (El Informador, 16/07/2026). No tenía entrada aquí,
+#     pero conviene que quede escrito para que nadie se la agregue.
+#
+# POR QUÉ CANAL 5 NO ESTÁ EN LOS CLUBES DE TELEVISA, aunque a veces lo lleven.
+#
+# Canal 5 toma solo uno o dos partidos por jornada entre los siete clubes de
+# TelevisaUnivision. Infobae (28/09/2026) lo dice textual: "América vs.
+# Monterrey y Pumas vs. Cruz Azul serán transmitidos por TUDN, aunque todavía
+# falta confirmar si también estarán disponibles en el canal 5."
+#
+# Si lo pusiéramos de default, CADA partido de Cruz Azul entraría a la sección
+# "Gratis hoy", y la mayoría no son gratis. Esa sección vale justamente por
+# acertar en lo que es gratis; llenarla de falsos positivos la vuelve inútil.
+# Así que la base es TUDN + ViX, y Canal 5 aparece solo cuando la parrilla lo
+# confirma para ese partido — que es exactamente para lo que activamos las
+# parrillas mexicanas de GatoTV.
+#
+# Revisar: al arrancar el Clausura 2027. El reparto cambió entre Clausura y
+# Apertura 2026 (p. ej. Necaxa pasó de TV Azteca/Claro a FOX One), así que
+# cambia por torneo, no por año.
 LIGA_MX_TEAM_CHANNELS = {
-    # TelevisaUnivision: Canal 5 + TUDN + ViX Premium
-    "america": ["Canal 5", "TUDN", "ViX"],
-    "pumas": ["Canal 5", "TUDN", "ViX"],
-    "unam": ["Canal 5", "TUDN", "ViX"],
-    "monterrey": ["Canal 5", "TUDN", "ViX"],
-    "rayados": ["Canal 5", "TUDN", "ViX"],
-    # TelevisaUnivision: TUDN + ViX Premium
-    "atlas": ["TUDN", "ViX"],
-    "cruz azul": ["TUDN", "ViX"],
-    "santos laguna": ["TUDN", "ViX"],
-    "santos": ["TUDN", "ViX"],
-    # FOX One / FOX Sports exclusivo
-    "leon": ["Fox Sports MX"],
-    "pachuca": ["Fox Sports MX"],
-    "queretaro": ["Fox Sports MX"],
-    "tijuana": ["Fox Sports MX"],
-    "xolos": ["Fox Sports MX"],
-    # FOX One + TV Azteca (compartido)
-    "necaxa": ["Fox Sports MX", "Azteca 7"],
-    # TV Azteca + FOX One
-    "tigres uanl": ["Azteca 7", "Fox Sports MX"],
-    "tigres": ["Azteca 7", "Fox Sports MX"],
-    "puebla": ["Azteca 7", "Fox Sports MX"],
-    "atlante": ["Azteca 7", "Fox Sports MX"],
-    "juarez": ["Azteca 7", "Fox Sports MX"],
-    # Toluca: alterna entre TUDN, TV Azteca y FOX One
-    "toluca": ["TUDN", "Azteca 7", "Fox Sports MX"],
-    # ESPN + Disney+
+    # Dice "ViX Premium" y no "ViX" a propósito. Las tres fuentes de jornada
+    # dicen "ViX Premium", que es el plan de pago. Y en server.py el cálculo de
+    # "Gratis hoy" trata "ViX" a secas como gratis (tiene plan libre) pero
+    # excluye explícitamente lo que lleva "premium". Si pusiéramos "ViX", los
+    # siete clubes de Televisa entrarían a "Gratis hoy" sin ser gratis.
+    #
+    # Para NFL y MLB sí es "ViX" a secas, porque ahí está verificado que va en
+    # la cuenta gratuita (N+ 11/09/2026, nota titulada "dónde ver NFL gratis").
+    # Es la misma marca con dos planes; la diferencia importa para el lector.
+    # ── TelevisaUnivision: TUDN + ViX Premium ──
+    "america": ["TUDN", "ViX Premium"],
+    "pumas": ["TUDN", "ViX Premium"],
+    "unam": ["TUDN", "ViX Premium"],
+    "monterrey": ["TUDN", "ViX Premium"],
+    "rayados": ["TUDN", "ViX Premium"],
+    "atlas": ["TUDN", "ViX Premium"],
+    "cruz azul": ["TUDN", "ViX Premium"],
+    "toluca": ["TUDN", "ViX Premium"],
+    # Santos: ViX más ESPN y Disney+ (El Informador 12/09/2026:
+    # "Transmisión (canales): Disney+ Premium, ViX Premium, ESPN")
+    "santos laguna": ["ViX Premium", "ESPN MX", "Disney+"],
+    "santos": ["ViX Premium", "ESPN MX", "Disney+"],
+    # ── FOX One ──
+    "leon": ["FOX One"],
+    "pachuca": ["FOX One"],
+    "queretaro": ["FOX One"],
+    "tijuana": ["FOX One"],
+    "xolos": ["FOX One"],
+    "necaxa": ["FOX One"],
+    "juarez": ["FOX One"],
+    # ── TV Azteca abierta ──
+    # Éstos sí van primero en abierta, y por eso sí deben entrar a "Gratis hoy".
+    # Infobae 21/09/2026: "El Atlante vs Monterrey y el Tigres vs Puebla serán
+    # transmitidos de manera gratuita por televisión abierta por el Canal 7 de
+    # TV Azteca".
+    "tigres uanl": ["Azteca 7", "FOX One"],
+    "tigres": ["Azteca 7", "FOX One"],
+    "atlante": ["Azteca 7"],
+    # Puebla: abierta por Azteca 7, más ESPN y Disney+ (Infobae 28/09/2026:
+    # "Puebla vs. León — Transmisión: TV Azteca, ESPN y Disney+")
+    "puebla": ["Azteca 7", "ESPN MX", "Disney+"],
+    # ── ESPN + Disney+ ──
     "atletico san luis": ["ESPN MX", "Disney+"],
     "san luis": ["ESPN MX", "Disney+"],
-    # Amazon Prime Video exclusivo
+    # ── Amazon Prime Video en exclusiva ──
+    # Los tres listados de partidos de Chivas como local dicen solo
+    # "Prime Video". Chivas TV aparecía en una guía de julio, pero no se pudo
+    # confirmar con una segunda fuente, así que no está.
     "guadalajara": ["Amazon Prime"],
     "chivas": ["Amazon Prime"],
 }
@@ -1491,6 +1713,14 @@ async def parse_espn_events_enriched(
             # este partido. Quien AFIRME el canal (título, meta description,
             # JSON-LD) tiene que callarse cuando esto es False.
             "channels_confirmed": channels_confirmed,
+            # Plataforma con TODOS los partidos de la competencia, si existe.
+            # Va en campo APARTE y no dentro de broadcasts a propósito: es una
+            # afirmación de otra naturaleza. "Todos los partidos de la NFL
+            # están en Game Pass" es un hecho para cada partido; "este juego va
+            # por ESPN MX" es una suposición mientras la parrilla no lo
+            # confirme. Mezclarlas en la misma lista perdería justo la
+            # distinción que esta tabla existe para hacer.
+            "plataforma_todos": PLATAFORMAS_TODOS_LOS_PARTIDOS.get(league_slug),
             "channels_by_country": channels_by_country,
             "venue": venue,
             "recap": recap,

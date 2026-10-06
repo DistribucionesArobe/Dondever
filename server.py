@@ -175,6 +175,12 @@ FREE_CHANNELS_MX = {
     "canal 5", "azteca 7", "las estrellas", "azteca uno", "azteca deportes",
     "tv azteca", "nu9ve", "canal 5 nu9ve", "canal once", "canal 22",
     "pluto tv",
+    # "canal 9" faltaba. Estaba "nu9ve", que es el nombre comercial nuevo, pero
+    # el canal se sigue llamando Canal 9 en todas las parrillas (GatoTV lo
+    # titula "Canal 9 de México (XEQ-TDT)", de Televisa) y así lo nombran las
+    # notas de MLB. Es TV abierta y lleva juegos de MLB del acuerdo
+    # TelevisaUnivision 2026-2028, así que debe contar para "Gratis hoy".
+    "canal 9",
 }
 # Prefixes for MX — match "ViX (free)" or "YouTube (official)" etc.
 FREE_PREFIXES_MX = {"vix"}
