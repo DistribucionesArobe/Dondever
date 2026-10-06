@@ -111,6 +111,46 @@ GATOTV_SPORTS_CHANNELS: dict[str, list[tuple[str, str]]] = {
         ("teleamazonas", "Teleamazonas"),
         ("ecuavisa_ecuador", "Ecuavisa"),
     ],
+    # ── MÉXICO ──────────────────────────────────────────────────────────────
+    #
+    # Faltaba. No porque GatoTV no tenga México: porque nunca se lo pedimos.
+    #
+    # El 05/10/2026 se midieron las 35 fichas del día en producción y solo DOS
+    # tenían canal de México confirmado — un 6%. Se concluyó que la parrilla no
+    # alcanzaba. La conclusión estaba mal: lo que no alcanzaba era esta lista,
+    # que iba de VE a EC y se saltaba el país del que viene la mayor parte del
+    # tráfico.
+    #
+    # Comprobado ese mismo día contra gatotv.com, con la fecha real:
+    #
+    #   /canal/tudn_mexico/2026-10-05
+    #       15:00–17:00  Monterrey Vs. Cruz Azul      Fútbol Mexicano Primera División
+    #       17:00–19:00  América vs. Tigres UANL      Femenil Primera División
+    #       23:00–01:00  Monterrey vs. América        Femenil Primera División
+    #   /canal/fox_sports_2_mexico/2026-10-05
+    #       06:00–08:00  UCAM Murcia vs. Barca
+    #       14:00–16:30  Kosner Baskonia vs. FIATC Giron
+    #
+    # Mismo patrón de URL y misma estructura HTML que los otros seis países,
+    # así que el parser, la caché y el comparador de nombres ya servían.
+    #
+    # Los nombres de la derecha son los que usa el resto del sitio
+    # (CHANNEL_ALIASES), para que un canal no acabe con dos nombres distintos
+    # según de qué fuente venga.
+    #
+    # Nota para quien lea una parrilla de TUDN: trae programas de resumen
+    # ("Liga MX en 60", "Fut en 60", "NFL en 60") que también nombran a los dos
+    # equipos sin ser la transmisión. La ventana de horario del comparador los
+    # descarta casi siempre, pero si aparece un canal raro en un partido viejo,
+    # mirar ahí primero.
+    "MX": [
+        ("tudn_mexico", "TUDN"),
+        ("5_mexico", "Canal 5"),
+        ("azteca_7", "Azteca 7"),
+        ("espn_mexico", "ESPN MX"),
+        ("fox_sports_mexico", "Fox Sports MX"),
+        ("fox_sports_2_mexico", "Fox Sports 2 MX"),
+    ],
 }
 
 # Canales que SOLO se consultan para fútbol.
@@ -149,6 +189,15 @@ GATOTV_SOCCER_EXTRA: dict[str, list[tuple[str, str]]] = {
            ("espn_5_ecuador", "ESPN 5"), ("espn_6_ecuador", "ESPN 6"),
            ("espn_7_ecuador", "ESPN 7"), ("fox_sports_2_ecuador", "Fox Sports 2"),
            ("fox_sports_3_ecuador", "Fox Sports 3")],
+    # México: el fútbol mexicano se reparte entre la TV abierta y los canales
+    # de los equipos del norte. Canal 9 lleva Liga MX; AYM Sports es de
+    # Multimedios y lleva Tigres y Rayados, que son dos de los equipos con más
+    # búsquedas del sitio. Van aquí y no arriba para no pedir cinco parrillas
+    # más en un juego de beisbol, donde no aportan nada.
+    "MX": [("9_de_mexico", "Canal 9"), ("azteca_uno", "Azteca Uno"),
+           ("aym_sports", "AYM Sports"), ("multimedios_plus", "Multimedios"),
+           ("espn_2_mexico", "ESPN 2 MX"), ("espn_3_mexico", "ESPN 3 MX"),
+           ("fox_sports_3_mexico", "Fox Sports 3 MX")],
 }
 
 

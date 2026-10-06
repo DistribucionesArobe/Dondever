@@ -1656,6 +1656,26 @@ CHANNEL_ALIASES = {
     "TNT Sports": {"name": "TNT Sports", "country": "MX", "type": "cable"},
     "TNT Sports MX": {"name": "TNT Sports", "country": "MX", "type": "cable"},
     "Canal 9": {"name": "Canal 9", "country": "MX", "type": "broadcast"},
+    # ── Canales que devuelve la parrilla mexicana de GatoTV ────────────────
+    # Se activó México en GATOTV_SPORTS_CHANNELS (ver el comentario largo en
+    # gatotv.py). Estos nombres salen de ahí y no estaban en esta tabla, así
+    # que salían sin país ni tipo: la pastilla quedaba gris, sin la etiqueta de
+    # TV abierta / cable / streaming, y el filtro "Mis plataformas" no los veía.
+    # Los números de ESPN y Fox apuntan al canal 1 a propósito: para el lector
+    # lo que importa es "es ESPN" y para el filtro lo que importa es que sean
+    # el mismo paquete de cable.
+    "ESPN 2 MX": {"name": "ESPN 2 MX", "country": "MX", "type": "cable"},
+    "ESPN 3 MX": {"name": "ESPN 3 MX", "country": "MX", "type": "cable"},
+    "ESPN 4 MX": {"name": "ESPN 4 MX", "country": "MX", "type": "cable"},
+    "Fox Sports 2 MX": {"name": "Fox Sports 2 MX", "country": "MX", "type": "cable"},
+    "Fox Sports 3 MX": {"name": "Fox Sports 3 MX", "country": "MX", "type": "cable"},
+    # Azteca Uno y Canal 5 son TV abierta: quien no paga cable los tiene, y de
+    # eso vive la sección "Gratis hoy".
+    "Azteca Uno": {"name": "Azteca Uno", "country": "MX", "type": "broadcast"},
+    # AYM Sports es de Multimedios y lleva Tigres y Rayados, dos de los equipos
+    # con más búsquedas del sitio.
+    "AYM Sports": {"name": "AYM Sports", "country": "MX", "type": "cable"},
+    "Multimedios": {"name": "Multimedios", "country": "MX", "type": "broadcast"},
     "Disney+": {"name": "Disney+", "country": "MX", "type": "streaming"},
     "Disney Plus": {"name": "Disney+", "country": "MX", "type": "streaming"},
     "Netflix": {"name": "Netflix", "country": "MX", "type": "streaming"},

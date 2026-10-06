@@ -1319,7 +1319,11 @@ async def parse_espn_events_enriched(
                 # Nada de ESPN ni de TheSportsDB. Los defaults de liga son una
                 # SUPOSICIÓN, no un dato: se marcan como no confirmados para que
                 # el título, la meta description y el JSON-LD no los afirmen.
-                mx_defaults = DEFAULT_LEAGUE_CHANNELS.get(league_slug, [])
+                # Por default_mx_channels y no por el diccionario directo: es
+                # la puerta única donde viven las excepciones (ver su docstring).
+                mx_defaults = default_mx_channels(
+                    league_slug, home.get("name", ""), away.get("name", "")
+                )
                 channels_confirmed = False
 
         # Add MX channels that aren't already in ESPN data
@@ -1617,7 +1621,8 @@ async def parse_sportsdb_standalone_events(
 
         # Add league defaults if no specific TV info
         if not broadcasts:
-            for ch in DEFAULT_LEAGUE_CHANNELS.get(league_slug, []):
+            # Misma puerta única que el otro lector (ver default_mx_channels).
+            for ch in default_mx_channels(league_slug, home_name, away_name):
                 info = CHANNEL_ALIASES.get(ch, {"name": ch, "type": "cable"})
                 display_name = info.get("name", ch)
                 key = display_name.lower()
@@ -3040,6 +3045,44 @@ US_TO_MX_CHANNEL = {
 }
 
 
+def default_mx_channels(league_slug: str, home_name: str = "",
+                        away_name: str = "") -> list[str]:
+    """El default de liga para México, con las excepciones que lo hacen honesto.
+
+    Hay cuatro lugares en el código que leían DEFAULT_LEAGUE_CHANNELS directo.
+    Esta función es la única puerta, para que la excepción no quede en uno y
+    falte en los otros tres — que es exactamente el bug de las dos copias de
+    la tabla US→MX que ya nos costó una vez.
+
+    ── Amistosos de selecciones ──
+    El slug se llama "club-friendly" pero apunta a `fifa.friendly` de ESPN,
+    que son amistosos de SELECCIONES, de todo el mundo. El default
+    ["TUDN", "ViX"] se le aplicaba a todos, y el 05/10/2026 eso producía en
+    producción:
+
+        Mauricio vs Sri Lanka      → "MX: TUDN, ViX"
+        Uganda vs Congo RD         → "MX: TUDN, ViX"
+        Ruanda vs Kenia            → "MX: TUDN, ViX"
+        Liechtenstein vs Gibraltar → "MX: TUDN, ViX"
+
+    TUDN no transmite Mauricio–Sri Lanka. TUDN y ViX son TelevisaUnivision,
+    que tiene los derechos de la SELECCIÓN MEXICANA: de ahí venía el default y
+    ahí es donde se sostiene, no fuera.
+
+    Un default que acierta casi nunca es peor que no decir nada. Cuando el
+    lector ve una respuesta que reconoce como falsa, deja de creerle también a
+    las que están bien. Fuera de los partidos de México no se contesta, y la
+    página dice "Por confirmar", que es la verdad.
+    """
+    if league_slug == "club-friendly":
+        nombres = f"{home_name or ''} {away_name or ''}".lower()
+        # ESPN manda "Mexico" sin acento; el acento se contempla por si otra
+        # fuente lo trae con él.
+        if "mexico" not in nombres and "méxico" not in nombres:
+            return []
+    return list(DEFAULT_LEAGUE_CHANNELS.get(league_slug, []))
+
+
 def mx_channels_for_game(league_slug: str, home_name: str, away_name: str,
                          us_channels: list[str] | None = None) -> list[str]:
     """Canales de México para un partido, con las mismas reglas en todo el sitio.
@@ -3062,12 +3105,35 @@ def mx_channels_for_game(league_slug: str, home_name: str, away_name: str,
     if league_slug == "nfl":
         return list(nfl_mx_channels(us_channels))
 
+    # ── Amistosos de selecciones: el default solo vale si juega México ──────
+    #
+    # El slug se llama "club-friendly" pero apunta a `fifa.friendly` de ESPN,
+    # que son amistosos de SELECCIONES, de todo el mundo. El default era
+    # ["TUDN", "ViX"] para cualquiera de ellos, y el 05/10/2026 eso producía,
+    # en producción:
+    #
+    #     Mauricio vs Sri Lanka   → "MX: TUDN, ViX"
+    #     Uganda vs Congo RD      → "MX: TUDN, ViX"
+    #     Ruanda vs Kenia         → "MX: TUDN, ViX"
+    #     Liechtenstein vs Gibraltar → "MX: TUDN, ViX"
+    #
+    # TUDN no transmite Mauricio–Sri Lanka. TUDN y ViX son TelevisaUnivision,
+    # que tiene los derechos de la SELECCIÓN MEXICANA; de ahí venía el default
+    # y ahí es donde se sostiene.
+    #
+    # Un default que acierta casi nunca es peor que no decir nada: cuando el
+    # lector ve una respuesta que reconoce como falsa, deja de creerle también
+    # a las que están bien. Así que fuera de los partidos de México, aquí no
+    # se contesta y la página dice "Por confirmar", que es la verdad.
+    if league_slug == "club-friendly":
+        return default_mx_channels(league_slug, home_name, away_name)
+
     for ch in us_channels:
         mx = US_TO_MX_CHANNEL.get(ch)
         if mx and mx not in out:
             out.append(mx)
     if not out:
-        out = list(DEFAULT_LEAGUE_CHANNELS.get(league_slug, []))
+        out = default_mx_channels(league_slug, home_name, away_name)
     return out
 
 
