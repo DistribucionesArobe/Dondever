@@ -155,8 +155,9 @@ def _reportar(filas: list[dict]) -> None:
         print(f"   {cc:<6} {_pct(g_ok, n):>8} {_pct(e_ok, n):>10} {_pct(any_ok, n):>8}   {' + '.join(quien)}")
 
     print()
-    print("   Recordatorio: GatoTV NO consulta México. epgshare es la única que")
-    print("   lo hace. Ninguna de las dos cubre España.")
+    print("   Ninguna de las dos fuentes cubre España, y hay página de España.")
+    if "MX" not in PAISES_GATOTV:
+        print("   OJO: GatoTV no tiene México configurado. Su 0% de MX no mide nada.")
 
     # ── 2. Por liga, solo México: es el país que paga las cuentas ───────
     print("\n2) México, liga por liga (es de donde viene el tráfico)\n")

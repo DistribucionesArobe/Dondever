@@ -135,7 +135,19 @@ def limpiar_canal(nombre: str) -> str:
         return f"{m.group(2).strip()} (Canal {m.group(1)})"
     s = _PAIS_PAREN.sub("", s)
     s = _COD_PAREN.sub("", s)
-    s = re.sub(r"^Canal\s+", "", s, flags=re.I)
+    # Quitar "Canal" solo si lo que sigue NO es un número solo.
+    #
+    # "Canal ESPN 3" → "ESPN 3", que es lo que queremos. Pero "Canal 5
+    # (México)" se convertía en "5", y eso rompe dos cosas: el lector no sabe
+    # qué es "5", y "5" no existe en CHANNEL_ALIASES —donde sí está
+    # "Canal 5"—, así que salía sin país ni tipo y el filtro de TV abierta no
+    # lo veía. En México el nombre del canal ES "Canal 5"; el "Canal" no es
+    # un prefijo que sobre, es parte del nombre.
+    #
+    # Visto el 06/10/2026 en la medición de cobertura: México vs Chile salía
+    # con "Canal 5, Azteca 7, 5" — tres canales donde hay dos.
+    if not re.match(r"^Canal\s+\d+\s*$", s, flags=re.I):
+        s = re.sub(r"^Canal\s+", "", s, flags=re.I)
     return re.sub(r"\s+", " ", s).strip() or (nombre or "").strip()
 
 

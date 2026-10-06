@@ -237,7 +237,24 @@ DEFAULT_LEAGUE_CHANNELS = {
     "gold-cup": ["TUDN", "Canal 5", "ViX"],
     "wcq-conmebol": ["ESPN MX", "Disney+"],
     "wcq-concacaf": ["TUDN", "Canal 5", "ViX"],
-    "nations-league": ["Fox Sports MX"],
+    # UEFA Nations League: SIN default. Decía ["Fox Sports MX"] y la evidencia
+    # va en contra, por tres vías independientes (06/10/2026):
+    #
+    #   1. La parrilla publicada de Fox Sports México de ese día no trae un
+    #      solo partido de la competencia: solo Central Fox, La última
+    #      palabra, +90, Le Mans y basquetbol de la Liga ACB.
+    #   2. La medición de cobertura buscó los 10 partidos del día en los TRECE
+    #      canales mexicanos que consultamos: 0 de 10.
+    #   3. Los derechos 2026-27 para México no están confirmados públicamente,
+    #      y lo que históricamente la transmitió fue Sky Sports y ViX, no Fox
+    #      (Goal, Claro Sports).
+    #
+    # Cambiarlo a Sky o ViX sería intercambiar una suposición por otra. Mejor
+    # no contestar: son 10 partidos al día afirmando un canal que la parrilla
+    # contradice, y la página dice "Por confirmar", que es la verdad.
+    #
+    # Si algún día se confirman los derechos, aquí se pone y ya.
+    # "nations-league": [...],
     "concacaf-nations": ["TUDN", "ViX"],
     # ── Futbol LATAM ──
     "liga-colombia": ["Win Sports+", "ESPN"],
