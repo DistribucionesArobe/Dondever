@@ -2636,9 +2636,68 @@ async def fetch_standings(sport: str, league: str) -> list[dict]:
         }
         entries.append(parsed)
 
+    entries = _ordenar_tabla(entries)
     _standings_cache[cache_key] = entries
     logger.info(f"Fetched {len(entries)} standings entries for {sport}/{league}")
     return entries
+
+
+def _num(v, default=-1e9) -> float:
+    """Texto de ESPN a número. '.578', '0.578', '+138', '93' y '' incluidos."""
+    try:
+        s = str(v).strip().replace("+", "")
+        if not s or s == "-":
+            return default
+        return float(s)
+    except Exception:
+        return default
+
+
+def _ordenar_tabla(entries: list[dict]) -> list[dict]:
+    """Ordena la tabla de posiciones y numera las filas.
+
+    Faltaba por completo: fetch_standings iba agregando en el orden en que
+    ESPN los manda, que viene AGRUPADO POR DIVISIÓN. Al aplanarlo en una sola
+    tabla el resultado quedaba revuelto, y las dos plantillas lo mostraban mal
+    cada una a su manera:
+
+      · league.html numeraba con `loop.index`, así que ponía 1, 2, 3… sobre una
+        lista desordenada. En /liga/wnba salía el #9 con mejor récord que el #5.
+      · team.html mostraba `row.rank`, y como ESPN no manda rank en MLB, pintaba
+        un "·" en las 30 filas. Milwaukee, con el mejor récord del año
+        (103-59), aparecía ÚLTIMO en /equipo/dodgers.
+
+    Criterio, en este orden:
+      1. Puntos (fútbol), desempatado por diferencia de goles.
+      2. Porcentaje de victorias (ligas de EE.UU.).
+      3. Victorias, si no hay ninguno de los dos.
+
+    Lo que esto NO hace: separar por conferencia o división. La plantilla
+    siempre pintó una sola tabla; ordenarla entera es estrictamente mejor que
+    dejarla revuelta. Separar por conferencia sería otro cambio, en la
+    plantilla, y con el riesgo de que las ligas de fútbol no tienen
+    conferencias. Primero que esté bien ordenada.
+    """
+    if not entries:
+        return entries
+
+    tiene_puntos = any(_num(e.get("points")) > -1e8 for e in entries)
+    tiene_pct = any(_num(e.get("win_pct")) > -1e8 for e in entries)
+
+    if tiene_puntos:
+        clave = lambda e: (-_num(e.get("points")), -_num(e.get("goal_diff")))
+    elif tiene_pct:
+        clave = lambda e: (-_num(e.get("win_pct")), -_num(e.get("wins")))
+    else:
+        clave = lambda e: (-_num(e.get("wins")), _num(e.get("losses"), 1e9))
+
+    ordenadas = sorted(entries, key=clave)
+    # Numeramos nosotros. El rank de ESPN es por división cuando existe, así
+    # que en una tabla aplanada miente; y en MLB simplemente no viene.
+    for i, e in enumerate(ordenadas, 1):
+        e["pos"] = i
+        e["rank"] = str(i)
+    return ordenadas
 
 
 async def get_team_stats(team_slug: str) -> dict:

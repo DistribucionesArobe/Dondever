@@ -695,11 +695,32 @@ def format_date_es(dt) -> str:
 
 
 def format_mx_day_time(iso_date: str) -> str:
-    """'Domingo 26 · 7:20 PM' in Mexico City time (Spanish, DST-aware)."""
+    """'Domingo 26 · 7:20 PM', y con el MES cuando la fecha no es de esta semana.
+
+    Por qué lleva el mes condicional. Esta función imprimía solo el día del mes
+    en todas las tablas del sitio, y eso hizo INVISIBLE durante semanas el bug
+    de los partidos zombi: /equipo/tigres servía partidos del 26 de agosto en
+    "próximos partidos" y en pantalla decía "Miércoles 26", indistinguible de
+    un 26 de este mes. Nadie podía notarlo, ni él ni yo. Lo encontramos por
+    otra vía.
+
+    La regla: si la fecha cae dentro de [ayer, +6 días], va sin mes —"Miércoles
+    7" se lee mejor y no hay ambigüedad posible. Fuera de esa ventana lleva el
+    mes, y eso incluye TODO el pasado. Así, si una fecha vieja vuelve a colarse
+    donde no debe, se ve de inmediato: "Miércoles 26 ago · 7:20 PM" en una
+    lista de próximos partidos grita que algo está mal.
+
+    O sea que esto no es cosmético: es el detector del próximo bug de este
+    tipo. Una fecha que miente debe verse mintiendo.
+    """
     try:
         dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
         mx = dt.astimezone(TZ_MX)
-        return f"{_DAYS_ES_FMT[mx.weekday()]} {mx.day} · {mx.strftime('%I:%M %p').lstrip('0')}"
+        hora = mx.strftime('%I:%M %p').lstrip('0')
+        hoy = datetime.now(TZ_MX).date()
+        dias = (mx.date() - hoy).days
+        mes = "" if -1 <= dias <= 6 else f" {_MONTHS_ES_SHORT[mx.month - 1]}"
+        return f"{_DAYS_ES_FMT[mx.weekday()]} {mx.day}{mes} · {hora}"
     except Exception:
         return ""
 

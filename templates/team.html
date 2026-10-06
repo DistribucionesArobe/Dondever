@@ -668,7 +668,26 @@
         {% endif %}
 
         <!-- Playoff Probabilities + GB + Seed + Division Record (US sports) -->
-        {% if stats.all_stats.get('playoffPercent') or stats.all_stats.get('playoffSeed') or stats.all_stats.get('gamesBehind') %}
+        {#- Un pronóstico que ya se resolvió dejó de ser un pronóstico.
+
+            El 06/10/2026, en plena postemporada, /equipo/dodgers mostraba
+            "Playoffs 100.0%" junto a "Wild Card 0.0%" y "3 Juegos atrás".
+            Las tres cifras son de temporada regular y a esas alturas ya no
+            dicen nada: los Dodgers estaban jugando la Serie Divisional. Para
+            el lector se leen como un error del sitio, y con razón.
+
+            ESPN sigue mandando los campos en postemporada, así que no hay un
+            "está en playoffs" que preguntar. Pero sí hay una señal en el
+            propio dato: cuando playoffPercent llega a 0 o a 100, la
+            probabilidad se resolvió. Mostrar una certeza con cara de
+            probabilidad es peor que no mostrar nada.
+
+            Por eso el bloque entero se oculta en ese caso: "Juegos atrás" y
+            "Seed" de temporada regular quedan igual de obsoletos y venían
+            juntos. -#}
+        {%- set _pp = stats.all_stats.get('playoffPercent') -%}
+        {%- set _resuelto = _pp and (_pp|string)|replace('%','')|trim in ('0', '0.0', '100', '100.0') -%}
+        {% if not _resuelto and (stats.all_stats.get('playoffPercent') or stats.all_stats.get('playoffSeed') or stats.all_stats.get('gamesBehind')) %}
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:0.5rem;">
             {% if stats.all_stats.get('playoffPercent') %}
             <div style="background:linear-gradient(135deg,#064e3b,#065f46);border-radius:8px;padding:0.6rem;text-align:center;">
