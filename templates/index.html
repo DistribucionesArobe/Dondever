@@ -366,6 +366,29 @@
             border-color: rgba(239,68,68,0.4);
             color: #fca5a5;
         }
+        /* ── Deportes sin partidos hoy ──────────────────────────────────
+           El 07/10/2026 el botón FÚTBOL se veía igual que los demás pero no
+           llevaba a ningún lado: cero partidos ese día, así que al tocarlo
+           salía "No hay juegos programados". El único indicio era que le
+           faltaba el número debajo, y eso nadie lo nota.
+
+           Se atenúa en vez de ocultarse: que el deporte exista es información
+           útil ("hoy no hay fútbol"), y esconderlo haría que la fila cambiara
+           de tamaño día con día. Sigue siendo clicable por si alguien quiere
+           confirmarlo. */
+        .sport-card.vacio { opacity: 0.38; }
+        .sport-card.vacio .sc-label { color: #94a3b8; }
+        .sport-card.vacio::after {
+            content: "sin juegos";
+            position: absolute;
+            bottom: 3px;
+            font-size: 0.42rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+        .sport-card.vacio.active { opacity: 0.75; }
         .sport-card {
             display: flex;
             flex-direction: column;
@@ -1633,43 +1656,43 @@
                 <span class="sc-label">Todos</span>
                 <span class="sc-count">{% if sport_counts.get('all') %}{{ sport_counts['all'] }} hoy{% endif %}</span>
             </a>
-            <a href="/?sport=soccer" class="sport-card {% if is_soccer %}active{% endif %}" data-sport="soccer">
+            <a href="/?sport=soccer" class="sport-card {% if is_soccer %}active{% endif %}{% if not sport_counts.get('soccer') %} vacio{% endif %}" data-sport="soccer">
                 <span class="sc-star" onclick="dvToggleSport('soccer',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#9917;</span>
                 <span class="sc-label">F&uacute;tbol</span>
                 <span class="sc-count">{% if sport_counts.get('soccer') %}{{ sport_counts['soccer'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=baseball" class="sport-card {% if current_sport == 'baseball' %}active{% endif %}" data-sport="baseball">
+            <a href="/?sport=baseball" class="sport-card {% if current_sport == 'baseball' %}active{% endif %}{% if not sport_counts.get('baseball') %} vacio{% endif %}" data-sport="baseball">
                 <span class="sc-star" onclick="dvToggleSport('baseball',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#9918;</span>
                 <span class="sc-label">B&eacute;isbol</span>
                 <span class="sc-count">{% if sport_counts.get('baseball') %}{{ sport_counts['baseball'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=basketball" class="sport-card {% if current_sport == 'basketball' %}active{% endif %}" data-sport="basketball">
+            <a href="/?sport=basketball" class="sport-card {% if current_sport == 'basketball' %}active{% endif %}{% if not sport_counts.get('basketball') %} vacio{% endif %}" data-sport="basketball">
                 <span class="sc-star" onclick="dvToggleSport('basketball',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127936;</span>
                 <span class="sc-label">B&aacute;squet</span>
                 <span class="sc-count">{% if sport_counts.get('basketball') %}{{ sport_counts['basketball'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=football" class="sport-card {% if current_sport == 'football' %}active{% endif %}" data-sport="football">
+            <a href="/?sport=football" class="sport-card {% if current_sport == 'football' %}active{% endif %}{% if not sport_counts.get('football') %} vacio{% endif %}" data-sport="football">
                 <span class="sc-star" onclick="dvToggleSport('football',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127944;</span>
                 <span class="sc-label">NFL</span>
                 <span class="sc-count">{% if sport_counts.get('football') %}{{ sport_counts['football'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=hockey" class="sport-card {% if current_sport == 'hockey' %}active{% endif %}" data-sport="hockey">
+            <a href="/?sport=hockey" class="sport-card {% if current_sport == 'hockey' %}active{% endif %}{% if not sport_counts.get('hockey') %} vacio{% endif %}" data-sport="hockey">
                 <span class="sc-star" onclick="dvToggleSport('hockey',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127954;</span>
                 <span class="sc-label">NHL</span>
                 <span class="sc-count">{% if sport_counts.get('hockey') %}{{ sport_counts['hockey'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=mma" class="sport-card {% if current_sport == 'mma' %}active{% endif %}" data-sport="mma">
+            <a href="/?sport=mma" class="sport-card {% if current_sport == 'mma' %}active{% endif %}{% if not sport_counts.get('mma') %} vacio{% endif %}" data-sport="mma">
                 <span class="sc-star" onclick="dvToggleSport('mma',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#129354;</span>
                 <span class="sc-label">UFC</span>
                 <span class="sc-count">{% if sport_counts.get('mma') %}{{ sport_counts['mma'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=motorsports" class="sport-card {% if current_sport == 'motorsports' %}active{% endif %}" data-sport="motorsports">
+            <a href="/?sport=motorsports" class="sport-card {% if current_sport == 'motorsports' %}active{% endif %}{% if not sport_counts.get('motorsports') %} vacio{% endif %}" data-sport="motorsports">
                 <span class="sc-star" onclick="dvToggleSport('motorsports',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127950;</span>
                 <span class="sc-label">F1</span>
@@ -1736,33 +1759,25 @@
     </div>
 </div>
 
-<!-- Sub-filters (soccer leagues) -->
-{% if is_soccer %}
-<div class="filters-wrap" id="leagueFiltersWrap">
-    <div class="subfilters" id="leagueScroller">
-        <span class="sf-label">&#9917; Ligas:</span>
-        <a href="/?league=liga-mx" class="subfilter-pill {% if current_league == 'liga-mx' %}active{% endif %}">&#127474;&#127485; Liga MX</a>
-        <a href="/?league=liga-colombia" class="subfilter-pill {% if current_league == 'liga-colombia' %}active{% endif %}">BetPlay &#127464;&#127476;</a>
-        <a href="/?league=liga-argentina" class="subfilter-pill {% if current_league == 'liga-argentina' %}active{% endif %}">Argentina &#127462;&#127479;</a>
-        <a href="/?league=liga-ecuador" class="subfilter-pill {% if current_league == 'liga-ecuador' %}active{% endif %}">LigaPro &#127466;&#127464;</a>
-        <a href="/?league=liga-panama" class="subfilter-pill {% if current_league == 'liga-panama' %}active{% endif %}">LPF &#127477;&#127462;</a>
-        <a href="/?league=liga-chile" class="subfilter-pill {% if current_league == 'liga-chile' %}active{% endif %}">Chile &#127464;&#127473;</a>
-        <a href="/?league=liga-peru" class="subfilter-pill {% if current_league == 'liga-peru' %}active{% endif %}">Liga 1 &#127477;&#127466;</a>
-        <a href="/?league=libertadores" class="subfilter-pill {% if current_league == 'libertadores' %}active{% endif %}">Libertadores</a>
-        <a href="/?league=sudamericana" class="subfilter-pill {% if current_league == 'sudamericana' %}active{% endif %}">Sudamericana</a>
-        <a href="/?league=premier-league" class="subfilter-pill {% if current_league == 'premier-league' %}active{% endif %}">&#127468;&#127463; Premier</a>
-        <a href="/?league=la-liga" class="subfilter-pill {% if current_league == 'la-liga' %}active{% endif %}">&#127466;&#127480; La Liga</a>
-        <a href="/?league=champions" class="subfilter-pill {% if current_league == 'champions' %}active{% endif %}">&#127942; Champions</a>
-        <a href="/?league=europa-league" class="subfilter-pill {% if current_league == 'europa-league' %}active{% endif %}">&#127942; Europa League</a>
-        <a href="/?league=serie-a" class="subfilter-pill {% if current_league == 'serie-a' %}active{% endif %}">&#127470;&#127481; Serie A</a>
-        <a href="/?league=bundesliga" class="subfilter-pill {% if current_league == 'bundesliga' %}active{% endif %}">&#127465;&#127466; Bundesliga</a>
-        <a href="/?league=ligue-1" class="subfilter-pill {% if current_league == 'ligue-1' %}active{% endif %}">&#127467;&#127479; Ligue 1</a>
-        <a href="/?league=liga-portugal" class="subfilter-pill {% if current_league == 'liga-portugal' %}active{% endif %}">&#127477;&#127481; Portugal</a>
-        <a href="/?league=eredivisie" class="subfilter-pill {% if current_league == 'eredivisie' %}active{% endif %}">&#127475;&#127473; Eredivisie</a>
-        <a href="/?league=mls" class="subfilter-pill {% if current_league == 'mls' %}active{% endif %}">&#127482;&#127480; MLS</a>
-    </div>
-</div>
-{% endif %}
+{#
+  Aquí vivía una segunda barra de ligas, con 19 ligas de fútbol escritas a
+  mano, que aparecía solo al tocar FÚTBOL.
+
+  Se quita por dos motivos:
+
+  1. No comprobaba si había partidos. El 07/10/2026 no hubo fútbol en todo el
+     día y la barra seguía ofreciendo Liga MX, Champions, Premier, La Liga y
+     las otras quince: las diecinueve llevaban a "No hay juegos programados".
+     Diecinueve botones, diecinueve callejones sin salida.
+
+  2. Desde hoy existe la fila .liga-chips, que hace lo mismo pero se arma con
+     los partidos reales del día y trae el conteo al lado del nombre. Tener dos
+     barras de ligas, con dos diseños distintos, para el mismo trabajo, era
+     justo lo contrario de "filtrar más rápido".
+
+  La lista fija tampoco escalaba: cubría fútbol y nada más. La nueva sirve
+  igual para MLB, NBA, NHL o LNBP sin tocar la plantilla.
+#}
 
 
 
@@ -2568,9 +2583,19 @@
         }
     })();
 
-    // ── Reorder league pills by user's country ──
+    // ── Reordenar las ligas según el país del visitante ──
+    //
+    // Esto vivía para la barra vieja de ligas de fútbol (#leagueScroller), que
+    // se quitó el 07/10/2026 por ofrecer 19 ligas sin comprobar si tenían
+    // partido. Se conserva y se apunta a la fila nueva (.liga-chips) porque la
+    // idea era buena y no quiero perderla: el servidor ordena pensando en
+    // México, pero 21% del tráfico es de Venezuela y hay lectores en Colombia,
+    // Perú, España y EE.UU. Para ellos, su liga local debe ir primero.
+    //
+    // El orden del servidor sigue siendo el que ve Google y el que se pinta
+    // antes de que corra el JS; esto solo reacomoda para el lector.
     (function() {
-        var scr = document.getElementById('leagueScroller');
+        var scr = document.getElementById('ligaChips') || document.getElementById('leagueScroller');
         if (!scr) return;
 
         // Map country code → local league slug that should appear first
@@ -2593,7 +2618,9 @@
 
         function reorderPills(cc) {
             var local = LOCAL_LEAGUE[cc] || 'liga-mx';
-            var pills = Array.from(scr.querySelectorAll('.subfilter-pill'));
+            // .liga-chip es la fila nueva; .subfilter-pill queda por si alguna
+            // otra vista todavía usa el formato viejo.
+            var pills = Array.from(scr.querySelectorAll('.liga-chip:not(.liga-chip-clear), .subfilter-pill'));
             var label = scr.querySelector('.sf-label');
             if (!pills.length) return;
 
