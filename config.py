@@ -680,22 +680,29 @@ STREAMING_AFFILIATES = {
         "key": "disneyplus",
         "name": "Disney+",
         "aliases": ["disney+", "disney plus", "star+"],
-        "url": os.getenv("AFFILIATE_DISNEYPLUS", "") or "https://www.disneyplus.com/",
-        "affiliate_url": os.getenv("AFFILIATE_DISNEYPLUS", "") or None,
+        "url": os.getenv("AFFILIATE_DISNEYPLUS", "") or "https://grfpr.com/g/z1w3b3celh9d38be8ce05c1634180b/",
+        "affiliate_url": os.getenv("AFFILIATE_DISNEYPLUS", "") or "https://grfpr.com/g/z1w3b3celh9d38be8ce05c1634180b/",
         "cta": "Ver en Disney+",
-        "countries": ["MX"],
-        "is_affiliate": False,
+        "countries": ["MX", "AR", "CL", "CO", "PE", "EC", "VE", "DO", "PA"],
+        # Admitad — Disney+ LATAM. Programa aceptado el 07/10/2026.
+        # Disney+ es uno de los canales que más aparece en el sitio: lleva ESPN
+        # en México, y sale en casi todo partido de MLB y NHL.
+        # Los países son los de LATAM donde hay tráfico; conviene confirmar en
+        # el panel de Admitad cuáles cubre el programa — un clic desde un país
+        # no cubierto no infringe nada, simplemente no paga.
+        "is_affiliate": True,
         "bg": "#113ccf", "color": "white",
     },
     "ESPN MX": {
         "key": "disneyplus",
         "name": "ESPN MX",
         "aliases": ["espn mx", "espn mexico"],
-        "url": os.getenv("AFFILIATE_DISNEYPLUS", "") or "https://www.disneyplus.com/",
-        "affiliate_url": os.getenv("AFFILIATE_DISNEYPLUS", "") or None,
+        "url": os.getenv("AFFILIATE_DISNEYPLUS", "") or "https://grfpr.com/g/z1w3b3celh9d38be8ce05c1634180b/",
+        "affiliate_url": os.getenv("AFFILIATE_DISNEYPLUS", "") or "https://grfpr.com/g/z1w3b3celh9d38be8ce05c1634180b/",
         "cta": "ESPN en Disney+",
         "countries": ["MX"],
-        "is_affiliate": False,
+        # Mismo programa que Disney+: en México, ESPN se ve dentro de Disney+.
+        "is_affiliate": True,
         "bg": "#d00", "color": "white",
     },
 }
