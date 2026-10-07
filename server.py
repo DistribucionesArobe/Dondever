@@ -416,6 +416,53 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                 snippet += (
                     f'<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={adsense_id}"\n'
                     f'     crossorigin="anonymous"></script>\n'
+                    # ── Colapsar los bloques que AdSense no llena ──
+                    #
+                    # Medido en la portada el 07/10/2026, con los bloques ya
+                    # sirviendo con data-ad-slot:
+                    #
+                    #   3 unidades, las tres data-ad-status="unfilled"
+                    #   467 px de alto cada una (484 con su contenedor)
+                    #   = 1,452 px en blanco de una página de 6,148 px
+                    #
+                    # AdSense marca el bloque como "unfilled" pero NO lo
+                    # colapsa: el <ins> conserva el alto que reservó. El primer
+                    # partido quedaba a 980 px del inicio, o sea una pantalla
+                    # entera de nada en móvil antes de ver contenido.
+                    #
+                    # Va aquí y no en templates/_ad.html porque el macro se
+                    # pinta hasta 3 veces por página: repetir el <style> sería
+                    # repetir el CSS. El middleware lo inyecta una sola vez.
+                    #
+                    # El :has() cubre el contenedor completo, para que no quede
+                    # flotando la etiqueta "Publicidad" sobre un hueco. El JS es
+                    # el respaldo para los bloques que ni siquiera llegan a
+                    # recibir status (quedan "sin status" cuando el push no se
+                    # resuelve) y para navegadores sin :has().
+                    '<style>\n'
+                    '  ins.adsbygoogle[data-ad-status="unfilled"] { display: none !important; }\n'
+                    '  .dv-ad:has(ins.adsbygoogle[data-ad-status="unfilled"]) { display: none !important; }\n'
+                    '  .dv-ad.dv-ad-vacio { display: none !important; }\n'
+                    '</style>\n'
+                    '<script>\n'
+                    '(function(){\n'
+                    '  function limpiar(){\n'
+                    '    document.querySelectorAll(".dv-ad").forEach(function(c){\n'
+                    '      var i = c.querySelector("ins.adsbygoogle");\n'
+                    '      if(!i) return;\n'
+                    '      var st = i.getAttribute("data-ad-status");\n'
+                    '      var vacio = (st === "unfilled") ||\n'
+                    '                  (!st && i.querySelectorAll("iframe").length === 0);\n'
+                    '      if(vacio) c.classList.add("dv-ad-vacio");\n'
+                    '    });\n'
+                    '  }\n'
+                    # 4s: AdSense suele resolver en 1-2s; el margen evita ocultar
+                    # un bloque que todavía iba a llenarse. Se repite a los 12s
+                    # por si la respuesta tardó más de lo normal.
+                    '  setTimeout(limpiar, 4000);\n'
+                    '  setTimeout(limpiar, 12000);\n'
+                    '})();\n'
+                    '</script>\n'
                 )
             if onesignal_id:
                 snippet += (
@@ -1040,6 +1087,49 @@ async def home(
         s = LEAGUES.get(ls, ("other",))[0] if ls in LEAGUES else "other"
         sport_counts[s] = sport_counts.get(s, 0) + 1
 
+    # ── Ligas con partido HOY, para la fila de filtros ──────────────────
+    #
+    # Los botones de arriba filtran por DEPORTE, y ahí "Fútbol" mete Liga MX
+    # junto con la peruana, la chilena, la colombiana y las europeas. Quien
+    # entra a ver Liga MX tiene que revisar una lista larga para encontrarla.
+    #
+    # La ruta ya acepta ?league=<slug> y se lo pasa a get_todays_games; lo que
+    # faltaba era exponerlo. Aquí se arma la lista de ligas que SÍ tienen
+    # partido hoy — no tiene caso ofrecer un filtro que devuelve vacío.
+    #
+    # El orden es por relevancia para el lector, no alfabético ni por número de
+    # partidos: con 64% del tráfico en México, Liga MX va primero aunque ese día
+    # tenga un solo juego y la MLB tenga quince.
+    _PRIORIDAD_LIGAS = [
+        "liga-mx", "mlb", "nfl", "nba", "liga-mx-femenil", "champions",
+        "la-liga", "premier-league", "nhl", "liga-expansion", "mls",
+        "serie-a", "bundesliga", "ligue-1", "libertadores", "lmp", "lmb",
+    ]
+    _cuenta_liga: dict[str, int] = {}
+    for g in games:
+        ls = g.get("league_slug", "")
+        if ls:
+            _cuenta_liga[ls] = _cuenta_liga.get(ls, 0) + 1
+
+    def _orden(slug: str) -> tuple:
+        try:
+            return (0, _PRIORIDAD_LIGAS.index(slug))
+        except ValueError:
+            # Las que no están en la lista van después, de más a menos partidos.
+            return (1, -_cuenta_liga.get(slug, 0))
+
+    league_chips = []
+    for slug in sorted(_cuenta_liga, key=_orden):
+        meta = LEAGUES.get(slug)
+        if not meta or len(meta) < 4:
+            continue
+        league_chips.append({
+            "slug": slug,
+            "name": meta[2],
+            "emoji": meta[3],
+            "count": _cuenta_liga[slug],
+        })
+
     # ── Compact standings for home page ────────────────
     home_standings: dict = {}
     _STANDINGS_LEAGUES = [
@@ -1091,6 +1181,7 @@ async def home(
             "fmt_event_when": lambda iso: _fmt_local(iso, "America/Mexico_City", True),
             "free_games": free_games,
             "sport_counts": sport_counts,
+            "league_chips": league_chips,
             "home_standings": home_standings,
             "is_historical": is_historical,
             "shown_ids": shown_ids,

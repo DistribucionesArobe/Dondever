@@ -314,6 +314,58 @@
             flex-wrap: wrap;
             margin-bottom: 0.7rem;
         }
+        /* ── Fila de ligas con partido hoy ──────────────────────────────
+           Una sola línea que se desliza, no una cuadrícula: la cuadrícula de
+           deportes ya ocupa dos filas de alto, y apilar otra empujaría los
+           partidos todavía más abajo. Aquí lo que importa es que Liga MX se
+           alcance de un toque sin crecer verticalmente. */
+        .liga-chips {
+            display: flex;
+            gap: 0.4rem;
+            overflow-x: auto;
+            padding: 0 0.6rem 0.5rem;
+            margin-bottom: 0.6rem;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .liga-chips::-webkit-scrollbar { display: none; }
+        .liga-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            flex: 0 0 auto;
+            padding: 0.4rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.07);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .liga-chip:hover { background: rgba(255,255,255,0.12); }
+        .liga-chip.active {
+            background: rgba(16,185,129,0.22);
+            border-color: #34d399;
+            color: #6ee7b7;
+        }
+        .liga-chip .lc-emoji { font-size: 0.9rem; }
+        .liga-chip .lc-count {
+            font-size: 0.65rem;
+            font-weight: 800;
+            opacity: 0.6;
+            background: rgba(0,0,0,0.25);
+            border-radius: 999px;
+            padding: 0.05rem 0.35rem;
+        }
+        .liga-chip.active .lc-count { opacity: 0.9; }
+        .liga-chip-clear {
+            background: rgba(239,68,68,0.15);
+            border-color: rgba(239,68,68,0.4);
+            color: #fca5a5;
+        }
         .sport-card {
             display: flex;
             flex-direction: column;
@@ -1639,6 +1691,38 @@
                 <span class="sc-count">torneos</span>
             </a>
         </div>
+
+        {#
+          Fila de LIGAS con partido hoy.
+
+          Los botones de arriba filtran por deporte, y "Fútbol" junta Liga MX
+          con la peruana, la chilena y las europeas. Quien entra buscando Liga
+          MX tenía que leer una lista larga para encontrarla.
+
+          Estos chips llevan a /?league=<slug>, que la ruta ya soportaba desde
+          antes — solo faltaba exponerlo. Solo salen ligas CON partido hoy: un
+          filtro que devuelve vacío es peor que no tenerlo.
+
+          El orden lo decide el servidor por relevancia para el lector, no por
+          número de partidos (ver _PRIORIDAD_LIGAS en server.py).
+        #}
+        {% if league_chips %}
+        <div class="liga-chips" id="ligaChips" role="navigation" aria-label="Filtrar por liga">
+            {% if current_league %}
+            <a href="/{% if current_sport %}?sport={{ current_sport }}{% endif %}" class="liga-chip liga-chip-clear">
+                &#10005; Quitar filtro
+            </a>
+            {% endif %}
+            {% for lc in league_chips %}
+            <a href="/?league={{ lc.slug }}"
+               class="liga-chip {% if current_league == lc.slug %}active{% endif %}">
+                <span class="lc-emoji">{{ lc.emoji }}</span>
+                <span class="lc-name">{{ lc.name }}</span>
+                <span class="lc-count">{{ lc.count }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         <!-- Fav filter (hidden, shown by JS if user has favs) -->
         <button class="filter-pill" id="favFilter" onclick="toggleFavFilter()" style="cursor:pointer;border:none;display:none;background:rgba(255,255,255,0.08);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);border-radius:2rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;margin-bottom:0.5rem;">&#11088; Mis equipos</button>
