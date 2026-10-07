@@ -1777,10 +1777,39 @@
 <!-- Games -->
 <main class="main" id="gamesContainer">
 
+    {#
+      Día sin partidos.
+
+      Antes decía "No hay juegos programados. Intenta con otra fecha" y ahí
+      terminaba. El 07/10/2026 —fecha FIFA, sin fútbol en ninguna de las 16
+      ligas de ESPN— quien llegaba buscando fútbol se iba; y si tocaba
+      "Mañana" también estaba vacío, porque el 8 tampoco había nada.
+
+      Ahora el servidor busca el primer día CON partidos (hasta 7 adelante,
+      respetando el filtro) y se ofrece el salto directo.
+    #}
     {% if not games %}
     <div class="no-games">
-        <h2>No hay juegos programados</h2>
+        <h2>{% if current_sport or current_league %}No hay partidos de este filtro hoy{% else %}Hoy no hay partidos{% endif %}</h2>
+        {% if proximo_dia %}
+        <p style="margin-bottom:1rem;">
+            Los próximos son el <strong>{{ proximo_dia.etiqueta }}</strong>:
+            {{ proximo_dia.total }} partido{{ 's' if proximo_dia.total != 1 }}{% if proximo_dia.ligas %}
+            de {{ proximo_dia.ligas|join(', ') }}{% endif %}.
+        </p>
+        <a href="/?date={{ proximo_dia.fecha }}{% if current_sport %}&amp;sport={{ current_sport }}{% endif %}{% if current_league %}&amp;league={{ current_league }}{% endif %}"
+           style="display:inline-block;background:var(--accent,#10b981);color:#fff;font-weight:700;
+                  padding:0.6rem 1.2rem;border-radius:10px;text-decoration:none;">
+            Ver los del {{ proximo_dia.etiqueta }} &rarr;
+        </a>
+        {% if current_sport or current_league %}
+        <p style="margin-top:0.9rem;font-size:0.85rem;">
+            <a href="/" style="color:var(--accent,#10b981);">o mira todo lo de hoy &rarr;</a>
+        </p>
+        {% endif %}
+        {% else %}
         <p>No se encontraron juegos para esta fecha/filtro. Intenta con otra fecha o quita los filtros.</p>
+        {% endif %}
     </div>
     {% endif %}
 

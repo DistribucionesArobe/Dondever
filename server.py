@@ -1080,6 +1080,47 @@ async def home(
     prev_date = (viewing_date - timedelta(days=1)).strftime("%Y%m%d")
     next_date = (viewing_date + timedelta(days=1)).strftime("%Y%m%d")
 
+    # ── Día vacío: decir CUÁNDO son los próximos ────────────────────────
+    #
+    # El 07/10/2026 no hubo fútbol en ninguna de las 16 ligas que consulta
+    # ESPN — fecha FIFA: los amistosos de selección ocuparon del 3 al 6, los
+    # clubes volvieron el 9, y el 7 y 8 quedaron en blanco. Comprobado contra
+    # la API, no es un fallo de datos.
+    #
+    # El problema era otro: la página decía "No hay juegos programados" y ahí
+    # se acababa. Quien llegó buscando fútbol se iba, y si tocaba "Mañana"
+    # también encontraba vacío: dos clics para nada.
+    #
+    # Ahora se busca hacia adelante el primer día CON partidos, respetando el
+    # filtro activo, y se ofrece el salto directo.
+    #
+    # El coste se paga solo cuando la lista viene vacía, que es raro. Se miran
+    # 7 días como mucho: más allá, decir "vuelve en dos semanas" no retiene a
+    # nadie y sí cuesta llamadas.
+    proximo_dia = None
+    if not games:
+        for salto in range(1, 8):
+            d = viewing_date + timedelta(days=salto)
+            try:
+                futuros = await get_todays_games(
+                    date_str=d.strftime("%Y%m%d"),
+                    sport_filter=sport, league_filter=league, persist=False,
+                )
+            except Exception:
+                break
+            if futuros:
+                proximo_dia = {
+                    "fecha": d.strftime("%Y%m%d"),
+                    "etiqueta": f"{_DAYS_ES_FULL[d.weekday()]} {d.day} de {_MONTHS_ES_FULL[d.month]}",
+                    "total": len(futuros),
+                    "ligas": sorted({
+                        (LEAGUES.get(g.get("league_slug", ""), ("", "", g.get("league_name", "")))[2]
+                         if g.get("league_slug") in LEAGUES else g.get("league_name", ""))
+                        for g in futuros
+                    } - {""})[:4],
+                }
+                break
+
     # ── Conteos del DÍA COMPLETO, no del filtro activo ──────────────────
     #
     # `games` ya viene filtrado: con ?sport=soccer trae solo fútbol, y
@@ -1166,6 +1207,7 @@ async def home(
             "fmt_event_when": lambda iso: _fmt_local(iso, "America/Mexico_City", True),
             "free_games": free_games,
             "sport_counts": sport_counts,
+            "proximo_dia": proximo_dia,
             "home_standings": home_standings,
             "is_historical": is_historical,
             "shown_ids": shown_ids,
