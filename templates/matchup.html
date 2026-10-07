@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -282,6 +283,8 @@
             <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.25rem 0.4rem;border-radius:8px;color:#94a3b8;">&#127769;</button>
         </div>
     </header>
+{{ ad('top') }}
+
 
     <!-- Game Hero Card -->
     <div class="game-hero">
@@ -467,15 +470,12 @@
 
     <!-- Betting CTA (Betsson) -->
     <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;display:grid;gap:0.6rem;">
-        {# US: Betsson #}
-        <a href="/go/bet?s=matchup-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="betsson" data-geo="us" data-display="flex" style="display:none;align-items:center;gap:1rem;background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #059669;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
-            <div style="flex:1;">
-                <div style="font-size:1rem;font-weight:800;color:white;">{{ first_team }} vs {{ second_team }}</div>
-                <div style="font-size:0.8rem;color:#6ee7b7;margin:0.2rem 0;">Apuesta en el partido</div>
-                <div style="font-size:0.65rem;color:#34d399;">{{ affiliates.betsson.name }} · +18</div>
-            </div>
-            <div style="background:#059669;color:white;font-weight:800;font-size:0.8rem;padding:0.6rem 1.1rem;border-radius:8px;white-space:nowrap;">VER MOMIOS &rarr;</div>
-        </a>
+        {# Aquí iba el CTA de apuestas para EE.UU., rotulado "{{ affiliates.betsson.name }}".
+           Se quita por lo mismo que el banner equivalente de league.html: la
+           marca anunciada cerró su programa el 24-sep-2026, y para EE.UU. el
+           router /go/bet manda a la home a propósito porque 1xBet no tiene
+           licencia estatal. El enlace prometía momios y no llevaba a ninguno.
+           El espacio queda para AdSense, que en EE.UU. paga mejor. #}
         {# MX: Jubilee #}
         <a href="/go/jubilee?s=matchup-cta" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" data-geo="mx" data-display="flex" style="display:flex;align-items:center;gap:1rem;background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #059669;border-radius:12px;padding:1rem 1.25rem;text-decoration:none;">
             <div style="flex:1;">
@@ -743,6 +743,7 @@
     </div>
 
     <!-- Footer -->
+    {{ ad('bottom') }}
     {% include "_juego_responsable.html" %}
     <div class="footer">
         <p>&copy; 2026 <a href="/">DondeVer.app</a> | <a href="/acerca-de">Acerca de</a> | <a href="/privacidad">Privacidad</a> | <a href="/terminos">Terminos</a></p>

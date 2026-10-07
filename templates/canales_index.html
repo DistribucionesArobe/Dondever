@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -86,6 +87,8 @@
 
 <div class="hero">
     <h1>&#128250; Canales deportivos hoy</h1>
+{{ ad('top') }}
+
     <p>{{ total_channels }} canales transmitiendo {{ total_games }} partidos hoy. Toca un canal para ver su programación completa.</p>
 </div>
 
@@ -125,6 +128,9 @@
     </div>
     {% endif %}
 </main>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>

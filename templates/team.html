@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1018,14 +1019,7 @@
     {% endif %}
 
     {# ══ ADSENSE MID-PAGE ══ #}
-    <div style="margin:1rem auto;text-align:center;min-height:90px;">
-        <ins class="adsbygoogle"
-             style="display:block"
-             data-ad-client="ca-pub-2576227882415709"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
+    {{ ad('mid') }}
 
     {# ══ SEO CONTENT (colapsado — click para expandir) ══ #}
     <div style="margin-top:1.5rem;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:white;">
@@ -1173,6 +1167,9 @@
         <div class="wa-note">Sin spam. Solo picks deportivos. Cancela cuando quieras.</div>
     </div>
 </div>
+
+{{ ad('bottom') }}
+
 
 <footer>
     <p><a href="/">DondeVer.app</a> &middot; <a href="/streaming">Comparar Streaming</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>

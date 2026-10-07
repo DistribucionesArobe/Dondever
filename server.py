@@ -813,6 +813,30 @@ templates.env.globals["team_shop"] = TEAM_SHOP
 templates.env.globals["meli_aff"] = MELI_AFF_PARAM
 templates.env.globals["team_shop_meli"] = TEAM_SHOP_MELI
 templates.env.globals["popular_teams"] = POPULAR_TEAMS
+
+# ── AdSense: publisher + slots ──────────────────────────────
+# El publisher ya lo inyecta GAInjectMiddleware en todas las páginas; aquí se
+# expone a las plantillas para que templates/_ad.html pueda pintar las unidades.
+#
+# ADSENSE_SLOTS es un JSON con los IDs de unidad de anuncio:
+#   {"top":"1234567890","mid":"2345678901","bottom":"3456789012","lista":"4567890123"}
+#
+# Si viene vacío o mal formado, AD_SLOTS queda {} y el macro no pinta nada. Eso
+# es deliberado: hasta el 07/10/2026 las unidades no tenían data-ad-slot, no se
+# llenaban nunca, y dejaban huecos de 467 px de alto en /equipo/*. Un hueco vacío
+# empuja el contenido y no paga; mejor no pintarlo y dejar que los auto ads
+# trabajen hasta que existan los slots.
+ADSENSE_PUB = os.getenv("ADSENSE_PUB_ID", "").strip()
+try:
+    AD_SLOTS = json.loads(os.getenv("ADSENSE_SLOTS", "").strip() or "{}")
+    if not isinstance(AD_SLOTS, dict):
+        AD_SLOTS = {}
+except (ValueError, TypeError):
+    logger.warning("ADSENSE_SLOTS no es JSON válido; no se pintarán unidades manuales")
+    AD_SLOTS = {}
+templates.env.globals["ADSENSE_PUB"] = ADSENSE_PUB
+templates.env.globals["AD_SLOTS"] = AD_SLOTS
+
 # JSON list for onboarding JS: [{slug, name, league}, ...]
 templates.env.globals["popular_teams_json"] = json.dumps(
     [{"slug": s, "name": i["name"], "league": i["league"]} for s, i in POPULAR_TEAMS.items()],

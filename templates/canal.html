@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -152,6 +153,8 @@
     <div class="channel-badge" style="background:#1e293b;color:white;">&#128250; {{ channel_name }}</div>
     {% endif %}
     <h1>{{ channel_name }} en vivo hoy: qué partidos pasan</h1>
+{{ ad('top') }}
+
     <p>{% if total_games %}Esto es lo que transmite {{ channel_name }} hoy, con horario del centro de México.{% else %}Hoy {{ channel_name }} no tiene partidos en nuestra programación. Abajo están los próximos y cómo ver el canal en vivo.{% endif %}</p>
     <div class="hero-stats">
         <span class="hero-stat"><strong>{{ total_games }}</strong> partido{{ 's' if total_games != 1 else '' }}</span>
@@ -279,6 +282,9 @@
  {"@type":"Question","name":"¿Qué partidos pasan hoy en {{ channel_name }}?","acceptedAnswer":{"@type":"Answer","text":"{% if total_games %}Hoy {{ channel_name }} transmite {{ total_games }} partido{{ 's' if total_games != 1 else '' }}, con horario del centro de México.{% else %}Hoy no hay partidos programados en {{ channel_name }}; en la página aparecen los próximos.{% endif %}"}}
 ]}
 </script>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>

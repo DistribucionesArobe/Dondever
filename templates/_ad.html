@@ -1,0 +1,65 @@
+{#
+  Bloque de anuncio — un solo lugar para todo el sitio.
+
+  POR QUÉ EXISTE ESTE ARCHIVO
+  ---------------------------
+  Medido en producción el 07/10/2026, leyendo el DOM del sitio en vivo:
+
+    dondever.app/            4 bloques → unfilled, unfill-optimized, sin status, unfilled
+    dondever.app/equipo/dodgers  2 bloques → 0 iframes dentro, hueco de 467x467 px
+
+  Ningún bloque se llenaba, y la cuenta de AdSense lo confirma: 20,066 vistas de
+  página contra 7,720 impresiones en 30 días. Menos de 0.4 anuncios por visita.
+
+  Tres causas, las tres en el código:
+
+  1. Ninguna unidad tenía data-ad-slot. Una unidad de display manual SIN slot es
+     inválida: AdSense no la llena. Tras suficientes fallos marca el bloque como
+     "unfill-optimized" y deja de pedir anuncios para él. Eso ya pasó en la home.
+
+  2. Los contenedores venían con max-height:100px y overflow:hidden. Recortar el
+     creativo deja fuera casi todos los formatos y, sobre todo, hace imposible la
+     visibilidad: Active View exige 50% de los píxeles visibles 1 segundo. Un
+     300x250 recortado a 100px enseña 40% y NUNCA cuenta. De ahí el 28.17%.
+
+  3. killAutoAds() y su CSS mataban los auto ads, que son justamente los que sí
+     llenan sin necesidad de slot.
+
+  LA REGLA DE ESTE MACRO
+  ----------------------
+  Si no hay slot configurado, NO se pinta nada. Un hueco vacío de 467 px es peor
+  que ningún anuncio: empuja el contenido hacia abajo, se ve como un error, y no
+  paga un peso. Mientras no haya slots, que los auto ads hagan el trabajo.
+
+  CÓMO SE CONFIGURAN LOS SLOTS
+  ----------------------------
+  Variable de entorno ADSENSE_SLOTS, un JSON:
+
+      {"top":"1234567890","mid":"2345678901","bottom":"3456789012","lista":"4567890123"}
+
+  Los IDs salen de AdSense → Anuncios → Por unidad de anuncio → Display.
+#}
+
+{% macro ad(pos='mid', max_w=728, label=true) %}
+{%- set slot = AD_SLOTS.get(pos) if AD_SLOTS else none -%}
+{%- if ADSENSE_PUB and slot -%}
+<div class="dv-ad dv-ad--{{ pos }}"
+     style="max-width:{{ max_w }}px;margin:1.5rem auto;padding:0 1rem;text-align:center;">
+  {%- if label %}
+  <div style="font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;opacity:.45;margin-bottom:.25rem;">Publicidad</div>
+  {%- endif %}
+  {#
+    Sin max-height ni overflow:hidden, a propósito: recortar el creativo es lo que
+    tenía la visibilidad en 28%. min-height reserva el espacio para que el anuncio
+    no empuje el contenido al cargar (y no cuente como CLS).
+  #}
+  <ins class="adsbygoogle"
+       style="display:block;min-height:100px;"
+       data-ad-client="{{ ADSENSE_PUB }}"
+       data-ad-slot="{{ slot }}"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+{%- endif -%}
+{% endmacro %}

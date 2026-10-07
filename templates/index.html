@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1450,24 +1451,32 @@
         .rm-status { font-size: 0.7rem; color: #6b7280; font-weight: 500; }
         [data-theme="dark"] .rm-teams { color: #e2e8f0; }
 
-        /* ── Auto-ads: cap height everywhere, hide before main content ── */
+        /* ── Auto-ads ──────────────────────────────────────────────
+           Aquí vivía un max-height:100px !important con overflow:hidden sobre
+           .google-auto-placed y sobre ins.adsbygoogle[data-ad-format="auto"].
+
+           Recortar el creativo es exactamente lo que tenía la visibilidad en
+           28.17% (AdSense, 30 días al 06/10/2026). Active View cuenta una
+           impresión como visible cuando se ve el 50% de los píxeles durante 1
+           segundo: un 300x250 recortado a 100px enseña el 40% y NUNCA llega.
+           Y la visibilidad baja deprime el CPM, porque mucha demanda compra
+           por impresión vista.
+
+           La intención original era que un anuncio enorme no rompiera la
+           portada (tareas #129 y #247). Eso se respeta, pero con el techo
+           arriba del formato más común en lugar de por debajo: 300x250 cabe
+           entero, y un half-page de 600px sigue sin caber.
+
+           Lo único que se sigue ocultando es el anuncio pegado al hero, antes
+           del contenido: ahí sí estorba de verdad. */
         .google-auto-placed {
-            max-height: 100px !important;
-            overflow: hidden !important;
+            max-height: 290px;
+            overflow: hidden;
+            margin: 0.75rem auto;
         }
         .hero-inner > .google-auto-placed,
-        .header + .google-auto-placed,
-        .google-auto-placed:first-child {
+        .header + .google-auto-placed {
             display: none !important;
-        }
-        /* Hide auto-placed ads between header and games */
-        .main > .google-auto-placed:first-child {
-            display: none !important;
-        }
-        ins.adsbygoogle[data-ad-format="autorelaxed"],
-        ins.adsbygoogle[data-ad-format="auto"] {
-            max-height: 100px !important;
-            overflow: hidden !important;
         }
         /* ── Kill Google anchor/overlay ads ── */
         ins.adsbygoogle[data-anchor-status],
@@ -1798,14 +1807,7 @@
     </section>
 
     {# ── Anuncio (antes iba el strip de eventos grandes UFC/boxeo; esos siguen en /liga/ufc, /liga/boxeo y el buscador) ── #}
-    <div class="ad-after-favs" style="max-width:728px;margin:0.4rem auto 0.9rem;text-align:center;max-height:100px;overflow:hidden;">
-        <ins class="adsbygoogle"
-             style="display:block;max-height:90px;"
-             data-ad-client="ca-pub-2576227882415709"
-             data-ad-format="horizontal"
-             data-full-width-responsive="false"></ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
+    {{ ad('top') }}
 
     {# ── 🔥 LOS IMPERDIBLES DE HOY ── #}
     {% if must_watch %}
@@ -1931,14 +1933,7 @@
 
     {# Insert AdSense after league 1 (users scrolled past featured + first league) #}
     {% if league_idx[0] == 1 %}
-    <div id="homeAdAfterLeague1" style="max-width:728px;margin:0.5rem auto;text-align:center;max-height:100px;overflow:hidden;">
-        <ins class="adsbygoogle"
-             style="display:block;max-height:90px;"
-             data-ad-client="ca-pub-2576227882415709"
-             data-ad-format="horizontal"
-             data-full-width-responsive="false"></ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
+    {{ ad('mid') }}
     {% endif %}
 
     {# Insert "Mostrar más" button before 6th league #}
@@ -2312,14 +2307,7 @@
 {% endfor %}
 
 <!-- Ad slot: bottom of page -->
-<div style="max-width:728px;margin:1rem auto;text-align:center;max-height:100px;overflow:hidden;">
-    <ins class="adsbygoogle"
-         style="display:block;max-height:90px;"
-         data-ad-client="ca-pub-2576227882415709"
-         data-ad-format="horizontal"
-         data-full-width-responsive="false"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-</div>
+{{ ad('bottom') }}
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Tu guia de donde ver deportes en vivo</p>

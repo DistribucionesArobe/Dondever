@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -95,6 +96,8 @@
 
 <div class="hero">
     <h1>&#9917; {{ total_teams }} equipos</h1>
+{{ ad('top') }}
+
     <p>Selecciona tu equipo para ver sus próximos partidos, resultados recientes y en qué canal los pasan.</p>
 </div>
 
@@ -118,6 +121,9 @@
     </div>
     {% endfor %}
 </div>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>

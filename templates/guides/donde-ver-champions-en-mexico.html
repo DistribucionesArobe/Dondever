@@ -160,8 +160,14 @@
         <div class="bet-box">
             <h3>Apuesta en los partidos de Champions</h3>
             <p>Ve los momios en tiempo real en DondeVer y apuesta en tus partidos favoritos de Champions League.</p>
-            <a href="/go/betsson?s=guide" target="_blank" rel="sponsored noopener" data-affiliate="betsson">{{ affiliates.betsson.bonus }} en Betsson</a>
-            <a href="/go/betsson?s=guide" target="_blank" rel="sponsored noopener" data-affiliate="betsson">{{ affiliates.betsson.bonus }} en Betsson</a>
+            {# Aquí había DOS enlaces idénticos a /go/betsson, y los dos estaban
+               muertos: el programa de Betsson cerró el 24-sep-2026 y /go/ ya
+               manda esa marca a /casinos. Queda uno solo, al router /go/bet,
+               que reparte por país a las casas que sí pagan. Sin nombre de
+               marca en el texto: el destino depende del país del visitante, así
+               que nombrar una casa aquí sería el mismo desajuste texto/enlace
+               que ya se corrigió una vez en los banners de NFL. #}
+            <a href="/go/bet?s=guide-champions" target="_blank" rel="sponsored nofollow noopener">Ver momios de Champions &rarr;</a>
             <p style="font-size:0.6rem;opacity:0.6;margin-top:0.5rem;margin-bottom:0;">Publicidad. +18. Apuesta responsablemente.</p>
         </div>
 

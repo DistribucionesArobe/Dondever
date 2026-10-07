@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -96,6 +97,8 @@
 <div class="hero">
     {% if team_logo %}<img src="{{ team_logo }}" alt="{{ team_name }}" class="team-logo-hero" loading="lazy">{% endif %}
     <h1>Calendario de {{ team_name }}</h1>
+{{ ad('top') }}
+
     <p>Próximos partidos de {{ team_league }} &mdash; semana del {{ week_range }}</p>
 </div>
 
@@ -157,6 +160,9 @@
     </section>
     {% endif %}
 </main>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>

@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -128,6 +129,8 @@
 <div class="hero">
     {% if team_logo %}<img src="{{ team_logo }}" alt="{{ team_name }}" class="team-logo-hero" loading="lazy">{% endif %}
     <h1>{{ seo_h1 }}</h1>
+{{ ad('top') }}
+
     <p>Canales de TV, cable y streaming para ver los partidos de {{ team_name }} ({{ team_league }}) en vivo desde {{ country_name }}.</p>
 </div>
 
@@ -239,6 +242,9 @@
         {% endfor %}
     </div>
 </main>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>

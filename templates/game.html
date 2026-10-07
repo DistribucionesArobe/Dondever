@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1366,14 +1367,7 @@
     {% endif %}
 
     {# ── Ad placement (after momios, before pick) ── #}
-    <div style="max-width:650px;margin:0 auto 1.5rem;padding:0 1rem;min-height:100px;text-align:center;">
-        <ins class="adsbygoogle"
-             style="display:block"
-             data-ad-client="ca-pub-2576227882415709"
-             data-ad-format="auto"
-             data-full-width-responsive="true"></ins>
-        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
+    {{ ad('mid', max_w=650) }}
 
     {# ── Pick del d&iacute;a / Prediccion ── #}
     {% if odds and game.status.state == 'pre' %}
@@ -1653,6 +1647,7 @@
         </div>
     </div>
 
+    {{ ad('bottom') }}
     {% include "_juego_responsable.html" %}
 
     <div class="footer">

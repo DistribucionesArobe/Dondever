@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -159,6 +160,8 @@
 <div class="hero">
     <div class="count-badge">{{ total_free }} evento{{ 's' if total_free != 1 else '' }} gratis hoy</div>
     <h1>Deportes gratis hoy en TV abierta y streaming</h1>
+{{ ad('top') }}
+
     <p>Todos los partidos y eventos deportivos que puedes ver gratis hoy {{ today_display }} en canales de TV abierta como Canal 5, Azteca 7, TUDN y plataformas de streaming gratuito.</p>
 </div>
 
@@ -231,6 +234,9 @@
         <p><a href="/">Ver toda la programación deportiva de hoy &rarr;</a></p>
     </div>
 </div>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Tu guía deportiva en México y LATAM</p>

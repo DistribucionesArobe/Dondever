@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -350,21 +351,22 @@
     </div>
 </div>
 {% endif %}
-{% if affiliates.betsson %}
-<div class="promo-banner" data-geo="us" style="display:none;">
-    <div class="promo-banner-inner">
-        <div class="promo-left">
-            <div style="font-size:1.5rem">{{ emoji }}</div>
-            <div>
-                <div class="promo-title">&iquest;Quieres apostar en {{ league_name }}?</div>
-                <div class="promo-sub">Las mejores cuotas en {{ affiliates.betsson.name }}</div>
-                <div class="promo-tiny">+18 solo responsablemente</div>
-            </div>
-        </div>
-        <a href="/go/betsson?s=league" target="_blank" rel="sponsored nofollow noopener" class="promo-cta" data-affiliate="betsson">Apostar ahora &#8599;</a>
-    </div>
-</div>
-{% endif %}
+{#
+  Aquí iba un segundo banner, data-geo="us", que apuntaba a /go/betsson?s=league.
+
+  Se quita porque no podía pagar nada por dos razones independientes:
+
+  1. Betsson terminó su programa de afiliados el 24 de septiembre de 2026. La
+     propia ruta /go/ ya manda betsson y strendus a /casinos desde entonces; el
+     banner seguía anunciando la marca y mandando el clic a una página interna.
+
+  2. Aunque el programa viviera, este banner solo se mostraba a visitantes de
+     EE.UU., y para EE.UU. /go/bet manda a la home a propósito: 1xBet no tiene
+     licencia estatal allá. No hay casa que pagar para ese público.
+
+  El espacio se lo queda AdSense, que para tráfico de EE.UU. paga bastante más
+  que para tráfico mexicano. No se sustituye por otro banner de apuestas.
+#}
 
 <!-- League Stats Strip -->
 {% if league_stats %}
@@ -557,14 +559,7 @@
 </main>
 
 <!-- AdSense mid-page -->
-<div style="max-width:900px;margin:1rem auto;padding:0 1rem;text-align:center;min-height:90px;">
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="ca-pub-2576227882415709"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-</div>
+{{ ad('mid', max_w=900) }}
 
 <!-- Standings -->
 {% if standings %}
@@ -887,6 +882,9 @@
         <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.555 4.126 1.528 5.869L.06 23.897l6.171-1.617A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.94 0-3.75-.58-5.264-1.573l-.378-.224-3.91 1.025 1.043-3.811-.247-.393A9.777 9.777 0 012.182 12 9.818 9.818 0 0112 2.182 9.818 9.818 0 0121.818 12 9.818 9.818 0 0112 21.818z"/>
     </svg>
 </a>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> — Tu guia de donde ver {{ league_name }} en vivo</p>

@@ -2765,43 +2765,77 @@ async def fetch_team_form(sport: str, league: str, team_id: str, n: int = 5) -> 
     if key in _form_cache:
         return _form_cache[key]
 
-    url = f"{ESPN_BASE}/{sport}/{league}/teams/{team_id}/schedule"
-    try:
-        async with httpx.AsyncClient(timeout=12) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception as e:
-        logger.warning(f"Team form error {sport}/{league}/{team_id}: {e}")
-        return []
+    base = f"{ESPN_BASE}/{sport}/{league}/teams/{team_id}/schedule"
+
+    async def _traer(url: str) -> dict:
+        try:
+            async with httpx.AsyncClient(timeout=12) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                return resp.json()
+        except Exception as e:
+            logger.warning(f"Team form error {sport}/{league}/{team_id}: {e}")
+            return {}
+
+    def _cosechar(data: dict, out: list[dict], vistos: set) -> None:
+        for ev in (data.get("events") or []):
+            if len(out) >= n:
+                return
+            comps = ev.get("competitions") or []
+            if not comps:
+                continue
+            comp = comps[0]
+            if not (comp.get("status", {}).get("type", {}) or {}).get("completed"):
+                continue
+            eid = str(ev.get("id") or "")
+            if eid and eid in vistos:
+                continue
+            cs = comp.get("competitors") or []
+            yo = next((c for c in cs if str((c.get("team") or {}).get("id")) == str(team_id)), None)
+            rival = next((c for c in cs if c is not yo), None)
+            if not yo or not rival:
+                continue
+            try:
+                mia = int((yo.get("score") or {}).get("displayValue") or yo.get("score") or 0)
+                suya = int((rival.get("score") or {}).get("displayValue") or rival.get("score") or 0)
+            except (TypeError, ValueError):
+                continue
+            if eid:
+                vistos.add(eid)
+            out.append({
+                "result": "W" if mia > suya else ("L" if mia < suya else "D"),
+                "date": (ev.get("date") or "")[:10],
+                "rival": (rival.get("team") or {}).get("displayName", ""),
+                "home": yo.get("homeAway") == "home",
+                "score": f"{mia}-{suya}",
+            })
 
     out: list[dict] = []
-    for ev in (data.get("events") or []):
-        comps = ev.get("competitions") or []
-        if not comps:
-            continue
-        comp = comps[0]
-        if not (comp.get("status", {}).get("type", {}) or {}).get("completed"):
-            continue
-        cs = comp.get("competitors") or []
-        yo = next((c for c in cs if str((c.get("team") or {}).get("id")) == str(team_id)), None)
-        rival = next((c for c in cs if c is not yo), None)
-        if not yo or not rival:
-            continue
-        try:
-            mia = int((yo.get("score") or {}).get("displayValue") or yo.get("score") or 0)
-            suya = int((rival.get("score") or {}).get("displayValue") or rival.get("score") or 0)
-        except (TypeError, ValueError):
-            continue
-        out.append({
-            "result": "W" if mia > suya else ("L" if mia < suya else "D"),
-            "date": (ev.get("date") or "")[:10],
-            "rival": (rival.get("team") or {}).get("displayName", ""),
-            "home": yo.get("homeAway") == "home",
-            "score": f"{mia}-{suya}",
-        })
-        if len(out) >= n:
-            break
+    vistos: set = set()
+    _cosechar(await _traer(base), out, vistos)
+
+    # ── Rellenar con la temporada regular si la fase en curso no alcanza ──
+    #
+    # Este endpoint devuelve SOLO el tipo de temporada en curso, y eso rompía
+    # la racha justo cuando más se mira. Visto en producción el 06/10/2026:
+    #
+    #   /equipo/dodgers → "Forma reciente (últimos 2): 1V 0E 1D"
+    #
+    # Los Dodgers llevaban 100-62 en el año, pero en octubre la fase en curso
+    # es la postemporada y ahí solo habían jugado 2. La ficha decía la verdad y
+    # al mismo tiempo daba una impresión falsa: dos partidos no son una racha.
+    # Mismo caso en Tigres, con un solo partido.
+    #
+    # seasontype=2 es la temporada regular. Se pide SOLO si la primera llamada
+    # no llenó los N, así que en plena temporada regular no cuesta nada: una
+    # petición como antes. En playoffs cuesta una más y a cambio la racha deja
+    # de ser engañosa.
+    #
+    # El orden se conserva: los de la fase en curso son los más recientes y
+    # entran primero; la temporada regular rellena hacia atrás. El set de ids
+    # evita duplicar un partido que aparezca en las dos respuestas.
+    if len(out) < n:
+        _cosechar(await _traer(f"{base}?seasontype=2"), out, vistos)
 
     _form_cache[key] = out
     return out
