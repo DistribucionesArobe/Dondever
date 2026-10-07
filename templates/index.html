@@ -1716,36 +1716,29 @@
         </div>
 
         {#
-          Fila de LIGAS con partido hoy.
+  Filtro de ligas. Vive aquí arriba, pegado a los deportes, desde el
+  07/10/2026: antes estaba debajo de "Lo imperdible", o sea después de que el
+  lector ya se había tragado la lista entera.
 
-          Los botones de arriba filtran por deporte, y "Fútbol" junta Liga MX
-          con la peruana, la chilena y las europeas. Quien entra buscando Liga
-          MX tenía que leer una lista larga para encontrarla.
+  Es el filtro CLIENT-SIDE: esconde y muestra las secciones ya pintadas, sin
+  recargar. Por eso se eligió este y no uno por URL — "rápido" era el pedido.
 
-          Estos chips llevan a /?league=<slug>, que la ruta ya soportaba desde
-          antes — solo faltaba exponerlo. Solo salen ligas CON partido hoy: un
-          filtro que devuelve vacío es peor que no tenerlo.
-
-          El orden lo decide el servidor por relevancia para el lector, no por
-          número de partidos (ver _PRIORIDAD_LIGAS en server.py).
-        #}
-        {% if league_chips %}
-        <div class="liga-chips" id="ligaChips" role="navigation" aria-label="Filtrar por liga">
-            {% if current_league %}
-            <a href="/{% if current_sport %}?sport={{ current_sport }}{% endif %}" class="liga-chip liga-chip-clear">
-                &#10005; Quitar filtro
-            </a>
-            {% endif %}
-            {% for lc in league_chips %}
-            <a href="/?league={{ lc.slug }}"
-               class="liga-chip {% if current_league == lc.slug %}active{% endif %}">
-                <span class="lc-emoji">{{ lc.emoji }}</span>
-                <span class="lc-name">{{ lc.name }}</span>
-                <span class="lc-count">{{ lc.count }}</span>
-            </a>
-            {% endfor %}
-        </div>
+  Solo aparece cuando hay más de una liga con partidos, y cada botón trae el
+  número de partidos de esa liga.
+#}
+{# ── LEAGUE FILTER CHIPS ── #}
+    {% if sports_grouped|length > 1 %}
+    <nav id="leagueChips" class="league-chips-bar" aria-label="Filtrar por liga" style="display:flex;gap:0.4rem;overflow-x:auto;padding:0.5rem 0 0.75rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
+        <button class="lchip active" data-filter="all" onclick="filterLeague('all',this)" style="white-space:nowrap;padding:0.35rem 0.85rem;border-radius:20px;border:1.5px solid var(--accent,#10b981);background:var(--accent,#10b981);color:white;font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;">Todas</button>
+        {% for league_name, league_data in sports_grouped.items() %}
+        {% set deduped = league_data.games | rejectattr('id', 'in', shown_ids) | list %}
+        {% if deduped %}
+        <button class="lchip{% if league_data.slug in ('lvbp','lidom') %} geo-league{% endif %}" data-filter="{{ league_data.slug }}"{% if league_data.slug in ('lvbp',) %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %} onclick="filterLeague('{{ league_data.slug }}',this)" style="white-space:nowrap;padding:0.35rem 0.85rem;border-radius:20px;border:1.5px solid var(--border,#d1d5db);background:var(--bg-card,#fff);color:var(--text-primary,#374151);font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;">{{ league_data.emoji }} {{ league_name }} <span style="opacity:.6;font-weight:800;font-size:.68rem;">{{ deduped|length }}</span></button>
         {% endif %}
+        {% endfor %}
+    </nav>
+    {% endif %}
+
 
         <!-- Fav filter (hidden, shown by JS if user has favs) -->
         <button class="filter-pill" id="favFilter" onclick="toggleFavFilter()" style="cursor:pointer;border:none;display:none;background:rgba(255,255,255,0.08);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);border-radius:2rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;margin-bottom:0.5rem;">&#11088; Mis equipos</button>
@@ -1905,8 +1898,6 @@
         </div>
     </section>
 
-    {# ── Anuncio (antes iba el strip de eventos grandes UFC/boxeo; esos siguen en /liga/ufc, /liga/boxeo y el buscador) ── #}
-    {{ ad('top') }}
 
     {# ── 🔥 LOS IMPERDIBLES DE HOY ── #}
     {% if must_watch %}
@@ -1972,22 +1963,30 @@
     </section>
     {% endif %}
 
+    {#
+      Anuncio superior.
+
+      Estaba ANTES de los partidos, entre "Mis equipos" y "Lo imperdible": lo
+      primero que encontraba quien llegaba buscando dónde ver un juego era un
+      anuncio. En un sitio al que la gente entra con una pregunta concreta y se
+      va en 33 segundos de media, eso cobra el peaje antes de dar la respuesta.
+
+      Ahora va DESPUÉS de los cinco destacados. El lector recibe lo que venía a
+      buscar, y el anuncio aparece cuando ya decidió seguir bajando.
+
+      El costo esperado: este hueco verá menos gente que arriba. A cambio,
+      quien lo vea habrá bajado por voluntad propia, que es justo el perfil que
+      sube la visibilidad — y la visibilidad, no el conteo, es lo que tenía el
+      CPM hundido (28.17% medido el 06/10/2026).
+    #}
+    {{ ad('top') }}
+
     {# ── 📺 GRATIS HOY — removed per user request ── #}
 
 
 
-    {# ── LEAGUE FILTER CHIPS ── #}
-    {% if sports_grouped|length > 1 %}
-    <nav id="leagueChips" class="league-chips-bar" aria-label="Filtrar por liga" style="display:flex;gap:0.4rem;overflow-x:auto;padding:0.5rem 0 0.75rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
-        <button class="lchip active" data-filter="all" onclick="filterLeague('all',this)" style="white-space:nowrap;padding:0.35rem 0.85rem;border-radius:20px;border:1.5px solid var(--accent,#10b981);background:var(--accent,#10b981);color:white;font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;">Todas</button>
-        {% for league_name, league_data in sports_grouped.items() %}
-        {% set deduped = league_data.games | rejectattr('id', 'in', shown_ids) | list %}
-        {% if deduped %}
-        <button class="lchip{% if league_data.slug in ('lvbp','lidom') %} geo-league{% endif %}" data-filter="{{ league_data.slug }}"{% if league_data.slug in ('lvbp',) %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %} onclick="filterLeague('{{ league_data.slug }}',this)" style="white-space:nowrap;padding:0.35rem 0.85rem;border-radius:20px;border:1.5px solid var(--border,#d1d5db);background:var(--bg-card,#fff);color:var(--text-primary,#374151);font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;">{{ league_data.emoji }} {{ league_name }}</button>
-        {% endif %}
-        {% endfor %}
-    </nav>
-    {% endif %}
+    {# La barra de ligas se movió arriba, junto a los deportes. #}
+
 
     {# ── MIS PLATAFORMAS filter ── #}
     <div id="platformFilterWrap" style="max-width:700px;margin:0 auto 0.5rem;padding:0 0.5rem;">
@@ -2595,7 +2594,7 @@
     // El orden del servidor sigue siendo el que ve Google y el que se pinta
     // antes de que corra el JS; esto solo reacomoda para el lector.
     (function() {
-        var scr = document.getElementById('ligaChips') || document.getElementById('leagueScroller');
+        var scr = document.getElementById('leagueChips');
         if (!scr) return;
 
         // Map country code → local league slug that should appear first
@@ -2618,16 +2617,18 @@
 
         function reorderPills(cc) {
             var local = LOCAL_LEAGUE[cc] || 'liga-mx';
-            // .liga-chip es la fila nueva; .subfilter-pill queda por si alguna
-            // otra vista todavía usa el formato viejo.
-            var pills = Array.from(scr.querySelectorAll('.liga-chip:not(.liga-chip-clear), .subfilter-pill'));
-            var label = scr.querySelector('.sf-label');
+            // Los botones son .lchip y llevan el slug en data-filter, no en
+            // href: el filtro es client-side, no navega. El botón "Todas"
+            // (data-filter="all") se queda fijo al inicio.
+            var pills = Array.from(scr.querySelectorAll('.lchip')).filter(function(b) {
+                return b.getAttribute('data-filter') !== 'all';
+            });
             if (!pills.length) return;
 
             // Sort: local(0) → EU(10-19) → LATAM(20-29) → Continental(30-39) → rest(50)
             pills.sort(function(a, b) {
-                var sa = a.getAttribute('href').replace('/?league=', '');
-                var sb = b.getAttribute('href').replace('/?league=', '');
+                var sa = a.getAttribute('data-filter') || '';
+                var sb = b.getAttribute('data-filter') || '';
                 function weight(s) {
                     if (s === local) return 0;
                     var ei = EU_SLUGS.indexOf(s);

@@ -1080,55 +1080,40 @@ async def home(
     prev_date = (viewing_date - timedelta(days=1)).strftime("%Y%m%d")
     next_date = (viewing_date + timedelta(days=1)).strftime("%Y%m%d")
 
-    # ── Sport counts for hero cards ─────────────────────
-    sport_counts: dict[str, int] = {"all": len(games)}
-    for g in games:
+    # ── Conteos del DÍA COMPLETO, no del filtro activo ──────────────────
+    #
+    # `games` ya viene filtrado: con ?sport=soccer trae solo fútbol, y
+    # get_todays_games ni siquiera consulta las demás ligas. Calcular los
+    # conteos sobre esa lista hacía que, al filtrar por un deporte, TODOS los
+    # demás aparecieran en cero.
+    #
+    # El error estaba desde antes pero era invisible: la tarjeta simplemente no
+    # pintaba número. Al atenuar las tarjetas sin partidos (07/10/2026) se
+    # volvió un cartel: con ?sport=soccer, béisbol, básquet, NFL y NHL decían
+    # "SIN JUEGOS" aunque en la portada sin filtro hubiera 4, 14, 2 y 3.
+    #
+    # Lo mismo valía para la fila de ligas: filtrar por una liga borraba el
+    # resto de los chips, dejando al lector sin forma de cambiar de liga sin
+    # volver atrás.
+    #
+    # La segunda llamada solo ocurre cuando hay filtro. La portada sin filtros
+    # —el caso común y el que rastrea Google— no paga nada. persist=False
+    # porque la escritura a la base ya la hizo la primera llamada.
+    if sport or league:
+        juegos_del_dia = await get_todays_games(date_str=date, persist=False)
+    else:
+        juegos_del_dia = games
+
+    sport_counts: dict[str, int] = {"all": len(juegos_del_dia)}
+    for g in juegos_del_dia:
         ls = g.get("league_slug", "")
         s = LEAGUES.get(ls, ("other",))[0] if ls in LEAGUES else "other"
         sport_counts[s] = sport_counts.get(s, 0) + 1
 
-    # ── Ligas con partido HOY, para la fila de filtros ──────────────────
-    #
-    # Los botones de arriba filtran por DEPORTE, y ahí "Fútbol" mete Liga MX
-    # junto con la peruana, la chilena, la colombiana y las europeas. Quien
-    # entra a ver Liga MX tiene que revisar una lista larga para encontrarla.
-    #
-    # La ruta ya acepta ?league=<slug> y se lo pasa a get_todays_games; lo que
-    # faltaba era exponerlo. Aquí se arma la lista de ligas que SÍ tienen
-    # partido hoy — no tiene caso ofrecer un filtro que devuelve vacío.
-    #
-    # El orden es por relevancia para el lector, no alfabético ni por número de
-    # partidos: con 64% del tráfico en México, Liga MX va primero aunque ese día
-    # tenga un solo juego y la MLB tenga quince.
-    _PRIORIDAD_LIGAS = [
-        "liga-mx", "mlb", "nfl", "nba", "liga-mx-femenil", "champions",
-        "la-liga", "premier-league", "nhl", "liga-expansion", "mls",
-        "serie-a", "bundesliga", "ligue-1", "libertadores", "lmp", "lmb",
-    ]
-    _cuenta_liga: dict[str, int] = {}
-    for g in games:
-        ls = g.get("league_slug", "")
-        if ls:
-            _cuenta_liga[ls] = _cuenta_liga.get(ls, 0) + 1
-
-    def _orden(slug: str) -> tuple:
-        try:
-            return (0, _PRIORIDAD_LIGAS.index(slug))
-        except ValueError:
-            # Las que no están en la lista van después, de más a menos partidos.
-            return (1, -_cuenta_liga.get(slug, 0))
-
-    league_chips = []
-    for slug in sorted(_cuenta_liga, key=_orden):
-        meta = LEAGUES.get(slug)
-        if not meta or len(meta) < 4:
-            continue
-        league_chips.append({
-            "slug": slug,
-            "name": meta[2],
-            "emoji": meta[3],
-            "count": _cuenta_liga[slug],
-        })
+    # Aquí se calculaba league_chips para una fila de ligas propia. Se quitó
+    # el 07/10/2026: el sitio YA tenía un filtro de ligas client-side
+    # (#leagueChips en index.html) que hace lo mismo sin recargar la página.
+    # Lo correcto era subirlo de sitio, no construir un tercero al lado.
 
     # ── Compact standings for home page ────────────────
     home_standings: dict = {}
@@ -1181,7 +1166,6 @@ async def home(
             "fmt_event_when": lambda iso: _fmt_local(iso, "America/Mexico_City", True),
             "free_games": free_games,
             "sport_counts": sport_counts,
-            "league_chips": league_chips,
             "home_standings": home_standings,
             "is_historical": is_historical,
             "shown_ids": shown_ids,
