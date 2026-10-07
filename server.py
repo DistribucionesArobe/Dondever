@@ -6966,10 +6966,41 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
     full_name = team_name
     team_name = _short_team_name(team_name, lg)  # "Los Angeles Dodgers" → "Dodgers" (como buscan)
 
+    def _es_nuestro(nombre):
+        """¿Este lado del partido es el equipo de la página?
+
+        Antes la prueba era `st in nombre`, y st es el slug con los guiones
+        vueltos espacios. Eso rompe justo en los slugs desambiguados — los que
+        llevan sufijo porque el nombre choca con otra liga:
+
+            /equipo/panthers-nhl  → st = "panthers nhl"
+            nombre del equipo     → "Florida Panthers"
+
+        "panthers nhl" no aparece ahí, así que is_home salía False SIEMPRE, y
+        cuando el equipo jugaba de local el rival calculado era él mismo. Medido
+        en producción el 07/10/2026:
+
+            title: "Dónde ver Panthers vs Panthers: sábado 10 4:00 PM MX y canal"
+            h1:    "Dónde ver Panthers: próximo partido vs Panthers"
+
+        El cuerpo de la página estaba bien (Florida Panthers vs Minnesota Wild);
+        lo roto era el título, que es lo único que ve Google en el resultado.
+        Afecta a panthers-nhl, rangers-nhl y spurs-nba.
+
+        Ahora se compara también contra el nombre completo y el corto, que son
+        los que devuelve la API. Dentro de una misma liga el nombre corto es
+        único — solo hay unos Panthers en NHL y unos Kings en NBA —, así que no
+        se introduce ambigüedad.
+        """
+        n = (nombre or "").lower()
+        if not n:
+            return False
+        return st in n or full_name.lower() in n or team_name.lower() in n
+
     def _opp_and_channel(game):
         home = game.get("home", {}) or {}
         away = game.get("away", {}) or {}
-        is_home = st in (home.get("name", "") or "").lower()
+        is_home = _es_nuestro(home.get("name", ""))
         opp_full = away.get("name", "") if is_home else home.get("name", "")
         opp = _short_team_name(opp_full, lg)
         # El canal solo se nombra si viene de un dato real de este partido.
@@ -7028,7 +7059,7 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         }
     if upcoming_games:
         u = upcoming_games[0]
-        is_home = st in (u.get("home", "") or "").lower()
+        is_home = _es_nuestro(u.get("home", ""))
         opp = _short_team_name(u.get("away", "") if is_home else u.get("home", ""), lg)
         when = format_mx_day_time(u.get("date_utc", "") or u.get("date", "") or "")
         chs = u.get("channels") or []

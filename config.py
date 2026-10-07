@@ -948,6 +948,8 @@ POPULAR_TEAMS = {
     "necaxa": {"name": "Necaxa", "league": "Liga MX"},
     "puebla": {"name": "Puebla", "league": "Liga MX"},
     "queretaro": {"name": "Querétaro", "league": "Liga MX"},
+    # Era el único de los 18 de Liga MX sin página (07/10/2026).
+    "atletico-san-luis": {"name": "Atlético de San Luis", "league": "Liga MX"},
     "mazatlan": {"name": "Mazatlán FC", "league": "Liga MX"},
     "tijuana": {"name": "Club Tijuana", "league": "Liga MX"},
     "juarez": {"name": "FC Juárez", "league": "Liga MX"},
@@ -1019,6 +1021,8 @@ POPULAR_TEAMS = {
     "lions": {"name": "Detroit Lions", "league": "NFL"},
     "vikings": {"name": "Minnesota Vikings", "league": "NFL"},
     "bengals": {"name": "Cincinnati Bengals", "league": "NFL"},
+    # Era el único de los 32 de NFL sin página (07/10/2026).
+    "browns": {"name": "Cleveland Browns", "league": "NFL"},
     "giants-nfl": {"name": "New York Giants", "league": "NFL"},
     "jets": {"name": "New York Jets", "league": "NFL"},
     "saints": {"name": "New Orleans Saints", "league": "NFL"},
@@ -1048,6 +1052,25 @@ POPULAR_TEAMS = {
     "thunder": {"name": "Oklahoma City Thunder", "league": "NBA"},
     "timberwolves": {"name": "Minnesota Timberwolves", "league": "NBA"},
     "cavaliers": {"name": "Cleveland Cavaliers", "league": "NBA"},
+    # ── Los 14 que faltaban para tener la NBA completa (07/10/2026) ──
+    # Se agregan ahora porque la temporada arranca este mes y la NBA, con ~7
+    # partidos diarios de octubre a abril, es lo que sostiene el tráfico cuando
+    # MLB se apaga en noviembre. Teníamos 16 de 30.
+    "hawks": {"name": "Atlanta Hawks", "league": "NBA"},
+    "nets": {"name": "Brooklyn Nets", "league": "NBA"},
+    "hornets": {"name": "Charlotte Hornets", "league": "NBA"},
+    "pistons": {"name": "Detroit Pistons", "league": "NBA"},
+    "rockets": {"name": "Houston Rockets", "league": "NBA"},
+    "pacers": {"name": "Indiana Pacers", "league": "NBA"},
+    "grizzlies": {"name": "Memphis Grizzlies", "league": "NBA"},
+    "pelicans": {"name": "New Orleans Pelicans", "league": "NBA"},
+    "magic": {"name": "Orlando Magic", "league": "NBA"},
+    "trail-blazers": {"name": "Portland Trail Blazers", "league": "NBA"},
+    # Sacramento Kings lleva sufijo: los Kings de la NHL son los de Los Ángeles.
+    "kings-nba": {"name": "Sacramento Kings", "league": "NBA"},
+    "raptors": {"name": "Toronto Raptors", "league": "NBA"},
+    "jazz": {"name": "Utah Jazz", "league": "NBA"},
+    "wizards": {"name": "Washington Wizards", "league": "NBA"},
     # LNBP (Liga Nacional de Baloncesto Profesional)
     "astros-jalisco": {"name": "Astros de Jalisco", "league": "LNBP"},
     "abejas-leon": {"name": "Abejas de León", "league": "LNBP"},
@@ -1145,6 +1168,35 @@ POPULAR_TEAMS = {
     "blackhawks": {"name": "Chicago Blackhawks", "league": "NHL"},
     "penguins": {"name": "Pittsburgh Penguins", "league": "NHL"},
     "capitals": {"name": "Washington Capitals", "league": "NHL"},
+    # ── Los 21 que faltaban para tener la NHL completa (07/10/2026) ──
+    # Mismo motivo que la NBA: temporada de octubre a abril, ~7 partidos
+    # diarios. Entre las dos cubren el hueco que deja MLB. Teníamos 11 de 32.
+    "ducks": {"name": "Anaheim Ducks", "league": "NHL"},
+    "sabres": {"name": "Buffalo Sabres", "league": "NHL"},
+    "flames": {"name": "Calgary Flames", "league": "NHL"},
+    "hurricanes": {"name": "Carolina Hurricanes", "league": "NHL"},
+    "blue-jackets": {"name": "Columbus Blue Jackets", "league": "NHL"},
+    "red-wings": {"name": "Detroit Red Wings", "league": "NHL"},
+    # Los Angeles Kings lleva sufijo: los Kings de la NBA son los de Sacramento.
+    "kings-nhl": {"name": "Los Angeles Kings", "league": "NHL"},
+    "wild": {"name": "Minnesota Wild", "league": "NHL"},
+    "canadiens": {"name": "Montreal Canadiens", "league": "NHL"},
+    "predators": {"name": "Nashville Predators", "league": "NHL"},
+    "devils": {"name": "New Jersey Devils", "league": "NHL"},
+    "islanders": {"name": "New York Islanders", "league": "NHL"},
+    "senators": {"name": "Ottawa Senators", "league": "NHL"},
+    "flyers": {"name": "Philadelphia Flyers", "league": "NHL"},
+    "sharks": {"name": "San Jose Sharks", "league": "NHL"},
+    "kraken": {"name": "Seattle Kraken", "league": "NHL"},
+    "blues": {"name": "St. Louis Blues", "league": "NHL"},
+    "lightning": {"name": "Tampa Bay Lightning", "league": "NHL"},
+    # "Utah Mammoth" es el nombre PERMANENTE desde el 7 de mayo de 2025, elegido
+    # por votación de aficionados. Sustituye a "Utah Hockey Club", que era el
+    # provisional de la temporada 2024-25. Verificado antes de escribirlo.
+    "mammoth": {"name": "Utah Mammoth", "league": "NHL"},
+    "canucks": {"name": "Vancouver Canucks", "league": "NHL"},
+    # Winnipeg Jets lleva sufijo: los Jets sin sufijo son los de Nueva York, NFL.
+    "jets-nhl": {"name": "Winnipeg Jets", "league": "NHL"},
     # ── Premier League (remaining) ──
     "bournemouth": {"name": "AFC Bournemouth", "league": "Premier League"},
     "brentford": {"name": "Brentford", "league": "Premier League"},
@@ -1355,8 +1407,30 @@ POPULAR_TEAMS = {
 
 
 TEAM_ALIASES = {
+    # ── Slugs con sufijo de liga ─────────────────────────────────────────
+    # El término de búsqueda sale de TEAM_ALIASES.get(slug con guiones vueltos
+    # espacios). Sin estas entradas, /equipo/kings-nhl busca literalmente
+    # "kings nhl", que no aparece en "Los Angeles Kings" y no encuentra nada.
+    #
+    # El sufijo existe porque el nombre corto choca entre ligas, así que aquí
+    # se mapea al nombre COMPLETO: "kings" a secas traería los dos equipos.
+    #
+    # panthers-nhl, rangers-nhl y spurs-nba ya existían sin alias. Eso rompía
+    # sus títulos: /equipo/panthers-nhl publicaba "Dónde ver Panthers vs
+    # Panthers" (visto en producción el 07/10/2026).
+    "kings nba": "sacramento kings",
+    "kings nhl": "los angeles kings",
+    "jets nhl": "winnipeg jets",
+    "panthers nhl": "florida panthers",
+    "rangers nhl": "new york rangers",
+    "spurs nba": "san antonio spurs",
+    "panthers nfl": "carolina panthers",
+    "cardinals nfl": "arizona cardinals",
+    "giants nfl": "new york giants",
     # Liga MX
     "chivas": "guadalajara",
+    "atletico san luis": "san luis",
+    "san luis": "san luis",
     "america": "america",
     "aguilas": "america",
     "las aguilas": "america",
