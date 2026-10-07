@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -139,6 +140,8 @@
     <section class="hero">
         <span class="kicker {{ ev.status }}">{% if ev.status == 'in' %}&#9679; EN VIVO{% elif ev.status == 'post' %}Finalizado{% else %}{{ kicker }}{% endif %}</span>
         <h1>{{ seo_h1 }}</h1>
+{{ ad('top') }}
+
         <div class="sub">{{ date_long_mx }}{% if ev.venue %} &middot; {{ ev.venue }}{% endif %}{% if ev.city %}, {{ ev.city }}{% endif %}{% if ev.country %} ({{ ev.country }}){% endif %}</div>
         <div class="answer">{{ answer|safe }}</div>
         <div class="chips">
@@ -227,6 +230,9 @@
     </div>
     {% endif %}
 </main>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; Tu gu&iacute;a deportiva en M&eacute;xico y LATAM</p>

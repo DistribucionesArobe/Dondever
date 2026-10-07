@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -87,6 +88,8 @@
     <div class="header">
         <div class="badge">Actualizado hoy</div>
         <h1>Pron&oacute;sticos Deportivos Hoy: Momios y Picks del D&iacute;a</h1>
+{{ ad('top') }}
+
         <div class="subtitle">{{ today_es|capitalize }} &mdash; {% if games %}{{ games|length }} partidos con cuotas{% elif upcoming_games %}{{ upcoming_games }} partidos hoy, sin cuotas por ahora{% else %}sin partidos programados{% endif %}</div>
     </div>
 
@@ -183,6 +186,9 @@
         <h2>&iquest;D&oacute;nde apostar en l&iacute;nea desde M&eacute;xico?</h2>
         <p>Las <strong>mejores casas de apuestas</strong> disponibles en M&eacute;xico y Latinoam&eacute;rica incluyen opciones con licencia que ofrecen momios competitivos en todos los deportes. Consulta nuestra <a href="/guia/mejores-casas-apuestas-liga-mx" style="color:#10b981;">gu&iacute;a de casas de apuestas</a> para comparar opciones.</p>
     </div>
+
+    {{ ad('bottom') }}
+
 
     <footer class="footer">
         <p>&copy; 2026 <a href="/">DondeVer.app</a> | Apuesta responsablemente. Solo mayores de 18.</p>

@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,6 +71,8 @@
 <main class="main">
     <nav class="crumb"><a href="/">Home</a> &rsaquo; {{ league }} &rsaquo; {{ team_name }}</nav>
     <h1>{{ seo_h1 }}</h1>
+{{ ad('top') }}
+
 
     <div class="answer">
         {% if today_game %}
@@ -127,6 +130,8 @@
         <p><b>Looking for Spanish-language listings?</b> <a href="/equipo/{{ team_slug }}" style="color:#059669;font-weight:700;">Ver los canales en espa&ntilde;ol &rarr;</a></p>
     </div>
 </main>
+{{ ad('bottom') }}
+
 <footer class="footer">
     <p>&copy; {{ year or now().year }} <a href="/">DondeVer.app</a> &mdash; TV schedules and channels for live sports.</p>
     <p style="margin-top:0.3rem;"><a href="/equipo/{{ team_slug }}">Versi&oacute;n en espa&ntilde;ol</a></p>

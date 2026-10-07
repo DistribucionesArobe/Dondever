@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -139,6 +140,8 @@
 </nav>
 
 <main class="main">
+{{ ad('top') }}
+
     <!-- Scoreboard -->
     <div class="scoreboard">
         <div class="sb-league">{{ game.league_name }}</div>
@@ -214,6 +217,9 @@
         {% if away_slug %}<a href="/equipo/{{ away_slug }}" class="cta-link cta-secondary">{{ game.away.name }}</a>{% endif %}
     </div>
 </main>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>

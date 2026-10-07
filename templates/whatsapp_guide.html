@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -57,6 +58,8 @@
 <header class="header"><div class="header-inner"><a href="/" class="logo" aria-label="DondeVer.app"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" width="181" height="32" style="height:32px;width:auto;display:block;"></a><a href="/" style="color:#10b981;text-decoration:none;font-weight:600;font-size:0.85rem;">&larr; Inicio</a></div></header>
 <main class="main">
     <h1>&#128242; El bot de WhatsApp de DondeVer</h1>
+{{ ad('top') }}
+
     <p class="lead">Pregunta qu&eacute; partidos hay hoy y d&oacute;nde verlos sin abrir el navegador. Contesta al instante, con canal y hora de M&eacute;xico, y te manda cada ma&ntilde;ana el resumen con picks. Es gratis.</p>
     <a class="cta" href="https://wa.me/15715463202?text=hoy" target="_blank" rel="noopener" onclick="if(typeof gtag==='function'){gtag('event','wa_open_chat',{event_category:'whatsapp',event_label:'guide'});}">&#128172; Abrir WhatsApp y escribir "hoy"</a>
     <p class="num">N&uacute;mero del bot: <b>+1 571 546 3202</b> &middot; gu&aacute;rdalo como "DondeVer"</p>
@@ -102,6 +105,8 @@
         <p><b>&iquest;Un canal est&aacute; mal?</b> Dinos en <a href="/contacto" style="color:#059669;font-weight:700;">/contacto</a> y lo corregimos el mismo d&iacute;a.</p>
     </div>
 </main>
+{{ ad('bottom') }}
+
 <footer class="footer"><p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; Tu gu&iacute;a deportiva en M&eacute;xico y LATAM</p></footer>
 </body>
 </html>

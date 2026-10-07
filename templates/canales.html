@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -159,6 +160,8 @@
 </div>
 
 <main class="main">
+{{ ad('top') }}
+
     {% if not games %}
     <div class="no-games">
         <h2>No hay juegos programados</h2>
@@ -236,6 +239,9 @@
         <p style="margin-top:0.5rem;">Horarios en hora centro de Mexico. Canales de TV abierta, cable y streaming actualizados diariamente.</p>
     </div>
 </div>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> - Tu guia de donde ver deportes en vivo</p>

@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -87,6 +88,8 @@
         <span>Mis equipos</span>
     </nav>
     <h1>&#11088; Mis equipos</h1>
+{{ ad('top') }}
+
     <p class="subtitle">Tu agenda personalizada de los pr&oacute;ximos 7 d&iacute;as</p>
 
     <div class="team-chips" id="teamChips"></div>
@@ -215,5 +218,7 @@
 <script src="/static/timezone.js" defer></script>
 <script src="/static/dark-mode.js" defer></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
+{{ ad('bottom') }}
+
 </body>
 </html>

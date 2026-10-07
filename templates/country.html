@@ -1,3 +1,4 @@
+{% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -110,6 +111,8 @@
     <div class="hero-country">
         <div class="flag">{{ country.flag }}</div>
         <h1>Donde ver deportes en {{ country.name }}</h1>
+{{ ad('top') }}
+
         <p>{{ country.desc }}</p>
     </div>
 
@@ -223,6 +226,9 @@
         </div>
     </div>
 </main>
+
+{{ ad('bottom') }}
+
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Tu guia de donde ver deportes en vivo</p>
