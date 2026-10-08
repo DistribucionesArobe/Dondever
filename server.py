@@ -3251,6 +3251,18 @@ async def league_page(request: Request, league_slug: str):
 
 # ── Sport-Today Pages (SEO) ────────────────────────────────
 
+# Clave de deporte de ESPN → etiqueta en español que usa POPULAR_TEAMS['sport']
+_DEPORTE_ES_POR_CLAVE = {
+    "soccer": "futbol",
+    "football": "futbol americano",
+    "baseball": "beisbol",
+    "basketball": "basketball",
+    "hockey": "hockey",
+    "mma": "MMA",
+    "boxing": "boxeo",
+    "racing": "motor",
+}
+
 # Config: slug → (sport_key, display_name, emoji, seo_channels_mx, seo_channels_us, seo_streaming)
 SPORT_TODAY_PAGES = {
     "futbol-hoy": (
@@ -3309,10 +3321,15 @@ async def _render_sport_today(request: Request, sport_slug: str):
             }
         games_by_league[ls]["games"].append(g)
 
-    # Related teams for this sport (from POPULAR_TEAMS)
+    # Related teams for this sport (from POPULAR_TEAMS).
+    # POPULAR_TEAMS guarda 'sport' en español ("futbol", "beisbol") mientras que
+    # sport_key es la clave de ESPN ("soccer", "baseball"), así que hay que
+    # traducir: comparar directo dejaba la sección vacía en todos los deportes
+    # menos basketball y hockey, donde las dos cadenas coinciden por casualidad.
+    _dep_es = _DEPORTE_ES_POR_CLAVE.get(sport_key, sport_key)
     related_teams = {
         slug: info for slug, info in POPULAR_TEAMS.items()
-        if info.get("sport") == sport_key
+        if info.get("sport") == _dep_es
     }
 
     # Leagues for this sport
@@ -6944,10 +6961,15 @@ async def streaming_page(request: Request):
 
 # ── Team Pages ──────────────────────────────────────────
 
-# Popular teams for SEO (slug -> display name)
-# slug -> {name, sport_label, league, keywords}
-# sport_label se usa en SEO: "futbol", "basketball", "futbol americano", "beisbol"
-POPULAR_TEAMS = {
+# Enriquecimiento SEO de equipos: 'sport' (etiqueta en español que usan el FAQ
+# y las ramas de NFL) y 'aka' (sinónimos de búsqueda).
+#
+# OJO: esto NO reemplaza a POPULAR_TEAMS de config.py. Antes se llamaba
+# POPULAR_TEAMS y, al declararse aquí, sombreaba el import de la línea 21 con
+# una copia vieja de 129 equipos. Resultado: /liga/nhl enlazaba 11 equipos en
+# vez de 32 y /liga/lmp ninguno, porque las rutas leían esta copia y no la
+# config. Ahora se fusiona sobre la config, que es la lista canónica.
+_TEAM_SEO_EXTRA = {
     # Liga MX
     "chivas": {"name": "Guadalajara (Chivas)", "sport": "futbol", "league": "Liga MX", "aka": "Chivas, Guadalajara, Rebaño Sagrado"},
     "america": {"name": "Club América", "sport": "futbol", "league": "Liga MX", "aka": "América, Águilas, Club America"},
@@ -7088,7 +7110,52 @@ POPULAR_TEAMS = {
     "ufc": {"name": "UFC", "sport": "MMA", "league": "UFC", "aka": "UFC, Ultimate Fighting"},
 }
 
-_TWO_WORD_NICKS = {"red sox", "white sox", "blue jays", "maple leafs", "trail blazers", "golden knights",
+# Etiqueta de deporte por liga. 'sport' lo consumen _build_team_faq, is_nfl y
+# las ramas de NFL_TEAM_EXTRA, que comparan contra estas cadenas en español.
+_DEPORTE_POR_LIGA = {
+    "futbol": ("Liga MX", "Liga MX Femenil", "Premier League", "La Liga", "Serie A",
+               "Bundesliga", "Ligue 1", "Eredivisie", "Liga Portugal", "MLS",
+               "Liga Argentina", "Liga BetPlay", "Primera Chile", "LigaPro Ecuador",
+               "Liga 1 Perú"),
+    "beisbol": ("MLB", "LMB", "LMP", "LVBP", "LIDOM"),
+    "basketball": ("NBA", "LNBP"),
+    "futbol americano": ("NFL",),
+    "hockey": ("NHL",),
+    "MMA": ("UFC",),
+    "boxeo": ("Boxeo",),
+    "motor": ("Formula 1", "MotoGP", "NASCAR", "IndyCar"),
+}
+_DEPORTE_DE_LIGA = {
+    liga: deporte for deporte, ligas in _DEPORTE_POR_LIGA.items() for liga in ligas
+}
+
+# Fusionar sobre POPULAR_TEAMS de config.py, en el mismo objeto (hay listas
+# derivadas que ya capturaron esta referencia al importar). config.py manda en
+# 'name' y 'league'; de aquí solo salen 'sport' y 'aka'.
+for _slug, _extra in _TEAM_SEO_EXTRA.items():
+    if _slug in POPULAR_TEAMS:
+        for _k in ("sport", "aka"):
+            if _k in _extra:
+                POPULAR_TEAMS[_slug].setdefault(_k, _extra[_k])
+    else:
+        POPULAR_TEAMS[_slug] = dict(_extra)
+
+_ligas_sin_deporte = set()
+for _slug, _info in POPULAR_TEAMS.items():
+    if not _info.get("sport"):
+        _liga = _info.get("league", "")
+        _dep = _DEPORTE_DE_LIGA.get(_liga)
+        if _dep:
+            _info["sport"] = _dep
+        else:
+            _ligas_sin_deporte.add(_liga)
+if _ligas_sin_deporte:
+    logger.warning(
+        "Ligas sin deporte en _DEPORTE_POR_LIGA (sus equipos no saldrán en "
+        "related_teams ni en el FAQ): %s", sorted(_ligas_sin_deporte)
+    )
+
+_TWO_WORD_NICKS ={"red sox", "white sox", "blue jays", "maple leafs", "trail blazers", "golden knights",
                    "red wings", "blue jackets", "diamondbacks", "rays", "sun", "sky", "fever", "dream",
                    "sparks", "storm", "aces", "liberty", "lynx", "mercury", "mystics", "wings", "valkyries"}
 _US_STYLE_LEAGUES = {"MLB", "NBA", "NFL", "NHL", "WNBA", "MLS", "College Football", "NCAA"}
