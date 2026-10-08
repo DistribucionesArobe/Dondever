@@ -19,6 +19,7 @@ from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
 from config import AFFILIATES, STREAMING_AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES, TEAM_SHOP, MELI_AFF_PARAM, TEAM_SHOP_MELI, POPULAR_TEAMS
+from video_embeds import video_de_partido, video_de_liga
 from db import init_db, persist_games, get_team_history, get_team_upcoming, get_team_channels
 import sports_api as _sports_api_mod
 from sports_api import (
@@ -2300,6 +2301,7 @@ async def game_semantic(request: Request, slug: str):
             "implied_probs": implied_probs,
             "match_preview": match_preview,
             "faq_items": _build_match_faq(game),
+            "video_oficial": video_de_partido(game),
             "noindex": noindex,
         }
     )
@@ -3236,6 +3238,7 @@ async def league_page(request: Request, league_slug: str):
             "default_channels": default_channels,
             "league_leaders": league_leaders,
             "league_seo_extra": LEAGUE_SEO_EXTRA.get(league_slug),
+            "video_oficial": video_de_liga(league_slug),
             "power_rankings": power_rankings,
             "nfl_picks": nfl_picks,
             "upcoming_events": upcoming_events,

@@ -1,4 +1,5 @@
 {% from "_ad.html" import ad %}
+{% from "_video.html" import video %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -419,6 +420,8 @@
         <span>{{ first_team }} vs {{ second_team }}</span>
     </nav>
     <h1 class="game-h1">{{ first_team }} vs {{ second_team }}: d&oacute;nde ver{{ " " + mx_when_label(game.date) if mx_when_label(game.date) }}{% if odds %}, momios y pron&oacute;stico{% endif %} &mdash; {{ game.league_name }}</h1>
+
+    {{ video(video_oficial) }}
 
     <div class="game-hero">
         <div class="league-badge">{{ game.emoji }} {{ game.league_name }}</div>

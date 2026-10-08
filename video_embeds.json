@@ -1,0 +1,26 @@
+{
+  "_lee_esto_antes_de_agregar": [
+    "Solo videos que el titular de los derechos publicó él mismo y dejó incrustables.",
+    "Nunca pongas aquí una señal pirata ni un reupload: un reclamo de derechos tira AdSense.",
+    "Antes de agregar un id, ábrelo en https://www.youtube.com/embed/ID y confirma que reproduce.",
+    "'verificado' es la fecha en que comprobaste el embed. Si no lo comprobaste, no lo pongas."
+  ],
+  "_campos": {
+    "partido_id": "opcional. Id exacto del partido. Si está, gana sobre liga+fecha.",
+    "liga": "slug de liga, p.ej. lvbp. Aplica a todos los partidos de esa liga ese día.",
+    "fecha": "YYYY-MM-DD en la zona horaria de la liga, no en UTC.",
+    "youtube_id": "id del video de YouTube.",
+    "titulo": "lo que se muestra encima del reproductor.",
+    "fuente": "URL del canal oficial donde lo encontraste.",
+    "verificado": "YYYY-MM-DD en que comprobaste que el embed funciona."
+  },
+  "_ejemplo_no_activo": {
+    "liga": "lvbp",
+    "fecha": "2026-10-12",
+    "youtube_id": "PEGA_AQUI_EL_ID",
+    "titulo": "Lunes de Béisbol — transmisión gratuita de la LVBP",
+    "fuente": "https://www.youtube.com/@lvbp_oficial",
+    "verificado": "2026-10-12"
+  },
+  "videos": []
+}
