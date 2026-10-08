@@ -2942,8 +2942,170 @@ async def fetch_team_news(sport: str, league: str, team_name: str, limit: int = 
     return articles
 
 
+# ── Béisbol de invierno del Caribe: API de la propia MLB ────────────────
+#
+# Para LMP, LVBP y LIDOM no había de dónde sacar posiciones ni líderes:
+#   · ESPN tiene scoreboard de LVBP y LIDOM, pero su endpoint de líderes
+#     devuelve 404 en las dos (comprobado el 08/10/2026 contra la misma ruta
+#     que sí funciona para MLB), y de la LMP no tiene nada.
+#   · TheSportsDB da calendario, y las posiciones hay que calcularlas a mano
+#     desde los resultados. De estadística individual, nada.
+#
+# statsapi.mlb.com sí las cubre, con el sportId 17 "Winter Leagues". Es la
+# API pública de MLB: gratuita, sin llave, y la fuente de la que beben los
+# propios sitios de las ligas. Verificado con la temporada 2025-26:
+#   LMP    10 equipos · 1º Nayarit 40-28  · HR: Leo Heras 14
+#   LVBP    8 equipos · 1º Cardenales 30-26 · HR: Balbino Fuenmayor 17
+#   LIDOM   6 equipos · 1º Águilas 32-17  · HR: Miguel Sanó 9
+#
+# Se usa SOLO para posiciones y líderes. El calendario y los canales siguen
+# viniendo de donde ya venían: esta API no trae datos de transmisión, que es
+# lo que de verdad vende el sitio.
+_MLB_STATS_LEAGUES = {
+    # clave: el id que ya tiene la liga en LEAGUES → id en statsapi.mlb.com
+    "sportsdb:5109": 132,   # Liga Mexicana del Pacífico
+    "sportsdb:5112": 135,   # LVBP (Venezuela)
+    "sportsdb:lidom": 131,  # LIDOM (Dominicana)
+}
+
+_mlbstats_cache = TTLCache(maxsize=32, ttl=1800)  # 30 min: cambian por jornada
+
+
+def _temporada_invierno(hoy: Optional[datetime] = None) -> int:
+    """Año con el que statsapi identifica la temporada de invierno en curso.
+
+    La temporada cruza el año: la 2026-27 empieza en octubre de 2026 y
+    termina con la Serie del Caribe en febrero de 2027. statsapi la etiqueta
+    con el año de INICIO — comprobado el 08/10/2026: season=2026 devuelve los
+    340 partidos que arrancan el 13 de octubre, y season=2027 devuelve cero.
+
+    De enero a junio seguimos dentro de la temporada que empezó el año
+    anterior, así que se resta uno.
+    """
+    d = hoy or datetime.now(TZ_MX)
+    return d.year - 1 if d.month <= 6 else d.year
+
+
+async def fetch_mlbstats_standings(liga_id: int, season: int) -> list[dict]:
+    """Posiciones de una liga de invierno, en el formato que usan las plantillas."""
+    clave = f"mlbstats:standings:{liga_id}:{season}"
+    if clave in _mlbstats_cache:
+        return _mlbstats_cache[clave]
+
+    url = ("https://statsapi.mlb.com/api/v1/standings"
+           f"?leagueId={liga_id}&season={season}")
+    filas: list[dict] = []
+    async with httpx.AsyncClient(timeout=15) as client:
+        try:
+            r = await client.get(url)
+            r.raise_for_status()
+            data = r.json()
+        except Exception as e:
+            logger.warning("statsapi standings %s/%s falló: %s", liga_id, season, e)
+            return []
+
+    for grupo in data.get("records", []) or []:
+        for t in grupo.get("teamRecords", []) or []:
+            equipo = t.get("team") or {}
+            ganados = t.get("wins") or 0
+            perdidos = t.get("losses") or 0
+            filas.append({
+                "name": equipo.get("name", ""),
+                "team": equipo.get("name", ""),
+                "wins": ganados,
+                "losses": perdidos,
+                "win_pct": t.get("winningPercentage", ""),
+                "games_back": t.get("gamesBack", "-"),
+                "streak": (t.get("streak") or {}).get("streakCode", ""),
+                "logo": "",
+            })
+
+    # Primero el que más ha ganado. statsapi ya suele mandarlos ordenados,
+    # pero no lo promete, y una tabla desordenada se nota al instante.
+    filas.sort(key=lambda f: (-(f["wins"] or 0), f["losses"] or 0))
+    for i, f in enumerate(filas, 1):
+        f["pos"] = i
+        f["rank"] = i
+
+    _mlbstats_cache[clave] = filas
+    return filas
+
+
+# Qué categorías mostrar. Cada una: clave en statsapi, grupo, etiqueta, emoji.
+_CATEGORIAS_INVIERNO = [
+    ("homeRuns",       "hitting",  "Jonrones",            "💣"),
+    ("battingAverage", "hitting",  "Promedio de bateo",   "🏏"),
+    ("runsBattedIn",   "hitting",  "Carreras impulsadas", "🏃"),
+    ("earnedRunAverage", "pitching", "Efectividad",       "⚾"),
+    ("strikeouts",     "pitching", "Ponches",             "🔥"),
+]
+
+
+async def fetch_mlbstats_leaders(liga_id: int, season: int, top_n: int = 5) -> list[dict]:
+    """Líderes de bateo y pitcheo, en el formato que ya pinta league.html."""
+    clave = f"mlbstats:leaders:{liga_id}:{season}:{top_n}"
+    if clave in _mlbstats_cache:
+        return _mlbstats_cache[clave]
+
+    async def _una(cat: str, grupo: str, etiqueta: str, emoji: str) -> Optional[dict]:
+        url = ("https://statsapi.mlb.com/api/v1/stats/leaders"
+               f"?leaderCategories={cat}&statGroup={grupo}"
+               f"&season={season}&leagueId={liga_id}&limit={top_n}")
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.get(url)
+                r.raise_for_status()
+                data = r.json()
+        except Exception:
+            return None
+        bloques = data.get("leagueLeaders") or []
+        if not bloques:
+            return None
+        lideres = []
+        for L in (bloques[0].get("leaders") or [])[:top_n]:
+            persona = L.get("person") or {}
+            equipo = L.get("team") or {}
+            nombre = persona.get("fullName") or ""
+            if not nombre:
+                continue
+            lideres.append({
+                "name": nombre,
+                "value": str(L.get("value", "")),
+                "team": equipo.get("name", ""),
+                "position": "",
+                "headshot": "",
+                "flag": "",
+            })
+        if not lideres:
+            return None
+        return {"name": cat, "label": etiqueta, "emoji": emoji, "leaders": lideres}
+
+    resultados = await asyncio.gather(
+        *[_una(c, g, e, em) for c, g, e, em in _CATEGORIAS_INVIERNO],
+        return_exceptions=True,
+    )
+    cats = [x for x in resultados if isinstance(x, dict)]
+    _mlbstats_cache[clave] = cats
+    return cats
+
+
 async def get_league_standings(sport: str, league: str, limit: int = 10) -> list[dict]:
     """Get top N standings for a league."""
+    # Las ligas del Caribe primero: statsapi da la tabla oficial, en vez de
+    # calcularla a mano desde los resultados de TheSportsDB.
+    if league in _MLB_STATS_LEAGUES:
+        temporada = _temporada_invierno()
+        tabla = await fetch_mlbstats_standings(_MLB_STATS_LEAGUES[league], temporada)
+        if not tabla and temporada > 2000:
+            # Arranque de temporada: aún no hay juegos. Se muestra la tabla
+            # final de la anterior antes que un hueco — con el año claro en
+            # la plantilla, que para eso se devuelve `season`.
+            tabla = await fetch_mlbstats_standings(
+                _MLB_STATS_LEAGUES[league], temporada - 1)
+        if tabla:
+            return tabla[:limit]
+        # Si statsapi falla, se sigue al camino de siempre.
+
     if league.startswith("sportsdb:"):
         league_id = league.split(":")[1]
         standings = await compute_sportsdb_standings(league_id)
@@ -2992,6 +3154,20 @@ async def fetch_league_leaders(sport: str, league: str, top_n: int = 5) -> list[
     Returns list of category dicts: {name, label, emoji, leaders: [{name, value, flag, position, headshot}]}
     Only for ESPN leagues (not TheSportsDB).
     """
+    # LMP, LVBP y LIDOM sí tienen líderes, pero no en ESPN: salen de la API
+    # de MLB (ver _MLB_STATS_LEAGUES más arriba). Esta rama va antes del
+    # corte por "sportsdb:" porque esas tres lo llevan en su id.
+    if league in _MLB_STATS_LEAGUES:
+        temporada = _temporada_invierno()
+        cats = await fetch_mlbstats_leaders(_MLB_STATS_LEAGUES[league], temporada, top_n)
+        if not cats:
+            # Temporada recién empezada: sin turnos al bat no hay líderes.
+            # Se enseñan los de la campaña anterior, que siguen siendo de
+            # interés, en vez de dejar el bloque vacío.
+            cats = await fetch_mlbstats_leaders(
+                _MLB_STATS_LEAGUES[league], temporada - 1, top_n)
+        return cats
+
     if league.startswith("sportsdb:"):
         return []
 
