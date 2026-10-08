@@ -1865,6 +1865,15 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
     ch_type = _cinfo.get("type", "")
     ch_country = _cinfo.get("country", "")
     ch_desc = _cinfo.get("desc", "")
+    # Canal que dejó de existir: decirlo arriba y mandar al que lo reemplazó.
+    # Quien busca "golperu en vivo" no quiere una parrilla vacía, quiere saber
+    # dónde quedó su futbol.
+    ch_cerrado = bool(_cinfo.get("cerrado"))
+    ch_nota = _cinfo.get("nota", "")
+    ch_reemplazo = None
+    if _cinfo.get("reemplazo_slug"):
+        ch_reemplazo = {"slug": _cinfo["reemplazo_slug"],
+                        "nombre": _cinfo.get("reemplazo_nombre", _cinfo["reemplazo_slug"])}
     howto = _CHANNEL_TYPE_HOWTO.get(ch_type, "")
     stream_route = CHANNEL_STREAM_ROUTE.get(channel_slug)
     next_games = [] if date else await _channel_upcoming(channel_slug)
@@ -1890,6 +1899,9 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             "ch_type": ch_type,
             "ch_country": ch_country,
             "ch_desc": ch_desc,
+            "ch_cerrado": ch_cerrado,
+            "ch_nota": ch_nota,
+            "ch_reemplazo": ch_reemplazo,
             "howto": howto,
             "stream_route": stream_route,
             "next_games": next_games,
@@ -6009,10 +6021,34 @@ CHANNEL_PAGES = {
     "tnt-sports":    {"name": "TNT Sports",    "country": "MX", "type": "cable",     "desc": "TNT Sports Mexico transmite Champions League, Europa League y Conference League por cable y en HBO Max."},
     "hbo-max":       {"name": "HBO Max",       "country": "MX", "type": "streaming", "desc": "HBO Max transmite en Mexico la Champions League y competencias UEFA de TNT Sports."},
     "nba-league-pass": {"name": "NBA League Pass", "country": "MX", "type": "streaming", "desc": "NBA League Pass ofrece todos los partidos de la NBA en vivo y bajo demanda en Mexico y Latinoamerica."},
+    # Peru — /canal/golperu es la pagina de canal con mas trafico del sitio (108
+    # clics en 3 meses) y hasta hoy no tenia contenido curado: el canal lleva
+    # meses cerrado y la pagina no lo decia. Verificado el 8 de octubre de 2026.
+    "golperu": {
+        "name": "GOLPERU", "country": "PE", "type": "cable",
+        "cerrado": True,
+        "reemplazo_slug": "liga1-max", "reemplazo_nombre": "L1 MAX",
+        "nota": ("GOLPERU ya no existe. Movistar TV retiro la senal el 1 de enero de 2026 "
+                 "y los partidos de la Liga 1 pasaron a L1 MAX."),
+        "desc": ("GOLPERU transmitio la Liga 1 peruana hasta diciembre de 2025. Movistar retiro "
+                 "el canal (14 SD y 714 HD) de su parrilla y el futbol peruano se mudo a L1 MAX, "
+                 "operado por 1190 Sports con la Federacion Peruana de Futbol."),
+    },
+    "liga1-max": {
+        "name": "L1 MAX", "country": "PE", "type": "cable",
+        "desc": ("L1 MAX transmite los partidos de la Liga 1 peruana desde 2026, en reemplazo de "
+                 "GOLPERU. Esta en Movistar TV en los canales 11 y 14 (SD) y 711 y 714 (HD), sin "
+                 "costo adicional para los clientes de la parrilla estandar, y en la Movistar TV App."),
+    },
 }
 
 
-@app.get("/canal/{channel_slug}", response_class=HTMLResponse)
+# OJO: esta función ya no es una ruta. Declaraba el mismo path que canal_page
+# (línea ~1791); FastAPI atiende con la primera que se registra, así que esta
+# nunca se ejecutaba. Peor: solo servía los 25 canales de CHANNEL_PAGES, y
+# /canal/golperu —la página de canal con más tráfico del sitio— no está entre
+# ellos, así que de haberse ejecutado habría devuelto 404.
+# Se deja el cuerpo como referencia histórica, sin decorador.
 async def channel_page(request: Request, channel_slug: str):
     """Channel page — what's on today for a specific channel. SEO goldmine."""
     channel = CHANNEL_PAGES.get(channel_slug)

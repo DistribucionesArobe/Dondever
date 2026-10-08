@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ channel_name }} en vivo hoy: qué partidos pasan y a qué hora | DondeVer</title>
-    <meta name="description" content="Qué pasan hoy en {{ channel_name }}: {% if total_games %}{{ total_games }} partido{{ 's' if total_games != 1 else '' }} con horario de México{% else %}próximos partidos y programación{% endif %}, cómo ver el canal en vivo y qué ligas transmite.">
+    <title>{% if ch_cerrado %}{{ channel_name }} ya no transmite: dónde ver{% if ch_reemplazo %} ({{ ch_reemplazo.nombre }}){% endif %}{% else %}{{ channel_name }} en vivo hoy: qué partidos pasan y a qué hora{% endif %} | DondeVer</title>
+    <meta name="description" content="{% if ch_cerrado %}{{ ch_nota }}{% if ch_reemplazo %} Aquí te decimos cómo ver {{ ch_reemplazo.nombre }} y qué partidos hay hoy.{% endif %}{% else %}Qué pasan hoy en {{ channel_name }}: {% if total_games %}{{ total_games }} partido{{ 's' if total_games != 1 else '' }} con horario de México{% else %}próximos partidos y programación{% endif %}, cómo ver el canal en vivo y qué ligas transmite.{% endif %}">
     <meta property="og:title" content="{{ channel_name }} hoy — Programación deportiva en vivo | DondeVer">
     <meta property="og:description" content="{{ total_games }} partidos en {{ channel_name }} hoy. Horarios y programación deportiva actualizada.">
     <meta property="og:type" content="website">
@@ -152,10 +152,19 @@
     {% else %}
     <div class="channel-badge" style="background:#1e293b;color:white;">&#128250; {{ channel_name }}</div>
     {% endif %}
-    <h1>{{ channel_name }} en vivo hoy: qué partidos pasan</h1>
+    <h1>{% if ch_cerrado %}{{ channel_name }} cerró: dónde ver ahora{% else %}{{ channel_name }} en vivo hoy: qué partidos pasan{% endif %}</h1>
 {{ ad('top') }}
 
+    {% if ch_cerrado %}
+    <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:0.9rem 1rem;border-radius:6px;margin:0 0 1rem;">
+        <p style="margin:0 0 .5rem;"><strong>{{ ch_nota }}</strong></p>
+        {% if ch_reemplazo %}
+        <p style="margin:0;"><a href="/canal/{{ ch_reemplazo.slug }}" style="font-weight:700;">Ver qué pasan hoy en {{ ch_reemplazo.nombre }} &rarr;</a></p>
+        {% endif %}
+    </div>
+    {% else %}
     <p>{% if total_games %}Esto es lo que transmite {{ channel_name }} hoy, con horario del centro de México.{% else %}Hoy {{ channel_name }} no tiene partidos en nuestra programación. Abajo están los próximos y cómo ver el canal en vivo.{% endif %}</p>
+    {% endif %}
     <div class="hero-stats">
         <span class="hero-stat"><strong>{{ total_games }}</strong> partido{{ 's' if total_games != 1 else '' }}</span>
         {% if live_count %}<span class="hero-stat" style="color:#ef4444;"><strong>{{ live_count }}</strong> en vivo</span>{% endif %}
