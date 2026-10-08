@@ -849,7 +849,13 @@ _PAISES_POR_PROGRAMA = {
     "disneyplus": {
         "limpio": "https://www.disneyplus.com/",
         "programas": {
-            "AFFILIATE_DISNEYPLUS":    {"MX", "CO", "AR", "BR", "CL"},
+            # Admitad — Disney+ LATAM, programa aceptado el 07/10/2026.
+            # Los países son los que declara el propio programa; a un visitante
+            # de fuera se le manda al enlace limpio, que no paga pero tampoco
+            # atribuye mal la venta.
+            ("AFFILIATE_DISNEYPLUS",
+             "https://grfpr.com/g/z1w3b3celh9d38be8ce05c1634180b/"):
+                {"MX", "CO", "AR", "BR", "CL"},
             "AFFILIATE_DISNEYPLUS_ES": {"ES", "PT", "IT", "FR", "DE", "GB", "IE", "NL",
                                         "BE", "AT", "CH", "DK", "SE", "NO", "FI", "PL",
                                         "CZ", "SK", "HU", "RO", "BG", "HR", "GR", "LT",
@@ -871,9 +877,28 @@ def url_afiliado_por_pais(key: str, country: str) -> str | None:
     pais = (country or "").upper()
     if not pais:
         return None
-    for variable, paises in config_key["programas"].items():
-        if pais in paises:
-            return os.getenv(variable, "") or None
+    for entrada, paises in config_key["programas"].items():
+        if pais not in paises:
+            continue
+        # Cada programa puede declararse de dos formas:
+        #   "AFFILIATE_X"                      → solo variable de entorno
+        #   ("AFFILIATE_X", "https://...")     → variable, y enlace por defecto
+        #
+        # El segundo caso existe porque el 08/10/2026 el enlace de Disney+
+        # LATAM estaba escrito en STREAMING_AFFILIATES pero nunca se usaba:
+        # esta función lo pisaba antes, buscaba AFFILIATE_DISNEYPLUS en el
+        # entorno, no la encontraba —no estaba dada de alta en Render— y
+        # devolvía None, así que el visitante acababa en disneyplus.com sin
+        # pasar por el afiliado. Un clic regalado.
+        #
+        # Con el valor por defecto en el código, el enlace funciona desde el
+        # despliegue y la variable de entorno sigue mandando si algún día hay
+        # que rotarlo sin tocar el repositorio.
+        if isinstance(entrada, tuple):
+            variable, por_defecto = entrada
+        else:
+            variable, por_defecto = entrada, None
+        return os.getenv(variable, "").strip() or por_defecto
     return None
 
 
