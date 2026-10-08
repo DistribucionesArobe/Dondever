@@ -407,7 +407,15 @@
             {% if saff %}
             <a href="/go/{{ saff.key }}?s=team-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ saff.key }}" data-league="{{ game.league_slug }}" style="text-decoration:none;font-weight:700;background:{{ saff.bg }};color:{{ saff.color }};padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;">{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
             {% else %}
+            {# El canal lleva a su página: quien ve "ESPN" aquí suele querer saber
+               qué más pasan ahí. canal_url() devuelve None si esa página daría
+               404 (señales regionales de EE. UU.), y entonces queda texto plano. #}
+            {%- set _curl = canal_url(b.channel) -%}
+            {% if _curl %}
+            <a href="{{ _curl }}" style="text-decoration:none;background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;font-weight:600;{% if _probable %}opacity:0.78;{% endif %}"{% if _probable %} title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}{% if _probable %} <span style="opacity:0.75;">· probable</span>{% endif %}</a>
+            {% else %}
             <span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-size:0.7rem;font-weight:600;{% if _probable %}opacity:0.78;{% endif %}"{% if _probable %} title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}{% if _probable %} <span style="opacity:0.75;">· probable</span>{% endif %}</span>
+            {% endif %}
             {% endif %}
             {% endfor %}
         {% else %}

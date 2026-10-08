@@ -1711,6 +1711,91 @@ def _canon_channel_slug(slug: str) -> str:
 templates.env.filters["channel_slug"] = _slugify_channel
 
 
+# ── Enlazar canales desde cualquier plantilla ────────────
+# Las fichas de equipo y de liga pintaban el canal como texto plano. Resultado:
+# las 122 páginas /canal/ no recibían ni un enlace interno desde las dos
+# secciones más grandes del sitio (423 equipos, 57 ligas) y se quedaban en
+# posición 20 pese a convertir al 3.6% contra 1.4% del promedio.
+#
+# La regla de abajo es la MISMA que usa la ruta /canal/ para decidir un 404.
+# Tiene que serlo: si enlazáramos con un criterio distinto, estaríamos
+# fabricando enlaces internos rotos, que es justo lo que queremos evitar.
+
+_REGIONAL_OK = {"win-sports", "willow-tv", "wwe-network", "wapa-deportes",
+                "mlb.tv", "nba.tv", "nfl.tv", "nhl.tv"}
+_RE_REGIONAL_US = re.compile(
+    r"(fanduel-sn|bally|nbc-sports-(?!mx)|root-sports|marquee|yes-network|^sny$|^nesn$|^masn|"
+    r"^sportsnet|^[a-z]+\.tv$|fox\d{1,2}$|cbs\)|\(cbs|\(nbc|\(abc|\(fox)")
+
+
+def _es_regional_us(channel_slug: str) -> bool:
+    """Afiliada local o RSN de EE. UU.: inútil para la audiencia de LATAM."""
+    if channel_slug in _REGIONAL_OK:
+        return False
+    return bool(re.match(r"^[kw][a-z]{2,3}(-|\d|$)", channel_slug)
+                or _RE_REGIONAL_US.search(channel_slug))
+
+
+def _pagina_curada(channel_slug: str):
+    return CHANNEL_PAGES.get(channel_slug) or next(
+        (v for k, v in CHANNEL_PAGES.items() if _canon_channel_slug(k) == channel_slug), None)
+
+
+from functools import lru_cache
+
+
+@lru_cache(maxsize=1)
+def _slug_por_canal() -> dict:
+    """Nombre exacto de canal → slug de su página.
+
+    Lista blanca a propósito, en vez de enlazar cualquier cadena que venga en
+    los datos. Dos razones medidas:
+
+      · La página /canal/ muestra los partidos de HOY. Un canal desconocido sin
+        partidos hoy devuelve 404 por diseño. Enlazarlo desde una ficha de
+        equipo que muestra un partido de la semana pasada fabricaría un enlace
+        roto.
+      · El mismo canal llega con nombres distintos. "ESPN2" da /canal/espn2,
+        que es la URL con tráfico real; "ESPN 2" daría /canal/espn-2, una URL
+        gemela que partiría la señal en dos.
+
+    Con 157 nombres en CHANNEL_ALIASES queda cubierto todo lo que tiene
+    tráfico; lo raro se queda como texto, que es lo que ya era.
+
+    Para los canales curados el slug sale de la CLAVE de CHANNEL_PAGES, no de
+    slugificar el nombre: la entrada "espn2" se muestra como "ESPN 2", y
+    slugificar ese nombre daría "espn-2", una URL gemela de la que sí tiene
+    tráfico.
+    """
+    from config import CHANNEL_ALIASES as _CH_ALIAS
+    mapa = {}
+    for nombre in list(_CH_ALIAS) + list(STREAMING_AFFILIATES):
+        if isinstance(nombre, str) and nombre.strip():
+            mapa[nombre.strip()] = _canon_channel_slug(_slugify_channel(nombre))
+    for slug, info in CHANNEL_PAGES.items():   # gana sobre lo anterior
+        if info.get("name"):
+            mapa[info["name"].strip()] = _canon_channel_slug(slug)
+    return mapa
+
+
+def canal_url(channel_name: str):
+    """URL de la página del canal, o None si no deberíamos enlazarla.
+
+    Devolver None es parte del diseño: la plantilla pinta texto plano y no un
+    enlace roto.
+    """
+    if not channel_name or not isinstance(channel_name, str):
+        return None
+    slug = _slug_por_canal().get(channel_name.strip())
+    if not slug or _es_regional_us(slug):
+        return None
+    return f"/canal/{slug}"
+
+
+templates.env.globals["canal_url"] = canal_url
+templates.env.filters["canal_url"] = canal_url
+
+
 @app.get("/canales", response_class=HTMLResponse)
 async def canales_index(request: Request):
     """Channel index — list all channels broadcasting today with game counts."""
@@ -1822,12 +1907,8 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
     # ── Soft-404 guard (GSC: kfmb-8.1-(cbs), kmsp-tv, kunp-16, wxix-fox19, fanduel-sn-west…)
     # Regional US affiliates / RSNs are useless for our LATAM audience → real 404.
     # Unknown channel with no games today (not curated, no affiliate) → 404 too.
-    _regional_ok = {"win-sports", "willow-tv", "wwe-network", "wapa-deportes", "mlb.tv", "nba.tv", "nfl.tv", "nhl.tv"}
-    _regional_us = channel_slug not in _regional_ok and (
-        re.match(r"^[kw][a-z]{2,3}(-|\d|$)", channel_slug) or re.search(
-            r"(fanduel-sn|bally|nbc-sports-(?!mx)|root-sports|marquee|yes-network|^sny$|^nesn$|^masn|"
-            r"^sportsnet|^[a-z]+\.tv$|fox\d{1,2}$|cbs\)|\(cbs|\(nbc|\(abc|\(fox)", channel_slug))
-    _curated_page = CHANNEL_PAGES.get(channel_slug) or next((v for k, v in CHANNEL_PAGES.items() if _canon_channel_slug(k) == channel_slug), None)
+    _regional_us = _es_regional_us(channel_slug)
+    _curated_page = _pagina_curada(channel_slug)
     _is_curated = bool(_curated_page) or (channel_name and channel_name in STREAMING_AFFILIATES) \
         or any(_slugify_channel(n) == channel_slug for n in STREAMING_AFFILIATES)
     if _regional_us and not _is_curated:

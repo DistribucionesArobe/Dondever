@@ -489,7 +489,9 @@
                 {%- set _probable = not game.get('channels_confirmed', True) -%}
                 {% if game.broadcasts %}
                     {% for b in game.broadcasts %}
-                    <span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}"{% if _probable %} style="opacity:0.8;" title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}</span>
+                    {%- set _curl = canal_url(b.channel) -%}
+                    {% if _curl %}<a href="{{ _curl }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}" style="text-decoration:none;{% if _probable %}opacity:0.8;{% endif %}"{% if _probable %} title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}</a>
+                    {% else %}<span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}"{% if _probable %} style="opacity:0.8;" title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}</span>{% endif %}
                     {% endfor %}
                     {% if _probable %}<div style="font-size:0.6rem;color:#9ca3af;font-weight:600;letter-spacing:0.02em;">canal probable</div>{% endif %}
                 {% else %}
