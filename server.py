@@ -861,6 +861,44 @@ templates.env.globals["meli_aff"] = MELI_AFF_PARAM
 templates.env.globals["team_shop_meli"] = TEAM_SHOP_MELI
 templates.env.globals["popular_teams"] = POPULAR_TEAMS
 
+
+# ── Cruce entre el nombre de liga de un equipo y el slug de la liga ──────
+#
+# POPULAR_TEAMS guarda la liga con su nombre para mostrar ("LMP", "MLB",
+# "Liga MX", "Liga BetPlay"), mientras que las rutas usan el slug ("lmp",
+# "mlb", "liga-mx", "liga-colombia"). Comparar los dos a secas nunca acierta,
+# y por eso /liga/* no enlazaba a un solo equipo (ver la nota en la ruta).
+#
+# Se normaliza quitando acentos, espacios y signos, y se acepta tanto el slug
+# como el nombre oficial de la liga. Así quedan cubiertos 29 de los 30 valores
+# que hay hoy en POPULAR_TEAMS; el restante va como alias explícito.
+def _norm_liga(s: str) -> str:
+    s = unicodedata.normalize("NFD", s or "").encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]", "", s)
+
+
+_ALIAS_LIGA_EQUIPOS = {
+    # "Liga 1 Perú" no coincide ni con el slug (liga-peru) ni con el nombre
+    # que tiene la liga en LEAGUES.
+    "liga1peru": "liga-peru",
+}
+
+_LIGA_DE_EQUIPO: dict[str, str] = {}
+for _slug, _meta in ALL_LEAGUES.items():
+    _LIGA_DE_EQUIPO.setdefault(_norm_liga(_slug), _slug)
+    if isinstance(_meta, tuple) and len(_meta) > 2:
+        _LIGA_DE_EQUIPO.setdefault(_norm_liga(_meta[2]), _slug)
+_LIGA_DE_EQUIPO.update(_ALIAS_LIGA_EQUIPOS)
+
+# Aviso en el arranque si algún equipo quedó sin liga reconocible: así un
+# nombre nuevo mal escrito se nota en los logs y no en silencio.
+_sin_liga = sorted({
+    i.get("league", "") for i in POPULAR_TEAMS.values()
+    if i.get("league") and _norm_liga(i["league"]) not in _LIGA_DE_EQUIPO
+})
+if _sin_liga:
+    logger.warning("Equipos con liga sin cruce, no se enlazarán: %s", _sin_liga)
+
 # ── AdSense: publisher + slots ──────────────────────────────
 # El publisher ya lo inyecta GAInjectMiddleware en todas las páginas; aquí se
 # expone a las plantillas para que templates/_ad.html pueda pintar las unidades.
@@ -3105,10 +3143,25 @@ async def league_page(request: Request, league_slug: str):
     upcoming_games = [u for u in upcoming_games
                       if u.get("home") != "TBD" and u.get("away") != "TBD"]
 
-    # Related teams from POPULAR_TEAMS that play in this league
+    # Equipos de esta liga, para enlazarlos desde la página de liga.
+    #
+    # La condición era `info.get("league") == league_slug`, y nunca se cumplía:
+    # league_slug vale "lmp", "mlb" o "liga-mx", mientras que POPULAR_TEAMS
+    # guarda el nombre para mostrar — "LMP", "MLB", "Liga MX".
+    #
+    # Resultado medido en producción el 08/10/2026: CERO enlaces a equipos en
+    # /liga/mlb, /liga/liga-mx, /liga/nfl, /liga/nba y las cuatro de béisbol.
+    # En todas. Y no es un detalle: las páginas de equipo son el 83% de tus
+    # clics (491,512 impresiones) y las de liga, que tienen el mejor CTR del
+    # sitio (3.70%), no les mandaban un solo enlace — ni para Google ni para
+    # el lector.
+    #
+    # _LIGA_DE_EQUIPO resuelve el cruce normalizando (sin acentos, sin
+    # espacios, minúsculas) y aceptando tanto el slug como el nombre de la
+    # liga. Cubre 29 de los 30 valores; el que falta lleva alias explícito.
     league_teams = {
         slug: info for slug, info in POPULAR_TEAMS.items()
-        if info.get("league") == league_slug
+        if _LIGA_DE_EQUIPO.get(_norm_liga(info.get("league", ""))) == league_slug
     }
 
     # Collect actual channels from today's games for this league
