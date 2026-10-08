@@ -1782,17 +1782,50 @@ async def parse_sportsdb_standalone_events(
         fetch_sportsdb_schedule(sportsdb_id, formatted_date),
         fetch_sportsdb_schedule(sportsdb_id, next_day),
     )
-    # Merge and filter: keep only events whose local dateEvent matches target
+    # Quedarse con los eventos cuyo día EN MÉXICO sea el pedido.
+    #
+    # Antes se comparaba contra dateEvent directamente, con un comentario que
+    # lo llamaba "local". No lo es: dateEvent viene en UTC.
+    #
+    # Un partido del 7 de octubre a las 19:00 en México son las 01:00 UTC del
+    # día 8. TheSportsDB lo guarda como dateEvent "2026-10-08", así que al
+    # pedir el día 8 entraba como partido de hoy — cuando en México se jugó
+    # ayer por la tarde. Reportado el 08/10/2026: Diablos Rojos del México vs
+    # Panteras de Aguascalientes (LNBP) salía EN VIVO a las 8:57 de la mañana,
+    # con el partido terminado desde la noche anterior.
+    #
+    # strTimestamp trae la fecha y hora UTC completas; convertirlas a hora de
+    # México da el día correcto. Si falta, se arma con dateEvent + strTime, y
+    # como último recurso se usa dateEvent tal cual.
+    def _dia_mx(ev: dict) -> str:
+        ts = (ev.get("strTimestamp") or "").strip()
+        if ts:
+            try:
+                d = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                if d.tzinfo is None:
+                    d = d.replace(tzinfo=timezone.utc)
+                return d.astimezone(TZ_MX).date().isoformat()
+            except Exception:
+                pass
+        fecha = (ev.get("dateEvent") or "").strip()
+        hora = (ev.get("strTime") or "").strip()
+        if fecha and hora:
+            try:
+                d = datetime.fromisoformat(f"{fecha}T{hora}").replace(tzinfo=timezone.utc)
+                return d.astimezone(TZ_MX).date().isoformat()
+            except Exception:
+                pass
+        return fecha
+
     seen_ids = set()
     events_raw = []
     for ev in raw_today + raw_next:
         eid = ev.get("idEvent", "")
-        ev_date = ev.get("dateEvent") or ""
         if eid in seen_ids:
             continue
         seen_ids.add(eid)
-        # Keep events whose dateEvent matches the requested MX date
-        if ev_date and ev_date != formatted_date:
+        dia = _dia_mx(ev)
+        if dia and dia != formatted_date:
             continue
         events_raw.append(ev)
 
@@ -1823,7 +1856,21 @@ async def parse_sportsdb_standalone_events(
         event_timestamp = ev.get("strTimestamp") or ""
         sport_type = league_info[0] if isinstance(league_info, tuple) else "baseball"
 
-        if sdb_status in ("match finished", "ft", "aet", "finished"):
+        # Un partido con AMBOS marcadores y un estado que no reconocemos está
+        # terminado, no en curso. Antes el `else` de abajo asumía lo contrario:
+        # cualquier cadena rara de TheSportsDB se volvía "En vivo".
+        #
+        # El criterio es deliberadamente asimétrico. Decir "Final" de un
+        # partido que sigue jugándose molesta; decir "EN VIVO" de uno que
+        # acabó ayer hace que el lector abra la tele y no encuentre nada, que
+        # es exactamente lo que este sitio promete evitar.
+        _hay_marcador = home_score is not None and away_score is not None
+        _terminados = ("match finished", "ft", "aet", "finished", "final",
+                       "aot", "after over time", "game finished", "ended",
+                       "awarded", "match postponed", "postponed", "cancelled",
+                       "canceled", "abandoned")
+
+        if sdb_status in _terminados or (_hay_marcador and sdb_status not in ("not started", "ns", "")):
             state = "post"
             display = "Final"
             detail = "Final"
