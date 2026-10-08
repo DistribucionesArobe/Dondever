@@ -6034,6 +6034,33 @@ CHANNEL_PAGES = {
                  "el canal (14 SD y 714 HD) de su parrilla y el futbol peruano se mudo a L1 MAX, "
                  "operado por 1190 Sports con la Federacion Peruana de Futbol."),
     },
+    # Resto del top 10 de /canal/ que estaba sin curar. Verificado el 8 de
+    # octubre de 2026. A propósito NO se ponen números de canal: las fuentes se
+    # contradicen entre sí y cambian por proveedor y por ciudad.
+    "espn2": {
+        "name": "ESPN 2", "country": "MX", "type": "cable",
+        "desc": ("ESPN 2 se ve por TV de paga en Mexico y buena parte de Latinoamerica "
+                 "(Argentina, Colombia, Peru, Chile, Ecuador, Venezuela, Uruguay, Paraguay, "
+                 "Bolivia, Panama, Centroamerica y Republica Dominicana) y tambien dentro de "
+                 "Disney+ con el plan que incluye ESPN. Su parrilla es sobre todo futbol, tenis "
+                 "y rugby, ademas de Formula 1 y beisbol. El numero de canal cambia segun el "
+                 "operador: Sky, Dish, Izzi, Megacable, Totalplay y Star TV lo ubican distinto."),
+    },
+    "espn-deportes": {
+        "name": "ESPN Deportes", "country": "US", "type": "cable",
+        "desc": ("ESPN Deportes es la senal en espanol de ESPN en Estados Unidos, de television "
+                 "de paga. Transmite LaLiga —ESPN tiene los derechos exclusivos en EE. UU. hasta "
+                 "la temporada 2028-29 con cada partido en ingles y espanol—, la Copa del Rey y "
+                 "la UEFA Women's Champions League en espanol, ademas de WNBA y NBA. Se ve con un "
+                 "proveedor de cable o con servicios como DirecTV Stream, Fubo, Hulu + Live TV, "
+                 "Sling TV o YouTube TV. No es lo mismo que ESPN+, que se contrata aparte."),
+    },
+    "tv-azteca": {
+        "name": "TV Azteca", "country": "MX", "type": "broadcast",
+        "desc": ("TV Azteca transmite deporte en television abierta mexicana, sin suscripcion. "
+                 "Sus partidos van principalmente por Azteca 7 y Azteca Uno, y tambien en vivo "
+                 "por el canal oficial de TV Azteca Deportes en YouTube y en su propia app."),
+    },
     "liga1-max": {
         "name": "L1 MAX", "country": "PE", "type": "cable",
         "desc": ("L1 MAX transmite los partidos de la Liga 1 peruana desde 2026, en reemplazo de "
