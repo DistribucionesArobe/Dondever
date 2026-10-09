@@ -516,7 +516,7 @@
     {# ══ RESULTADOS RECIENTES ══ #}
     {% if recent_results %}
     <div style="margin-top:1rem;">
-        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Ultimos resultados</h2>
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Últimos resultados</h2>
         <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
             {% for r in recent_results %}
             <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
@@ -601,7 +601,7 @@
     <!-- ══ Detailed Stats (all sports) ══ -->
     {% set st = stats.sport_type %}
     <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
-        <h2 style="font-size:1rem;font-weight:700;margin:0 0 0.75rem;color:#1a1a2e;">Estadisticas de temporada</h2>
+        <h2 style="font-size:1rem;font-weight:700;margin:0 0 0.75rem;color:#1a1a2e;">Estadísticas de temporada</h2>
 
         <!-- Offense / Defense -->
         {% if stats.all_stats.get('pointsFor') or stats.all_stats.get('goalsFor') %}
@@ -642,7 +642,7 @@
             {% if stats.all_stats.get('Last Ten Games') %}
             <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:0.6rem;text-align:center;">
                 <div style="font-size:1rem;font-weight:800;color:#6366f1;">{{ stats.all_stats.get('Last Ten Games') }}</div>
-                <div style="font-size:0.65rem;color:#6b7280;">Ultimos 10</div>
+                <div style="font-size:0.65rem;color:#6b7280;">Últimos 10</div>
             </div>
             {% endif %}
         </div>
@@ -763,7 +763,7 @@
     {# ══ NFL ADVANCED STATS ══ #}
     {% if nfl_advanced and nfl_advanced.record %}
     <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:0.9rem 1rem;margin-bottom:1rem;">
-        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;font-weight:700;margin-bottom:0.6rem;">📊 Estadisticas avanzadas NFL</div>
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;font-weight:700;margin-bottom:0.6rem;">📊 Estadísticas avanzadas NFL</div>
         <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:0.5rem;">
             <div style="text-align:center;padding:0.4rem;background:#f9fafb;border-radius:8px;">
                 <div style="font-size:0.6rem;color:#6b7280;">PPG</div>
@@ -903,7 +903,7 @@
                 <span class="shop-icon">&#129506;</span>
                 {% endif %}
                 <span class="shop-label">Gorras en MercadoLibre</span>
-                <span class="shop-sub">{{ team_name }} &middot; Mexico</span>
+                <span class="shop-sub">{{ team_name }} &middot; México</span>
                 <span class="shop-badge" style="color:#3483FA;">Ver en MercadoLibre &#8599;</span>
             </a>
         </div>
@@ -996,8 +996,14 @@
     <div class="related-teams" style="margin-bottom:1rem;">
         <h2>Canales donde más se transmite a {{ team_name }}</h2>
         <div class="related-grid">
+            {# Este bloque enlazaba con channel_slug a pelo, sin comprobar si la
+               página existe. Producía 404s reales — /canal/sportsnet-la y
+               /canal/yes salían enlazados desde las fichas de Dodgers y Yankees.
+               canal_url() devuelve None cuando la página daría 404. #}
             {% for ch_name, ch_count in top_channels %}
-            <a href="/canal/{{ ch_name|channel_slug }}">{{ ch_name }} <span style="font-size:0.75rem;color:var(--text-muted)">({{ ch_count }})</span></a>
+            {%- set _curl = canal_url(ch_name) -%}
+            {% if _curl %}<a href="{{ _curl }}">{{ ch_name }} <span style="font-size:0.75rem;color:var(--text-muted)">({{ ch_count }})</span></a>
+            {% else %}<span>{{ ch_name }} <span style="font-size:0.75rem;color:var(--text-muted)">({{ ch_count }})</span></span>{% endif %}
             {% endfor %}
         </div>
     </div>
@@ -1050,16 +1056,16 @@
                 <p>{{ team_name }} compite en la {{ team_league }}, una de las ligas de fútbol con mayor audiencia entre los aficionados mexicanos y latinos en Estados Unidos. Los partidos de la {{ team_league }} se transmiten a través de múltiples plataformas tanto en México como en USA, incluyendo televisión abierta, cable y servicios de streaming. En DondeVer.app actualizamos la programación diariamente para que siempre sepas dónde y a qué hora ver a {{ team_name }}.</p>
                 {% elif team_sport == 'beisbol' %}
                 <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
-                <p>{{ team_name }} juega en la {{ team_league }}, la liga de béisbol más importante del mundo. La temporada regular de la MLB se extiende de abril a septiembre, con postemporada en octubre. Los juegos de {{ team_name }} se transmiten en diversas plataformas en Mexico, USA y Latinoamerica. En DondeVer.app te mostramos los canales y horarios actualizados para cada juego.</p>
+                <p>{{ team_name }} juega en la {{ team_league }}, la liga de béisbol más importante del mundo. La temporada regular de la MLB se extiende de abril a septiembre, con postemporada en octubre. Los juegos de {{ team_name }} se transmiten en diversas plataformas en México, USA y Latinoamérica. En DondeVer.app te mostramos los canales y horarios actualizados para cada juego.</p>
                 {% elif team_sport == 'basketball' %}
                 <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
-                <p>{{ team_name }} es uno de los equipos de la {{ team_league }}, la liga de baloncesto más seguida del planeta. La temporada regular de la NBA va de octubre a abril, seguida por los playoffs y las Finales. Los partidos de {{ team_name }} se pueden ver en Mexico, USA y Latinoamerica a través de varios canales y plataformas de streaming que actualizamos a diario en DondeVer.app.</p>
+                <p>{{ team_name }} es uno de los equipos de la {{ team_league }}, la liga de baloncesto más seguida del planeta. La temporada regular de la NBA va de octubre a abril, seguida por los playoffs y las Finales. Los partidos de {{ team_name }} se pueden ver en México, USA y Latinoamérica a través de varios canales y plataformas de streaming que actualizamos a diario en DondeVer.app.</p>
                 {% elif team_sport == 'futbol americano' %}
                 <h3>{{ team_name }} en la {{ team_league }} — Temporada 2026-27</h3>
                 {% if nfl_team_extra %}
                 <p>{{ nfl_team_extra.seo_p }}</p>
                 <p><strong>Division:</strong> {{ nfl_team_extra.division }} · <strong>Conferencia:</strong> {{ nfl_team_extra.conference }} · <strong>Estadio:</strong> {{ nfl_team_extra.stadium }}</p>
-                <p><strong>Canales en Mexico:</strong> {{ nfl_team_extra.channels_mx }}</p>
+                <p><strong>Canales en México:</strong> {{ nfl_team_extra.channels_mx }}</p>
                 <p style="font-style:italic;color:#6b7280;">{{ nfl_team_extra.fun_fact }}</p>
                 {% else %}
                 <p>{{ team_name }} compite en la {{ team_league }}, la liga de fútbol americano con mayor audiencia en el mundo. La temporada 2026 de la NFL arranca el 9 de septiembre y culmina con el Super Bowl LXI en febrero de 2027. Los juegos de {{ team_name }} se transmiten en México por Canal 5 (TV abierta), FOX Sports, ESPN (Disney+) y DAZN con NFL Game Pass. Aquí en DondeVer.app te decimos exactamente dónde verlos.</p>
@@ -1069,7 +1075,7 @@
                 <p>{{ team_name }} juega en la {{ team_league }}, la principal liga de hockey sobre hielo. Los partidos de la NHL se transmiten en diversas plataformas. En DondeVer.app encontrarás los canales y horarios actualizados para seguir a {{ team_name }}.</p>
                 {% elif team_sport == 'MMA' %}
                 <h3>Próximas peleas de {{ team_name }}</h3>
-                <p>{{ team_name }} es la organización de artes marciales mixtas más importante del mundo. Las carteleras de la UFC incluyen eventos numerados (PPV), Fight Night y eventos especiales que se transmiten en Mexico, USA y Latinoamerica. Aquí te mostramos dónde ver cada evento actualizado al día de hoy.</p>
+                <p>{{ team_name }} es la organización de artes marciales mixtas más importante del mundo. Las carteleras de la UFC incluyen eventos numerados (PPV), Fight Night y eventos especiales que se transmiten en México, USA y Latinoamérica. Aquí te mostramos dónde ver cada evento actualizado al día de hoy.</p>
                 {% else %}
                 {% if sportsdb_team_info and sportsdb_team_info.get('description') %}
                 <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
@@ -1078,42 +1084,42 @@
                 <p><strong>Estadio:</strong> {{ sportsdb_team_info.stadium }}{% if sportsdb_team_info.get('stadium_capacity') %} (capacidad: {{ sportsdb_team_info.stadium_capacity }}){% endif %}{% if sportsdb_team_info.get('location') %} · <strong>Ciudad:</strong> {{ sportsdb_team_info.location }}{% endif %}{% if sportsdb_team_info.get('formed_year') %} · <strong>Fundado:</strong> {{ sportsdb_team_info.formed_year }}{% endif %}</p>
                 {% endif %}
                 {% else %}
-                <p>En DondeVer.app te decimos en qué canal pasan los partidos de {{ team_name }} en Mexico, USA y Latinoamerica. Cubrimos TV abierta, cable y streaming para que siempre encuentres dónde verlo.</p>
+                <p>En DondeVer.app te decimos en qué canal pasan los partidos de {{ team_name }} en México, USA y Latinoamérica. Cubrimos TV abierta, cable y streaming para que siempre encuentres dónde verlo.</p>
                 {% endif %}
                 {% endif %}
             </div>
 
             <div class="como-ver-guide" style="margin:0.75rem 0;border:none;padding:0;">
                 {% if team_sport == 'futbol' %}
-                <h2>Cómo ver a {{ team_name }} ({{ team_league }}) en Mexico, USA y Latinoamerica</h2>
+                <h2>Cómo ver a {{ team_name }} ({{ team_league }}) en México, USA y Latinoamérica</h2>
                 <p>Los canales que transmiten a {{ team_name }} cambian segun el partido, la jornada y los acuerdos de cada temporada. En DondeVer.app mostramos los canales confirmados para cada juego en tiempo real — consulta la seccion de partidos arriba para ver donde se transmite hoy.</p>
-                <p>Cubrimos TV abierta, cable y plataformas de streaming tanto en Mexico como en Estados Unidos y Latinoamerica.</p>
+                <p>Cubrimos TV abierta, cable y plataformas de streaming tanto en México como en Estados Unidos y Latinoamérica.</p>
                 {% elif team_sport == 'beisbol' %}
-                <h2>Cómo ver a {{ team_name }} (MLB) en Mexico, USA y Latinoamerica</h2>
+                <h2>Cómo ver a {{ team_name }} (MLB) en México, USA y Latinoamérica</h2>
                 <p>Los derechos de transmision de la MLB varian por partido y mercado. Cada juego puede estar en un canal diferente dependiendo del equipo y la fecha. En DondeVer.app te mostramos el canal confirmado para cada juego de {{ team_name }} en tiempo real.</p>
-                <p>Cubrimos opciones de TV y streaming en Mexico, Estados Unidos y Latinoamerica.</p>
+                <p>Cubrimos opciones de TV y streaming en México, Estados Unidos y Latinoamérica.</p>
                 {% elif team_sport == 'basketball' %}
-                <h2>Cómo ver a {{ team_name }} (NBA) en Mexico, USA y Latinoamerica</h2>
+                <h2>Cómo ver a {{ team_name }} (NBA) en México, USA y Latinoamérica</h2>
                 <p>Los canales de la NBA cambian segun el partido y la semana. En DondeVer.app mostramos el canal confirmado para cada juego de {{ team_name }} actualizado en tiempo real.</p>
-                <p>Cubrimos TV abierta, cable y streaming en Mexico, Estados Unidos y Latinoamerica.</p>
+                <p>Cubrimos TV abierta, cable y streaming en México, Estados Unidos y Latinoamérica.</p>
                 {% elif team_sport == 'futbol americano' %}
-                <h2>Cómo ver a {{ team_name }} (NFL) en Mexico 2026</h2>
+                <h2>Cómo ver a {{ team_name }} (NFL) en México 2026</h2>
                 {% if nfl_team_extra %}
                 <h3>TV abierta</h3>
                 <p>Canal 5 (Televisa) transmite juegos selectos de la NFL cada domingo y en fechas especiales como Thanksgiving y playoffs. Si {{ team_name }} juega en horario estelar o es el juego destacado de la semana, es probable que lo pasen por Canal 5 gratis.</p>
                 <h3>Cable y streaming</h3>
-                <p>FOX Sports y ESPN (via Disney+) cubren la mayoria de los juegos de la NFL en Mexico. DAZN ofrece NFL Game Pass con todos los partidos en vivo y on-demand. Netflix transmite juegos selectos de la temporada 2026.</p>
-                <h3>Horarios en Mexico</h3>
-                <p>Los juegos de {{ team_name }} generalmente se transmiten los domingos a las 12:00 PM o 3:25 PM (hora centro de Mexico), con juegos de domingo por la noche a las 7:20 PM y Monday Night Football a las 7:15 PM. DondeVer.app te muestra el horario exacto de cada partido.</p>
+                <p>FOX Sports y ESPN (vía Disney+) cubren la mayoría de los juegos de la NFL en México. DAZN ofrece NFL Game Pass con todos los partidos en vivo y on-demand. Netflix transmite juegos selectos de la temporada 2026.</p>
+                <h3>Horarios en México</h3>
+                <p>Los juegos de {{ team_name }} generalmente se transmiten los domingos a las 12:00 PM o 3:25 PM (hora centro de México), con juegos de domingo por la noche a las 7:20 PM y Monday Night Football a las 7:15 PM. DondeVer.app te muestra el horario exacto de cada partido.</p>
                 {% else %}
                 <p>La NFL reparte sus juegos entre multiples cadenas y plataformas que rotan cada semana. En DondeVer.app te decimos exactamente donde ver cada partido de {{ team_name }} con el canal confirmado en tiempo real.</p>
-                <p>Cubrimos TV abierta, cable y streaming en Mexico, Estados Unidos y Latinoamerica.</p>
+                <p>Cubrimos TV abierta, cable y streaming en México, Estados Unidos y Latinoamérica.</p>
                 {% endif %}
                 {% elif team_sport == 'hockey' %}
-                <h2>Cómo ver a {{ team_name }} (NHL) en Mexico, USA y Latinoamerica</h2>
+                <h2>Cómo ver a {{ team_name }} (NHL) en México, USA y Latinoamérica</h2>
                 <p>Los partidos de la NHL se transmiten en diferentes canales segun el juego. En DondeVer.app mostramos el canal confirmado para cada partido de {{ team_name }} en tiempo real.</p>
                 {% elif team_sport == 'MMA' %}
-                <h2>Cómo ver {{ team_name }} en Mexico, USA y Latinoamerica</h2>
+                <h2>Cómo ver {{ team_name }} en México, USA y Latinoamérica</h2>
                 <p>Los eventos de {{ team_name }} se transmiten en diferentes plataformas segun el tipo de cartelera (numerados, Fight Night, eventos especiales). En DondeVer.app te mostramos donde ver cada evento actualizado al dia de hoy.</p>
                 {% endif %}
                 <p style="font-size:0.8rem;color:#6b7280;margin-top:0.5rem;">Los canales se actualizan diariamente con informacion confirmada para cada partido.</p>
@@ -1133,7 +1139,7 @@
 
             {% if nfl_team_extra %}
             <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;">
-                <h3 style="font-size:0.9rem;margin-bottom:0.5rem;color:#1a1a2e;">Equipos NFL populares en Mexico</h3>
+                <h3 style="font-size:0.9rem;margin-bottom:0.5rem;color:#1a1a2e;">Equipos NFL populares en México</h3>
                 <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
                     {% for slug, label in [('cowboys','Cowboys'),('chiefs','Chiefs'),('raiders','Raiders'),('seahawks','Seahawks'),('dolphins','Dolphins'),('49ers','49ers'),('eagles','Eagles'),('steelers','Steelers'),('packers','Packers'),('patriots','Patriots')] %}
                     {% if slug != team_slug %}

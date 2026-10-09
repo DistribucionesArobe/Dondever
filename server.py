@@ -7468,6 +7468,30 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         }
     if upcoming_games:
         u = upcoming_games[0]
+        # Un partido a meses de distancia no es "el próximo partido": es el fin
+        # de temporada. Medido el 09/10/2026 en /equipo/yankees, que tiene 1.540
+        # clics y encabezaba así, en octubre:
+        #
+        #   title: "Dónde ver Yankees vs Blue Jays: jueves 18 feb 11:00 PM MX y canal"
+        #
+        # Los Yankees quedaron fuera de playoffs y su siguiente juego literal es
+        # pretemporada de febrero. El dato no es falso; la promesa sí. Quien
+        # busca "yankees hoy" y ve una fecha de febrero en Google no entra.
+        _dias = None
+        try:
+            _d = datetime.fromisoformat((u.get("date_utc") or u.get("date") or "").replace("Z", "+00:00"))
+            if _d.tzinfo:
+                _dias = (_d - datetime.now(_d.tzinfo)).days
+        except (ValueError, TypeError):
+            pass
+        if _dias is not None and _dias > 21:
+            return {
+                "title": f"Dónde ver {team_name}: calendario, canales y próximos partidos",
+                "h1": f"Dónde ver a {full_name}: calendario y canales",
+                "desc": (f"{team_name} no tiene partido próximo: su calendario se reanuda en unas semanas. "
+                         f"Aquí están la fecha del siguiente juego, los canales de TV y streaming{lg_sfx} "
+                         f"por país, y los últimos resultados."),
+            }
         is_home = _es_nuestro(u.get("home", ""))
         opp = _short_team_name(u.get("away", "") if is_home else u.get("home", ""), lg)
         when = format_mx_day_time(u.get("date_utc", "") or u.get("date", "") or "")
