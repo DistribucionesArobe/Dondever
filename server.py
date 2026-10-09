@@ -1721,7 +1721,13 @@ templates.env.filters["channel_slug"] = _slugify_channel
 # Tiene que serlo: si enlazáramos con un criterio distinto, estaríamos
 # fabricando enlaces internos rotos, que es justo lo que queremos evitar.
 
-_REGIONAL_OK = {"win-sports", "willow-tv", "wwe-network", "wapa-deportes",
+# Excepciones al filtro de abajo. La regla `^[kw][a-z]{2,3}(-|\d|$)` busca
+# afiliadas locales de EE. UU. (KFAA-TV, WXIX…), pero también atrapa por error
+# a canales latinos que empiezan con W: "win-sports-plus" cae en la trampa
+# porque "win-" encaja en el patrón. Cada entrada de aquí es un falso positivo
+# comprobado, no una suposición.
+_REGIONAL_OK = {"win-sports", "win-sports-plus", "win-play", "willow-tv",
+                "wwe-network", "wapa-deportes",
                 "mlb.tv", "nba.tv", "nfl.tv", "nhl.tv"}
 _RE_REGIONAL_US = re.compile(
     r"(fanduel-sn|bally|nbc-sports-(?!mx)|root-sports|marquee|yes-network|^sny$|^nesn$|^masn|"
@@ -6114,6 +6120,25 @@ CHANNEL_PAGES = {
         "desc": ("GOLPERU transmitio la Liga 1 peruana hasta diciembre de 2025. Movistar retiro "
                  "el canal (14 SD y 714 HD) de su parrilla y el futbol peruano se mudo a L1 MAX, "
                  "operado por 1190 Sports con la Federacion Peruana de Futbol."),
+    },
+    # Colombia — Win Sports aparece en las fichas de partido pero /canal/win-sports
+    # y /canal/win-sports-plus daban 404. Colombia es el 7º mercado del sitio
+    # (488 clics en 3 meses) y este es EL canal del futbol colombiano.
+    # Verificado el 9 de octubre de 2026.
+    "win-sports": {
+        "name": "Win Sports", "country": "CO", "type": "cable",
+        "desc": ("Win Sports es el canal del futbol profesional colombiano. La Dimayor negocia "
+                 "los derechos en bloque y los tiene un solo operador, asi que la Liga BetPlay no "
+                 "se transmite por television abierta. El canal basico pasa cinco partidos de Liga, "
+                 "uno de Torneo y uno de Copa por fecha hasta cuartos de final; el resto es exclusivo "
+                 "de Win+ Futbol. Se contrata con el operador de cable o se ve por internet en Win Play."),
+    },
+    "win-sports-plus": {
+        "name": "Win Sports+", "country": "CO", "type": "cable",
+        "desc": ("Win+ Futbol es el canal premium del futbol colombiano: ahi estan TODOS los partidos "
+                 "de la Liga BetPlay de cada fecha, incluidos los que no pasa el canal basico Win Sports. "
+                 "Se pide al operador de television de paga o se ve por internet en Win Play. "
+                 "Si quieres la liga completa, este es el canal, no el basico."),
     },
     # Resto del top 10 de /canal/ que estaba sin curar. Verificado el 8 de
     # octubre de 2026. A propósito NO se ponen números de canal: las fuentes se
