@@ -7559,9 +7559,55 @@ async def _athlete_page(request: Request, slug: str, info: dict):
     })
 
 
+@lru_cache(maxsize=1)
+def _alias_slug_equipo() -> dict:
+    """Slug del nombre completo → slug canónico del equipo.
+
+    Medido en Search Console el 9 de octubre de 2026: el sitio servía DOS
+    páginas distintas para el mismo equipo, cada una con su propio canonical
+    apuntándose a sí misma. Google veía dos páginas compitiendo:
+
+        /equipo/dodgers            2.552 clics
+        /equipo/los-angeles-dodgers   14 clics
+        /equipo/braves                73   ·  /equipo/atlanta-braves    96
+        /equipo/cubs                  56   ·  /equipo/chicago-cubs      18
+        /equipo/red-sox              147   ·  /equipo/boston-red-sox    18
+
+    Y no eran copias idénticas: la versión larga de Dodgers anunciaba un
+    partido distinto y viejo ("vs White Sox") que la corta ("vs Brewers"),
+    porque cae en la ruta de respaldo que busca por texto en vez de leer la
+    config. O sea que además de partir la señal, daba información falsa.
+
+    El mapa se genera desde POPULAR_TEAMS, no se escribe a mano: para cada
+    equipo se calcula el slug de su nombre completo y, si no coincide con la
+    clave y esa clave no existe ya como página propia, apunta a la canónica.
+    Así no se puede desincronizar con la config. Son 256 pares.
+    """
+    import unicodedata as _ud
+
+    def _slug(s: str) -> str:
+        s = _ud.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+        return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+
+    mapa = {}
+    for clave, info in POPULAR_TEAMS.items():
+        s = _slug(info.get("name", ""))
+        if s and s != clave and s not in POPULAR_TEAMS:
+            mapa[s] = clave
+    return mapa
+
+
+def _canon_team_slug(team_slug: str) -> str:
+    """Slug canónico del equipo. Devuelve el mismo si ya lo es."""
+    return _alias_slug_equipo().get((team_slug or "").lower(), team_slug)
+
+
 @app.get("/equipo/{team_slug}", response_class=HTMLResponse)
 async def team_page(request: Request, team_slug: str):
     """Dynamic team page with today's games for that team."""
+    _canon = _canon_team_slug(team_slug)
+    if _canon != team_slug:
+        return RedirectResponse(url=f"/equipo/{_canon}", status_code=301)
     # Resolve team info from slug
     team_info = POPULAR_TEAMS.get(team_slug)
     # Pilotos / peleadores viven en config.POPULAR_TEAMS (server.POPULAR_TEAMS es solo equipos)
@@ -8455,6 +8501,12 @@ def _default_channels(country_slug: str) -> list:
 @app.get("/equipo/{team_slug}/en/{country_slug}", response_class=HTMLResponse)
 async def team_country_page(request: Request, team_slug: str, country_slug: str):
     """Programmatic SEO: 'Dónde ver [equipo] en [país]'."""
+    # Mismo duplicado que en /equipo/{slug}: en Search Console aparecían
+    # /equipo/philadelphia-phillies/en/venezuela y /equipo/atlanta-braves/en/venezuela
+    # conviviendo con las versiones cortas.
+    _canon = _canon_team_slug(team_slug)
+    if _canon != team_slug:
+        return RedirectResponse(url=f"/equipo/{_canon}/en/{country_slug}", status_code=301)
     country = TEAM_COUNTRY_SEO.get(country_slug)
     if not country:
         return templates.TemplateResponse(request, "404.html", status_code=404,
@@ -8721,6 +8773,9 @@ async def team_page_en(request: Request, team_slug: str):
 @app.get("/equipo/{team_slug}/calendario", response_class=HTMLResponse)
 async def team_calendar_page(request: Request, team_slug: str):
     """Weekly calendar for a team — 7-day view with games."""
+    _canon = _canon_team_slug(team_slug)
+    if _canon != team_slug:
+        return RedirectResponse(url=f"/equipo/{_canon}/calendario", status_code=301)
     team_info = POPULAR_TEAMS.get(team_slug)
     if team_info:
         team_name = team_info["name"]
