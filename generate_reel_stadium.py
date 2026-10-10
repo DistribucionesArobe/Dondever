@@ -1,4 +1,4 @@
-"""Stadium art direction for faceless DondeVer Reels. Local render only."""
+"""Daily Reel using the approved Canva cover and matching data scenes."""
 import argparse
 import json
 import math
@@ -8,9 +8,10 @@ import tempfile
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from generate_reel import ROOT, W, H, FPS, DURATION, load_badge, music, ffmpeg_binary
 
-WHITE='#f5f7f5'
-GREEN='#70f0aa'
-GRAY='#aab5b2'
+WHITE='#f8f6f1'
+GREEN='#def22c'
+GRAY='#a0aebe'
+CANVA_COVER = ROOT / 'static/reels/canva-approved-cover.png'
 
 def face(size, condensed=False):
     font=ImageFont.truetype(str(ROOT/'static/fonts'/('Anton.ttf' if condensed else 'Manrope.ttf')),size)
@@ -40,10 +41,19 @@ def write(d, value, y, size, color=WHITE, x=540, width=860, condensed=False):
 
 
 def layer(game, index, badges, date, preview=False):
+    if index == 0:
+        img = Image.open(CANVA_COVER).convert('RGBA')
+        if preview:
+            d = ImageDraw.Draw(img)
+            d.rectangle((70,1630,700,1690),fill='#031421')
+            d.text((90,1640),'MUESTRA · '+date,font=face(24),fill=WHITE)
+        return img
     img=Image.new('RGBA',(W,H),(0,0,0,0)); d=ImageDraw.Draw(img)
-    d.rounded_rectangle((80,170,348,220),radius=25,fill=GREEN)
-    d.text((214,179),'DONDEVER.APP',font=face(25),anchor='mt',fill='#07231a')
-    d.text((990,181),game['league'],font=face(30),anchor='rt',fill=WHITE)
+    # Canva's angular lime border carried into the live data scenes.
+    d.line((520,160,1000,160,935,1500),fill=GREEN,width=3)
+    d.polygon([(950,160),(1000,160),(996,215)],fill=GREEN)
+    d.text((80,179),'DONDEVER.APP',font=face(27),fill=WHITE)
+    d.text((990,181),game['league'],font=face(26),anchor='rt',fill=WHITE)
     if index==0:
         write(d,'QUE NO SE TE\nPASE EL PARTIDO.',420,112,condensed=True)
         d.rectangle((405,770,675,780),fill=GREEN)
@@ -51,8 +61,8 @@ def layer(game, index, badges, date, preview=False):
         write(d,'EQUIPOS · HORARIO · CANALES',1050,28,GREEN)
     elif index==1:
         write(d,'EL ENFRENTAMIENTO',340,39,GREEN)
-        for key,x,color in [('away',305,'#ffd263'),('home',775,'#ff8243')]:
-            d.ellipse((x-177,585,x+177,939),fill=(10,14,18,215),outline=color,width=4)
+        for key,x,color in [('away',305,GREEN),('home',775,WHITE)]:
+            d.ellipse((x-177,585,x+177,939),fill=(3,20,33,215),outline=color,width=4)
             badge=badges[key]
             if badge:
                 badge=badge.copy(); badge.thumbnail((282,282))
@@ -68,7 +78,7 @@ def layer(game, index, badges, date, preview=False):
         write(d,game['time'],455,195,condensed=True)
         write(d,'HORA CDMX · UTC−6',720,32)
         write(d,date,800,33,GRAY)
-        d.rounded_rectangle((100,920,980,1400),radius=34,fill=(6,13,16,226),outline=(116,144,131,130),width=2)
+        d.rounded_rectangle((100,920,980,1400),radius=34,fill=(3,20,33,245),outline=(160,174,190,100),width=2)
         y=975
         for country,key in [('MÉXICO','mx_channels'),('ESTADOS UNIDOS','us_channels')]:
             write(d,country,y,26,GREEN)
@@ -76,10 +86,10 @@ def layer(game, index, badges, date, preview=False):
             y=write(d,value,y+55,44,width=760)+60
         write(d,'Fuente: agenda ESPN',1480,23,GRAY)
     else:
-        write(d,'MENOS BUSCAR.\nMÁS VER.',430,140,condensed=True)
+        write(d,'TU PARTIDO.\nTU CANAL.',430,140,condensed=True)
         write(d,'Consulta la agenda\ny elige tus equipos.',850,46)
-        d.rounded_rectangle((120,1100,960,1245),radius=24,fill=GREEN)
-        write(d,'dondever.app',1134,69,'#07231a',width=760,condensed=True)
+        d.polygon([(120,1100),(960,1100),(900,1245),(120,1245)],fill=GREEN)
+        write(d,'dondever.app',1134,69,'#031421',width=760,condensed=True)
         write(d,'ENLACE EN EL PERFIL',1340,30)
     write(d,('MUESTRA · ' if preview else 'AGENDA · ')+date,1640,21,GRAY)
     return img
@@ -93,7 +103,10 @@ def render(metadata,output):
     date_parts=metadata['date'].split('-')
     months=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC']
     date=f'{date_parts[2]} {months[int(date_parts[1])-1]} {date_parts[0]}'
-    bg=ImageOps.fit(Image.open(ROOT/'static/reels/stadium-v2.png').convert('RGB'),(W+60,H+108)) if game['league_slug']=='nfl' else Image.new('RGB',(W+60,H+108),'#10251d')
+    bg=Image.new('RGB',(W+60,H+108),'#031421')
+    backdrop=ImageDraw.Draw(bg)
+    for offset in range(0,1800,180):
+        backdrop.line((0,1420+offset,W+60,980+offset),fill='#142b41',width=2)
     bg=bg.resize((width+40,height+72), Image.Resampling.LANCZOS).convert('RGBA')
     # Dark veil allows the literal data to remain readable over cinematic lighting.
     veil=Image.new('RGBA',bg.size,(0,4,8,58)); bg=Image.alpha_composite(bg,veil)
@@ -141,7 +154,7 @@ def render(metadata,output):
                 # Small sequence markers leave the action area clear.
                 for dot in range(4):
                     d.rounded_rectangle(tuple(int(v*scale) for v in (430+dot*60,1570,470+dot*60,1577)),radius=2,
-                                        fill=GREEN if dot==index else '#50645a')
+                                        fill=GREEN if dot==index else '#344353')
                 if 0<elapsed<.09 and index:
                     flash=Image.new('RGBA',(width,height),(255,255,255,int(70*(1-elapsed/.09))))
                     frame=Image.alpha_composite(frame,flash)
@@ -156,7 +169,7 @@ def render(metadata,output):
                         '-i',str(silent),'-i',str(audio),'-map','0:v:0','-map','1:a:0',
                         '-c:v','copy','-c:a','aac','-b:a','128k','-ar','48000',
                         '-movflags','+faststart','-t',str(DURATION),str(output)],check=True,timeout=90)
-    metadata.update({'design':'stadium-v2','width':width,'height':height,'preview':metadata.get('preview',False),'duration':20,'music':'All This — Kevin MacLeod (CC BY 4.0)'})
+    metadata.update({'design':'canva-approved-v1','canva_source':'DAHXo0VXJ2s','width':width,'height':height,'preview':metadata.get('preview',False),'duration':20,'music':'All This — Kevin MacLeod (CC BY 4.0)'})
     output.with_suffix('.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2))
     return output
 
