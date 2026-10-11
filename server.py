@@ -581,6 +581,25 @@ from time import monotonic as _mono
 
 _HTML_CACHE = _TTLCache(maxsize=800, ttl=300)
 
+# Caché largo para páginas sin nada que pase hoy.
+#
+# Medido en el panel de Render el 09/10/2026: el servicio tiene UN solo núcleo
+# y la CPU pega en 100% cada pocos minutos durante todo el día. La memoria ni
+# se acerca al límite (65% de 2 GB). Con un núcleo saturado, cinco peticiones
+# simultáneas se encolan, pasan el tiempo de espera del proxy y Render contesta
+# 520 — comprobado: 5 páginas en paralelo, 1 dio 520; 6 sin caché, 3 dieron 520.
+# Esos son los 45 "Error de servidor (5xx)" que reporta Search Console, y los
+# ve Googlebot, que rastrea en paralelo.
+#
+# El 90% del catálogo (423 equipos, 122 canales, 57 ligas) no tiene nada que
+# mostrar la mayoría de los días: ni partido hoy, ni marcador que cambie. Esas
+# páginas se re-renderizaban cada 5 minutos para producir HTML idéntico. Con 30
+# minutos se hacen seis veces menos renders sin arriesgar un dato viejo, porque
+# solo entran aquí las que la ruta declara "hoy no pasa nada" (cabecera
+# x-dv-ttl mayor a 300). Las fichas con partido en vivo siguen con su TTL corto.
+_HTML_CACHE_LARGO = _TTLCache(maxsize=1500, ttl=1800)
+_TTL_LARGO = 1800
+
 # La portada es la página más pesada (arma todas las ligas del día + momios) y
 # era la única que no pasaba por el caché: /equipo/, /liga/, /partido/ y los hubs
 # sí, pero "/" no estaba en ninguna de las dos listas, así que se renderizaba de
@@ -657,6 +676,13 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
             store = _HTML_CACHE
         key = path + ("?" + str(request.query_params) if request.query_params else "")
         hit = store.get(key)
+        # Si no está en el caché normal, puede estar en el largo (páginas sin
+        # nada hoy). Se mira después para que una entrada fresca del normal
+        # siempre gane.
+        if hit is None and not is_home:
+            hit = _HTML_CACHE_LARGO.get(key)
+            if hit is not None:
+                store = _HTML_CACHE_LARGO
         if hit is not None and len(hit) == 3 and hit[2] is not None and _mono() > hit[2]:
             # Venció antes que su TTL normal: es una ficha de un partido en vivo.
             # Se reporto que la portada iba en la alta de la 9a y la ficha en la
@@ -689,13 +715,20 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
             # (cabecera x-dv-ttl). Lo usan las fichas de partidos en vivo o a
             # punto de empezar: ahí 300 s de HTML viejo es una mentira.
             _ttl_corto = None
+            _destino = store
             try:
                 _v = int(response.headers.get("x-dv-ttl") or 0)
-                if _v > 0:
+                if 0 < _v <= 300:
                     _ttl_corto = _mono() + _v
-            except Exception:
+                elif _v > 300 and not is_home:
+                    # La ruta declara que hoy no pasa nada en esta página.
+                    # Se guarda en el caché largo y SIN vencimiento propio: el
+                    # TTL del store manda. Un hit[2] con valor haría que la
+                    # comprobación de arriba la tirara antes de tiempo.
+                    _destino = _HTML_CACHE_LARGO
+            except (TypeError, ValueError):
                 pass
-            store[key] = (_zlib.compress(body, 6), ctype, _ttl_corto)
+            _destino[key] = (_zlib.compress(body, 6), ctype, _ttl_corto)
             headers = dict(response.headers)
             headers.pop("content-length", None)
             headers.pop("x-dv-ttl", None)
@@ -1971,7 +2004,7 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
         if ln and ln not in leagues_here:
             leagues_here.append(ln)
 
-    return templates.TemplateResponse(
+    _r = templates.TemplateResponse(
         request,
         "canal.html",
         context={
@@ -2002,6 +2035,11 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             "noindex": bool(date) or (len(channel_games) == 0 and len(next_games) == 0),
         },
     )
+    # Canal sin partidos hoy: lo único que muestra es el texto curado y los
+    # próximos días. Nada de eso cambia en media hora.
+    if not channel_games:
+        _r.headers["x-dv-ttl"] = str(_TTL_LARGO)
+    return _r
 
 
 @app.get("/partido/{slug}", response_class=HTMLResponse)
@@ -3320,7 +3358,7 @@ async def league_page(request: Request, league_slug: str):
         except Exception:
             pass
 
-    return templates.TemplateResponse(
+    _r = templates.TemplateResponse(
         request, "league.html", context={
             "league_slug": league_slug,
             "league_name": display_name,
@@ -3349,6 +3387,11 @@ async def league_page(request: Request, league_slug: str):
             "event_seo": event_seo,
         }
     )
+    # Liga sin partidos hoy: tabla de posiciones y calendario no cambian en
+    # media hora. La mayoría de las 57 ligas está así casi todos los días.
+    if not games:
+        _r.headers["x-dv-ttl"] = str(_TTL_LARGO)
+    return _r
 
 
 # ── Sport-Today Pages (SEO) ────────────────────────────────
@@ -7869,7 +7912,7 @@ async def team_page(request: Request, team_slug: str):
                                 "Busca el tuyo desde la portada."},
         )
 
-    return templates.TemplateResponse(request, "team.html", {
+    _r = templates.TemplateResponse(request, "team.html", {
         # Alterna en inglés (solo equipos de EE.UU. con versión traducida)
         "en_alt": f"{APP_URL}/en/{team_slug}" if team_slug in EN_TEAMS else "",
         "seo_title": seo["title"],
@@ -7901,6 +7944,13 @@ async def team_page(request: Request, team_slug: str):
         "nfl_advanced": await get_nfl_team_advanced_stats(team_slug) if team_sport == "futbol americano" else {},
         "sportsdb_team_info": sportsdb_team_info,
     })
+    # Sin partido hoy no hay marcador ni hora que puedan quedar viejos: la
+    # página es la misma durante horas. Se manda al caché de 30 minutos para
+    # dejar de re-renderizarla cada 5. Con partido hoy NO se toca: ahí el TTL
+    # corto de siempre es lo correcto.
+    if not games:
+        _r.headers["x-dv-ttl"] = str(_TTL_LARGO)
+    return _r
 
 
 # ── Programmatic SEO pages ────────────────────────────────
