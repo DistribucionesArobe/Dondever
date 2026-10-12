@@ -108,6 +108,12 @@
         .ch-next-when { font-weight:800; color:#f97316; white-space:nowrap; }
         .ch-next-match { flex:1; min-width:0; font-weight:700; color:#1a1a2e; }
         .ch-next-league { font-size:0.72rem; color:#6b7280; white-space:nowrap; }
+        .ch-week-lead { font-size:0.85rem; color:#6b7280; margin:0.2rem 0 0.8rem; }
+        .ch-day { margin-bottom:0.9rem; }
+        .ch-day-head { display:flex; align-items:baseline; gap:0.5rem; margin:0 0 0.4rem; font-size:0.9rem; }
+        .ch-day-name { font-weight:800; color:#1a1a2e; text-transform:capitalize; }
+        .ch-day-date { font-size:0.75rem; color:#9ca3af; flex:1; }
+        .ch-day-count { font-size:0.7rem; font-weight:700; color:#6b7280; background:#f3f4f6; border-radius:999px; padding:0.1rem 0.5rem; }
         .ch-info { max-width:900px; margin:1.5rem auto 0; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1.1rem 1.25rem; }
         .ch-info h2 { font-size:1rem; font-weight:800; margin:1rem 0 0.4rem; color:#1a1a2e; }
         .ch-info h2:first-child { margin-top:0; }
@@ -120,6 +126,8 @@
         .ch-faq p { margin-bottom:0.6rem; }
         body.dark-mode .ch-info, body.dark-mode .ch-next { background:#1e293b; border-color:#334155; }
         body.dark-mode .ch-info p, body.dark-mode .ch-next-match { color:#e2e8f0; }
+        body.dark-mode .ch-day-name { color:#e2e8f0; }
+        body.dark-mode .ch-day-count { background:#334155; color:#cbd5e1; }
         body.dark-mode .ch-league-tag { background:#334155; color:#e2e8f0; }
         .no-games h2 { font-size: 1.1rem; margin-bottom: 0.4rem; color: #374151; }
         .footer { background: #1a1a2e; color: #9ca3af; text-align: center; padding: 1.5rem 1rem; font-size: 0.75rem; margin-top: 2rem; }
@@ -236,20 +244,39 @@
     </section>
     {% endfor %}
 
-    {# ── Próximos partidos en el canal (da contenido los días sin transmisión) ── #}
-    {% if next_games %}
-    <section class="league-section" style="margin-top:1.2rem;">
-        <h2 class="league-header"><span>&#128197; Pr&oacute;ximos partidos en {{ channel_name }}</span></h2>
-        <div class="ch-next">
-            {% for g in next_games %}
-            <a class="ch-next-row" href="{{ g|game_url }}">
-                <span class="ch-next-when">{{ format_mx_day_time(g.date) }}</span>
-                <span class="ch-next-match">{{ g.home.name }} vs {{ g.away.name }}</span>
-                <span class="ch-next-league">{{ g.emoji }} {{ g.league_name }}</span>
-            </a>
-            {% endfor %}
+    {# ── La semana del canal, día por día ──
+       Solo salen los días con transmisión: siete pestañas donde seis dicen
+       "no hay partidos" no ayudan a nadie. El rango va en el encabezado. #}
+    {% if week_days %}
+    <section class="league-section ch-week" style="margin-top:1.2rem;">
+        <h2 class="league-header">
+            <span>&#128197; Programaci&oacute;n de {{ channel_name }} esta semana</span>
+        </h2>
+        <p class="ch-week-lead">{{ week_total }} partido{{ '' if week_total == 1 else 's' }} en los pr&oacute;ximos {{ week_range }} d&iacute;as.</p>
+        {% for d in week_days %}
+        <div class="ch-day">
+            <h3 class="ch-day-head">
+                <span class="ch-day-name">{{ d.label }}</span>
+                <span class="ch-day-date">{{ d.sub }}</span>
+                <span class="ch-day-count">{{ d.games|length }}</span>
+            </h3>
+            <div class="ch-next">
+                {% for g in d.games %}
+                <a class="ch-next-row" href="{{ g|game_url }}">
+                    <span class="ch-next-when">{{ format_mx_time(g.date) }}</span>
+                    <span class="ch-next-match">{{ g.home.name }} vs {{ g.away.name }}</span>
+                    <span class="ch-next-league">{{ g.emoji }} {{ g.league_name }}</span>
+                </a>
+                {% endfor %}
+            </div>
         </div>
+        {% endfor %}
         <p class="ch-note">Horarios del centro de M&eacute;xico. La programaci&oacute;n puede cambiar sin aviso.</p>
+    </section>
+    {% elif not channel_games %}
+    <section class="league-section" style="margin-top:1.2rem;">
+        <h2 class="league-header"><span>&#128197; Programaci&oacute;n de {{ channel_name }}</span></h2>
+        <p class="ch-week-lead">No tenemos partidos confirmados en {{ channel_name }} en los pr&oacute;ximos {{ week_range }} d&iacute;as. Abajo te dejamos c&oacute;mo verlo y qu&eacute; suele transmitir.</p>
     </section>
     {% endif %}
 

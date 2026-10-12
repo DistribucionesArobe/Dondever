@@ -1892,23 +1892,73 @@ _CHANNEL_TYPE_HOWTO = {
 }
 
 
-async def _channel_upcoming(channel_slug: str, days: int = 3, limit: int = 10) -> list:
-    """Próximos partidos en este canal (siguientes días). Da contenido a la página
-    los días sin transmisión, que antes quedaba vacía y en noindex."""
-    out = []
+_SEMANA_DIAS = 7
+_SEMANA_CACHE = _TTLCache(maxsize=2, ttl=1800)
+_SEMANA_LOCK = asyncio.Lock()
+
+
+async def _juegos_de_la_semana(days: int = _SEMANA_DIAS) -> list:
+    """[(datetime, [juegos]), …] para los próximos `days` días.
+
+    Se calcula UNA sola vez cada media hora para todo el sitio, no una vez por
+    página de canal. Esto no es microoptimización: cada get_todays_games abre
+    del orden de cuarenta peticiones a las APIs, así que siete días por ciento
+    veintidós páginas de canal serían decenas de miles de llamadas. Con el
+    índice compartido son siete, y las páginas solo filtran en memoria.
+
+    El lock existe por la misma razón que los 520 de la semana pasada: si diez
+    peticiones simultáneas encuentran el caché vacío, lo construyen diez veces
+    y saturan la única CPU del plan. Con el lock lo construye una y las otras
+    nueve esperan. El fetch de adentro es secuencial a propósito: en paralelo
+    terminaría antes pero con siete ráfagas de cuarenta peticiones encima.
+    """
     base = datetime.now(TZ_MX)
-    for d in range(1, days + 1):
-        if len(out) >= limit:
-            break
-        ds = (base + timedelta(days=d)).strftime("%Y%m%d")
-        try:
-            for g in await get_todays_games(date_str=ds):
-                if any(_slugify_channel(b.get("channel", "")) == channel_slug for b in g.get("broadcasts", [])):
-                    out.append(g)
-                    if len(out) >= limit:
-                        break
-        except Exception:
+    clave = f"{base.strftime('%Y%m%d')}:{days}"
+    hit = _SEMANA_CACHE.get(clave)
+    if hit is not None:
+        return hit
+    async with _SEMANA_LOCK:
+        # Otra petición pudo haberlo construido mientras esperábamos el lock.
+        hit = _SEMANA_CACHE.get(clave)
+        if hit is not None:
+            return hit
+        out = []
+        for d in range(1, days + 1):
+            dt = base + timedelta(days=d)
+            try:
+                out.append((dt, await get_todays_games(date_str=dt.strftime("%Y%m%d"))))
+            except Exception:
+                out.append((dt, []))
+        _SEMANA_CACHE[clave] = out
+        return out
+
+
+async def _channel_week(channel_slug: str, days: int = _SEMANA_DIAS) -> list:
+    """La semana del canal, agrupada por día: [{date, label, sub, games}, …].
+
+    Solo aparecen los días que tienen algo. FotMob resuelve esto al revés —en
+    su guía de TV mexicana enseña siete pestañas y seis dicen "No hay partidos
+    en directo"—, y un muro de días vacíos no le sirve a nadie ni da contenido
+    indexable. El rango se anuncia en el encabezado; lo que no está, no está.
+    """
+    semana = await _juegos_de_la_semana(days)
+    base = datetime.now(TZ_MX).date()
+    out = []
+    for dt, juegos in semana:
+        del_dia = [
+            g for g in juegos
+            if any(_slugify_channel(b.get("channel", "")) == channel_slug
+                   for b in g.get("broadcasts", []))
+        ]
+        if not del_dia:
             continue
+        delta = (dt.date() - base).days
+        out.append({
+            "date": dt.strftime("%Y%m%d"),
+            "label": "Mañana" if delta == 1 else f"{_DAYS_ES_FMT[dt.weekday()]} {dt.day}",
+            "sub": f"{dt.day} de {_MONTHS_ES[dt.month]}",
+            "games": del_dia,
+        })
     return out
 
 
@@ -1996,7 +2046,8 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
                         "nombre": _cinfo.get("reemplazo_nombre", _cinfo["reemplazo_slug"])}
     howto = _CHANNEL_TYPE_HOWTO.get(ch_type, "")
     stream_route = CHANNEL_STREAM_ROUTE.get(channel_slug)
-    next_games = [] if date else await _channel_upcoming(channel_slug)
+    week_days = [] if date else await _channel_week(channel_slug)
+    next_games = [g for d in week_days for g in d["games"]]
     # Ligas que realmente se transmiten en este canal (de nuestros propios datos, no inventadas)
     leagues_here = []
     for g in channel_games + next_games:
@@ -2025,6 +2076,9 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             "howto": howto,
             "stream_route": stream_route,
             "next_games": next_games,
+            "week_days": week_days,
+            "week_total": len(next_games),
+            "week_range": _SEMANA_DIAS,
             "leagues_here": leagues_here[:8],
             "current_date": date or today.strftime("%Y%m%d"),
             "today_display": format_date_es(viewing_date),
@@ -5497,6 +5551,29 @@ try:
                 replace_existing=True,
             )
             logger.info("Push notifications scheduled (pre-game every 5 min + daily at 8AM MX)")
+
+        # ── Índice de la semana para las páginas de canal ──
+        # Se refresca solo cada 20 min (el caché vive 30), así que cuando llega
+        # un visitante el índice ya está caliente y su petición no paga los
+        # siete fetches. Sin esto, el primer visitante después de cada
+        # expiración se come varios segundos y, si llegan varios a la vez, la
+        # CPU única del plan se satura —que es exactamente de dónde salían
+        # los 520.
+        async def _calentar_semana():
+            try:
+                await _juegos_de_la_semana()
+            except Exception as e:
+                logger.warning(f"No se pudo calentar el índice de la semana: {e}")
+
+        scheduler.add_job(
+            _calentar_semana,
+            IntervalTrigger(minutes=20),
+            id="warm_week_index",
+            name="Warm 7-day channel index",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
 
         # TikTok/Reels daily video + images at 7:30 AM MX (13:30 UTC)
         scheduler.add_job(
