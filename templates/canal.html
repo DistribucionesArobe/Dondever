@@ -137,6 +137,11 @@
         @media (min-width: 768px) {
             .league-section { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; }
             .league-header { grid-column: 1 / -1; }
+            /* .league-section es una rejilla de 2 columnas pensada para las
+               tarjetas de partido. El resumen de la semana y la nota al pie no
+               son tarjetas: deben cruzar las dos columnas, no quedarse en una
+               celda suelta. Los días sí aprovechan las dos columnas. */
+            .ch-week .ch-week-lead, .ch-week .ch-note { grid-column: 1 / -1; }
             .game-card { margin-bottom: 0; }
         }
     </style>
