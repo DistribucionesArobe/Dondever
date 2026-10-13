@@ -1,4 +1,5 @@
 import os
+import re
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
@@ -722,6 +723,62 @@ STREAMING_AFFILIATES = {
 for _proveedor in STREAMING_AFFILIATES.values():
     _proveedor["is_affiliate"] = bool(_proveedor.get("affiliate_url"))
 del _proveedor
+
+
+def _norma_canal(nombre: str) -> str:
+    """'Disney Plus', 'disney+', 'DISNEY  PLUS' → la misma llave."""
+    return re.sub(r"[^a-z0-9+]+", "", (nombre or "").lower())
+
+
+class _AfiliadosPorCanal(dict):
+    """STREAMING_AFFILIATES, pero .get() también entiende los alias.
+
+    Por qué existe. Las plantillas preguntan `streaming_aff.get(b.channel)`
+    con el nombre tal como llega de la API: "Disney Plus", "Star+",
+    "Amazon Prime". Ninguno de esos es una clave del diccionario —las claves
+    son "Disney+" y "Prime Video"—, así que .get() devolvía None y el canal
+    se pintaba como etiqueta gris sin enlace.
+
+    Eso significa que los clics de los DOS únicos programas que hoy pagan
+    (Disney+ y Prime Video) se estaban tirando a la basura en game.html,
+    team.html e index.html. El campo "aliases" estaba escrito en cada entrada
+    desde el principio; simplemente nadie lo leía: era código muerto.
+
+    Se resuelve aquí, en la estructura, y no en cada plantilla, porque así
+    las cuatro que ya llaman .get() quedan arregladas sin tocarlas y las que
+    se escriban mañana nacen bien. Iterar (.items(), .keys()) no cambia: solo
+    la búsqueda por nombre es más tolerante.
+    """
+
+    def __init__(self, base: dict):
+        super().__init__(base)
+        self._por_alias = {}
+        for nombre, datos in base.items():
+            for etiqueta in [nombre] + list(datos.get("aliases") or []):
+                # El nombre canónico manda: si un alias de otro servicio choca
+                # con un nombre real, gana el nombre real.
+                clave = _norma_canal(etiqueta)
+                if clave not in self._por_alias or etiqueta == nombre:
+                    self._por_alias[clave] = nombre
+
+    def _resolver(self, nombre):
+        if not isinstance(nombre, str):
+            return None
+        # dict.__contains__ a propósito: `nombre in self` llamaría a nuestro
+        # __contains__, que vuelve aquí, y se va en recursión infinita.
+        if dict.__contains__(self, nombre):
+            return nombre
+        return self._por_alias.get(_norma_canal(nombre))
+
+    def get(self, nombre, default=None):
+        canonico = self._resolver(nombre)
+        return dict.get(self, canonico, default) if canonico else default
+
+    def __contains__(self, nombre):
+        return self._resolver(nombre) is not None
+
+
+STREAMING_AFFILIATES = _AfiliadosPorCanal(STREAMING_AFFILIATES)
 
 # Alias for new code — same object, clearer name
 PROVIDERS = STREAMING_AFFILIATES

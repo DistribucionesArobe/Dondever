@@ -489,8 +489,15 @@
                 {%- set _probable = not game.get('channels_confirmed', True) -%}
                 {% if game.broadcasts %}
                     {% for b in game.broadcasts %}
+                    {#- Si el canal es una plataforma con programa de afiliados, el chip
+                        va al redirect medido en vez de a la página del canal: es el
+                        mismo mecanismo que ya usan game.html y team.html, y era lo
+                        único que faltaba aquí. Para todo lo demás sigue mandando a
+                        /canal/, que es lo que alimenta esas páginas. -#}
+                    {%- set _saff = streaming_aff.get(b.channel) -%}
                     {%- set _curl = canal_url(b.channel) -%}
-                    {% if _curl %}<a href="{{ _curl }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}" style="text-decoration:none;{% if _probable %}opacity:0.8;{% endif %}"{% if _probable %} title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}</a>
+                    {% if _saff %}<a href="/go/{{ _saff.key }}?s=liga-canal" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ _saff.key }}" class="channel-tag streaming" style="text-decoration:none;background:{{ _saff.bg }};color:{{ _saff.color }};font-weight:700;{% if _probable %}opacity:0.8;{% endif %}"{% if _probable %} title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }} <span style="opacity:.75;font-size:.85em;">&#8599;</span></a>
+                    {% elif _curl %}<a href="{{ _curl }}" class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}" style="text-decoration:none;{% if _probable %}opacity:0.8;{% endif %}"{% if _probable %} title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}</a>
                     {% else %}<span class="channel-tag {{ b.info.get('type', 'unknown') if b.info else 'unknown' }}"{% if _probable %} style="opacity:0.8;" title="Canal habitual de la liga; aún sin confirmar para este partido"{% endif %}>{{ b.channel }}</span>{% endif %}
                     {% endfor %}
                     {% if _probable %}<div style="font-size:0.6rem;color:#9ca3af;font-weight:600;letter-spacing:0.02em;">canal probable</div>{% endif %}
