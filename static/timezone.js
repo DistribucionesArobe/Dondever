@@ -291,6 +291,24 @@
     });
   }
 
+  // ── "¿Lo ves desde X?" → ficha del equipo en ese país ──
+  // Se pintan los diez países y se enseña solo el que toca. A alguien en
+  // México no se le enseña ninguno: ya está en su página.
+  function showGeoCTA(country) {
+    var cajas = document.querySelectorAll('.geo-cta');
+    if (!cajas.length) return;
+    cajas.forEach(function(caja) {
+      var enlace = country && country !== 'MX'
+        ? caja.querySelector('[data-geo-for="' + country + '"]') : null;
+      // Reversible: si el usuario cambia de país a mano, hay que poder
+      // esconder el anterior, no solo enseñar el nuevo.
+      caja.querySelectorAll('[data-geo-for]').forEach(function(a) {
+        a.hidden = (a !== enlace);
+      });
+      caja.hidden = !enlace;
+    });
+  }
+
   // ── Main init ──────────────────────────────────────────
   function init(country) {
     convertTimes(country);
@@ -298,6 +316,7 @@
     setupSelector();
     applyAffiliateGeo(country);
     reorderChannels(country);
+    showGeoCTA(country);
   }
 
   // Priority: 1) stored preference, 2) IP geo, 3) browser TZ
@@ -323,5 +342,6 @@
     setupSelector();
     applyAffiliateGeo(quickCountry);
     reorderChannels(quickCountry);
+    showGeoCTA(quickCountry);
   }
 })();
