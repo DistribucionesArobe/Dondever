@@ -992,7 +992,10 @@
                             <td style="padding:0.45rem 0.4rem;text-align:left;white-space:nowrap;">
                                 <div style="display:flex;align-items:center;gap:0.35rem;">
                                     {% if row.team_logo %}<img src="{{ row.team_logo }}" alt="" style="width:18px;height:18px;border-radius:50%;object-fit:contain;" loading="lazy">{% endif %}
-                                    <span style="font-size:0.75rem;{% if is_this_team %}color:#059669;{% endif %}">{{ row.team_short if row.team_short|length <= 5 else row.team_name }}</span>
+                                    {# `if row.team_short|length <= 5` sin comprobar que exista:
+                                       con team_short vacío, 0 <= 5 es verdadero y la celda
+                                       quedaba en blanco en vez de caer al nombre completo. #}
+                                    <span style="font-size:0.75rem;{% if is_this_team %}color:#059669;{% endif %}">{{ row.team_short if row.team_short and row.team_short|length <= 5 else row.team_name }}</span>
                                 </div>
                             </td>
                             <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.games_played or '-' }}</td>

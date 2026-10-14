@@ -3009,9 +3009,26 @@ async def fetch_mlbstats_standings(liga_id: int, season: int) -> list[dict]:
             equipo = t.get("team") or {}
             ganados = t.get("wins") or 0
             perdidos = t.get("losses") or 0
+            _nombre = equipo.get("name", "")
             filas.append({
-                "name": equipo.get("name", ""),
-                "team": equipo.get("name", ""),
+                "name": _nombre,
+                "team": _nombre,
+                # Las plantillas leen team_name / team_short / team_logo /
+                # games_played, que es la forma que devuelven el resto de los
+                # proveedores de tabla. Aquí salían solo con "name", así que
+                # /liga/lvbp, /liga/lidom y /liga/lmp llevaban quién sabe
+                # cuánto pintando una tabla SIN NOMBRES DE EQUIPO: se veía el
+                # número, los ganados y el porcentaje, y la columna Equipo en
+                # blanco. Justo en las tres ligas que son nuestra ventaja,
+                # porque ESPN no publica sus tablas.
+                #
+                # team_short va vacío a propósito: inventar abreviaturas desde
+                # "Leones del Caracas" o "Águilas Cibaeñas" da resultados
+                # inconsistentes, y las plantillas ya caen al nombre completo.
+                "team_name": _nombre,
+                "team_short": "",
+                "team_logo": "",
+                "games_played": ganados + perdidos,
                 "wins": ganados,
                 "losses": perdidos,
                 "win_pct": t.get("winningPercentage", ""),
