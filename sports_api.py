@@ -3028,6 +3028,15 @@ async def fetch_mlbstats_standings(liga_id: int, season: int) -> list[dict]:
                 "team_name": _nombre,
                 "team_short": "",
                 "team_logo": "",
+                # El año de la tabla. get_league_standings cae a la temporada
+                # ANTERIOR cuando la nueva todavía no tiene juegos, y su
+                # comentario decía que la plantilla pondría el año "porque para
+                # eso se devuelve season" — pero season nunca se devolvía. Hoy
+                # se vio el resultado: /en/baseball/dominican-winter-league
+                # mostraba la tabla con 49 y 50 juegos jugados el 14 de octubre,
+                # con la temporada recién empezada. Era la final del año pasado
+                # presentada como si fuera la de ahora.
+                "season": int(season),
                 "games_played": ganados + perdidos,
                 "wins": ganados,
                 "losses": perdidos,

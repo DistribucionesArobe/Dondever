@@ -127,7 +127,15 @@
 
     {# ── Posiciones ──────────────────────────────────────────────────── #}
     {% if standings %}
-    <h2>{{ cfg.corto }} standings</h2>
+    {# Decir de qué año es la tabla cuando no es la de ahora. La temporada
+       nueva empieza sin juegos, y entonces se muestra la final de la anterior:
+       sin etiqueta, el lector la toma por actual. #}
+    <h2>{% if tabla_cerrada %}{{ cfg.corto }} {{ temp_tabla }}&ndash;{{ temp_tabla + 1 }} final standings{% else %}{{ cfg.corto }} standings{% endif %}</h2>
+    {% if tabla_cerrada %}
+    <div class="flag">The {{ temp_tabla + 1 }}&ndash;{{ temp_actual + 1 }} season has just started and no games
+    count toward the table yet. These are the final standings of the {{ temp_tabla }}&ndash;{{ temp_tabla + 1 }}
+    season; they will be replaced as soon as the new one is under way.</div>
+    {% endif %}
     {% if cfg.nota_datos %}<div class="flag">{{ cfg.nota_datos }}</div>{% endif %}
     <div class="card">
         <div style="overflow-x:auto;">

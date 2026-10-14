@@ -9013,6 +9013,15 @@ async def winter_league_en(request: Request, slug: str):
             if ch and ch not in canales:
                 canales.append(ch)
 
+    # ¿La tabla es de la temporada en curso o la final de la anterior?
+    # statsapi etiqueta la temporada de invierno con su año de INICIO, y
+    # get_league_standings cae a la anterior mientras la nueva no tiene juegos.
+    # Sin decirlo, la página afirma como actual una tabla cerrada hace meses.
+    from sports_api import _temporada_invierno
+    _temp_actual = _temporada_invierno()
+    _temp_tabla = standings[0].get("season") if standings else None
+    tabla_cerrada = bool(_temp_tabla and _temp_tabla < _temp_actual)
+
     hoy = len(games)
     titulo = (f"{cfg['corto']} today: {hoy} game{'' if hoy == 1 else 's'}, TV channels and standings"
               if hoy else f"{cfg['nombre']}: schedule, TV channels and standings")
@@ -9024,6 +9033,8 @@ async def winter_league_en(request: Request, slug: str):
         "games": games, "standings": standings,
         "recent_results": recent_results, "upcoming_games": upcoming_games,
         "channels": canales, "fmt_et": fmt_et,
+        "tabla_cerrada": tabla_cerrada, "temp_tabla": _temp_tabla,
+        "temp_actual": _temp_actual,
         "seo_title": titulo, "seo_desc": desc,
         "others": [(s, c["nombre"]) for s, c in _EN_WINTER_LEAGUES.items() if s != slug],
     })
