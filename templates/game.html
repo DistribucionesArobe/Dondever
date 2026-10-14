@@ -537,7 +537,7 @@
                     {% endif %}
                 {% endfor %}
                 {% if mx_free %}
-                <div class="channel-group">
+                <div class="channel-group" data-ch-country="MX">
                     <span class="country-label free-label">TV ABIERTA</span>
                     {% for b in mx_free %}
                     <a href="/canal/{{ b.channel|channel_slug }}" class="channel-pill broadcast" style="text-decoration:none;">{{ b.channel }}</a>
@@ -545,7 +545,7 @@
                 </div>
                 {% endif %}
                 {% if mx_paid %}
-                <div class="channel-group">
+                <div class="channel-group" data-ch-country="MX">
                     <span class="country-label">MX</span>
                     {% for b in mx_paid %}
                     {% set saff = streaming_aff.get(b.channel) %}
@@ -559,7 +559,7 @@
                 {% endif %}
                 {% endif %}
                 {% if us_channels %}
-                <div class="channel-group">
+                <div class="channel-group" data-ch-country="US">
                     <span class="country-label">USA</span>
                     {% for b in us_channels %}
                     {% set saff = streaming_aff.get(b.channel) %}

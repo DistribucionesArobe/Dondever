@@ -448,10 +448,18 @@
                     {% set ve_ch = nxt.channels|selectattr('country','equalto','VE')|list %}
                     {% set do_ch = nxt.channels|selectattr('country','equalto','DO')|list %}
                     {% set other_ch = nxt.channels|rejectattr('country','in',['MX','US','VE','DO'])|list %}
-                    {% if mx_ch %}<span style="font-weight:600;">MX:</span> {% for c in mx_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% elif not ve_ch and not do_ch %}<span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span>{% endif %}
-                    {% if ve_ch %}<span style="font-weight:600;">VE:</span> {% for c in ve_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% endif %}
-                    {% if do_ch %}<span style="font-weight:600;">RD:</span> {% for c in do_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% endif %}
-                    {% if us_ch %}<span style="margin-left:0.3rem;font-weight:600;">USA:</span> {% for c in us_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}{% endif %}
+                    {# data-ch-country: el orden de abajo está fijo (MX, VE, RD, USA) y
+                       eso le sirve a un mexicano, no a alguien en Houston, que tiene
+                       que pasar por tres países ajenos para llegar al suyo. timezone.js
+                       ya sabe en qué país está el visitante —lo usa para la hora y para
+                       los afiliados— y ahora también sube su grupo al frente. Va en el
+                       cliente a propósito: el HTML sale idéntico para todos, así que el
+                       caché de 30 minutos no sirve una página ordenada para EE. UU. a
+                       un visitante de México. #}
+                    {% if mx_ch %}<span data-ch-country="MX"><span style="font-weight:600;">MX:</span> {% for c in mx_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}</span>{% elif not ve_ch and not do_ch %}<span data-ch-country="MX"><span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span></span>{% endif %}
+                    {% if ve_ch %}<span data-ch-country="VE"><span style="font-weight:600;">VE:</span> {% for c in ve_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}</span>{% endif %}
+                    {% if do_ch %}<span data-ch-country="DO"><span style="font-weight:600;">RD:</span> {% for c in do_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}</span>{% endif %}
+                    {% if us_ch %}<span data-ch-country="US"><span style="margin-left:0.3rem;font-weight:600;">USA:</span> {% for c in us_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}</span>{% endif %}
                     {% for c in other_ch %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c.name }}</span>{% endfor %}
                 {% else %}
                     {% for ch in nxt.channels %}
@@ -501,8 +509,8 @@
                 {% if u.channels[0] is mapping %}
                     {% set mx_ch = u.channels|selectattr('country','equalto','MX')|list %}
                     {% set us_ch = u.channels|selectattr('country','equalto','US')|list %}
-                    {% if mx_ch %}<span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}{% else %}<span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span>{% endif %}
-                    {% if us_ch %} · <span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}{% endif %}
+                    {% if mx_ch %}<span data-ch-country="MX"><span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}</span>{% else %}<span data-ch-country="MX"><span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span></span>{% endif %}
+                    {% if us_ch %}<span data-ch-country="US"> · <span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}</span>{% endif %}
                 {% else %}
                     {{ u.channels|join(', ') }}
                 {% endif %}

@@ -554,8 +554,8 @@
                             {% set us_ch = u.channels|rejectattr('is_us_regional')|selectattr('country','equalto','US')|list %}
                             {% set reg_ch = u.channels|selectattr('is_us_regional')|list %}
                             {% set other_ch = u.channels|rejectattr('is_us_regional')|rejectattr('country','in',['MX','US'])|list %}
-                            {% if mx_ch %}<span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}{% else %}<span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span>{% endif %}
-                            {% if us_ch %} · <span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}{% endif %}
+                            {% if mx_ch %}<span data-ch-country="MX"><span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}</span>{% else %}<span data-ch-country="MX"><span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span></span>{% endif %}
+                            {% if us_ch %}<span data-ch-country="US"> · <span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}</span>{% endif %}
                             {% if other_ch %} · {{ other_ch|map(attribute='name')|join(', ') }}{% endif %}
                             {% if reg_ch %} · <span style="opacity:0.55;">Regional EE.UU.: {{ reg_ch|map(attribute='name')|join(', ') }}</span>{% endif %}
                         </td>

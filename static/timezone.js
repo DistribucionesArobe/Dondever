@@ -266,12 +266,38 @@
     }
   }
 
+  // ── Canales: el país del visitante primero ─────────────
+  // El HTML sale siempre en el mismo orden (MX, VE, RD, USA) porque así lo
+  // pide el caché: una sola versión de la página para todos. Eso le funciona
+  // a un mexicano y le estorba a todos los demás — alguien en Houston tenía
+  // que pasar por los canales de tres países ajenos antes de llegar al suyo,
+  // y en Analytics se veía: 14 segundos en /equipo/dodgers desde EE. UU.
+  // contra 22 del promedio, en la misma página.
+  //
+  // Esto ya lo sabíamos; solo no lo estábamos usando. El país detectado
+  // cambiaba la hora y el enlace de afiliado, nunca el orden de los canales.
+  function reorderChannels(country) {
+    if (!country) return;
+    var grupos = document.querySelectorAll('[data-ch-country]');
+    var vistos = [];
+    grupos.forEach(function(g) {
+      if (g.getAttribute('data-ch-country') !== country) return;
+      var padre = g.parentNode;
+      if (!padre || vistos.indexOf(padre) !== -1) return;
+      // Solo movemos el primero de cada contenedor: si un partido tuviera dos
+      // grupos del mismo país, reordenar los dos los dejaría invertidos.
+      vistos.push(padre);
+      if (padre.firstElementChild !== g) padre.insertBefore(g, padre.firstChild);
+    });
+  }
+
   // ── Main init ──────────────────────────────────────────
   function init(country) {
     convertTimes(country);
     updateSelectorUI(country);
     setupSelector();
     applyAffiliateGeo(country);
+    reorderChannels(country);
   }
 
   // Priority: 1) stored preference, 2) IP geo, 3) browser TZ
@@ -296,5 +322,6 @@
     updateSelectorUI(quickCountry);
     setupSelector();
     applyAffiliateGeo(quickCountry);
+    reorderChannels(quickCountry);
   }
 })();
