@@ -49,6 +49,25 @@
         .row .c { font-size: 0.75rem; color: #6b7280; }
         .note { font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem; }
         .faq p { font-size: 0.88rem; line-height: 1.6; color: #374151; margin-bottom: 0.6rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        thead tr { background: #f8fafc; border-bottom: 2px solid #e5e7eb; }
+        th { padding: 0.5rem 0.4rem; color: #6b7280; font-weight: 700; text-align: center; }
+        th.t { text-align: left; }
+        td { padding: 0.45rem 0.3rem; text-align: center; }
+        td.t { text-align: left; white-space: nowrap; }
+        tbody tr { border-bottom: 1px solid #f3f4f6; }
+        tbody tr.me { background: #ecfdf5; font-weight: 700; }
+        tbody tr.me td.t { color: #059669; }
+        .src { font-size: 0.6rem; color: #9ca3af; padding: 0.4rem 0.8rem; text-align: right; }
+        .res { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.9rem; border-top: 1px solid #f3f4f6; }
+        .res:first-child { border-top: none; }
+        .res .sc { font-weight: 800; color: #059669; font-size: 0.85rem; padding: 0 0.5rem; }
+        .res span { font-size: 0.8rem; font-weight: 600; }
+        .tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+        .tag { background: #f3f4f6; color: #374151; border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 600; text-decoration: none; }
+        body.dark-mode thead tr { background: #0f172a; }
+        body.dark-mode td, body.dark-mode .res span { color: #e2e8f0; }
+        body.dark-mode .tag { background: #334155; color: #cbd5e1; }
         .footer { max-width: 820px; margin: 2rem auto; padding: 1rem; text-align: center; font-size: 0.7rem; color: #9ca3af; }
         .footer a { color: #059669; text-decoration: none; }
         body.dark-mode .answer, body.dark-mode .card { background: #1e293b; border-color: #334155; }
@@ -58,6 +77,13 @@
     {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
       {"@type":"Question","name":"What channel is the {{ team_name }} game on?","acceptedAnswer":{"@type":"Answer","text":"{% if today_game and ch_now %}Today's {{ team_name }} game airs on {{ ch_now|join(', ') }}.{% elif upcoming %}The next {{ team_name }} game is listed below with its TV channel and start time in Eastern Time.{% else %}No {{ team_name }} game is currently scheduled.{% endif %}"}},
       {"@type":"Question","name":"What time do the {{ team_name }} play?","acceptedAnswer":{"@type":"Answer","text":"All start times on this page are shown in Eastern Time (ET)."}}
+    ]}
+    </script>
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":"{{ app_url }}/"},
+      {"@type":"ListItem","position":2,"name":"{{ league }}","item":"{{ app_url }}/en/{{ team_slug }}"},
+      {"@type":"ListItem","position":3,"name":"{{ team_name }}","item":"{{ app_url }}/en/{{ team_slug }}"}
     ]}
     </script>
 </head>
@@ -120,6 +146,72 @@
         {% endfor %}
     </div>
     <p class="note">Times shown in Eastern Time (ET). Broadcast listings can change; regional blackouts may apply.</p>
+    {% endif %}
+
+    {# ── Resultados recientes ──────────────────────────────────────────
+       Hasta hoy esta página solo tenía el partido de hoy y los próximos. Lo
+       de abajo ya existía en la ficha en español; aquí solo no se pedía. #}
+    {% if recent_results %}
+    <h2>{{ team_name }} recent results</h2>
+    <div class="card">
+        {% for r in recent_results %}
+        <div class="res">
+            <span>{{ r.home }}</span>
+            <span class="sc">{{ r.home_score }} &ndash; {{ r.away_score }}</span>
+            <span>{{ r.away }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── Canales donde suele verse: además de informar, es enlace interno
+         hacia las páginas /canal/, que es lo que las hace rankear. #}
+    {% if top_channels %}
+    <h2>Where {{ team_name }} games usually air</h2>
+    <div class="tags">
+        {% for ch_name, ch_count in top_channels %}
+        {%- set _saff = streaming_aff.get(ch_name) -%}
+        {%- set _curl = canal_url(ch_name) -%}
+        {% if _saff %}<a class="tag" href="/go/{{ _saff.key }}?s=en-team-channel" target="_blank" rel="sponsored nofollow noopener" data-affiliate="{{ _saff.key }}" style="background:{{ _saff.bg }};color:{{ _saff.color }};font-weight:700;">{{ ch_name }} &#8599;</a>
+        {% elif _curl %}<a class="tag" href="{{ _curl }}">{{ ch_name }} <span style="color:#9ca3af;">({{ ch_count }})</span></a>
+        {% else %}<span class="tag">{{ ch_name }} <span style="color:#9ca3af;">({{ ch_count }})</span></span>{% endif %}
+        {% endfor %}
+    </div>
+    <p class="note">Based on the broadcasts we have recorded for this team. Regional sports networks vary by market.</p>
+    {% endif %}
+
+    {% if league_standings %}
+    <h2>{{ league }} standings</h2>
+    <div class="card">
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:30px;">#</th>
+                        <th class="t">Team</th>
+                        <th>GP</th><th>W</th><th>L</th><th>PCT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in league_standings %}
+                    {# Un hueco es honesto; un número de fila disfrazado de
+                       posición no lo es. Misma regla que en la versión española. #}
+                    <tr class="{% if (team_name|lower in row.team_name|lower) or (row.team_name|lower in team_name|lower) %}me{% endif %}">
+                        <td>{{ row.rank if row.rank else '·' }}</td>
+                        <td class="t">
+                            {% if row.team_logo %}<img src="{{ row.team_logo }}" alt="" width="18" height="18" style="vertical-align:middle;margin-right:0.3rem;object-fit:contain;" loading="lazy">{% endif %}{{ row.team_short if row.team_short and row.team_short|length <= 5 else row.team_name }}
+                        </td>
+                        <td>{{ row.games_played or '-' }}</td>
+                        <td>{{ row.wins or '-' }}</td>
+                        <td>{{ row.losses or '-' }}</td>
+                        <td style="font-weight:800;">{{ row.win_pct or row.points or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="src">Source: ESPN &middot; updated hourly</div>
+    </div>
     {% endif %}
 
     <h2>Frequently asked</h2>

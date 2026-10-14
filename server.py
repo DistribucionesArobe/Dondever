@@ -8898,6 +8898,43 @@ async def team_page_en(request: Request, team_slug: str):
         except Exception:
             return ""
 
+    # ── Mismos datos que la ficha en español ────────────────────────────
+    # La página en inglés nació el 16/09 con 141 líneas y se quedó ahí: ni
+    # posiciones, ni resultados, ni enlaces a canales. 0 clics y 0 impresiones
+    # en 28 días. Cero IMPRESIONES —no cero clics— significa que Google ni la
+    # enseñaba, y contenido delgado es exactamente el criterio por el que no
+    # indexa. No hay nada que construir: estos helpers ya existen, ya están
+    # cacheados y la ficha en español los usa desde hace semanas. Solo no se
+    # los estábamos pidiendo.
+    league_standings = []
+    recent_results = []
+    top_channels = []
+    try:
+        from sports_api import TEAM_LEAGUE_MAP as _TLM2
+        _lm = _TLM2.get(team_slug)
+        if _lm:
+            t_sport, t_league = _lm
+            try:
+                league_standings = await get_league_standings(t_sport, t_league, limit=50)
+            except Exception:
+                pass
+            try:
+                # Más días cuando no hay partido hoy: la página no debe quedarse vacía.
+                for r in await get_recent_league_results(t_sport, t_league,
+                                                         days=7 if today_game else 14, limit=30):
+                    if st in r["home"].lower() or st in r["away"].lower():
+                        recent_results.append(r)
+                    if len(recent_results) >= (5 if today_game else 10):
+                        break
+            except Exception:
+                pass
+    except Exception:
+        pass
+    try:
+        top_channels = await get_team_channels(team_name)
+    except Exception:
+        pass  # la BD puede no estar: la página sigue sirviendo
+
     ch_now = _us_channels(today_game) if today_game else []
     if today_game:
         opp_raw = (today_game["away"]["name"] if st in (today_game["home"]["name"] or "").lower()
@@ -8918,6 +8955,8 @@ async def team_page_en(request: Request, team_slug: str):
         "league": league, "today_game": today_game, "ch_now": ch_now,
         "upcoming": upcoming, "fmt_et": fmt_et, "us_channels": _us_channels,
         "seo_title": title, "seo_desc": desc, "seo_h1": h1,
+        "league_standings": league_standings, "recent_results": recent_results,
+        "top_channels": top_channels,
     })
 
 
