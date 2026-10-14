@@ -138,6 +138,30 @@ def _game_url(game: dict) -> str:
 templates.env.filters["game_url"] = _game_url
 templates.env.globals["game_url"] = _game_url
 
+
+def _dato(valor):
+    """El valor, o '—' cuando de verdad no hay dato.
+
+    Las tablas de posiciones usaban `{{ row.losses or '-' }}`, y en Jinja —como
+    en Python— el 0 es falso. O sea que un equipo invicto aparecía con un guión
+    en la columna de derrotas, que se lee como "no sabemos", cuando el dato es
+    justamente que no ha perdido ninguno. Lo vimos hoy en la tabla de la LVBP:
+    Tiburones 2-0 se pintaba "2 derrotas: —".
+
+    Hay tres formas distintas de "no hay dato" y las tres tienen que acabar en
+    guión: la clave ausente (Undefined de Jinja), None, y la cadena vacía que
+    manda statsapi en varios campos. El cero no es ninguna de las tres.
+    """
+    from jinja2 import Undefined
+    if isinstance(valor, Undefined) or valor is None:
+        return "—"
+    if isinstance(valor, str) and not valor.strip():
+        return "—"
+    return valor
+
+
+templates.env.filters["dato"] = _dato
+
 # ── hreflang tags for LATAM + Spain geo-targeting ──────────────
 HREFLANG_LOCALES = ["es-MX", "es-US", "es-AR", "es-CO", "es-CL", "es-PE", "es-EC", "es-VE", "es-PA", "es-DO", "es-ES"]
 

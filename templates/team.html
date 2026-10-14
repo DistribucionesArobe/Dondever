@@ -998,14 +998,14 @@
                                     <span style="font-size:0.75rem;{% if is_this_team %}color:#059669;{% endif %}">{{ row.team_short if row.team_short and row.team_short|length <= 5 else row.team_name }}</span>
                                 </div>
                             </td>
-                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.games_played or '-' }}</td>
-                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.wins or '-' }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.games_played|dato }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.wins|dato }}</td>
                             {% if team_sport == 'futbol' or team_sport == 'hockey' %}
-                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.ties or '-' }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.ties|dato }}</td>
                             {% endif %}
-                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.losses or '-' }}</td>
-                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.goal_diff or '-' }}</td>
-                            <td style="padding:0.45rem 0.3rem;text-align:center;font-weight:800;background:{% if is_this_team %}#d1fae5{% else %}#f0fdf4{% endif %};">{% if team_sport == 'futbol' or team_sport == 'hockey' %}{{ row.points or '-' }}{% else %}{{ row.win_pct or '-' }}{% endif %}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.losses|dato }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;">{{ row.goal_diff|dato }}</td>
+                            <td style="padding:0.45rem 0.3rem;text-align:center;font-weight:800;background:{% if is_this_team %}#d1fae5{% else %}#f0fdf4{% endif %};">{% if team_sport == 'futbol' or team_sport == 'hockey' %}{{ row.points|dato }}{% else %}{{ row.win_pct|dato }}{% endif %}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

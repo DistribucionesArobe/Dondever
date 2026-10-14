@@ -201,10 +201,10 @@
                         <td class="t">
                             {% if row.team_logo %}<img src="{{ row.team_logo }}" alt="" width="18" height="18" style="vertical-align:middle;margin-right:0.3rem;object-fit:contain;" loading="lazy">{% endif %}{{ row.team_short if row.team_short and row.team_short|length <= 5 else row.team_name }}
                         </td>
-                        <td>{{ row.games_played or '-' }}</td>
-                        <td>{{ row.wins or '-' }}</td>
-                        <td>{{ row.losses or '-' }}</td>
-                        <td style="font-weight:800;">{{ row.win_pct or row.points or '-' }}</td>
+                        <td>{{ row.games_played|dato }}</td>
+                        <td>{{ row.wins|dato }}</td>
+                        <td>{{ row.losses|dato }}</td>
+                        <td style="font-weight:800;">{{ row.win_pct|dato if row.win_pct|default('') != '' else row.points|dato }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
