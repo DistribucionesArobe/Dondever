@@ -8645,6 +8645,38 @@ _DEFAULT_CHANNELS_BY_COUNTRY = {
 }
 
 
+# Consejo por país Y liga, para las fichas /equipo/{slug}/en/{pais}.
+#
+# Solo hay entradas donde podemos decir algo CIERTO y útil; donde no, se cae al
+# consejo general del país, que es lo que había. Nada de rellenar por rellenar:
+# una frase vaga sobre una liga que no es la de la página es peor que ninguna.
+_TIP_POR_PAIS_Y_LIGA = {
+    ("estados-unidos", "MLB"): (
+        "En Estados Unidos los juegos de temporada regular se reparten entre la cadena "
+        "regional de cada equipo y las nacionales (FOX, FS1, TBS, ESPN). MLB.TV transmite "
+        "todos los juegos salvo los de tu propio mercado, que quedan bloqueados por "
+        "blackout: si vives en la zona del equipo, necesitas la cadena regional o un "
+        "servicio de cable que la incluya."
+    ),
+    ("estados-unidos", "NFL"): (
+        "La mayoría de los juegos están en FOX y CBS según la conferencia, el domingo por "
+        "la noche en NBC y el lunes en ESPN/ABC. Thursday Night Football es exclusivo de "
+        "Amazon Prime Video. En español, Telemundo y ESPN Deportes pasan juegos selectos."
+    ),
+    ("estados-unidos", "Liga MX"): (
+        "Desde Estados Unidos la Liga MX se ve principalmente en TUDN y Univision —que es "
+        "TV abierta y por tanto gratis con antena— y en ViX con suscripción. Algunos "
+        "partidos están en Fox Deportes. No todos los equipos tienen los mismos derechos "
+        "en EE. UU. que en México, así que conviene revisar partido por partido."
+    ),
+    ("estados-unidos", "NBA"): (
+        "Los juegos nacionales van por ESPN/ABC, TNT y NBA TV; el resto, por la cadena "
+        "regional del equipo. League Pass tiene los juegos fuera de tu mercado, con las "
+        "mismas reglas de blackout local que MLB."
+    ),
+}
+
+
 def _default_channels(country_slug: str) -> list:
     return _DEFAULT_CHANNELS_BY_COUNTRY.get(country_slug, _DEFAULT_LATAM_CHANNELS)
 
@@ -8701,6 +8733,16 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     # Country tip from COUNTRY_PAGES if available
     cp = COUNTRY_PAGES.get(country_slug, {})
     country_tip = cp.get("tip", "")
+    # El consejo del país es uno solo y se pintaba en TODAS las fichas de ese
+    # país, sin mirar el deporte. Resultado real: /equipo/dodgers/en/estados-unidos
+    # —una página de MLB— explicaba dónde ver la Liga MX y la NFL, y no decía
+    # una palabra de béisbol. Justamente la consulta que más nos ve en EE. UU.
+    # es "a que hora juegan los dodgers hoy y en que canal" (494 impresiones en
+    # 28 días, posición 12). Hablarle de futbol en esa página es decirle a
+    # Google que la página no va de lo que el usuario preguntó.
+    _tip_liga = _TIP_POR_PAIS_Y_LIGA.get((country_slug, team_league))
+    if _tip_liga:
+        country_tip = _tip_liga
 
     all_countries = [(cs, cd["name"], cd["flag"]) for cs, cd in TEAM_COUNTRY_SEO.items()]
 

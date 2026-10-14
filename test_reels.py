@@ -6,10 +6,22 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 import reel_storage
-from post_reel import eligible
+from post_reel import eligible, reel_caption
 from generate_instagram import TZ_MX
 
 class ReelTests(unittest.TestCase):
+    def test_caption_uses_verified_channels_and_match_prompt(self):
+        game={'away':{'name':'Club Deportivo Guadalajara'},'home':{'name':'Club América'},
+              'time':'19:00','league':'Liga MX','league_slug':'liga-mx',
+              'mx_channels':['Canal 5'],'us_channels':[]}
+        caption=reel_caption(game)
+        self.assertIn('¿A quién apoyas en Club Deportivo Guadalajara vs Club América?',caption)
+        self.assertIn('México: Canal 5',caption)
+        self.assertNotIn('Estados Unidos',caption)
+        self.assertNotIn('por confirmar',caption)
+        self.assertIn('#LigaMX',caption)
+        self.assertIn('DondeVer.app',caption)
+
     def test_selection(self):
         now=datetime(2026,10,1,12,tzinfo=TZ_MX)
         game={'starts_at':(now+timedelta(hours=2)).isoformat(),'status':'STATUS_SCHEDULED','channel_verified':True,'mx_channels':['ESPN'],'league_slug':'nfl'}

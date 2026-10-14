@@ -43,8 +43,30 @@ def write(d, value, y, size, color=WHITE, x=540, width=860, condensed=False):
 def layer(game, index, badges, date, preview=False):
     if index == 0:
         img = Image.open(CANVA_COVER).convert('RGBA')
+        d = ImageDraw.Draw(img)
+        # Keep the approved Canva background and brand, while making the
+        # fixture itself the opening hook for people who do not know us yet.
+        d.rounded_rectangle((72, 330, 1008, 970), radius=32,
+                            fill=(3, 20, 33, 242), outline=GREEN, width=3)
+        write(d, '¿A QUIÉN APOYAS?', 378, 52, GREEN, condensed=True)
+        for key, x in [('away', 300), ('home', 780)]:
+            badge = badges[key]
+            if badge:
+                badge = badge.copy()
+                badge.thumbnail((148, 148))
+                img.alpha_composite(badge, (x-badge.width//2, 468))
+            else:
+                write(d, game[key].get('short', '?')[:5].upper(), 510, 48,
+                      GREEN, x=x, width=260, condensed=True)
+            write(d, game[key]['name'], 650, 38, WHITE,
+                  x=x, width=350, condensed=True)
+        write(d, 'VS', 750, 35, GREEN, condensed=True)
+        write(d, f"{game['time']} H CDMX  ·  {game['league']}", 855, 34, WHITE)
+        d.rectangle((68, 1035, 760, 1170), fill=(3, 20, 33, 250))
+        d.polygon([(78, 1044), (712, 1044), (672, 1140), (78, 1140)], fill=GREEN)
+        write(d, 'COMENTA TU EQUIPO', 1073, 39, '#031421', x=385,
+              width=560, condensed=True)
         if preview:
-            d = ImageDraw.Draw(img)
             d.rectangle((70,1630,700,1690),fill='#031421')
             d.text((90,1640),'MUESTRA · '+date,font=face(24),fill=WHITE)
         return img
@@ -78,16 +100,25 @@ def layer(game, index, badges, date, preview=False):
         write(d,game['time'],455,195,condensed=True)
         write(d,'HORA CDMX · UTC−6',720,32)
         write(d,date,800,33,GRAY)
-        d.rounded_rectangle((100,920,980,1400),radius=34,fill=(3,20,33,245),outline=(160,174,190,100),width=2)
-        y=975
-        for country,key in [('MÉXICO','mx_channels'),('ESTADOS UNIDOS','us_channels')]:
-            write(d,country,y,26,GREEN)
-            value=' · '.join(game.get(key) or []) or 'Canal por confirmar'
-            y=write(d,value,y+55,44,width=760)+60
+        markets=[(country,'mx_channels' if country=='MÉXICO' else 'us_channels')
+                 for country in ('MÉXICO','ESTADOS UNIDOS')]
+        available=[(country,' · '.join(game.get(key) or []))
+                   for country,key in markets if game.get(key)]
+        card_bottom = 920 + (480 if len(available) > 1 else 310)
+        d.rounded_rectangle((100,920,980,card_bottom),radius=34,
+                            fill=(3,20,33,245),outline=(160,174,190,100),width=2)
+        y=955
+        if not available:
+            write(d,'Consulta dónde verlo en DondeVer.app',y,42,width=760)
+        else:
+            for country,value in available:
+                write(d,country,y,26,GREEN)
+                y=write(d,value,y+55,44,width=760)+60
         write(d,'Fuente: agenda ESPN',1480,23,GRAY)
     else:
-        write(d,'TU PARTIDO.\nTU CANAL.',430,140,condensed=True)
-        write(d,'Consulta la agenda\ny elige tus equipos.',850,46)
+        write(d,'¿A QUIÉN APOYAS?',430,105,condensed=True)
+        write(d,f"{game['away']['name']} vs {game['home']['name']}",650,48,width=840,condensed=True)
+        write(d,'Comenta tu equipo y guarda\nel horario para el partido.',875,44)
         d.polygon([(120,1100),(960,1100),(900,1245),(120,1245)],fill=GREEN)
         write(d,'dondever.app',1134,69,'#031421',width=760,condensed=True)
         write(d,'ENLACE EN EL PERFIL',1340,30)

@@ -14,6 +14,31 @@ from generate_reel_stadium import render
 BASE = os.getenv('DONDEVER_URL', 'https://dondever.app').rstrip('/')
 GRAPH = 'https://graph.facebook.com/v21.0'
 CREDIT = 'All This — Kevin MacLeod (incompetech.com). Licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/ (extracto editado).'
+LEAGUE_TAGS = {
+    'liga-mx': '#LigaMX', 'nfl': '#NFL', 'mlb': '#MLB', 'nba': '#NBA',
+    'nhl': '#NHL', 'mls': '#MLS', 'champions': '#ChampionsLeague',
+}
+
+def reel_caption(game):
+    """A fixture-specific comment prompt, useful details, and only relevant tags."""
+    away = game['away']['name']
+    home = game['home']['name']
+    lines = [
+        f"¿A quién apoyas en {away} vs {home}? Comenta tu equipo. 👇",
+        f"🕒 {game['time']} h CDMX · {game['league']}",
+    ]
+    if game.get('mx_channels'):
+        lines.append('🇲🇽 México: ' + ' / '.join(game['mx_channels']))
+    if game.get('us_channels'):
+        lines.append('🇺🇸 EE. UU.: ' + ' / '.join(game['us_channels']))
+    lines.extend([
+        'Guarda este Reel para tener el horario a la mano.',
+        'Más horarios y canales en DondeVer.app · Enlace en el perfil.',
+        ' '.join(filter(None, ['#DondeVer', '#DeportesEnVivo',
+                               LEAGUE_TAGS.get(game.get('league_slug'), '')])),
+        CREDIT,
+    ])
+    return '\n'.join(lines)
 
 def eligible(games, now):
     result = []
@@ -47,7 +72,7 @@ async def main(dry_run=False):
     if not games:
         print('No verified upcoming game today; skipped.'); return
     game = games[0]
-    caption = f"{game['away']['name']} vs {game['home']['name']} · {game['time']} h CDMX.\nMéxico: {' / '.join(game['mx_channels']) or 'Canal por confirmar'}.\nEE. UU.: {' / '.join(game['us_channels']) or 'Canal por confirmar'}.\nConsulta la agenda en dondever.app. Enlace en el perfil.\n#DondeVer #Deportes\n\n{CREDIT}"
+    caption = reel_caption(game)
     if dry_run:
         print(json.dumps({'date':day,'game':game,'caption':caption,'preview':True},ensure_ascii=False)); return
     key = os.environ['INTERNAL_API_KEY']; token = os.environ['INSTAGRAM_ACCESS_TOKEN']; user = os.environ['INSTAGRAM_USER_ID']
