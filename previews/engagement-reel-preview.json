@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-11",
+  "preview": true,
+  "caption": "¿A quién apoyas?",
+  "game": {
+    "league": "Liga MX",
+    "league_slug": "liga-mx",
+    "time": "19:00",
+    "away": {
+      "name": "Club Deportivo Guadalajara",
+      "short": "CHIVAS"
+    },
+    "home": {
+      "name": "Club América",
+      "short": "AMÉRICA"
+    },
+    "mx_channels": [
+      "Canal 5"
+    ],
+    "us_channels": []
+  },
+  "design": "canva-approved-v1",
+  "canva_source": "DAHXo0VXJ2s",
+  "width": 720,
+  "height": 1280,
+  "duration": 20,
+  "music": "All This — Kevin MacLeod (CC BY 4.0)"
+}
