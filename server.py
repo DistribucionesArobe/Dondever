@@ -5918,6 +5918,11 @@ async def sitemap_equipos():
     # Versiones en inglés para equipos de EE.UU. (hreflang recíproco con /equipo/{slug})
     for team_slug in _en_team_list():
         urls.append(_sm_url(f'{APP_URL}/en/{team_slug}', today_str, "daily", "0.7"))
+    # Béisbol invernal en inglés. Prioridad alta porque, a diferencia de las
+    # fichas de equipos de EE.UU., aquí sí tenemos algo que la competencia no:
+    # ESPN no publica la tabla de la LVBP y nosotros sí.
+    for _wl in _EN_WINTER_LEAGUES:
+        urls.append(_sm_url(f'{APP_URL}/en/baseball/{_wl}', today_str, "daily", "0.8"))
     # /equipo/{slug}/calendario se quitó del sitemap (GSC 28 d: 5,013 impresiones, 0 clics,
     # posición ~44). Duplica los próximos partidos que ya trae /equipo/{slug} y se lleva
     # presupuesto de rastreo. Las páginas siguen accesibles para el usuario, pero con noindex.
@@ -8878,6 +8883,126 @@ def _en_team_list() -> list:
         if info and info.get("league") in _EN_LEAGUE_LABEL:
             out.append(slug)
     return out
+
+
+# ── Béisbol invernal en inglés ────────────────────────────────────────────
+#
+# Por qué estas tres páginas y no "what channel is the Cowboys game on".
+#
+# El inglés del sitio llevaba 28 días con 0 clics y 0 impresiones porque
+# apuntaba a las keywords más peleadas del nicho: ahí están CBS Sports, FOX,
+# ESPN y The Streamable, que tiene detrás a VerticalScope. Un dominio sin
+# autoridad en inglés no entra.
+#
+# Aquí sí tenemos ventaja, y es la misma que nos funcionó en español: datos
+# que nadie más publica. ESPN no publica la tabla de la LVBP. Nosotros sí,
+# con líderes de bateo y pitcheo. Y el público existe: diáspora venezolana y
+# dominicana en Estados Unidos, más fans de MLB siguiendo a sus prospectos en
+# la pelota de invierno. Ahí no está CBS Sports.
+#
+# Van bajo /en/baseball/ y no /en/ a secas porque /en/{team_slug} es un
+# comodín: cualquier cosa en /en/X la atrapa esa ruta y devuelve 404.
+_EN_WINTER_LEAGUES = {
+    "venezuelan-winter-league": {
+        "liga": "lvbp",
+        "nombre": "Venezuelan Winter League (LVBP)",
+        "corto": "LVBP",
+        "pais": "Venezuela",
+        "es_url": "/liga/lvbp",
+        "temporada": "October to January, with a round robin and a final series that decide "
+                     "the club that represents Venezuela at the Caribbean Series.",
+        "intro": "The Liga Venezolana de Béisbol Profesional (LVBP) is Venezuela's top "
+                 "winter baseball league. Many of its players are MLB prospects and former "
+                 "big leaguers, which is why the league is followed closely from the United "
+                 "States.",
+        # Verificado sobre el terreno en este proyecto: ESPN no publica la tabla
+        # de la LVBP, y Beisbol Play es la vía oficial fuera de Venezuela.
+        "nota_datos": "ESPN does not publish LVBP standings. The table below is built from "
+                      "the league's own results.",
+    },
+    "dominican-winter-league": {
+        "liga": "lidom",
+        "nombre": "Dominican Winter League (LIDOM)",
+        "corto": "LIDOM",
+        "pais": "the Dominican Republic",
+        "es_url": "/liga/lidom",
+        "temporada": "October to late January, ending with a final series whose winner goes "
+                     "to the Caribbean Series.",
+        "intro": "LIDOM is the Dominican Republic's professional winter league. Licey, "
+                 "Águilas Cibaeñas, Escogido and Estrellas are among the most "
+                 "followed clubs, and rosters regularly include MLB players and prospects.",
+        "nota_datos": "",
+    },
+    "mexican-pacific-league": {
+        "liga": "lmp",
+        "nombre": "Mexican Pacific League (LMP)",
+        "corto": "LMP",
+        "pais": "Mexico",
+        "es_url": "/liga/lmp",
+        "temporada": "October to January, finishing with a final series and the Caribbean "
+                     "Series berth for Mexico.",
+        "intro": "The Liga Mexicana del Pacífico (LMP) is Mexico's winter baseball "
+                 "league, played in the northwest of the country. Tomateros, Naranjeros, "
+                 "Yaquis and Venados are among its best-known clubs.",
+        "nota_datos": "",
+    },
+}
+
+
+@app.get("/en/baseball/{slug}", response_class=HTMLResponse)
+async def winter_league_en(request: Request, slug: str):
+    """English page for a Caribbean/Mexican winter baseball league."""
+    cfg = _EN_WINTER_LEAGUES.get(slug)
+    if not cfg:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404, context={"message": "Page not found."})
+
+    league_slug = cfg["liga"]
+    sport, league_id, display_name, _emoji = ALL_LEAGUES[league_slug]
+
+    games, standings, recent_results, upcoming_games = await asyncio.gather(
+        get_todays_games(league_filter=league_slug),
+        get_league_standings(sport, league_id, limit=50),
+        get_recent_league_results(sport, league_id, days=10, limit=10),
+        get_upcoming_league_games(sport, league_id, days=14, limit=10),
+        return_exceptions=True,
+    )
+    games, standings, recent_results, upcoming_games = [
+        [] if isinstance(x, Exception) else x
+        for x in (games, standings, recent_results, upcoming_games)
+    ]
+
+    def fmt_et(iso_date: str) -> str:
+        try:
+            dt = datetime.fromisoformat(str(iso_date).replace("Z", "+00:00")).astimezone(TZ_ET)
+            return dt.strftime("%a, %b %-d · %-I:%M %p ET")
+        except Exception:
+            return ""
+
+    # Los canales salen de nuestros propios datos del día, no de una lista
+    # escrita a mano: si hoy no lo transmite nadie que conozcamos, la página
+    # lo dice en vez de inventar una cadena.
+    canales = []
+    for g in games:
+        for b in g.get("broadcasts", []):
+            ch = b.get("channel", "")
+            if ch and ch not in canales:
+                canales.append(ch)
+
+    hoy = len(games)
+    titulo = (f"{cfg['corto']} today: {hoy} game{'' if hoy == 1 else 's'}, TV channels and standings"
+              if hoy else f"{cfg['nombre']}: schedule, TV channels and standings")
+    desc = (f"{cfg['nombre']} — today's games with start times in Eastern Time, "
+            f"full standings and where to watch from the United States.")
+
+    return templates.TemplateResponse(request, "winter_league_en.html", {
+        "cfg": cfg, "slug": slug, "league_name": display_name,
+        "games": games, "standings": standings,
+        "recent_results": recent_results, "upcoming_games": upcoming_games,
+        "channels": canales, "fmt_et": fmt_et,
+        "seo_title": titulo, "seo_desc": desc,
+        "others": [(s, c["nombre"]) for s, c in _EN_WINTER_LEAGUES.items() if s != slug],
+    })
 
 
 @app.get("/en/{team_slug}", response_class=HTMLResponse)
