@@ -70,6 +70,18 @@
         .leyenda{display:flex;justify-content:space-between;font-size:.72rem;color:#6b7280;font-weight:600}
         .fuente{font-size:.68rem;color:#9ca3af;text-align:center;margin-top:.9rem;line-height:1.5}
 
+        /* ── Temporada por temporada ─────────────────────────── */
+        .tmps{display:flex;flex-direction:column;gap:.35rem}
+        .tmp{display:grid;grid-template-columns:62px 1fr 72px;align-items:center;gap:.6rem}
+        .tmp .tl{font-size:.74rem;font-weight:800;color:#374151;font-variant-numeric:tabular-nums}
+        .tmp .tn{font-size:.74rem;font-weight:700;color:#6b7280;text-align:right;font-variant-numeric:tabular-nums}
+        .tmp .tb{display:flex;height:9px;border-radius:999px;overflow:hidden;background:#eef0f5}
+        .tmp .tb i{display:block;height:100%}
+        .tmp .tb .ba{background:{{ cfg.color_a }}}
+        .tmp .tb .be{background:#cbd5e1}
+        .tmp .tb .bb{background:{{ cfg.color_b }}}
+        body.dark-mode .tmp .tl{color:#e2e8f0}
+
         /* ── Tarjetas de dato ────────────────────────────────── */
         .datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.6rem;margin-bottom:1rem}
         .dato{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:.85rem .9rem}
@@ -259,7 +271,53 @@
             </div>
         </div>
         {% endif %}
+        {% if extra.ajustados %}
+        <div class="dato">
+            <div class="v">{{ extra.ajustados }}</div>
+            <div class="k">Por la m&iacute;nima &middot; {{ extra.pct_ajustados }}%</div>
+        </div>
+        {% endif %}
+        {% if extra.local_a.jugados and extra.local_b.jugados %}
+        <div class="dato">
+            <div class="v">{{ extra.local_a.pct }}% / {{ extra.local_b.pct }}%</div>
+            <div class="k">Gana en casa &middot; {{ equipo_a }} / {{ equipo_b }}</div>
+        </div>
+        {% endif %}
+        {% if extra.mayor %}
+        <div class="dato">
+            <div class="v">{{ extra.mayor.marcador }}</div>
+            <div class="k">Mayor diferencia &middot; {{ extra.mayor.fecha|fecha_corta }}</div>
+        </div>
+        {% endif %}
     </div>
+
+    {# ── Temporada por temporada ──────────────────────────────────────────
+       Sale del mismo historial que la serie de arriba, así que no puede
+       contradecirla. Es el dato que la gente discute: no "quién gana más",
+       sino "quién ha ganado últimamente". #}
+    {% if extra.por_temporada|length > 1 %}
+    <h2 class="sec">Temporada por temporada</h2>
+    <div class="card">
+        <div class="tmps">
+            {% for t in extra.por_temporada %}
+            {% set tot = t.a + t.b + t.e %}
+            <div class="tmp">
+                <span class="tl">{{ t.temporada }}</span>
+                <span class="tb" aria-hidden="true">
+                    {%- if t.a %}<i class="ba" style="flex:{{ t.a }}"></i>{% endif -%}
+                    {%- if t.e %}<i class="be" style="flex:{{ t.e }}"></i>{% endif -%}
+                    {%- if t.b %}<i class="bb" style="flex:{{ t.b }}"></i>{% endif -%}
+                </span>
+                <span class="tn">{{ t.a }}&ndash;{{ t.b }}{% if t.e %} ({{ t.e }}E){% endif %}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="fuente" style="margin-top:.6rem">
+            {{ equipo_a }} a la izquierda, {{ equipo_b }} a la derecha.
+            {{ extra.temporadas }} temporada{{ 's' if extra.temporadas != 1 }} con enfrentamientos.
+        </p>
+    </div>
+    {% endif %}
     {% else %}
     <div class="vacio">
         <strong>Todav&iacute;a no tenemos partidos registrados de este cl&aacute;sico.</strong><br>

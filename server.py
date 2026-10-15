@@ -9259,6 +9259,86 @@ def _resumen_h2h(juegos: list, nombre_a: str, nombre_b: str) -> dict:
     }
 
 
+# Ligas cuya temporada cabe dentro de un año natural. Todas las demás cruzan el
+# cambio de año y se etiquetan "2025-26": el béisbol de invierno empieza en
+# octubre y acaba en febrero, la Liga MX juega Apertura y Clausura, la NFL y la
+# NBA terminan el año siguiente al que empiezan.
+_TEMPORADA_EN_UN_ANO = {"mlb", "lmb", "mls"}
+
+
+def _stats_clasico(juegos: list, nombre_a: str, nombre_b: str, liga_slug: str) -> dict:
+    """Datos derivados del propio historial. Ni una petición más.
+
+    Todo sale de las filas que ya tenemos, así que no cuesta nada y no puede
+    desincronizarse con la serie que se muestra arriba.
+    """
+    a = _sin_acentos(nombre_a)
+    una = liga_slug in _TEMPORADA_EN_UN_ANO
+
+    temporadas: dict = {}
+    loc_a = [0, 0]   # [ganados, jugados] como local
+    loc_b = [0, 0]
+    ajustados = 0    # decididos por la mínima
+    mayor = None     # la paliza más grande
+
+    for j in juegos:
+        try:
+            pl, pv = int(j["home_score"]), int(j["away_score"])
+        except (TypeError, ValueError, KeyError):
+            continue
+        f = str(j.get("game_date") or "")
+        if len(f) != 8 or not f.isdigit():
+            continue
+        anio, mes = int(f[0:4]), int(f[4:6])
+        if una:
+            etiqueta = str(anio)
+        else:
+            inicio = anio if mes >= 7 else anio - 1
+            etiqueta = f"{inicio}-{str(inicio + 1)[2:]}"
+
+        a_local = a in _sin_acentos(j.get("home_name"))
+        pa, pb = (pl, pv) if a_local else (pv, pl)
+
+        t = temporadas.setdefault(etiqueta, {"temporada": etiqueta, "a": 0, "b": 0, "e": 0})
+        if pa > pb:
+            t["a"] += 1
+        elif pb > pa:
+            t["b"] += 1
+        else:
+            t["e"] += 1
+
+        if a_local:
+            loc_a[1] += 1
+            loc_a[0] += 1 if pa > pb else 0
+        else:
+            loc_b[1] += 1
+            loc_b[0] += 1 if pb > pa else 0
+
+        dif = abs(pl - pv)
+        if dif == 1:
+            ajustados += 1
+        if dif and (mayor is None or dif > mayor["dif"]):
+            mayor = {
+                "dif": dif, "fecha": f,
+                "ganador": j.get("home_name") if pl > pv else j.get("away_name"),
+                "marcador": f"{max(pl, pv)}-{min(pl, pv)}",
+            }
+
+    lista = sorted(temporadas.values(), key=lambda t: t["temporada"], reverse=True)
+    total = sum(t["a"] + t["b"] + t["e"] for t in lista)
+    return {
+        "por_temporada": lista,
+        "temporadas": len(lista),
+        "local_a": {"ganados": loc_a[0], "jugados": loc_a[1],
+                    "pct": round(loc_a[0] / loc_a[1] * 100) if loc_a[1] else 0},
+        "local_b": {"ganados": loc_b[0], "jugados": loc_b[1],
+                    "pct": round(loc_b[0] / loc_b[1] * 100) if loc_b[1] else 0},
+        "ajustados": ajustados,
+        "pct_ajustados": round(ajustados / total * 100) if total else 0,
+        "mayor": mayor,
+    }
+
+
 @app.get("/clasico/{slug}", response_class=HTMLResponse)
 async def clasico_page(request: Request, slug: str):
     """Página permanente de una rivalidad: serie, historial y próximo duelo."""
@@ -9279,8 +9359,12 @@ async def clasico_page(request: Request, slug: str):
     # desde 2014. Ver fetch_mlbstats_h2h.
     from sports_api import _MLB_STATS_LEAGUES, fetch_mlbstats_h2h
     _liga_invierno = _MLB_STATS_LEAGUES.get(league_id)
-    _trae_h2h = (fetch_mlbstats_h2h(_liga_invierno, a, b, limite=40)
-                 if _liga_invierno else get_h2h(a, b, limit=40))
+    # El límite tiene que ser más alto que lo que se PINTA, porque la serie se
+    # calcula sobre todo lo que llegue. Con limit=40 la página decía "Caracas
+    # domina 22-18" contando sólo los últimos 40 partidos, cuando el histórico
+    # es 49-47 para Magallanes. El recorte para el listado va más abajo.
+    _trae_h2h = (fetch_mlbstats_h2h(_liga_invierno, a, b)
+                 if _liga_invierno else get_h2h(a, b, limit=500))
 
     h2h, standings, proximos, hoy = await asyncio.gather(
         _trae_h2h,
@@ -9335,6 +9419,7 @@ async def clasico_page(request: Request, slug: str):
         "slug_a": _canon_team_slug(cfg["slugs"][0]),
         "slug_b": _canon_team_slug(cfg["slugs"][1]),
         "h2h": h2h, "serie": serie, "proximo": proximo, "duelo_hoy": bool(duelo_hoy),
+        "extra": _stats_clasico(h2h, a, b, cfg["liga_slug"]),
         # La nota de procedencia cambia según de dónde salió el historial.
         "fuente_mlb": bool(_liga_invierno),
         "fila_a": _fila(a), "fila_b": _fila(b),

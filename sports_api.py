@@ -3139,8 +3139,20 @@ async def _calendario_invierno(liga_id: int, season: int) -> list[dict]:
     return juegos
 
 
-async def fetch_mlbstats_h2h(liga_id: int, nombre_a: str, nombre_b: str,
-                             limite: int = 40) -> list[dict]:
+def _escudo_mlb(team_id) -> str:
+    """Escudo de un equipo de statsapi, en PNG pequeño.
+
+    NO se usa www.mlbstatic.com/team-logos/{id}.svg, que es el que parece el
+    oficial: medido el 15/10/2026, el de Caribes de Anzoátegui pesa 1.294 KB y
+    el del Zulia 990 KB. Dos escudos así en la cabecera son 2 MB de imágenes en
+    una página que se ve sobre todo desde Venezuela y con datos móviles.
+
+    midfield sirve el mismo escudo como PNG: 3 KB a 120 px.
+    """
+    return f"https://midfield.mlbstatic.com/v1/team/{team_id}/spots/120" if team_id else ""
+
+
+async def fetch_mlbstats_h2h(liga_id: int, nombre_a: str, nombre_b: str) -> list[dict]:
     """Enfrentamientos entre dos equipos de una liga de invierno.
 
     POR QUÉ NO SALE DE NUESTRA BASE
@@ -3161,10 +3173,17 @@ async def fetch_mlbstats_h2h(liga_id: int, nombre_a: str, nombre_b: str,
 
     Del más reciente al más viejo, igual que db.get_h2h — la plantilla toma
     h2h[-1] para decir desde cuándo hay historial.
+
+    Devuelve TODO el historial, sin recortar. El recorte es cosa de quien lo
+    pinta: la serie tiene que calcularse sobre el total. Cuando esto devolvía
+    sólo 40 filas, /clasico/magallanes-vs-caracas anunciaba "Caracas domina la
+    serie 22-18" porque contaba los últimos 40 partidos, cuando el histórico
+    completo es 49-47 para Magallanes. Decirle a media Venezuela que gana el
+    rival equivocado es el peor error posible en esa página.
     """
     clave = f"h2h:inv:{liga_id}:{nombre_a}:{nombre_b}"
     if clave in _h2h_invierno_cache:
-        return _h2h_invierno_cache[clave][:limite]
+        return _h2h_invierno_cache[clave]
 
     a, b = _sin_acentos_api(nombre_a), _sin_acentos_api(nombre_b)
     temporadas = range(_H2H_INVIERNO_DESDE, _temporada_invierno() + 1)
@@ -3197,7 +3216,8 @@ async def fetch_mlbstats_h2h(liga_id: int, nombre_a: str, nombre_b: str,
                 "home_name": n_loc, "away_name": n_vis,
                 "home_short": (loc.get("team") or {}).get("abbreviation") or "",
                 "away_short": (vis.get("team") or {}).get("abbreviation") or "",
-                "home_logo": "", "away_logo": "",
+                "home_logo": _escudo_mlb((loc.get("team") or {}).get("id")),
+                "away_logo": _escudo_mlb((vis.get("team") or {}).get("id")),
                 "home_score": loc.get("score"), "away_score": vis.get("score"),
                 "venue": (g.get("venue") or {}).get("name") or "",
                 "winner": n_loc if loc.get("score") > vis.get("score") else (
@@ -3206,7 +3226,7 @@ async def fetch_mlbstats_h2h(liga_id: int, nombre_a: str, nombre_b: str,
 
     filas.sort(key=lambda f: f["game_date"], reverse=True)
     _h2h_invierno_cache[clave] = filas
-    return filas[:limite]
+    return filas
 
 
 async def fetch_mlbstats_leaders(liga_id: int, season: int, top_n: int = 5) -> list[dict]:
