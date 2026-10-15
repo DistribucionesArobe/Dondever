@@ -93,12 +93,20 @@ EVENT_CHANNELS = {
         "AR": ["ESPN Latinoamérica", "Disney+"],
         "ES": ["DAZN"],
     },
+    # NASCAR en México y Latinoamérica es de FOX DEPORTES desde el 1 de febrero
+    # de 2026: Cup, Xfinity y Trucks, más de 90 carreras al año. Anunciado por
+    # FOX Latinoamérica y NASCAR el 29/01/2026.
+    #
+    # Aquí decía "Fox Sports MX" y "Fox Sports Latinoamérica", que NO es lo
+    # mismo: Fox Sports México es de Grupo Lauman desde que Disney lo vendió,
+    # mientras que FOX Deportes es la señal de Fox Corporation. Mandábamos al
+    # lector a la empresa equivocada.
     "nascar": {
-        "MX": ["Fox Sports MX"],
+        "MX": ["FOX Deportes"],
         "US": ["NBC", "USA Network", "HBO Max"],   # se sobreescribe con broadcasts de ESPN por carrera
-        "VE": ["Fox Sports Latinoamérica"],
-        "CO": ["Fox Sports Latinoamérica"],
-        "AR": ["Fox Sports Latinoamérica"],
+        "VE": ["FOX Deportes"],
+        "CO": ["FOX Deportes"],
+        "AR": ["FOX Deportes"],
         "ES": ["DAZN"],
     },
     "indycar": {
