@@ -9178,6 +9178,21 @@ async def clasico_page(request: Request, slug: str):
 
     serie = _resumen_h2h(h2h, a, b)
 
+    # Escudos. POPULAR_TEAMS no los guarda, pero cada partido que persistimos sí
+    # trae home_logo/away_logo de ESPN, así que se sacan del propio historial.
+    # Si todavía no hay partidos guardados, no hay escudo y la página se ve bien
+    # igual: la inicial dentro de un círculo con el color del equipo.
+    def _escudo(nombre):
+        n = nombre.lower()
+        for j in h2h:
+            if n in (j.get("home_name") or "").lower() and j.get("home_logo"):
+                return j["home_logo"]
+            if n in (j.get("away_name") or "").lower() and j.get("away_logo"):
+                return j["away_logo"]
+        return ""
+
+    escudo_a, escudo_b = _escudo(a), _escudo(b)
+
     def _es_el_duelo(local, visita):
         l, v = (local or "").lower(), (visita or "").lower()
         return ((a.lower() in l and b.lower() in v) or (b.lower() in l and a.lower() in v))
@@ -9198,6 +9213,11 @@ async def clasico_page(request: Request, slug: str):
 
     return templates.TemplateResponse(request, "clasico.html", {
         "cfg": cfg, "slug": slug, "equipo_a": a, "equipo_b": b,
+        "escudo_a": escudo_a, "escudo_b": escudo_b,
+        # Los slugs van al template para enlazar a /equipo/. Se canonizan por si
+        # alguno cambió de nombre: _canon_team_slug ya resuelve los 256 alias.
+        "slug_a": _canon_team_slug(cfg["slugs"][0]),
+        "slug_b": _canon_team_slug(cfg["slugs"][1]),
         "h2h": h2h, "serie": serie, "proximo": proximo, "duelo_hoy": bool(duelo_hoy),
         "fila_a": _fila(a), "fila_b": _fila(b),
         "otros": [(s, c) for s, c in _CLASICOS.items() if s != slug][:6],
