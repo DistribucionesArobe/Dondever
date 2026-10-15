@@ -9,6 +9,7 @@ import asyncio
 import logging
 import os
 import re
+import unicodedata as _ud
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from cachetools import TTLCache
@@ -20,6 +21,17 @@ from config import (
 )
 
 logger = logging.getLogger("dondever.sports")
+
+
+def _sin_acentos_api(t: str) -> str:
+    """Minúsculas sin acentos, para comparar nombres de equipo.
+
+    Los slugs y los nombres que guardamos no llevan acento ("america", "leon")
+    y los de las APIs sí ("Club América"). Comparar en crudo hacía que la
+    página del América no encontrara ni su propio partido.
+    """
+    return "".join(c for c in _ud.normalize("NFD", (t or "").lower())
+                   if _ud.category(c) != "Mn")
 
 # ── ESPN status description → Spanish translation ──
 _STATUS_ES = {
@@ -2096,12 +2108,7 @@ async def search_games(query: str, date_str: Optional[str] = None,
     su propio partido: solo salían los de futbol americano, que coincidían por
     el nombre de la liga.
     """
-    import unicodedata as _ud
-
-    def _norm(t: str) -> str:
-        return "".join(c for c in _ud.normalize("NFD", (t or "").lower())
-                       if _ud.category(c) != "Mn")
-
+    _norm = _sin_acentos_api
     query_lower = query.lower().strip()
 
     # Expand aliases: "chivas" -> also search "guadalajara"
@@ -3098,6 +3105,108 @@ _CATEGORIAS_INVIERNO = [
     ("earnedRunAverage", "pitching", "Efectividad",       "⚾"),
     ("strikeouts",     "pitching", "Ponches",             "🔥"),
 ]
+
+
+# Primera temporada con calendario completo en statsapi para las ligas de
+# invierno. Comprobado el 15/10/2026 pidiendo el calendario año por año:
+#   LVBP  2000 → 4 partidos   2005 → 4   2008 → 264 ✓
+#   LMP   2014 → 274 ✓        LIDOM 2014 → 155 ✓
+# Antes de 2008 sólo hay restos sueltos, así que empezar ahí sería prometer un
+# historial que no existe. Se usa 2014 porque son doce temporadas —sobra para
+# que la serie signifique algo— y son doce peticiones, no dieciocho.
+_H2H_INVIERNO_DESDE = 2014
+
+# 12 h. Las temporadas cerradas no cambian nunca y la actual cambia una vez al
+# día como mucho. La página además está detrás del caché de HTML.
+_h2h_invierno_cache = TTLCache(maxsize=16, ttl=43200)
+
+
+async def _calendario_invierno(liga_id: int, season: int) -> list[dict]:
+    """Calendario terminado de una temporada de invierno. Sin filtrar."""
+    url = ("https://statsapi.mlb.com/api/v1/schedule"
+           f"?sportId=17&leagueId={liga_id}&season={season}&gameType=R")
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.get(url)
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        logger.warning("statsapi calendario %s/%s falló: %s", liga_id, season, e)
+        return []
+    juegos = []
+    for dia in data.get("dates") or []:
+        juegos.extend(dia.get("games") or [])
+    return juegos
+
+
+async def fetch_mlbstats_h2h(liga_id: int, nombre_a: str, nombre_b: str,
+                             limite: int = 40) -> list[dict]:
+    """Enfrentamientos entre dos equipos de una liga de invierno.
+
+    POR QUÉ NO SALE DE NUESTRA BASE
+    -------------------------------
+    El resto de los clásicos lee `games`, que sólo tiene lo que hemos guardado
+    desde que existe el sitio. Para LVBP, LIDOM y LMP eso sería casi nada justo
+    en las ligas donde el clásico es lo más buscado de la temporada.
+
+    statsapi.mlb.com publica el calendario completo con marcadores. Comprobado
+    el 15/10/2026 sobre 2014-2025:
+        Magallanes vs Caracas     96 partidos   49-47
+        Licey vs Escogido        114 partidos   58-56
+        Tomateros vs Naranjeros  109 partidos   50-59
+
+    Devuelve filas con las mismas claves que db.get_h2h para que _resumen_h2h y
+    la plantilla no tengan que saber de dónde vino el dato. Sin escudos: la
+    plantilla ya cae a la inicial sobre el color del equipo.
+
+    Del más reciente al más viejo, igual que db.get_h2h — la plantilla toma
+    h2h[-1] para decir desde cuándo hay historial.
+    """
+    clave = f"h2h:inv:{liga_id}:{nombre_a}:{nombre_b}"
+    if clave in _h2h_invierno_cache:
+        return _h2h_invierno_cache[clave][:limite]
+
+    a, b = _sin_acentos_api(nombre_a), _sin_acentos_api(nombre_b)
+    temporadas = range(_H2H_INVIERNO_DESDE, _temporada_invierno() + 1)
+    # En paralelo: son doce peticiones y en serie se notarían en una caja de 1 CPU.
+    tandas = await asyncio.gather(*[_calendario_invierno(liga_id, s) for s in temporadas],
+                                  return_exceptions=True)
+
+    filas: list[dict] = []
+    for tanda in tandas:
+        if isinstance(tanda, Exception):
+            continue
+        for g in tanda:
+            if (g.get("status") or {}).get("abstractGameState") != "Final":
+                continue
+            eq = g.get("teams") or {}
+            loc, vis = eq.get("home") or {}, eq.get("away") or {}
+            n_loc = ((loc.get("team") or {}).get("name") or "")
+            n_vis = ((vis.get("team") or {}).get("name") or "")
+            nl, nv = _sin_acentos_api(n_loc), _sin_acentos_api(n_vis)
+            if not ((a in nl and b in nv) or (b in nl and a in nv)):
+                continue
+            if loc.get("score") is None or vis.get("score") is None:
+                continue
+            fecha = g.get("officialDate") or ""
+            filas.append({
+                "id": str(g.get("gamePk") or ""),
+                "game_date": fecha.replace("-", ""),
+                "date_utc": g.get("gameDate") or "",
+                "league_slug": "", "league_name": "", "sport": "baseball",
+                "home_name": n_loc, "away_name": n_vis,
+                "home_short": (loc.get("team") or {}).get("abbreviation") or "",
+                "away_short": (vis.get("team") or {}).get("abbreviation") or "",
+                "home_logo": "", "away_logo": "",
+                "home_score": loc.get("score"), "away_score": vis.get("score"),
+                "venue": (g.get("venue") or {}).get("name") or "",
+                "winner": n_loc if loc.get("score") > vis.get("score") else (
+                    n_vis if vis.get("score") > loc.get("score") else ""),
+            })
+
+    filas.sort(key=lambda f: f["game_date"], reverse=True)
+    _h2h_invierno_cache[clave] = filas
+    return filas[:limite]
 
 
 async def fetch_mlbstats_leaders(liga_id: int, season: int, top_n: int = 5) -> list[dict]:

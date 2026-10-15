@@ -218,10 +218,21 @@
             <span>{{ serie.total }} partido{{ '' if serie.total == 1 else 's' }}</span>
             <span>{{ serie.pct_b }}%</span>
         </div>
+        {# De dónde salen los números. No es lo mismo nuestro propio registro,
+           que empieza cuando empezó el sitio, que el archivo oficial de MLB
+           para las ligas de invierno; decir "lo que hemos registrado" sobre un
+           dato de statsapi sería vendernos un mérito que no es nuestro, y al
+           revés sería prometer un historial completo que no tenemos. #}
         <p class="fuente">
-            Historial construido con los partidos que DondeVer.app ha registrado
-            {%- if h2h %}, desde el {{ h2h[-1].game_date }}{% endif %}. No es el historial
-            completo de la rivalidad: crece cada vez que estos equipos vuelven a jugar.
+            {%- if fuente_mlb -%}
+                Historial oficial de MLB (statsapi) para {{ cfg.liga }}
+                {%- if h2h %}, desde el {{ h2h[-1].game_date|fecha_corta }}{% endif %}.
+                No incluye postemporada ni las temporadas anteriores a 2014.
+            {%- else -%}
+                Historial construido con los partidos que DondeVer.app ha registrado
+                {%- if h2h %}, desde el {{ h2h[-1].game_date|fecha_corta }}{% endif %}. No es el historial
+                completo de la rivalidad: crece cada vez que estos equipos vuelven a jugar.
+            {%- endif -%}
         </p>
     </section>
 
@@ -304,7 +315,7 @@
         {%- set a_local = equipo_a.lower() in (j.home_name or '').lower() -%}
         {%- set gana_local = (j.home_score|int) > (j.away_score|int) -%}
         <div class="row">
-            <span class="fch">{{ j.game_date }}</span>
+            <span class="fch">{{ j.game_date|fecha_corta }}</span>
             <span class="tm r">{{ j.home_short or j.home_name }}{% if j.home_logo %} <img class="mini" src="{{ j.home_logo }}" alt="" loading="lazy" onerror="this.remove()">{% endif %}</span>
             <span class="sc {% if gana_local %}{{ 'win-a' if a_local else 'win-b' }}{% elif (j.away_score|int) > (j.home_score|int) %}{{ 'win-b' if a_local else 'win-a' }}{% endif %}">{{ j.home_score }}&ndash;{{ j.away_score }}</span>
             <span class="tm">{% if j.away_logo %}<img class="mini" src="{{ j.away_logo }}" alt="" loading="lazy" onerror="this.remove()"> {% endif %}{{ j.away_short or j.away_name }}</span>

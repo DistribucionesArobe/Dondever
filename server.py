@@ -162,6 +162,29 @@ def _dato(valor):
 
 templates.env.filters["dato"] = _dato
 
+
+_MESES_CORTO = ("ene", "feb", "mar", "abr", "may", "jun",
+                "jul", "ago", "sep", "oct", "nov", "dic")
+
+
+def _fecha_corta(ymd):
+    """'20251221' → '21 dic 2025'.
+
+    La columna game_date se guarda como YYYYMMDD y el historial del clásico la
+    imprimía tal cual: se leía "20251221" en pantalla y "desde el 20250412" en
+    la nota de procedencia.
+    """
+    s = str(ymd or "").strip()
+    if len(s) != 8 or not s.isdigit():
+        return s
+    try:
+        return f"{int(s[6:8])} {_MESES_CORTO[int(s[4:6]) - 1]} {s[0:4]}"
+    except (IndexError, ValueError):
+        return s
+
+
+templates.env.filters["fecha_corta"] = _fecha_corta
+
 # ── hreflang tags for LATAM + Spain geo-targeting ──────────────
 HREFLANG_LOCALES = ["es-MX", "es-US", "es-AR", "es-CO", "es-CL", "es-PE", "es-EC", "es-VE", "es-PA", "es-DO", "es-ES"]
 
@@ -9249,8 +9272,18 @@ async def clasico_page(request: Request, slug: str):
     from db import get_h2h
     sport, league_id, *_ = ALL_LEAGUES[cfg["liga_slug"]]
 
+    # Béisbol de invierno: el historial sale de statsapi.mlb.com, no de nuestra
+    # base. Es justo donde el clásico es lo más buscado de la temporada y donde
+    # nuestra tabla `games` apenas tiene nada, porque esas ligas se añadieron
+    # hace semanas. statsapi publica el calendario completo con marcadores
+    # desde 2014. Ver fetch_mlbstats_h2h.
+    from sports_api import _MLB_STATS_LEAGUES, fetch_mlbstats_h2h
+    _liga_invierno = _MLB_STATS_LEAGUES.get(league_id)
+    _trae_h2h = (fetch_mlbstats_h2h(_liga_invierno, a, b, limite=40)
+                 if _liga_invierno else get_h2h(a, b, limit=40))
+
     h2h, standings, proximos, hoy = await asyncio.gather(
-        get_h2h(a, b, limit=40),
+        _trae_h2h,
         get_league_standings(sport, league_id, limit=50),
         get_upcoming_league_games(sport, league_id, days=120, limit=60),
         get_todays_games(league_filter=cfg["liga_slug"]),
@@ -9302,6 +9335,8 @@ async def clasico_page(request: Request, slug: str):
         "slug_a": _canon_team_slug(cfg["slugs"][0]),
         "slug_b": _canon_team_slug(cfg["slugs"][1]),
         "h2h": h2h, "serie": serie, "proximo": proximo, "duelo_hoy": bool(duelo_hoy),
+        # La nota de procedencia cambia según de dónde salió el historial.
+        "fuente_mlb": bool(_liga_invierno),
         "fila_a": _fila(a), "fila_b": _fila(b),
         # Primero los de la misma liga, que es lo que de verdad le interesa a
         # quien está leyendo esta rivalidad; después el resto, para rellenar.
