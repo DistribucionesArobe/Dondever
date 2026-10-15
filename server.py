@@ -1292,7 +1292,11 @@ async def home(
             # Enlaces reales (no chips de JS) a las páginas de rivalidad. Las
             # chips de liga se arman en el cliente y por eso no las ve el robot;
             # esta fila sí está en el HTML que llega.
-            "clasicos_home": list(_CLASICOS.items()),
+            #
+            # Uno por liga y hasta diez: con el catálogo completo serían más de
+            # cincuenta enlaces en una línea de la portada, que no es una fila
+            # de enlaces sino un muro. El resto se alcanza desde /clasicos.
+            "clasicos_home": _clasicos_portada(),
             "current_sport": sport,
             "current_league": league,
             "current_date": date or today.strftime("%Y%m%d"),
@@ -9115,82 +9119,9 @@ _EN_WINTER_LEAGUES = {
 # busca en la tabla `games`. `tagline` y `contexto` son lo único escrito a
 # mano, y son hechos comprobables, no relleno: nada de "el duelo más apasionante
 # de todos los tiempos".
-_CLASICOS = {
-    "america-vs-chivas": {
-        "nombre": "Clásico Nacional", "liga": "Liga MX", "liga_slug": "liga-mx",
-        "equipos": ("América", "Guadalajara"),
-        "slugs": ("america", "chivas"),
-        "tagline": "América vs Chivas",
-        "contexto": "El partido más visto del futbol mexicano. Enfrenta a los dos clubes "
-                    "con más campeonatos de Liga MX y es el único que suele transmitirse "
-                    "por televisión abierta en todo el país.",
-        "color_a": "#ffd700", "color_b": "#c8102e",
-    },
-    "america-vs-cruz-azul": {
-        "nombre": "Clásico Joven", "liga": "Liga MX", "liga_slug": "liga-mx",
-        "equipos": ("América", "Cruz Azul"),
-        "slugs": ("america", "cruz-azul"),
-        "tagline": "América vs Cruz Azul",
-        "contexto": "Clásico capitalino entre dos de los equipos más ganadores de México. "
-                    "Se juega desde los años setenta y ha definido varias finales.",
-        "color_a": "#ffd700", "color_b": "#003da5",
-    },
-    "monterrey-vs-tigres": {
-        "nombre": "Clásico Regio", "liga": "Liga MX", "liga_slug": "liga-mx",
-        "equipos": ("Monterrey", "Tigres"),
-        "slugs": ("monterrey", "tigres"),
-        "tagline": "Rayados vs Tigres",
-        "contexto": "El clásico de Nuevo León. Los dos equipos comparten ciudad y se han "
-                    "enfrentado en finales de Liga MX y de Concacaf.",
-        "color_a": "#003da5", "color_b": "#ffb81c",
-    },
-    "pumas-vs-cruz-azul": {
-        "nombre": "Clásico Capitalino", "liga": "Liga MX", "liga_slug": "liga-mx",
-        "equipos": ("Pumas", "Cruz Azul"),
-        "slugs": ("pumas", "cruz-azul"),
-        "tagline": "Pumas vs Cruz Azul",
-        "contexto": "Duelo entre dos clubes de la Ciudad de México con historia compartida "
-                    "en finales y en la memoria del Estadio Olímpico Universitario.",
-        "color_a": "#00205b", "color_b": "#003da5",
-    },
-    "yankees-vs-red-sox": {
-        "nombre": "Yankees vs Red Sox", "liga": "MLB", "liga_slug": "mlb",
-        "equipos": ("Yankees", "Red Sox"),
-        "slugs": ("yankees", "red-sox"),
-        "tagline": "La rivalidad más antigua de las Grandes Ligas",
-        "contexto": "Rivalidad de división en la Liga Americana del Este. Se enfrentan "
-                    "varias veces cada temporada regular y han definido series de "
-                    "postemporada memorables.",
-        "color_a": "#132448", "color_b": "#bd3039",
-    },
-    "dodgers-vs-giants": {
-        "nombre": "Dodgers vs Giants", "liga": "MLB", "liga_slug": "mlb",
-        "equipos": ("Dodgers", "Giants"),
-        "slugs": ("dodgers", "giants"),
-        "tagline": "El clásico de la Costa Oeste",
-        "contexto": "Rivalidad que nació en Nueva York y se mudó completa a California. "
-                    "Ambos están en la División Oeste de la Liga Nacional.",
-        "color_a": "#005a9c", "color_b": "#fd5a1e",
-    },
-    "cowboys-vs-eagles": {
-        "nombre": "Cowboys vs Eagles", "liga": "NFL", "liga_slug": "nfl",
-        "equipos": ("Cowboys", "Eagles"),
-        "slugs": ("cowboys", "eagles"),
-        "tagline": "El clásico de la NFC Este",
-        "contexto": "Rivalidad de división: se enfrentan dos veces cada temporada regular "
-                    "y el resultado suele decidir quién gana la NFC Este.",
-        "color_a": "#041e42", "color_b": "#004c54",
-    },
-    "lakers-vs-celtics": {
-        "nombre": "Lakers vs Celtics", "liga": "NBA", "liga_slug": "nba",
-        "equipos": ("Lakers", "Celtics"),
-        "slugs": ("lakers", "celtics"),
-        "tagline": "La rivalidad con más finales de la NBA",
-        "contexto": "Los dos equipos con más campeonatos de la NBA. Se han enfrentado en "
-                    "múltiples Finales desde los años sesenta.",
-        "color_a": "#552583", "color_b": "#007a33",
-    },
-}
+# El catálogo vive en clasicos.py: son datos, no lógica, y aquí solo
+# engordaban un módulo que ya pasa de 9.000 líneas.
+from clasicos import CLASICOS as _CLASICOS
 
 
 def _sin_acentos(t: str) -> str:
@@ -9210,6 +9141,33 @@ def _clasicos_de_equipo(team_slug: str) -> list:
     """Clásicos en los que participa un equipo. Lista de (slug, cfg)."""
     s = _canon_team_slug(team_slug or "")
     return [(k, c) for k, c in _CLASICOS.items() if s in c["slugs"]]
+
+
+# Qué ligas salen en la fila de la portada y en qué orden. Es una decisión de
+# audiencia, no alfabética: manda México, luego lo que más se ve en México y
+# Estados Unidos, luego el béisbol de invierno —que está en temporada justo
+# cuando Liga MX y la NFL también— y al final Europa y Sudamérica.
+# Recorrer el catálogo sin más dejaba una fila entera de ligas europeas.
+_LIGAS_PORTADA = ("liga-mx", "mlb", "nfl", "lvbp", "lidom", "lmp",
+                  "la-liga", "premier-league", "liga-argentina", "nba")
+
+
+def _clasicos_portada(maximo: int = 10) -> list:
+    """Un clásico por liga para la fila de la portada, en orden de audiencia.
+
+    Dentro de cada liga se toma el primero del catálogo, que está ordenado por
+    relevancia: en Liga MX el Clásico Nacional, en La Liga El Clásico, en
+    Argentina el Superclásico.
+    """
+    salida = []
+    for liga in _LIGAS_PORTADA:
+        for k, c in _CLASICOS.items():
+            if c["liga_slug"] == liga:
+                salida.append((k, c))
+                break
+        if len(salida) >= maximo:
+            break
+    return salida
 
 
 def _clasicos_de_liga(liga_slug: str) -> list:
@@ -9345,15 +9303,43 @@ async def clasico_page(request: Request, slug: str):
         "slug_b": _canon_team_slug(cfg["slugs"][1]),
         "h2h": h2h, "serie": serie, "proximo": proximo, "duelo_hoy": bool(duelo_hoy),
         "fila_a": _fila(a), "fila_b": _fila(b),
-        "otros": [(s, c) for s, c in _CLASICOS.items() if s != slug][:6],
+        # Primero los de la misma liga, que es lo que de verdad le interesa a
+        # quien está leyendo esta rivalidad; después el resto, para rellenar.
+        # Antes se cortaban los seis primeros del diccionario, lo que con el
+        # catálogo ampliado dejaba a un lector de la NBA mirando clásicos de
+        # Liga MX.
+        "otros": (
+            [(s, c) for s, c in _CLASICOS.items()
+             if s != slug and c["liga_slug"] == cfg["liga_slug"]]
+            + [(s, c) for s, c in _CLASICOS.items()
+               if s != slug and c["liga_slug"] != cfg["liga_slug"]]
+        )[:6],
     })
 
 
 @app.get("/clasicos", response_class=HTMLResponse)
 async def clasicos_index(request: Request):
-    """Índice de clásicos."""
+    """Índice de clásicos, agrupado por liga.
+
+    La agrupación se arma aquí y no en la plantilla: antes la plantilla
+    recorría una lista fija de cuatro ligas y cualquier clásico de una quinta
+    quedaba invisible aunque su página existiera y estuviera en el sitemap.
+
+    El orden de los grupos es el de aparición en el catálogo, que ya está
+    ordenado por cercanía al lector: México primero, luego Europa, luego
+    Sudamérica, luego Estados Unidos y al final el béisbol de invierno.
+    """
+    grupos: list = []
+    indice: dict = {}
+    for s, c in _CLASICOS.items():
+        liga = c["liga"]
+        if liga not in indice:
+            indice[liga] = {"liga": liga, "liga_slug": c["liga_slug"], "items": []}
+            grupos.append(indice[liga])
+        indice[liga]["items"].append((s, c))
     return templates.TemplateResponse(request, "clasicos_index.html",
-                                      {"clasicos": _CLASICOS})
+                                      {"clasicos": _CLASICOS, "grupos": grupos,
+                                       "total": len(_CLASICOS)})
 
 
 @app.get("/en/baseball/{slug}", response_class=HTMLResponse)

@@ -33,6 +33,8 @@
         .cl .tg{font-size:.82rem;font-weight:600;opacity:.92}
         .cl .go{font-size:.75rem;font-weight:800;margin-top:.6rem;opacity:.95}
         h2{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;font-weight:800;margin:1.6rem 0 .6rem}
+        h2 .h2-liga{font-size:.68rem;letter-spacing:0;text-transform:none;color:#059669;text-decoration:none;font-weight:700;margin-left:.5rem}
+        h2 .h2-liga:hover{text-decoration:underline}
         .footer{max-width:900px;margin:2rem auto;padding:1rem;text-align:center;font-size:.7rem;color:#9ca3af}
         .footer a{color:#059669;text-decoration:none}
         body.dark-mode{background:#0f172a}
@@ -49,18 +51,18 @@
 <main class="main">
     <nav class="crumb"><a href="/">Inicio</a> &rsaquo; Cl&aacute;sicos</nav>
     <h1>Cl&aacute;sicos del deporte</h1>
-    <p class="lead">Las rivalidades que la gente busca por nombre. En cada una: el historial de
-    enfrentamientos que hemos registrado, c&oacute;mo llegan los dos equipos y d&oacute;nde ver
+    <p class="lead">{{ total }} rivalidades que la gente busca por nombre. En cada una: el historial
+    de enfrentamientos que hemos registrado, c&oacute;mo llegan los dos equipos y d&oacute;nde ver
     el pr&oacute;ximo duelo con canales y horario.</p>
 
 {{ ad('top') }}
 
-    {% for liga in ['Liga MX', 'MLB', 'NFL', 'NBA'] %}
-    {% set grupo = clasicos.items()|selectattr('1.liga','equalto',liga)|list %}
-    {% if grupo %}
-    <h2>{{ liga }}</h2>
+    {# La lista de ligas la arma el servidor. Aquí estaba fija en cuatro, y
+       cualquier clásico de una quinta liga no aparecía nunca. #}
+    {% for g in grupos %}
+    <h2>{{ g.liga }} <a class="h2-liga" href="/liga/{{ g.liga_slug }}">ver la liga &rarr;</a></h2>
     <div class="grid">
-        {% for s, c in grupo %}
+        {% for s, c in g['items'] %}
         <a class="cl" href="/clasico/{{ s }}"
            style="background:linear-gradient(110deg,{{ c.color_a }} 0%,{{ c.color_a }} 44%,#0b1020 50%,{{ c.color_b }} 56%,{{ c.color_b }} 100%);">
             <div class="lg">{{ c.liga }}</div>
@@ -70,7 +72,6 @@
         </a>
         {% endfor %}
     </div>
-    {% endif %}
     {% endfor %}
 </main>
 {{ ad('bottom') }}
