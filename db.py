@@ -59,6 +59,21 @@ class GameRecord(Base):
     venue = Column(String(256), default="")
     # Channels (JSON array of channel names)
     channels_json = Column(Text, default="[]")
+    # Lo mismo, pero congelado: [{"canal","pais","tipo","origen"}] TAL COMO ERAN
+    # el día que se guardó el partido.
+    #
+    # channels_json sólo tiene nombres sueltos; el país y el tipo se resuelven
+    # al pintar, consultando CHANNEL_ALIASES *de hoy*. Eso significa que el
+    # archivo se reinterpreta solo: el día que un canal cambie de manos, de país
+    # o de tipo, todos los partidos viejos empiezan a describirse mal, hacia
+    # atrás, sin que nadie se entere. Es la misma raíz del caso Fox Sports —
+    # el canal caduco no estaba en el código, estaba congelado en la base.
+    #
+    # Esta columna todavía no la lee nadie, y es a propósito: para las filas
+    # viejas está vacía y lo estará durante meses. Su valor es que a partir de
+    # hoy el histórico de transmisiones queda bien guardado, y eso no se puede
+    # reconstruir hacia atrás si no se empieza.
+    channels_meta = Column(Text, default="[]")
     # Recap (JSON: headline, mvp, winner)
     recap_json = Column(Text, default="{}")
     # Winner name (denormalized for easy queries)
@@ -79,6 +94,18 @@ async def init_db():
     """Create tables if they don't exist."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # create_all crea tablas, NO añade columnas a una tabla que ya existe.
+        # Sin esto, una columna nueva sólo aparecería en una base vacía y en
+        # producción el INSERT fallaría con "column does not exist".
+        #
+        # ADD COLUMN IF NOT EXISTS con default constante es instantáneo en
+        # Postgres (no reescribe la tabla) y se puede correr en cada arranque.
+        for columna, tipo in (("channels_meta", "TEXT DEFAULT '[]'"),):
+            try:
+                await conn.execute(
+                    text(f"ALTER TABLE games ADD COLUMN IF NOT EXISTS {columna} {tipo}"))
+            except Exception as e:
+                log.warning("No se pudo asegurar la columna %s: %s", columna, e)
     log.info("DB tables ensured")
 
 
@@ -94,7 +121,28 @@ async def persist_games(games: list[dict], date_str: str):
     async with async_session() as session:
         async with session.begin():
             for g in games:
-                channels = [b.get("channel", "") for b in g.get("broadcasts", [])]
+                emisiones = g.get("broadcasts", []) or []
+                channels = [b.get("channel", "") for b in emisiones]
+                # El país y el tipo salen del `info` que ya trae cada emisión
+                # (resuelto contra CHANNEL_ALIASES al construir el partido), así
+                # que aquí no se consulta nada: se guarda lo que era verdad hoy.
+                meta = []
+                for b in emisiones:
+                    nombre = b.get("channel") or ""
+                    if not nombre:
+                        continue
+                    info = b.get("info") or {}
+                    meta.append({
+                        "canal": nombre,
+                        "pais": info.get("country") or "",
+                        "tipo": info.get("type") or "",
+                        # De dónde salió: espn, sportsdb_event, league_default
+                        # o rights_estimate. Importa, porque un default de liga
+                        # no es lo mismo que una transmisión confirmada, y al
+                        # mirar el archivo dentro de un año no habrá forma de
+                        # distinguirlos si no se guarda.
+                        "origen": b.get("source") or "",
+                    })
                 recap = g.get("recap", {})
                 winner = recap.get("winner", "")
 
@@ -112,14 +160,14 @@ async def persist_games(games: list[dict], date_str: str):
                             home_name, away_name, home_short, away_short,
                             home_logo, away_logo,
                             home_score, away_score, state, venue,
-                            channels_json, recap_json, winner,
+                            channels_json, channels_meta, recap_json, winner,
                             created_at, updated_at
                         ) VALUES (
                             :id, :game_date, :date_utc, :league_slug, :league_name, :sport,
                             :home_name, :away_name, :home_short, :away_short,
                             :home_logo, :away_logo,
                             :home_score, :away_score, :state, :venue,
-                            :channels_json, :recap_json, :winner,
+                            :channels_json, :channels_meta, :recap_json, :winner,
                             NOW(), NOW()
                         )
                         ON CONFLICT (id) DO UPDATE SET
@@ -127,6 +175,14 @@ async def persist_games(games: list[dict], date_str: str):
                             away_score = EXCLUDED.away_score,
                             state = EXCLUDED.state,
                             channels_json = EXCLUDED.channels_json,
+                            -- Sólo se pisa si lo nuevo trae algo. Un partido se
+                            -- reescribe muchas veces el día que se juega, y si
+                            -- una de esas pasadas viene sin emisiones (la API
+                            -- ya no devuelve broadcast de un partido acabado)
+                            -- borraría el mapa que sí habíamos capturado.
+                            channels_meta = CASE
+                                WHEN EXCLUDED.channels_meta IN ('[]', '') THEN games.channels_meta
+                                ELSE EXCLUDED.channels_meta END,
                             recap_json = EXCLUDED.recap_json,
                             winner = EXCLUDED.winner,
                             updated_at = NOW()
@@ -149,6 +205,7 @@ async def persist_games(games: list[dict], date_str: str):
                         "state": g.get("status", {}).get("state", "pre"),
                         "venue": g.get("venue", ""),
                         "channels_json": json.dumps(channels, ensure_ascii=False),
+                        "channels_meta": json.dumps(meta, ensure_ascii=False),
                         "recap_json": json.dumps(recap, ensure_ascii=False),
                         "winner": winner,
                     }
