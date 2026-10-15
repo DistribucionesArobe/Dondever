@@ -2072,8 +2072,36 @@ async def get_todays_games(
     return all_events
 
 
-async def search_games(query: str, date_str: Optional[str] = None) -> list[dict]:
-    """Search for games matching a query (team name, league, etc.)"""
+async def search_games(query: str, date_str: Optional[str] = None,
+                       solo_equipos: bool = False) -> list[dict]:
+    """Busca partidos por término. Con solo_equipos=True ignora liga y evento.
+
+    Por qué existe el parámetro. El buscador general SÍ quiere que "nfl"
+    devuelva todos los partidos de la NFL, así que mira también league_name,
+    league_slug y name. Pero la página de equipo usa la misma función, y ahí
+    ese comportamiento es un desastre: /equipo/america busca "america" y
+    "america" está dentro de "Fútbol Americano Universitario", de "Copa
+    America" y de "Copa Sudamericana".
+
+    Medido el 15/10/2026 en producción: la página del América encabezaba con
+    "Dónde ver América hoy vs UAB Blazers" y listaba tres partidos de futbol
+    americano universitario como "Partidos de hoy" del club. /equipo/universitario
+    (Perú) tenía el mismo problema por la misma palabra.
+
+    El equipo del partido es home/away. La liga nunca lo es.
+
+    Los acentos se quitan de los dos lados. Los slugs no los llevan ("america",
+    "leon", "queretaro") y los nombres de la API sí ("Club América"), así que
+    comparar en crudo hacía que la página del América no encontrara ni siquiera
+    su propio partido: solo salían los de futbol americano, que coincidían por
+    el nombre de la liga.
+    """
+    import unicodedata as _ud
+
+    def _norm(t: str) -> str:
+        return "".join(c for c in _ud.normalize("NFD", (t or "").lower())
+                       if _ud.category(c) != "Mn")
+
     query_lower = query.lower().strip()
 
     # Expand aliases: "chivas" -> also search "guadalajara"
@@ -2091,17 +2119,17 @@ async def search_games(query: str, date_str: Optional[str] = None) -> list[dict]
 
     matches = []
     for game in all_games:
-        searchable = " ".join([
+        campos = [
             game["home"]["name"],
             game["away"]["name"],
             game["home"]["short"],
             game["away"]["short"],
-            game["league_name"],
-            game["league_slug"],
-            game["name"],
-        ]).lower()
+        ]
+        if not solo_equipos:
+            campos += [game["league_name"], game["league_slug"], game["name"]]
+        searchable = _norm(" ".join(campos))
 
-        if any(term in searchable for term in search_terms):
+        if any(_norm(term) in searchable for term in search_terms):
             matches.append(game)
 
     return matches
@@ -2664,6 +2692,11 @@ async def fetch_standings(sport: str, league: str) -> list[dict]:
             "team_name": team.get("displayName", ""),
             "team_short": team.get("abbreviation", ""),
             "team_logo": team.get("logos", [{}])[0].get("href", "") if team.get("logos") else "",
+            # Color de marca del equipo, tal como lo publica ESPN (hex sin "#").
+            # Se usa para teñir la cabecera de /equipo/. Puede no venir: la
+            # plantilla cae a su color neutro y no se rompe nada.
+            "team_color": (team.get("color") or "").lstrip("#"),
+            "team_color_alt": (team.get("alternateColor") or "").lstrip("#"),
             "group": entry.get("_group", ""),
             # Soccer stats
             "rank": stats.get("rank", ""),

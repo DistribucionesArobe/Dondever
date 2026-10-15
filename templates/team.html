@@ -105,23 +105,44 @@
         .back-link { display:inline-block; color:#10b981; text-decoration:none; font-size:0.8rem; margin-bottom:0.5rem; }
         .container { max-width:900px; margin:0 auto; padding:1rem; }
 
+        /* ── Cabecera del equipo ───────────────────────────────────────────
+           El color de fondo es el de marca que publica ESPN, filtrado en
+           _color_equipo para que nunca sea tan claro que el texto blanco deje
+           de leerse. Si el equipo no trae color, llega el azul del sitio y la
+           cabecera se ve como antes. El escudo va sobre un círculo blanco
+           porque muchos escudos tienen el contorno oscuro y encima del color
+           del propio club desaparecerían. */
         .team-hero {
             display:flex; align-items:center; gap:1rem; padding:1.25rem;
-            background:white; border-radius:12px; margin-bottom:1rem; border:1px solid #e5e7eb;
+            border-radius:12px; margin-bottom:1rem; color:#fff; position:relative; overflow:hidden;
         }
-        .team-logo-big { width:64px; height:64px; border-radius:50%; object-fit:contain; background:#f3f4f6; }
-        .team-title { font-size:1.3rem; font-weight:800; }
-        .team-league { font-size:0.85rem; color:#6b7280; }
+        .team-hero::after {
+            content:""; position:absolute; inset:0;
+            background:linear-gradient(105deg, rgba(255,255,255,.14) 0%, rgba(0,0,0,.18) 100%);
+            pointer-events:none;
+        }
+        .team-hero > * { position:relative; z-index:1; }
+        .team-logo-big {
+            width:64px; height:64px; border-radius:50%; object-fit:contain;
+            background:#fff; padding:6px; flex:none;
+            box-shadow:0 2px 10px rgba(0,0,0,.18);
+        }
+        .team-title { font-size:1.3rem; font-weight:800; color:#fff; }
+        .team-league { font-size:0.85rem; color:rgba(255,255,255,.82); }
         .follow-btn {
             margin-left:auto; display:flex; align-items:center; gap:0.4rem;
             padding:0.5rem 1rem; border-radius:8px; font-size:0.8rem; font-weight:700;
-            cursor:pointer; border:2px solid #10b981; background:transparent; color:#10b981;
-            transition:all 0.2s; white-space:nowrap;
+            cursor:pointer; border:2px solid rgba(255,255,255,.7); background:rgba(255,255,255,.12);
+            color:#fff; transition:all 0.2s; white-space:nowrap;
         }
-        .follow-btn:hover { background:#ecfdf5; }
+        .follow-btn:hover { background:rgba(255,255,255,.24); border-color:#fff; }
         .follow-btn.following { background:#10b981; color:white; border-color:#10b981; }
         .follow-btn.following:hover { background:#ef4444; border-color:#ef4444; }
         .follow-btn .icon { font-size:1rem; }
+        @media (max-width:520px){
+            .team-hero { flex-wrap:wrap; gap:.75rem; padding:1rem; }
+            .follow-btn { margin-left:0; width:100%; justify-content:center; }
+        }
 
         h2 { font-size:1rem; margin:1.25rem 0 0.5rem; color:#1a1a2e; }
         .game-count { color:#9ca3af; font-weight:400; font-size:0.8rem; }
@@ -315,9 +336,12 @@
     </nav>
     <h1 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:0.6rem;">{{ seo_h1 }}</h1>
 
-    <div class="team-hero">
+    <div class="team-hero" style="background:{{ team_color|default('#0f172a', true) }};">
+        {# onerror: si la URL del escudo muere, se quita la imagen en vez de
+           dejar el icono roto sobre el color del equipo. #}
         {% if team_logo %}
-        <img src="{{ team_logo }}" alt="{{ team_name }}" class="team-logo-big">
+        <img src="{{ team_logo }}" alt="{{ team_name }}" class="team-logo-big"
+             width="64" height="64" onerror="this.remove()">
         {% endif %}
         <div>
             <div class="team-title">{{ team_name }}</div>

@@ -2706,7 +2706,7 @@ async def og_team_image(team_slug: str):
     search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
     team_logo_url = ""
     try:
-        games = await search_games(search_term)
+        games = await search_games(search_term, solo_equipos=True)
         for game in games:
             if search_term.lower() in game["home"]["name"].lower():
                 team_logo_url = game["home"].get("logo", "")
@@ -4179,7 +4179,7 @@ async def api_team_quick(team_slug: str):
     search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
 
     # Fetch games and stats in parallel
-    games_task = search_games(search_term)
+    games_task = search_games(search_term, solo_equipos=True)
     stats_task = get_team_stats(team_slug)
 
     games, stats = await asyncio.gather(games_task, stats_task, return_exceptions=True)
@@ -7861,6 +7861,34 @@ def _canon_team_slug(team_slug: str) -> str:
     return _alias_slug_equipo().get((team_slug or "").lower(), team_slug)
 
 
+# Azul oscuro del sitio. Es el color que tiene hoy la cabecera, así que cuando
+# no hay color de equipo la página no cambia en vez de ponerse gris.
+_COLOR_NEUTRO = "#0f172a"
+
+
+def _color_equipo(stats: dict) -> str:
+    """Color de marca del equipo para teñir la cabecera, o el neutro del sitio.
+
+    Dos cuidados. Primero, ESPN manda el hex sin "#" y a veces basura ("", "0",
+    "ffffff"): se exige que sean 6 hexadecimales. Segundo, el blanco y los
+    colores muy claros no sirven de fondo porque encima va texto blanco; para
+    esos se usa el color alterno, y si tampoco sirve, el neutro.
+    """
+    def _usable(c: str):
+        c = (c or "").strip().lstrip("#").lower()
+        if len(c) != 6 or any(ch not in "0123456789abcdef" for ch in c):
+            return None
+        r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
+        # Luminancia percibida. Por encima de 0.72 el texto blanco no se lee.
+        if (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.72:
+            return None
+        return "#" + c
+
+    if not isinstance(stats, dict):
+        return _COLOR_NEUTRO
+    return _usable(stats.get("team_color")) or _usable(stats.get("team_color_alt")) or _COLOR_NEUTRO
+
+
 @app.get("/equipo/{team_slug}", response_class=HTMLResponse)
 async def team_page(request: Request, team_slug: str):
     """Dynamic team page with today's games for that team."""
@@ -7890,18 +7918,24 @@ async def team_page(request: Request, team_slug: str):
 
     # Search for games
     search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
-    games = await search_games(search_term)
+    # solo_equipos: aquí el término tiene que coincidir con un equipo del
+    # partido, nunca con el nombre de la liga. Ver search_games en sports_api.
+    games = await search_games(search_term, solo_equipos=True)
 
     # Get team info from first game found
     team_logo = ""
     team_league = ""
     if games:
+        # Sin quitar acentos esto nunca acertaba con los equipos acentuados:
+        # "america" no está dentro de "Club América", así que la cabecera del
+        # América, el León y el Querétaro salía sin escudo.
+        _busca = _sin_acentos(search_term)
         for game in games:
-            if search_term.lower() in game["home"]["name"].lower():
+            if _busca in _sin_acentos(game["home"]["name"]):
                 team_logo = game["home"].get("logo", "")
                 team_league = game.get("league_name", "")
                 break
-            elif search_term.lower() in game["away"]["name"].lower():
+            elif _busca in _sin_acentos(game["away"]["name"]):
                 team_logo = game["away"].get("logo", "")
                 team_league = game.get("league_name", "")
                 break
@@ -8113,6 +8147,10 @@ async def team_page(request: Request, team_slug: str):
         "team_name": team_name,
         "team_slug": team_slug,
         "team_logo": team_logo,
+        # Color de marca que publica ESPN. Puede venir vacío (ligas de
+        # TheSportsDB, o equipos sin color en la API): la plantilla cae al
+        # azul oscuro del sitio, que es el aspecto actual.
+        "team_color": _color_equipo(stats),
         # Rivalidades de este equipo. Lista vacía para los ~280 equipos que no
         # están en _CLASICOS; la plantilla no pinta nada en ese caso.
         "clasicos_equipo": _clasicos_de_equipo(team_slug),
@@ -8824,7 +8862,7 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     # Get team logo and games
     search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
     team_logo = ""
-    games = await search_games(search_term)
+    games = await search_games(search_term, solo_equipos=True)
     for game in games:
         if search_term.lower() in game["home"]["name"].lower():
             team_logo = game["home"].get("logo", "")
@@ -9399,7 +9437,7 @@ async def team_page_en(request: Request, team_slug: str):
 
     search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
     st = search_term.lower()
-    games = await search_games(search_term)
+    games = await search_games(search_term, solo_equipos=True)
 
     team_logo = ""
     for g in games:
