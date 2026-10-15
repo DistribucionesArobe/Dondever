@@ -6712,6 +6712,36 @@ def _build_match_faq(game: dict) -> list[dict]:
                  f"en cuanto la transmisión se anuncia."
         })
 
+    # ── 1b. La misma pregunta, pero como la escribe la gente ──
+    #
+    # Search Console, 7 días: 29 consultas de béisbol invernal con impresiones
+    # y CERO clics — 817 impresiones perdidas. Y están escritas así:
+    #
+    #   "en que canal estan pasando el juego de magallanes"        147 imp
+    #   "donde estan transmitiendo el juego de leones del caracas"  44 imp
+    #   "donde puedo ver el juego de las aguilas del zulia"         42 imp
+    #
+    # Dos diferencias con lo que teníamos. Primero, dicen "el juego de X" en
+    # SINGULAR: nombran a su equipo, no el enfrentamiento, porque el rival les
+    # da igual. Segundo, usan verbos hablados —"están pasando", "están
+    # transmitiendo", "puedo ver"— donde nosotros poníamos el infinitivo seco
+    # "¿Dónde ver…?".
+    #
+    # Esto no es solo de la LVBP: es como se pregunta en toda Latinoamérica,
+    # en cualquier deporte. Por eso va aquí, en el FAQ de TODA ficha de
+    # partido, y no en un parche para una liga.
+    #
+    # Va una entrada por equipo, no una por enfrentamiento, para que coincida
+    # con quien solo escribió el nombre del suyo.
+    if canales:
+        _lista = ", ".join(canales[:4])
+        for _eq, _rival in ((home, away), (away, home)):
+            faq.append({
+                "q": f"¿En qué canal están pasando el juego de {_eq}?",
+                "a": f"El juego de {_eq} contra {_rival} se transmite por {_lista}."
+                     + (f" Es partido de {lg}." if lg else "")
+            })
+
     # ── 2. A qué hora — en la hora de cada país, no solo México ──
     #
     # Ojo con España: un partido de Liga MX a las 4:50 PM de México cae a las
@@ -6767,7 +6797,9 @@ def _build_match_faq(game: dict) -> list[dict]:
     if sede:
         faq.append({"q": f"¿En qué estadio se juega {vs}?", "a": f"{vs} se juega en {sede}."})
 
-    return faq[:6]
+    # 8 y no 6: entraron dos preguntas por equipo (la forma hablada) y con el
+    # corte anterior se habrían comido la del estadio y la de canal por país.
+    return faq[:8]
 
 
 def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
@@ -6789,6 +6821,22 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
             "q": f"¿En qué canal pasan a {team_name} hoy?",
             "a": f"Hoy {team_name} se transmite por {ch_str}. "
                  f"Los canales pueden variar según el partido — en DondeVer.app actualizamos esta información en tiempo real."
+        })
+        # La misma pregunta en la forma hablada que usa la gente. En Search
+        # Console estas variantes traen impresiones y CERO clics porque
+        # ninguna página nuestra las decía con esas palabras:
+        #   "en que canal estan pasando el juego de magallanes"
+        #   "donde estan transmitiendo el juego de leones del caracas hoy"
+        #   "donde puedo ver el juego de las aguilas del zulia"
+        # Cambia el verbo, no el contenido: misma respuesta, mismos canales.
+        faq.append({
+            "q": f"¿En qué canal están pasando el juego de {team_name}?",
+            "a": f"El juego de {team_name} de hoy se transmite por {ch_str}."
+        })
+        faq.append({
+            "q": f"¿Dónde puedo ver el juego de {team_name} hoy?",
+            "a": f"Puedes ver el juego de {team_name} hoy por {ch_str}. "
+                 f"Arriba está el horario convertido a la hora de tu país."
         })
     else:
         faq.append({
