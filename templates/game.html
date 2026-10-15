@@ -400,6 +400,21 @@
     [data-theme="dark"] .team-block img {
         background: var(--bg-muted) !important;
     }
+
+    /* ── Aviso de clásico ──────────────────────────────────────────────
+       Sale solo cuando el cruce está en _CLASICOS. Los dos colores son los
+       del par, partidos en diagonal, para que se lea como el mismo objeto
+       que la página de la rivalidad y no como un banner genérico más. */
+    .cl-banner{display:block;max-width:900px;margin:0 auto 1rem;border-radius:14px;
+               padding:.85rem 1rem;color:#fff;text-decoration:none;position:relative;overflow:hidden}
+    .cl-banner::after{content:"";position:absolute;inset:0;background:rgba(5,8,20,.42);transition:background .15s}
+    .cl-banner:hover::after{background:rgba(5,8,20,.3)}
+    .cl-banner > *{position:relative;z-index:1}
+    .cl-banner .cb-tag{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;font-weight:800;opacity:.85}
+    .cl-banner .cb-nombre{font-size:1.05rem;font-weight:900;margin:.15rem 0 .1rem}
+    .cl-banner .cb-dato{font-size:.8rem;font-weight:600;opacity:.95}
+    .cl-banner .cb-go{font-size:.72rem;font-weight:800;margin-top:.35rem;opacity:.95}
+    @media (max-width:600px){.cl-banner{margin-left:1rem;margin-right:1rem}}
 </style>
 </head>
 <body>
@@ -420,6 +435,29 @@
         <span>{{ first_team }} vs {{ second_team }}</span>
     </nav>
     <h1 class="game-h1">{{ first_team }} vs {{ second_team }}: d&oacute;nde ver{{ " " + mx_when_label(game.date) if mx_when_label(game.date) }}{% if odds %}, momios y pron&oacute;stico{% endif %} &mdash; {{ game.league_name }}</h1>
+
+    {% if clasico_banner %}
+    {# El dato de la serie solo se escribe si hay partidos guardados. Un
+       "0-0 en 0 partidos" sería peor que no decir nada. #}
+    <a class="cl-banner" href="/clasico/{{ clasico_banner.slug }}"
+       style="background:linear-gradient(110deg,{{ clasico_banner.color_a }} 0%,{{ clasico_banner.color_a }} 42%,#0b1020 50%,{{ clasico_banner.color_b }} 58%,{{ clasico_banner.color_b }} 100%);">
+        <div class="cb-tag">Esto es un cl&aacute;sico</div>
+        <div class="cb-nombre">{{ clasico_banner.nombre }}</div>
+        {% if clasico_banner.serie %}
+        <div class="cb-dato">
+            {%- set s = clasico_banner.serie -%}
+            {%- if s.lider -%}
+                {{ s.lider }} domina la serie {{ s.gana_a if s.lider == clasico_banner.equipo_a else s.gana_b }}-{{ s.gana_b if s.lider == clasico_banner.equipo_a else s.gana_a }}{% if s.empates %} con {{ s.empates }} empate{{ 's' if s.empates != 1 }}{% endif %} en {{ s.total }} partido{{ 's' if s.total != 1 }} registrado{{ 's' if s.total != 1 }}.
+            {%- else -%}
+                {{ s.gana_a }}-{{ s.gana_b }}{% if s.empates %} y {{ s.empates }} empate{{ 's' if s.empates != 1 }}{% endif %} en {{ s.total }} partido{{ 's' if s.total != 1 }} registrado{{ 's' if s.total != 1 }}: nadie domina.
+            {%- endif -%}
+        </div>
+        {% else %}
+        <div class="cb-dato">{{ clasico_banner.tagline }}</div>
+        {% endif %}
+        <div class="cb-go">Ver historial completo de la rivalidad &rarr;</div>
+    </a>
+    {% endif %}
 
     {{ video(video_oficial) }}
 

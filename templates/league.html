@@ -284,6 +284,16 @@
             .promo-banner-inner { flex-direction: column; text-align: center; gap: 0.75rem; }
             .stats-strip { grid-template-columns: 1fr 1fr; }
         }
+
+        /* ── Clásicos de la liga ──────────────────────────────────────── */
+        .cl-liga{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.6rem}
+        .cl-mini{position:relative;display:block;border-radius:12px;overflow:hidden;
+                 padding:.75rem .85rem;color:#fff;text-decoration:none}
+        .cl-mini::after{content:"";position:absolute;inset:0;background:rgba(5,8,20,.46);transition:background .15s}
+        .cl-mini:hover::after{background:rgba(5,8,20,.32)}
+        .cl-mini > *{position:relative;z-index:1;display:block}
+        .cl-mini .cm-nb{font-size:.95rem;font-weight:900;line-height:1.2}
+        .cl-mini .cm-tg{font-size:.72rem;font-weight:600;opacity:.92;margin-top:.2rem}
     </style>
 </head>
 <body>
@@ -835,6 +845,24 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+{% endif %}
+
+{# ══ CLÁSICOS DE LA LIGA ══
+   Va justo antes del listado de equipos: quien llegó a /liga/ buscando a quién
+   seguir, encuentra primero los partidos con nombre propio. #}
+{% if clasicos_liga %}
+<div class="teams-grid">
+    <h2>Cl&aacute;sicos de {{ league_name }}</h2>
+    <div class="cl-liga">
+        {% for s, c in clasicos_liga %}
+        <a class="cl-mini" href="/clasico/{{ s }}"
+           style="background:linear-gradient(110deg,{{ c.color_a }} 0%,{{ c.color_a }} 42%,#0b1020 50%,{{ c.color_b }} 58%,{{ c.color_b }} 100%);">
+            <span class="cm-nb">{{ c.nombre }}</span>
+            <span class="cm-tg">{{ c.tagline }} &middot; historial &rarr;</span>
+        </a>
+        {% endfor %}
+    </div>
 </div>
 {% endif %}
 

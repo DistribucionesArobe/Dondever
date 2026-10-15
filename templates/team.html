@@ -287,6 +287,16 @@
         .wa-msg.success { display: block; background: #f0fdf4; color: #166534; }
         .wa-msg.error { display: block; background: #fef2f2; color: #991b1b; }
         .wa-note { font-size: 0.62rem; color: #9ca3af; margin-top: 0.4rem; }
+
+        /* ── Clásicos del equipo ──────────────────────────────────────── */
+        .cl-equipo{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.6rem}
+        .cl-mini{position:relative;display:block;border-radius:12px;overflow:hidden;
+                 padding:.75rem .85rem;color:#fff;text-decoration:none}
+        .cl-mini::after{content:"";position:absolute;inset:0;background:rgba(5,8,20,.46);transition:background .15s}
+        .cl-mini:hover::after{background:rgba(5,8,20,.32)}
+        .cl-mini > *{position:relative;z-index:1;display:block}
+        .cl-mini .cm-nb{font-size:.95rem;font-weight:900;line-height:1.2}
+        .cl-mini .cm-tg{font-size:.72rem;font-weight:600;opacity:.92;margin-top:.2rem}
     </style>
 
     <!-- FAQPage JSON-LD is in <head> — no duplicate here -->
@@ -637,6 +647,28 @@
             <div style="font-size:0.7rem;color:#6b7280;">Division</div>
         </div>
         {% endif %}
+    </div>
+    {% endif %}
+
+    {# ══ CLÁSICOS DE ESTE EQUIPO ══
+       Solo aparece para los equipos que están en _CLASICOS. El enlace es lo
+       que saca a /clasico/ de ser una página huérfana: sin esto solo existe
+       en el sitemap, y una URL que nadie enlaza es una URL que Google ignora. #}
+    {% if clasicos_equipo %}
+    <div style="margin-top:1rem;">
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Cl&aacute;sicos de {{ team_name }}</h2>
+        <div class="cl-equipo">
+            {% for s, c in clasicos_equipo %}
+            {# El rival es el que no es este equipo. Se compara contra los dos
+               slugs del par, no contra el nombre, porque el nombre varía. #}
+            {% set rival = c.equipos[1] if c.slugs[0] == team_slug else c.equipos[0] %}
+            <a class="cl-mini" href="/clasico/{{ s }}"
+               style="background:linear-gradient(110deg,{{ c.color_a }} 0%,{{ c.color_a }} 42%,#0b1020 50%,{{ c.color_b }} 58%,{{ c.color_b }} 100%);">
+                <span class="cm-nb">{{ c.nombre }}</span>
+                <span class="cm-tg">vs {{ rival }} &middot; historial y pr&oacute;ximo duelo &rarr;</span>
+            </a>
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
 

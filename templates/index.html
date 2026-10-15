@@ -366,6 +366,18 @@
             border-color: rgba(239,68,68,0.4);
             color: #fca5a5;
         }
+        /* ── Fila de clásicos ─────────────────────────────────────────── */
+        .cl-fila {
+            max-width: 1200px; margin: 0.9rem auto 0; padding: 0 1rem;
+            font-size: 0.78rem; line-height: 1.9; color: #6b7280;
+        }
+        .cl-fila .cf-tt { font-weight: 800; color: #374151; margin-right: 0.2rem; }
+        .cl-fila a { color: #059669; text-decoration: none; font-weight: 600; }
+        .cl-fila a:hover { text-decoration: underline; }
+        .cl-fila .cf-sep { margin: 0 0.35rem; opacity: 0.5; }
+        .cl-fila .cf-todos { margin-left: 0.5rem; font-weight: 800; }
+        body.dark-mode .cl-fila, [data-theme="dark"] .cl-fila { color: #94a3b8; }
+        body.dark-mode .cl-fila .cf-tt, [data-theme="dark"] .cl-fila .cf-tt { color: #e2e8f0; }
         /* ── Deportes sin partidos hoy ──────────────────────────────────
            El 07/10/2026 el botón FÚTBOL se veía igual que los demás pero no
            llevaba a ningún lado: cero partidos ese día, así que al tocarlo
@@ -1774,6 +1786,19 @@
 
 
 
+{# ══ RIVALIDADES ══
+   Enlaces de verdad en el HTML. Las chips de liga de arriba se construyen en
+   el navegador a partir de los partidos del día, así que el robot no las ve y
+   además desaparecen cuando esa liga no juega hoy. Estas páginas son
+   permanentes y conviene que se alcancen desde la portada todos los días. #}
+{% if clasicos_home %}
+<nav class="cl-fila" aria-label="Cl&aacute;sicos">
+    <span class="cf-tt">Cl&aacute;sicos:</span>
+    {% for s, c in clasicos_home %}<a href="/clasico/{{ s }}">{{ c.nombre }}</a>{% if not loop.last %}<span class="cf-sep">&middot;</span>{% endif %}{% endfor %}
+    <a class="cf-todos" href="/clasicos">Ver todos &rarr;</a>
+</nav>
+{% endif %}
+
 <!-- Games -->
 <main class="main" id="gamesContainer">
 
@@ -2440,6 +2465,7 @@
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Tu guia de donde ver deportes en vivo</p>
     <p style="margin-top:0.3rem">
         <a href="/pronosticos-hoy">Pron&oacute;sticos</a> &middot;
+        <a href="/clasicos">Cl&aacute;sicos</a> &middot;
         <a href="/equipos">Equipos</a> &middot;
         <a href="/canales">Canales</a> &middot;
         <a href="/streaming">Comparar Streaming</a> &middot;

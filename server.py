@@ -1289,6 +1289,10 @@ async def home(
             "sports_grouped": sports_grouped,
             "sport_types": sport_types,
             "leagues": LEAGUES,
+            # Enlaces reales (no chips de JS) a las páginas de rivalidad. Las
+            # chips de liga se arman en el cliente y por eso no las ve el robot;
+            # esta fila sí está en el HTML que llega.
+            "clasicos_home": list(_CLASICOS.items()),
             "current_sport": sport,
             "current_league": league,
             "current_date": date or today.strftime("%Y%m%d"),
@@ -2504,9 +2508,36 @@ async def game_semantic(request: Request, slug: str):
         except Exception:
             pass
 
+    # ── ¿Este cruce es un clásico? ────────────────────────────────────────────
+    # Solo entonces se consulta el H2H. La consulta usa ILIKE sobre home_name y
+    # away_name, que no están indexados para búsqueda por subcadena; correrla en
+    # cada partido del día sería pagar ese costo ~400 veces para usarla en ocho.
+    _clasico = _clasico_de_partido(
+        game.get("home", {}).get("name", ""),
+        game.get("away", {}).get("name", ""),
+        game.get("league_slug", ""),
+    )
+    clasico_banner = None
+    if _clasico:
+        _cl_slug, _cl_cfg = _clasico
+        try:
+            from db import get_h2h
+            _h2h = await get_h2h(_cl_cfg["equipos"][0], _cl_cfg["equipos"][1], limit=30)
+            _serie = _resumen_h2h(_h2h, _cl_cfg["equipos"][0], _cl_cfg["equipos"][1])
+        except Exception:
+            _serie = {"total": 0}
+        clasico_banner = {
+            "slug": _cl_slug, "nombre": _cl_cfg["nombre"],
+            "tagline": _cl_cfg["tagline"],
+            "color_a": _cl_cfg["color_a"], "color_b": _cl_cfg["color_b"],
+            "serie": _serie if _serie.get("total") else None,
+            "equipo_a": _cl_cfg["equipos"][0], "equipo_b": _cl_cfg["equipos"][1],
+        }
+
     _resp = templates.TemplateResponse(
         request, "game.html", context={
             "game": game, "odds": odds,
+            "clasico_banner": clasico_banner,
             "home_slug": home_slug, "away_slug": away_slug,
             "home_stats": home_stats, "away_stats": away_stats,
             "summary": summary,
@@ -3442,6 +3473,8 @@ async def league_page(request: Request, league_slug: str):
             "league_name": display_name,
             "emoji": emoji,
             "sport": sport,
+            # Rivalidades de esta liga (vacío en las que no tienen ninguna).
+            "clasicos_liga": _clasicos_de_liga(league_slug),
             "games": games,
             "total_games": len(games),
             "standings": standings,
@@ -8080,6 +8113,9 @@ async def team_page(request: Request, team_slug: str):
         "team_name": team_name,
         "team_slug": team_slug,
         "team_logo": team_logo,
+        # Rivalidades de este equipo. Lista vacía para los ~280 equipos que no
+        # están en _CLASICOS; la plantilla no pinta nada en ese caso.
+        "clasicos_equipo": _clasicos_de_equipo(team_slug),
         "team_league": team_league or team_league_seo,
         "team_sport": team_sport,
         "team_aka": team_aka,
@@ -9119,13 +9155,64 @@ _CLASICOS = {
 }
 
 
+def _sin_acentos(t: str) -> str:
+    """Minúsculas sin acentos, para comparar nombres de equipo.
+
+    Los nombres de aquí llevan acento ("América") y los de la API no siempre
+    ("Club America"). Comparar en crudo hacía que el Clásico Nacional no se
+    detectara nunca y, peor, que en _resumen_h2h el local nunca se reconociera
+    como el equipo A: el marcador de la serie salía al revés.
+    """
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", (t or "").lower())
+                   if unicodedata.category(c) != "Mn")
+
+
+def _clasicos_de_equipo(team_slug: str) -> list:
+    """Clásicos en los que participa un equipo. Lista de (slug, cfg)."""
+    s = _canon_team_slug(team_slug or "")
+    return [(k, c) for k, c in _CLASICOS.items() if s in c["slugs"]]
+
+
+def _clasicos_de_liga(liga_slug: str) -> list:
+    """Clásicos de una liga. Lista de (slug, cfg)."""
+    return [(k, c) for k, c in _CLASICOS.items() if c["liga_slug"] == liga_slug]
+
+
+def _clasico_de_partido(nombre_local: str, nombre_visita: str, liga_slug: str = "") -> tuple:
+    """(slug, cfg) si este cruce es un clásico registrado; si no, None.
+
+    Compara por subcadena contra `equipos` porque los nombres de la API varían
+    ("Guadalajara" / "CD Guadalajara", "Tigres" / "Tigres UANL"). El filtro de
+    liga no es decorativo: "Tigres" existe en Liga MX y en LIDOM, y "Giants" en
+    MLB y en la NFL. Sin él, un Licey-Monterrey imposible pasaría igual, pero un
+    cruce real mal etiquetado sí podría colarse.
+
+    Los acentos se quitan de los dos lados. Sin eso el Clásico Nacional —el
+    partido más buscado del sitio— no se detectaba nunca: aquí el equipo se
+    llama "América" y ESPN lo manda como "Club America", y "américa" no es
+    subcadena de "club america".
+    """
+    a = _sin_acentos(nombre_local)
+    b = _sin_acentos(nombre_visita)
+    if not a or not b:
+        return None
+    for k, c in _CLASICOS.items():
+        if liga_slug and c["liga_slug"] != liga_slug:
+            continue
+        x, y = _sin_acentos(c["equipos"][0]), _sin_acentos(c["equipos"][1])
+        if (x in a and y in b) or (x in b and y in a):
+            return (k, c)
+    return None
+
+
 def _resumen_h2h(juegos: list, nombre_a: str, nombre_b: str) -> dict:
     """Serie entre dos equipos a partir de los partidos guardados."""
     ga = gb = empates = 0
     carreras_a = carreras_b = 0
     racha = []
     for j in juegos:
-        local_es_a = nombre_a.lower() in (j.get("home_name") or "").lower()
+        local_es_a = _sin_acentos(nombre_a) in _sin_acentos(j.get("home_name"))
         try:
             pl, pv = int(j["home_score"]), int(j["away_score"])
         except (TypeError, ValueError, KeyError):
