@@ -1368,11 +1368,11 @@ from events_api import EVENT_CHANNELS as EVENT_CHANNELS_BY_KIND
 # Texto de "dónde ver gratis" por categoría de motor (FAQ)
 _RACE_FREE_FAQ = {
     "f1": ("¿Se puede ver la F1 gratis en México?",
-           "Canal 5 transmite en TV abierta carreras selectas los domingos. El resto de sesiones van por Fox Sports MX y F1 TV Pro."),
+           "Canal 5 transmite en TV abierta carreras selectas los domingos. El resto de sesiones van por Sky Sports (Sky e izzi) y F1 TV Pro."),
     "motogp": ("¿Dónde ver MotoGP en México?",
                "MotoGP se transmite en México y Latinoamérica por ESPN y Disney+ (todas las sesiones: prácticas, clasificación, sprint y carrera). En España por DAZN."),
     "nascar": ("¿Dónde ver NASCAR en México?",
-               "La NASCAR Cup Series se ve en México y Latinoamérica por Fox Sports. En Estados Unidos la temporada se reparte entre FOX, Prime Video, TNT/HBO Max y NBC/USA Network."),
+               "La NASCAR Cup Series se ve en México y Latinoamérica por FOX Deportes. En Estados Unidos la temporada se reparte entre FOX, Prime Video, TNT/HBO Max y NBC/USA Network."),
     "indycar": ("¿Dónde ver IndyCar y a Pato O'Ward en México?",
                 "IndyCar se transmite en México y Latinoamérica por ESPN y Disney+. En Estados Unidos por FOX."),
 }
@@ -3069,11 +3069,11 @@ LEAGUE_SEO_EXTRA = {
     },
     "f1": {
         "title": "Donde ver F1 hoy en vivo — Formula 1 en Mexico | DondeVer",
-        "meta_desc": "Donde ver la Formula 1 (F1) en vivo hoy en Mexico: horarios, canales y resultados de cada Gran Premio. Checo Perez, Verstappen, Hamilton. Fox Sports, Canal 5, F1 TV.",
+        "meta_desc": "Donde ver la Formula 1 (F1) en vivo hoy en Mexico: horarios, canales y resultados de cada Gran Premio. Checo Perez, Verstappen, Hamilton. Sky Sports, Canal 5, F1 TV Pro.",
         "h2": "Donde ver Formula 1 en vivo hoy",
         "paragraphs": [
             "La Formula 1 (F1) es la maxima categoria del automovilismo mundial. La temporada 2026 cuenta con 24 Grandes Premios incluyendo el Gran Premio de Mexico en el Autodromo Hermanos Rodriguez (noviembre). Sergio 'Checo' Perez es el piloto mexicano que compite en la grilla junto a Max Verstappen, Lewis Hamilton y Carlos Sainz.",
-            "En Mexico, la F1 se transmite por Fox Sports MX (cable), Canal 5 (gratis en TV abierta los domingos de carrera), TUDN y F1 TV (streaming oficial). Cada fin de semana de carrera incluye practicas libres (viernes), clasificacion (sabado) y la carrera (domingo). En DondeVer.app te mostramos donde ver cada sesion del Gran Premio con horarios de Mexico.",
+            "En Mexico, la F1 se transmite por Sky Sports (cable, en Sky e izzi), Canal 5 (gratis en TV abierta en carreras selectas) y F1 TV Pro (streaming oficial). Desde 2026 los derechos son de TelevisaUnivision: Fox Sports ya no transmite la F1 en Mexico. Cada fin de semana de carrera incluye practicas libres (viernes), clasificacion (sabado) y la carrera (domingo). En DondeVer.app te mostramos donde ver cada sesion del Gran Premio con horarios de Mexico.",
         ],
         "links": [],
     },
@@ -3089,11 +3089,11 @@ LEAGUE_SEO_EXTRA = {
     },
     "nascar": {
         "title": "Dónde ver NASCAR hoy: próxima carrera, hora en México y canal | DondeVer",
-        "meta_desc": "Calendario NASCAR Cup Series 2026 con hora de México: próxima carrera, playoffs y canales (Fox Sports MX; FOX, Prime Video, TNT y NBC en EE.UU.). Daniel Suárez y más.",
+        "meta_desc": "Calendario NASCAR Cup Series 2026 con hora de México: próxima carrera, playoffs y canales (FOX Deportes en México y LATAM; FOX, Prime Video, TNT y NBC en EE.UU.). Daniel Suárez y más.",
         "h2": "Dónde ver la NASCAR Cup Series en vivo",
         "paragraphs": [
             "La NASCAR Cup Series es la máxima categoría del automovilismo de stock cars en Estados Unidos, con 36 carreras entre febrero y noviembre y playoffs de 10 carreras que definen al campeón en Phoenix. El regiomontano Daniel Suárez es el piloto mexicano de la categoría.",
-            "En México y Latinoamérica las carreras se ven por Fox Sports. En Estados Unidos la temporada se reparte entre FOX y FS1, Prime Video, TNT/HBO Max y NBC/USA Network. Aquí encuentras cada carrera con su hora de México y el canal confirmado.",
+            "En México y Latinoamérica las carreras se ven por FOX Deportes. En Estados Unidos la temporada se reparte entre FOX y FS1, Prime Video, TNT/HBO Max y NBC/USA Network. Aquí encuentras cada carrera con su hora de México y el canal confirmado.",
         ],
         "links": [],
     },
@@ -3123,7 +3123,7 @@ LEAGUE_SEO_EXTRA = {
         "h2": "Donde ver UFC en vivo hoy",
         "paragraphs": [
             "La UFC (Ultimate Fighting Championship) es la organizacion de MMA (artes marciales mixtas) mas importante del mundo. Realiza eventos casi cada semana entre UFC Fight Night (carteleras regulares) y eventos numerados PPV (UFC 324, 325, etc.) con peleas de campeonato. Peleadores mexicanos como Brandon Moreno y Alexa Grasso compiten regularmente.",
-            "Desde 2026, la UFC se transmite en Mexico y Latinoamerica por Paramount+ (streaming). Fox Sports MX tambien transmite eventos selectos. Las carteleras suelen iniciar los sabados por la tarde (horario Mexico) con las preliminares, seguidas de la cartelera estelar por la noche. En DondeVer.app te mostramos donde ver cada evento de la UFC con horarios de Mexico.",
+            "Desde 2026, la UFC se transmite en Mexico y Latinoamerica EN EXCLUSIVA por Paramount+ (streaming), incluidos los eventos numerados y las Fight Nights, sin pago adicional por evento. Las carteleras suelen iniciar los sabados por la tarde (horario Mexico) con las preliminares, seguidas de la cartelera estelar por la noche. En DondeVer.app te mostramos donde ver cada evento de la UFC con horarios de Mexico.",
         ],
         "links": [],
     },

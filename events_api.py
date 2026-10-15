@@ -61,16 +61,23 @@ ALL_KINDS = ("ufc", "f1", "boxing", "motogp", "nascar", "indycar", "atp", "wta",
 
 # Canales por país (rights 2026). Se muestran en la página de evento.
 EVENT_CHANNELS = {
+    # Paramount y UFC ampliaron su alianza a Latinoamérica y Australia desde
+    # 2026, por siete años: Paramount+ lleva TODA la programación —numerados y
+    # Fight Nights— sin pago por evento. Ya no hay reparto con ESPN ni con Fox.
     "ufc": {
-        "MX": ["Paramount+", "Fox Sports MX"],
+        "MX": ["Paramount+"],
         "US": ["Paramount+"],
-        "VE": ["Paramount+", "ESPN Latinoamérica"],
-        "CO": ["Paramount+", "ESPN Latinoamérica"],
-        "AR": ["Paramount+", "ESPN Latinoamérica"],
+        "VE": ["Paramount+"],
+        "CO": ["Paramount+"],
+        "AR": ["Paramount+"],
         "ES": ["Eurosport", "HBO Max"],
     },
     "f1": {
-        "MX": ["Fox Sports MX", "Canal 5", "F1 TV Pro"],
+        # Desde 2026 los derechos de F1 en México son de TelevisaUnivision: la
+        # cobertura completa va por Sky Sports (en Sky e izzi) y algunas
+        # carreras en abierto por Canal 5, del mismo grupo. Fox Sports dejó de
+        # ser la casa de la F1 en México.
+        "MX": ["Sky Sports", "Canal 5", "F1 TV Pro"],
         "US": ["Apple TV", "F1 TV Pro"],
         "VE": ["Disney+", "ESPN Latinoamérica"],
         "CO": ["Disney+", "ESPN Latinoamérica"],
