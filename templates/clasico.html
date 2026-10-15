@@ -1,0 +1,285 @@
+{% from "_ad.html" import ad %}
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ cfg.nombre }}: {{ cfg.tagline }} — dónde ver, historial y próximo partido | DondeVer</title>
+    <meta name="description" content="{{ cfg.nombre }} ({{ cfg.tagline }}): dónde ver el próximo partido, historial de enfrentamientos, marcadores y posiciones en {{ cfg.liga }}.">
+    <link rel="canonical" href="{{ app_url }}/clasico/{{ slug }}">
+    <meta property="og:title" content="{{ cfg.nombre }} — {{ cfg.tagline }}">
+    <meta property="og:description" content="Historial, marcadores y dónde ver el próximo {{ cfg.nombre }}.">
+    <meta property="og:url" content="{{ app_url }}/clasico/{{ slug }}">
+    <meta property="og:locale" content="es_MX">
+    <link rel="icon" type="image/png" href="/static/logo.png?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:#f6f7fb;color:#111827}
+        .header{background:#0b1020;padding:.6rem 0}
+        .header-inner{max-width:900px;margin:0 auto;padding:0 1rem;display:flex;align-items:center;justify-content:space-between}
+        .main{max-width:900px;margin:0 auto 3rem;padding:0 1rem}
+        .crumb{font-size:.72rem;color:#6b7280;margin:.7rem 0}
+        .crumb a{color:#059669;text-decoration:none}
+
+        /* ── Portada del clásico ─────────────────────────────── */
+        .hero{position:relative;border-radius:18px;overflow:hidden;margin-bottom:1rem;
+              background:linear-gradient(110deg,{{ cfg.color_a }} 0%,{{ cfg.color_a }} 42%,#0b1020 50%,{{ cfg.color_b }} 58%,{{ cfg.color_b }} 100%);
+              padding:1.6rem 1.1rem;color:#fff;text-align:center}
+        .hero::after{content:"";position:absolute;inset:0;background:rgba(5,8,20,.46)}
+        .hero > *{position:relative;z-index:1}
+        .hero .kicker{font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;font-weight:800;opacity:.85}
+        .hero h1{font-size:1.75rem;font-weight:900;line-height:1.15;margin:.35rem 0 .15rem;text-shadow:0 2px 14px rgba(0,0,0,.45)}
+        .hero .sub{font-size:.9rem;opacity:.9;font-weight:600}
+        .vs-row{display:flex;align-items:center;justify-content:center;gap:1rem;margin-top:1rem}
+        .vs-team{flex:1;max-width:220px}
+        .vs-team .nm{font-size:1rem;font-weight:800;line-height:1.2}
+        .vs-ball{font-size:1.4rem;font-weight:900;opacity:.6}
+
+        /* ── Marcador de la serie ────────────────────────────── */
+        .serie{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:1.2rem 1.1rem;margin-bottom:1rem}
+        .serie h2{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;font-weight:800;text-align:center}
+        .marcador{display:flex;align-items:center;justify-content:center;gap:1.4rem;margin:.9rem 0 .2rem}
+        .m-num{font-size:3rem;font-weight:900;line-height:1}
+        .m-a{color:{{ cfg.color_a }}}
+        .m-b{color:{{ cfg.color_b }}}
+        .m-e{font-size:1.5rem;font-weight:800;color:#9ca3af}
+        .m-lab{font-size:.7rem;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center;margin-top:.25rem}
+        .barra{display:flex;height:11px;border-radius:999px;overflow:hidden;margin:1rem 0 .5rem;background:#eef0f5}
+        .barra i{display:block;height:100%}
+        .barra .ba{background:{{ cfg.color_a }}}
+        .barra .be{background:#cbd5e1}
+        .barra .bb{background:{{ cfg.color_b }}}
+        .leyenda{display:flex;justify-content:space-between;font-size:.72rem;color:#6b7280;font-weight:600}
+        .fuente{font-size:.68rem;color:#9ca3af;text-align:center;margin-top:.9rem;line-height:1.5}
+
+        /* ── Tarjetas de dato ────────────────────────────────── */
+        .datos{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.6rem;margin-bottom:1rem}
+        .dato{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:.85rem .9rem}
+        .dato .v{font-size:1.5rem;font-weight:900;color:#0b1020;line-height:1.1}
+        .dato .k{font-size:.68rem;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:.2rem}
+        .racha{display:flex;gap:.25rem;margin-top:.35rem}
+        .pill{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:.66rem;font-weight:900;color:#fff}
+        .pA{background:{{ cfg.color_a }}}
+        .pB{background:{{ cfg.color_b }}}
+        .pE{background:#9ca3af}
+
+        h2.sec{font-size:1.05rem;font-weight:800;margin:1.4rem 0 .6rem}
+        .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden}
+
+        /* ── Próximo duelo ───────────────────────────────────── */
+        .next{background:linear-gradient(135deg,#064e3b,#065f46);color:#fff;border-radius:16px;padding:1.1rem;margin-bottom:1rem}
+        .next .lbl{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;font-weight:800;opacity:.85}
+        .next .mt{font-size:1.1rem;font-weight:800;margin:.3rem 0}
+        .next .wh{font-size:.95rem;font-weight:700;color:#6ee7b7}
+        .chs{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.6rem}
+        .ch{background:rgba(255,255,255,.16);border-radius:7px;padding:.25rem .6rem;font-size:.78rem;font-weight:700}
+        .next a.cta{display:inline-block;margin-top:.8rem;background:#fff;color:#065f46;font-weight:800;font-size:.82rem;padding:.5rem 1rem;border-radius:9px;text-decoration:none}
+
+        /* ── Historial ───────────────────────────────────────── */
+        .row{display:grid;grid-template-columns:72px 1fr auto 1fr;gap:.6rem;align-items:center;padding:.7rem .9rem;border-top:1px solid #f1f3f7;font-size:.85rem}
+        .row:first-child{border-top:none}
+        .row .fch{font-size:.7rem;color:#9ca3af;font-weight:700}
+        .row .tm{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .row .tm.r{text-align:right}
+        .row .sc{font-weight:900;background:#f3f4f6;border-radius:8px;padding:.15rem .55rem;white-space:nowrap}
+        .row .sc.win-a{background:{{ cfg.color_a }}1f;color:{{ cfg.color_a }}}
+        .row .sc.win-b{background:{{ cfg.color_b }}1f;color:{{ cfg.color_b }}}
+
+        /* ── Comparativo de tabla ────────────────────────────── */
+        .cmp{display:grid;grid-template-columns:1fr auto 1fr;gap:.5rem;align-items:center;padding:.8rem .9rem;border-top:1px solid #f1f3f7}
+        .cmp:first-child{border-top:none}
+        .cmp .lado{font-size:1.15rem;font-weight:900}
+        .cmp .lado.r{text-align:right}
+        .cmp .et{font-size:.68rem;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center}
+
+        .ctx{background:#fff;border:1px solid #e5e7eb;border-left:4px solid {{ cfg.color_a }};border-radius:12px;padding:1rem 1.1rem;font-size:.88rem;line-height:1.65;color:#374151;margin-bottom:1rem}
+        .otros{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.5rem}
+        .otros a{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:.45rem .8rem;font-size:.8rem;font-weight:700;color:#374151;text-decoration:none}
+        .vacio{background:#fff;border:1px dashed #d1d5db;border-radius:14px;padding:1.1rem;font-size:.86rem;color:#6b7280;line-height:1.6}
+        .footer{max-width:900px;margin:2rem auto;padding:1rem;text-align:center;font-size:.7rem;color:#9ca3af}
+        .footer a{color:#059669;text-decoration:none}
+        @media(max-width:520px){.hero h1{font-size:1.4rem}.m-num{font-size:2.3rem}}
+        body.dark-mode{background:#0f172a}
+        body.dark-mode .serie,body.dark-mode .dato,body.dark-mode .card,body.dark-mode .ctx,body.dark-mode .otros a{background:#1e293b;border-color:#334155}
+        body.dark-mode .dato .v,body.dark-mode .row,body.dark-mode .cmp .lado{color:#e2e8f0}
+    </style>
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Inicio","item":"{{ app_url }}/"},
+      {"@type":"ListItem","position":2,"name":"Clásicos","item":"{{ app_url }}/clasicos"},
+      {"@type":"ListItem","position":3,"name":"{{ cfg.nombre }}","item":"{{ app_url }}/clasico/{{ slug }}"}
+    ]}
+    </script>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" aria-label="DondeVer.app"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" width="181" height="32" style="height:32px;width:auto;display:block;"></a>
+        <a href="/liga/{{ cfg.liga_slug }}" style="color:#10b981;text-decoration:none;font-weight:700;font-size:.8rem;">{{ cfg.liga }} &rarr;</a>
+    </div>
+</header>
+<main class="main">
+    <nav class="crumb"><a href="/">Inicio</a> &rsaquo; <a href="/clasicos">Cl&aacute;sicos</a> &rsaquo; {{ cfg.nombre }}</nav>
+
+    <section class="hero">
+        <div class="kicker">{{ cfg.liga }}</div>
+        <h1>{{ cfg.nombre }}</h1>
+        <div class="sub">{{ cfg.tagline }}</div>
+        <div class="vs-row">
+            <div class="vs-team"><div class="nm">{{ equipo_a }}</div></div>
+            <div class="vs-ball">VS</div>
+            <div class="vs-team"><div class="nm">{{ equipo_b }}</div></div>
+        </div>
+    </section>
+
+    {# ── Próximo duelo: lo que la gente vino a buscar, hasta arriba ── #}
+    {% if proximo %}
+    <div class="next">
+        <div class="lbl">{% if duelo_hoy %}Hoy{% else %}Pr&oacute;ximo {{ cfg.nombre }}{% endif %}</div>
+        {% if duelo_hoy %}
+        <div class="mt">{{ proximo.home.name }} vs {{ proximo.away.name }}</div>
+        <div class="wh">{{ format_mx_time(proximo.date) }} &middot; hora de M&eacute;xico</div>
+        {% set _chs = [] %}{% for b in proximo.broadcasts %}{% if _chs.append(b.channel) %}{% endif %}{% endfor %}
+        {% if _chs %}<div class="chs">{% for c in _chs[:6] %}<span class="ch">{{ c }}</span>{% endfor %}</div>{% endif %}
+        <a class="cta" href="{{ proximo|game_url }}">Ver canales y horarios &rarr;</a>
+        {% else %}
+        <div class="mt">{{ proximo.home }} vs {{ proximo.away }}</div>
+        <div class="wh">{{ format_mx_day_time(proximo.date_utc or proximo.date) }}</div>
+        {% if proximo.channels %}
+        <div class="chs">{% for c in proximo.channels[:6] %}<span class="ch">{{ c.name if c is mapping else c }}</span>{% endfor %}</div>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+{{ ad('top') }}
+
+    {# ── La serie. Si no hay partidos guardados, se dice; no se pinta 0-0 ── #}
+    {% if serie.total %}
+    <section class="serie">
+        <h2>La serie</h2>
+        <div class="marcador">
+            <div>
+                <div class="m-num m-a">{{ serie.gana_a }}</div>
+                <div class="m-lab">{{ equipo_a }}</div>
+            </div>
+            {% if serie.empates %}
+            <div>
+                <div class="m-e">{{ serie.empates }}</div>
+                <div class="m-lab">Empates</div>
+            </div>
+            {% endif %}
+            <div>
+                <div class="m-num m-b">{{ serie.gana_b }}</div>
+                <div class="m-lab">{{ equipo_b }}</div>
+            </div>
+        </div>
+        <div class="barra">
+            <i class="ba" style="width:{{ serie.pct_a }}%"></i>
+            <i class="be" style="width:{{ serie.pct_e }}%"></i>
+            <i class="bb" style="width:{{ serie.pct_b }}%"></i>
+        </div>
+        <div class="leyenda">
+            <span>{{ serie.pct_a }}%</span>
+            <span>{{ serie.total }} partido{{ '' if serie.total == 1 else 's' }}</span>
+            <span>{{ serie.pct_b }}%</span>
+        </div>
+        <p class="fuente">
+            Historial construido con los partidos que DondeVer.app ha registrado
+            {%- if h2h %}, desde el {{ h2h[-1].game_date }}{% endif %}. No es el historial
+            completo de la rivalidad: crece cada vez que estos equipos vuelven a jugar.
+        </p>
+    </section>
+
+    <div class="datos">
+        {% if serie.lider %}
+        <div class="dato">
+            <div class="v">{{ serie.lider }}</div>
+            <div class="k">Domina la serie</div>
+        </div>
+        {% endif %}
+        <div class="dato">
+            <div class="v">{{ serie.puntos_a }}&ndash;{{ serie.puntos_b }}</div>
+            <div class="k">Marcador acumulado</div>
+        </div>
+        {% if serie.racha %}
+        <div class="dato">
+            <div class="k" style="margin:0 0 .1rem">&Uacute;ltimos resultados</div>
+            <div class="racha">
+                {% for r in serie.racha %}
+                <span class="pill p{{ r }}" title="{% if r == 'A' %}{{ equipo_a }}{% elif r == 'B' %}{{ equipo_b }}{% else %}Empate{% endif %}">
+                    {%- if r == 'A' %}{{ equipo_a[:1] }}{% elif r == 'B' %}{{ equipo_b[:1] }}{% else %}E{% endif -%}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="vacio">
+        <strong>Todav&iacute;a no tenemos partidos registrados de este cl&aacute;sico.</strong><br>
+        El historial se construye con los partidos que vamos guardando, as&iacute; que aparecer&aacute;
+        en cuanto {{ equipo_a }} y {{ equipo_b }} vuelvan a enfrentarse. Mientras tanto, abajo
+        est&aacute; el contexto y el pr&oacute;ximo duelo en cuanto se programe.
+    </div>
+    {% endif %}
+
+    <div class="ctx">{{ cfg.contexto }}</div>
+
+    {# ── Comparativo en la tabla ── #}
+    {% if fila_a and fila_b %}
+    <h2 class="sec">C&oacute;mo llegan</h2>
+    <div class="card">
+        <div class="cmp">
+            <div class="lado">{{ fila_a.wins|dato }}&ndash;{{ fila_a.losses|dato }}</div>
+            <div class="et">R&eacute;cord</div>
+            <div class="lado r">{{ fila_b.wins|dato }}&ndash;{{ fila_b.losses|dato }}</div>
+        </div>
+        {% if fila_a.rank or fila_b.rank %}
+        <div class="cmp">
+            <div class="lado">{{ fila_a.rank|dato }}&ordm;</div>
+            <div class="et">Posici&oacute;n</div>
+            <div class="lado r">{{ fila_b.rank|dato }}&ordm;</div>
+        </div>
+        {% endif %}
+        <div class="cmp">
+            <div class="lado" style="font-size:.9rem;color:#6b7280;">{{ equipo_a }}</div>
+            <div class="et">&nbsp;</div>
+            <div class="lado r" style="font-size:.9rem;color:#6b7280;">{{ equipo_b }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Historial partido a partido ── #}
+    {% if h2h %}
+    <h2 class="sec">&Uacute;ltimos enfrentamientos</h2>
+    <div class="card">
+        {% for j in h2h[:15] %}
+        {%- set a_local = equipo_a.lower() in (j.home_name or '').lower() -%}
+        {%- set gana_local = (j.home_score|int) > (j.away_score|int) -%}
+        <div class="row">
+            <span class="fch">{{ j.game_date }}</span>
+            <span class="tm r">{{ j.home_short or j.home_name }}</span>
+            <span class="sc {% if gana_local %}{{ 'win-a' if a_local else 'win-b' }}{% elif (j.away_score|int) > (j.home_score|int) %}{{ 'win-b' if a_local else 'win-a' }}{% endif %}">{{ j.home_score }}&ndash;{{ j.away_score }}</span>
+            <span class="tm">{{ j.away_short or j.away_name }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2 class="sec">Otros cl&aacute;sicos</h2>
+    <div class="otros">
+        {% for s, c in otros %}<a href="/clasico/{{ s }}">{{ c.nombre }}</a>{% endfor %}
+    </div>
+</main>
+{{ ad('bottom') }}
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; D&oacute;nde ver deportes en vivo.</p>
+</footer>
+<script src="/static/timezone.js" defer></script>
+<script src="/static/dark-mode.js" defer></script>
+</body>
+</html>

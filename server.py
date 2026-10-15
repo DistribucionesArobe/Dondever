@@ -5947,6 +5947,10 @@ async def sitemap_equipos():
     # ESPN no publica la tabla de la LVBP y nosotros sí.
     for _wl in _EN_WINTER_LEAGUES:
         urls.append(_sm_url(f'{APP_URL}/en/baseball/{_wl}', today_str, "daily", "0.8"))
+    # Clásicos: permanentes, así que cambian poco pero valen mucho. Van aquí y
+    # no en sitemap-core porque son páginas de equipos.
+    for _cl in _CLASICOS:
+        urls.append(_sm_url(f'{APP_URL}/clasico/{_cl}', week_start, "weekly", "0.8"))
     # /equipo/{slug}/calendario se quitó del sitemap (GSC 28 d: 5,013 impresiones, 0 clics,
     # posición ~44). Duplica los próximos partidos que ya trae /equipo/{slug} y se lleva
     # presupuesto de rastreo. Las páginas siguen accesibles para el usuario, pero con noindex.
@@ -6001,6 +6005,7 @@ async def sitemap_core():
         ("app", "monthly", "0.6"),
         ("privacidad", "monthly", "0.3"),
         ("terminos", "monthly", "0.3"),
+        ("clasicos", "weekly", "0.8"),
         ("guia/donde-ver-liga-mx", "weekly", "0.8"),
         ("guia/donde-ver-nfl-en-mexico", "weekly", "0.8"),
         ("guia/donde-ver-nba-en-mexico", "weekly", "0.8"),
@@ -9019,6 +9024,191 @@ _EN_WINTER_LEAGUES = {
         "nota_datos": "",
     },
 }
+
+
+# ── Clásicos ──────────────────────────────────────────────────────────────
+#
+# De dónde sale esto. En Search Console, 7 días: "magallanes vs tiburones
+# donde ver" trae 229 impresiones y "donde ver magallanes vs tiburones hoy"
+# otras 179 — la misma pregunta partida en decenas de variantes. Y cada vez
+# que juegan se crea una URL /partido/ nueva que arranca de cero en autoridad
+# y muere a los tres días.
+#
+# Una página fija por rivalidad acumula durante toda la temporada en vez de
+# repartirse entre partidos sueltos.
+#
+# `equipos` son los nombres como aparecen en nuestros datos, porque con eso se
+# busca en la tabla `games`. `tagline` y `contexto` son lo único escrito a
+# mano, y son hechos comprobables, no relleno: nada de "el duelo más apasionante
+# de todos los tiempos".
+_CLASICOS = {
+    "america-vs-chivas": {
+        "nombre": "Clásico Nacional", "liga": "Liga MX", "liga_slug": "liga-mx",
+        "equipos": ("América", "Guadalajara"),
+        "slugs": ("america", "chivas"),
+        "tagline": "América vs Chivas",
+        "contexto": "El partido más visto del futbol mexicano. Enfrenta a los dos clubes "
+                    "con más campeonatos de Liga MX y es el único que suele transmitirse "
+                    "por televisión abierta en todo el país.",
+        "color_a": "#ffd700", "color_b": "#c8102e",
+    },
+    "america-vs-cruz-azul": {
+        "nombre": "Clásico Joven", "liga": "Liga MX", "liga_slug": "liga-mx",
+        "equipos": ("América", "Cruz Azul"),
+        "slugs": ("america", "cruz-azul"),
+        "tagline": "América vs Cruz Azul",
+        "contexto": "Clásico capitalino entre dos de los equipos más ganadores de México. "
+                    "Se juega desde los años setenta y ha definido varias finales.",
+        "color_a": "#ffd700", "color_b": "#003da5",
+    },
+    "monterrey-vs-tigres": {
+        "nombre": "Clásico Regio", "liga": "Liga MX", "liga_slug": "liga-mx",
+        "equipos": ("Monterrey", "Tigres"),
+        "slugs": ("monterrey", "tigres"),
+        "tagline": "Rayados vs Tigres",
+        "contexto": "El clásico de Nuevo León. Los dos equipos comparten ciudad y se han "
+                    "enfrentado en finales de Liga MX y de Concacaf.",
+        "color_a": "#003da5", "color_b": "#ffb81c",
+    },
+    "pumas-vs-cruz-azul": {
+        "nombre": "Clásico Capitalino", "liga": "Liga MX", "liga_slug": "liga-mx",
+        "equipos": ("Pumas", "Cruz Azul"),
+        "slugs": ("pumas", "cruz-azul"),
+        "tagline": "Pumas vs Cruz Azul",
+        "contexto": "Duelo entre dos clubes de la Ciudad de México con historia compartida "
+                    "en finales y en la memoria del Estadio Olímpico Universitario.",
+        "color_a": "#00205b", "color_b": "#003da5",
+    },
+    "yankees-vs-red-sox": {
+        "nombre": "Yankees vs Red Sox", "liga": "MLB", "liga_slug": "mlb",
+        "equipos": ("Yankees", "Red Sox"),
+        "slugs": ("yankees", "red-sox"),
+        "tagline": "La rivalidad más antigua de las Grandes Ligas",
+        "contexto": "Rivalidad de división en la Liga Americana del Este. Se enfrentan "
+                    "varias veces cada temporada regular y han definido series de "
+                    "postemporada memorables.",
+        "color_a": "#132448", "color_b": "#bd3039",
+    },
+    "dodgers-vs-giants": {
+        "nombre": "Dodgers vs Giants", "liga": "MLB", "liga_slug": "mlb",
+        "equipos": ("Dodgers", "Giants"),
+        "slugs": ("dodgers", "giants"),
+        "tagline": "El clásico de la Costa Oeste",
+        "contexto": "Rivalidad que nació en Nueva York y se mudó completa a California. "
+                    "Ambos están en la División Oeste de la Liga Nacional.",
+        "color_a": "#005a9c", "color_b": "#fd5a1e",
+    },
+    "cowboys-vs-eagles": {
+        "nombre": "Cowboys vs Eagles", "liga": "NFL", "liga_slug": "nfl",
+        "equipos": ("Cowboys", "Eagles"),
+        "slugs": ("cowboys", "eagles"),
+        "tagline": "El clásico de la NFC Este",
+        "contexto": "Rivalidad de división: se enfrentan dos veces cada temporada regular "
+                    "y el resultado suele decidir quién gana la NFC Este.",
+        "color_a": "#041e42", "color_b": "#004c54",
+    },
+    "lakers-vs-celtics": {
+        "nombre": "Lakers vs Celtics", "liga": "NBA", "liga_slug": "nba",
+        "equipos": ("Lakers", "Celtics"),
+        "slugs": ("lakers", "celtics"),
+        "tagline": "La rivalidad con más finales de la NBA",
+        "contexto": "Los dos equipos con más campeonatos de la NBA. Se han enfrentado en "
+                    "múltiples Finales desde los años sesenta.",
+        "color_a": "#552583", "color_b": "#007a33",
+    },
+}
+
+
+def _resumen_h2h(juegos: list, nombre_a: str, nombre_b: str) -> dict:
+    """Serie entre dos equipos a partir de los partidos guardados."""
+    ga = gb = empates = 0
+    carreras_a = carreras_b = 0
+    racha = []
+    for j in juegos:
+        local_es_a = nombre_a.lower() in (j.get("home_name") or "").lower()
+        try:
+            pl, pv = int(j["home_score"]), int(j["away_score"])
+        except (TypeError, ValueError, KeyError):
+            continue
+        pa, pb = (pl, pv) if local_es_a else (pv, pl)
+        carreras_a += pa
+        carreras_b += pb
+        if pa > pb:
+            ga += 1; racha.append("A")
+        elif pb > pa:
+            gb += 1; racha.append("B")
+        else:
+            empates += 1; racha.append("E")
+    total = ga + gb + empates
+    return {
+        "total": total, "gana_a": ga, "gana_b": gb, "empates": empates,
+        "puntos_a": carreras_a, "puntos_b": carreras_b,
+        # Porcentajes para la barra. Sin partidos no hay barra: 0 y 0, no 50/50,
+        # que sugeriría un empate histórico inexistente.
+        "pct_a": round(ga / total * 100) if total else 0,
+        "pct_b": round(gb / total * 100) if total else 0,
+        "pct_e": round(empates / total * 100) if total else 0,
+        "racha": racha[:5],
+        "lider": nombre_a if ga > gb else (nombre_b if gb > ga else None),
+    }
+
+
+@app.get("/clasico/{slug}", response_class=HTMLResponse)
+async def clasico_page(request: Request, slug: str):
+    """Página permanente de una rivalidad: serie, historial y próximo duelo."""
+    cfg = _CLASICOS.get(slug)
+    if not cfg:
+        return templates.TemplateResponse(
+            request, "404.html", status_code=404,
+            context={"message": "Ese clásico no está en DondeVer."})
+
+    a, b = cfg["equipos"]
+    from db import get_h2h
+    sport, league_id, *_ = ALL_LEAGUES[cfg["liga_slug"]]
+
+    h2h, standings, proximos, hoy = await asyncio.gather(
+        get_h2h(a, b, limit=40),
+        get_league_standings(sport, league_id, limit=50),
+        get_upcoming_league_games(sport, league_id, days=120, limit=60),
+        get_todays_games(league_filter=cfg["liga_slug"]),
+        return_exceptions=True,
+    )
+    h2h, standings, proximos, hoy = [
+        [] if isinstance(x, Exception) else x for x in (h2h, standings, proximos, hoy)]
+
+    serie = _resumen_h2h(h2h, a, b)
+
+    def _es_el_duelo(local, visita):
+        l, v = (local or "").lower(), (visita or "").lower()
+        return ((a.lower() in l and b.lower() in v) or (b.lower() in l and a.lower() in v))
+
+    # El próximo duelo: primero entre los de hoy, luego en el calendario.
+    duelo_hoy = next((g for g in hoy
+                      if _es_el_duelo((g.get("home") or {}).get("name"),
+                                      (g.get("away") or {}).get("name"))), None)
+    proximo = duelo_hoy or next(
+        (u for u in proximos if _es_el_duelo(u.get("home"), u.get("away"))), None)
+
+    # Posición de cada uno en la tabla, para el comparativo.
+    def _fila(nombre):
+        n = nombre.lower()
+        return next((r for r in standings
+                     if n in (r.get("team_name") or "").lower()
+                     or (r.get("team_name") or "").lower() in n), None)
+
+    return templates.TemplateResponse(request, "clasico.html", {
+        "cfg": cfg, "slug": slug, "equipo_a": a, "equipo_b": b,
+        "h2h": h2h, "serie": serie, "proximo": proximo, "duelo_hoy": bool(duelo_hoy),
+        "fila_a": _fila(a), "fila_b": _fila(b),
+        "otros": [(s, c) for s, c in _CLASICOS.items() if s != slug][:6],
+    })
+
+
+@app.get("/clasicos", response_class=HTMLResponse)
+async def clasicos_index(request: Request):
+    """Índice de clásicos."""
+    return templates.TemplateResponse(request, "clasicos_index.html",
+                                      {"clasicos": _CLASICOS})
 
 
 @app.get("/en/baseball/{slug}", response_class=HTMLResponse)

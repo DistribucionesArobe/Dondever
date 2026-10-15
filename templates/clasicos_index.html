@@ -1,0 +1,82 @@
+{% from "_ad.html" import ad %}
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clásicos del deporte: dónde ver, historial y próximos partidos | DondeVer</title>
+    <meta name="description" content="Los clásicos de Liga MX, MLB, NFL y NBA: dónde ver cada rivalidad, historial de enfrentamientos y el próximo partido con canales y horarios.">
+    <link rel="canonical" href="{{ app_url }}/clasicos">
+    <meta property="og:title" content="Clásicos del deporte — DondeVer.app">
+    <meta property="og:locale" content="es_MX">
+    <link rel="icon" type="image/png" href="/static/logo.png?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:#f6f7fb;color:#111827}
+        .header{background:#0b1020;padding:.6rem 0}
+        .header-inner{max-width:900px;margin:0 auto;padding:0 1rem;display:flex;align-items:center;justify-content:space-between}
+        .main{max-width:900px;margin:0 auto 3rem;padding:0 1rem}
+        .crumb{font-size:.72rem;color:#6b7280;margin:.7rem 0}
+        .crumb a{color:#059669;text-decoration:none}
+        h1{font-size:1.5rem;font-weight:900;margin-bottom:.3rem}
+        .lead{font-size:.9rem;color:#6b7280;line-height:1.6;margin-bottom:1.1rem}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.8rem}
+        .cl{position:relative;display:block;border-radius:16px;overflow:hidden;text-decoration:none;color:#fff;padding:1.1rem 1rem;min-height:120px}
+        .cl::after{content:"";position:absolute;inset:0;background:rgba(5,8,20,.5);transition:background .15s}
+        .cl:hover::after{background:rgba(5,8,20,.36)}
+        .cl > *{position:relative;z-index:1}
+        .cl .lg{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;font-weight:800;opacity:.85}
+        .cl .nb{font-size:1.2rem;font-weight:900;margin:.25rem 0 .15rem;line-height:1.15}
+        .cl .tg{font-size:.82rem;font-weight:600;opacity:.92}
+        .cl .go{font-size:.75rem;font-weight:800;margin-top:.6rem;opacity:.95}
+        h2{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;font-weight:800;margin:1.6rem 0 .6rem}
+        .footer{max-width:900px;margin:2rem auto;padding:1rem;text-align:center;font-size:.7rem;color:#9ca3af}
+        .footer a{color:#059669;text-decoration:none}
+        body.dark-mode{background:#0f172a}
+        body.dark-mode .lead{color:#94a3b8}
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="header-inner">
+        <a href="/" aria-label="DondeVer.app"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" width="181" height="32" style="height:32px;width:auto;display:block;"></a>
+        <a href="/" style="color:#10b981;text-decoration:none;font-weight:700;font-size:.8rem;">Hoy &rarr;</a>
+    </div>
+</header>
+<main class="main">
+    <nav class="crumb"><a href="/">Inicio</a> &rsaquo; Cl&aacute;sicos</nav>
+    <h1>Cl&aacute;sicos del deporte</h1>
+    <p class="lead">Las rivalidades que la gente busca por nombre. En cada una: el historial de
+    enfrentamientos que hemos registrado, c&oacute;mo llegan los dos equipos y d&oacute;nde ver
+    el pr&oacute;ximo duelo con canales y horario.</p>
+
+{{ ad('top') }}
+
+    {% for liga in ['Liga MX', 'MLB', 'NFL', 'NBA'] %}
+    {% set grupo = clasicos.items()|selectattr('1.liga','equalto',liga)|list %}
+    {% if grupo %}
+    <h2>{{ liga }}</h2>
+    <div class="grid">
+        {% for s, c in grupo %}
+        <a class="cl" href="/clasico/{{ s }}"
+           style="background:linear-gradient(110deg,{{ c.color_a }} 0%,{{ c.color_a }} 44%,#0b1020 50%,{{ c.color_b }} 56%,{{ c.color_b }} 100%);">
+            <div class="lg">{{ c.liga }}</div>
+            <div class="nb">{{ c.nombre }}</div>
+            <div class="tg">{{ c.tagline }}</div>
+            <div class="go">Ver historial y pr&oacute;ximo partido &rarr;</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+</main>
+{{ ad('bottom') }}
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; D&oacute;nde ver deportes en vivo.</p>
+</footer>
+<script src="/static/dark-mode.js" defer></script>
+</body>
+</html>

@@ -263,6 +263,39 @@ async def get_team_channels(team_name: str) -> list[tuple[str, int]]:
         return [(r[0], r[1]) for r in result.all()]
 
 
+async def get_h2h(team_a: str, team_b: str, limit: int = 30) -> list[dict]:
+    """Enfrentamientos entre dos equipos, del más reciente al más viejo.
+
+    Sale de nuestra propia tabla `games`, no de una API. Eso tiene una
+    consecuencia que la página TIENE que decir: el historial empieza el día que
+    empezamos a guardar partidos, no en la fundación del club. Un "Clásico
+    Nacional: 412 juegos" sería mentira; "18 desde que lo registramos, con la
+    fecha del primero" es verdad y además se vuelve más valioso cada temporada.
+
+    Se consulta en los dos sentidos porque el local cambia cada vez.
+    """
+    if not team_a or not team_b:
+        return []
+    async with async_session() as session:
+        result = await session.execute(
+            text("""
+                SELECT id, game_date, date_utc, league_slug, league_name, sport,
+                       home_name, away_name, home_short, away_short,
+                       home_logo, away_logo, home_score, away_score,
+                       venue, winner
+                FROM games
+                WHERE state = 'post'
+                  AND home_score IS NOT NULL AND away_score IS NOT NULL
+                  AND ((home_name ILIKE :a AND away_name ILIKE :b)
+                    OR (home_name ILIKE :b AND away_name ILIKE :a))
+                ORDER BY game_date DESC, date_utc DESC
+                LIMIT :lim
+            """),
+            {"a": f"%{team_a}%", "b": f"%{team_b}%", "lim": limit},
+        )
+        return [dict(r) for r in result.mappings().all()]
+
+
 async def get_league_history(league_slug: str, limit: int = 20) -> list[dict]:
     """Get recent finished games for a league."""
     async with async_session() as session:
