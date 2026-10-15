@@ -2808,12 +2808,21 @@ async def get_team_stats(team_slug: str) -> dict:
 
     # Resolve team name from slug
     from config import TEAM_ALIASES
-    team_name_search = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " ")).lower()
+    # Sin quitar acentos esta búsqueda fallaba para medio Liga MX: el slug es
+    # "america" y ESPN manda "América", y "america" no está dentro de
+    # "américa". Comprobado el 15/10/2026 contra la tabla real: no encontraba a
+    # América, León, Querétaro, Mazatlán, Juárez ni Atlético de San Luis.
+    #
+    # Y como get_team_stats devuelve {} cuando no encuentra, esas fichas salían
+    # sin escudo, sin color, sin posición en la tabla y sin récord. La del
+    # América es la página de equipo más visitada del sitio.
+    team_name_search = _sin_acentos_api(
+        TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " ")))
 
     # Find the team in standings
     for entry in standings:
-        entry_name = entry["team_name"].lower()
-        entry_short = entry["team_short"].lower()
+        entry_name = _sin_acentos_api(entry["team_name"])
+        entry_short = _sin_acentos_api(entry["team_short"])
         if (team_name_search in entry_name or
             entry_name in team_name_search or
             team_slug.replace("-", "") in entry_name.replace(" ", "") or
