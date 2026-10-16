@@ -8391,6 +8391,13 @@ async def team_page(request: Request, team_slug: str):
         # TheSportsDB, o equipos sin color en la API): la plantilla cae al
         # azul oscuro del sitio, que es el aspecto actual.
         "team_color": _color_equipo(stats),
+        # Los países a los que enlaza "Ver en …". La plantilla tenía una lista
+        # fija de diez escrita a mano que NO incluía España — justo el mercado
+        # que mejor paga y donde está la diáspora. Y además enlazaba a países
+        # que el sitemap ya no publica, así que los enlaces internos y el
+        # sitemap se contradecían. Ahora salen los dos de _paises_de_equipo.
+        "paises_ficha": [(cs, TEAM_COUNTRY_SEO[cs]["name"], TEAM_COUNTRY_SEO[cs]["flag"])
+                         for cs in _paises_de_equipo(team_slug) if cs in TEAM_COUNTRY_SEO],
         # Rivalidades de este equipo. Lista vacía para los ~280 equipos que no
         # están en _CLASICOS; la plantilla no pinta nada en ese caso.
         "clasicos_equipo": _clasicos_de_equipo(team_slug),
