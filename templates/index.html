@@ -1940,7 +1940,13 @@
     </section>
     {% endif %}
 
-    {# ── ⭐ MIS EQUIPOS (populated dynamically via JS) ── #}
+    {# ── ⭐ MIS EQUIPOS (populated dynamically via JS) ──
+
+       Sólo en la portada sin filtrar. Si alguien pulsó "BÁSQUET" ya dijo a qué
+       viene, y encontrarse "Mis equipos · ninguno de tus favoritos juega hoy"
+       ocupando 244 px antes del primer partido de la NBA es contestarle otra
+       cosa. Sus equipos siguen a un clic, en "TODOS". #}
+    {% if not current_sport and not current_league %}
     <section class="my-teams-section" id="secMyTeams" style="display:none;">
         <div class="my-teams-header">
             <span>&#11088; Mis equipos</span>
@@ -1962,6 +1968,7 @@
             </div>
         </div>
     </section>
+    {% endif %}
 
 
 {#
@@ -1987,15 +1994,19 @@
       anuncio. En un sitio al que la gente entra con una pregunta concreta y se
       va en 33 segundos de media, eso cobra el peaje antes de dar la respuesta.
 
-      Ahora va DESPUÉS de los cinco destacados. El lector recibe lo que venía a
-      buscar, y el anuncio aparece cuando ya decidió seguir bajando.
+      Iba DESPUÉS de los cinco destacados: el lector recibía lo que venía a
+      buscar y el anuncio aparecía cuando ya había decidido seguir bajando.
 
-      El costo esperado: este hueco verá menos gente que arriba. A cambio,
-      quien lo vea habrá bajado por voluntad propia, que es justo el perfil que
-      sube la visibilidad — y la visibilidad, no el conteo, es lo que tenía el
-      CPM hundido (28.17% medido el 06/10/2026).
+      16/10/2026: al quitar "Lo imperdible" este anuncio se quedó sin aquello
+      que lo justificaba. Pasó a ser lo primero bajo la cabecera, antes de
+      cualquier partido — y en la vista filtrada por deporte, lo único entre el
+      filtro y el primer juego. Medido con ?sport=basketball: la NBA empezaba a
+      1.030 px del inicio.
+
+      Así que vuelve a bajar hasta después de la primera liga, que es donde
+      estaba el sentido original. Los tres huecos siguen existiendo: éste tras
+      la liga 1, ad('mid') tras la liga 3, y ad('bottom') al final.
     #}
-    {{ ad('top') }}
 
     {# ── 📺 GRATIS HOY — removed per user request ── #}
 
@@ -2045,8 +2056,11 @@
     {% set finished_games = deduped_games | selectattr('status.state', 'eq', 'post') | list %}
     {% if deduped_games %}
 
-    {# Insert AdSense after league 1 (users scrolled past featured + first league) #}
+    {# Los dos huecos de en medio, repartidos: uno tras la primera liga y otro
+       tras la tercera. Antes los dos caían casi juntos arriba. #}
     {% if league_idx[0] == 1 %}
+    {{ ad('top') }}
+    {% elif league_idx[0] == 3 %}
     {{ ad('mid') }}
     {% endif %}
 
