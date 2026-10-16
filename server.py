@@ -1192,12 +1192,22 @@ async def home(
     # ── Live games section ──────────────────────────────
     live_games = [g for g in games if g["status"]["state"] == "in"]
 
-    # ── IDs already shown in must-watch / free / live ──
+    # ── IDs ya mostrados arriba, para no repetirlos en las ligas ──
+    #
+    # Esta lista sólo puede contener partidos que la portada PINTA antes de la
+    # sección por ligas. Si entra algo que no se pinta en ningún sitio, el
+    # partido no se repite: desaparece.
+    #
+    # Eso es justo lo que pasó el 16/10/2026 al quitar "Lo imperdible". Los
+    # hasta 15 candidatos de must_watch seguían entrando aquí, pero ya no se
+    # pintaban. En ?sport=football los partidos de futbol americano del día
+    # eran todos candidatos, así que la portada salió literalmente vacía: sin
+    # ligas y sin el aviso de "no hay partidos" (porque para el servidor sí
+    # había). free_games arrastraba el mismo problema desde que "Gratis hoy"
+    # se mudó a su propia página: tampoco se pinta aquí.
+    #
+    # Queda sólo EN VIVO, que es la única sección que de verdad va arriba.
     _priority_ids = set()
-    for g in must_watch:
-        _priority_ids.add(g["id"])
-    for g in free_games:
-        _priority_ids.add(g["id"])
     for g in live_games:
         _priority_ids.add(g["id"])
 
