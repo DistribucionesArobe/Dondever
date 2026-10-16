@@ -6204,24 +6204,58 @@ _PAIS_DE_LIGA = {
 }
 # Donde vive la gente que busca su liga desde fuera.
 _DIASPORA = ("espana", "estados-unidos")
-# Las ligas que no son "de un país" tampoco se siguen en los once por igual.
-# El futbol europeo sí es universal entre hispanohablantes; el hockey no lo ve
-# nadie fuera de Estados Unidos, y el beisbol vive en el Caribe y México.
-# Poner las 423 fichas en los once países era multiplicar por once la parte
-# del catálogo que menos se busca.
-_TODOS = list(TEAM_COUNTRY_SEO)
-_BEISBOL = ["mexico", "estados-unidos", "venezuela", "republica-dominicana",
-            "panama", "colombia"]
+# Los once países, escritos a mano y no como list(TEAM_COUNTRY_SEO).
+#
+# Aquí había exactamente eso, list(TEAM_COUNTRY_SEO), y TEAM_COUNTRY_SEO se
+# define 2.250 líneas más abajo: al importar el módulo esta línea reventaba con
+# NameError y el servidor no arrancaba. La sintaxis era correcta, así que
+# compilaba y el commit pasaba; sólo fallaba al ejecutarse. Es la causa de que
+# la página se cayera "al hacer push": Render levantaba la instancia nueva, el
+# import moría, y como el disco montado impide el despliegue sin cortes, la
+# vieja ya se había bajado.
+#
+# La guarda de abajo, junto a la definición de TEAM_COUNTRY_SEO, evita que las
+# dos listas se separen en silencio si algún día añadimos un país.
+_TODOS = ["mexico", "estados-unidos", "venezuela", "panama",
+          "republica-dominicana", "argentina", "colombia", "chile",
+          "peru", "ecuador", "espana"]
+#
+# Medido en Search Console, clics en /equipo/*/en/* (15 jul – 14 oct 2026):
+#
+#   Venezuela 827 · México 779 · EE.UU. 368 · Colombia 255 · R.Dominicana 215
+#   Argentina 168 · Chile 161 · España 159 · Ecuador 145 · Panamá 110 · Perú 96
+#
+# Suman 3.283 de los 3.290 clics del filtro /en/: los once países reciben
+# clics y ninguno es cero. El más pequeño, Perú, trae 96 en tres meses.
+#
+# Eso desmonta la primera versión de esta poda, que recortaba por país. El
+# problema de las 4.653 páginas nunca fue el eje "país": era suponer que un
+# chileno no busca "warriors vs clippers donde ver" o un ecuatoriano "donde
+# ver partidos del inter de miami". Sí lo hacen, y esos clics venían
+# precisamente de las ligas que habíamos cortado de esos países: NBA, WNBA,
+# MLS, NFL y la propia LVBP (Chile y Perú tienen clics en Tigres de Aragua y
+# Leones del Caracas).
+#
+# Lo que sí se sostiene es la otra mitad del razonamiento: una liga local no
+# se busca fuera de su país. Nadie en Chile busca "Alebrijes de Oaxaca". Así
+# que la regla queda en dos casos:
+#
+#   deporte global (NBA, MLB, NFL, futbol europeo, MLS) → los once países
+#   liga local (Liga MX, LVBP, LigaPro, LNBP, LMB…)     → su país + diáspora
+#
+# Diáspora = España y Estados Unidos, donde un dominicano buscando al Licey o
+# un ecuatoriano buscando a Emelec no compite con ningún medio local.
 _MERCADOS_FICHA = {
     # Futbol europeo: se sigue en todo el mundo hispano.
     "Premier League": _TODOS, "La Liga": _TODOS, "Serie A": _TODOS,
     "Bundesliga": _TODOS, "Ligue 1": _TODOS,
-    # Deportes de Estados Unidos: México y EE.UU., más España en basquet.
-    "MLB": _BEISBOL,
-    "NFL": ["mexico", "estados-unidos", "espana"],
-    "NBA": ["mexico", "estados-unidos", "espana", "argentina"],
+    # Ligas de Estados Unidos. Las cuatro tienen clics medidos fuera de México
+    # y EE.UU.: NBA en los once, MLB en Chile y España, NFL en Dominicana y
+    # Argentina, MLS en Argentina, Ecuador y Panamá.
+    "MLB": _TODOS, "NFL": _TODOS, "NBA": _TODOS, "MLS": _TODOS,
+    # El hockey es la única excepción real: no aparece en ninguna consulta de
+    # GSC fuera de Estados Unidos y México.
     "NHL": ["estados-unidos", "mexico"],
-    "MLS": ["mexico", "estados-unidos"],
     # Ligas europeas menores para nuestra audiencia.
     "Liga Portugal": ["espana", "mexico", "estados-unidos"],
     "Eredivisie": ["espana", "mexico", "estados-unidos"],
@@ -6242,9 +6276,13 @@ def _paises_de_equipo(team_slug: str) -> list:
         return _MERCADOS_FICHA[liga]
     propio = _PAIS_DE_LIGA.get(liga)
     if not propio:
-        # Liga que no sabemos ubicar: se queda sólo en los mercados grandes,
-        # en vez de multiplicarse por once.
-        return ["mexico", *(_DIASPORA)]
+        # Liga que no está en POPULAR_TEAMS: equipos descubiertos desde los
+        # juegos del día (WNBA, futbol americano universitario, torneos).
+        # Estas fichas no entran en el sitemap, así que estos enlaces son la
+        # única puerta que tienen. Y la WNBA, que cae aquí, tiene clics
+        # medidos en Chile, Ecuador, Argentina y Panamá: cortarla a tres
+        # países cerraba la puerta justo donde se abría.
+        return _TODOS
     return [propio, *(p for p in _DIASPORA if p != propio)]
 
 
@@ -8449,6 +8487,16 @@ TEAM_COUNTRY_SEO = {
     "ecuador": {"name": "Ecuador", "flag": "🇪🇨", "code": "EC"},
     "espana": {"name": "España", "flag": "🇪🇸", "code": "ES"},
 }
+
+# _TODOS (línea ~6207) tiene estos once países escritos a mano, porque se usa
+# 2.250 líneas antes de que exista este diccionario. Si algún día añadimos un
+# país aquí y olvidamos el otro sitio, que se note al arrancar y no meses
+# después en forma de páginas que nunca se enlazaron.
+assert list(TEAM_COUNTRY_SEO) == _TODOS, (
+    "TEAM_COUNTRY_SEO y _TODOS no coinciden: "
+    f"sobran {set(TEAM_COUNTRY_SEO) - set(_TODOS)}, "
+    f"faltan {set(_TODOS) - set(TEAM_COUNTRY_SEO)}"
+)
 
 # Channels available per country for each league
 # Updated Aug 2026 — sources: RÉCORD, Infobae, Mediotiempo
