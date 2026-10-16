@@ -6178,13 +6178,89 @@ def mx_date_str(iso: str) -> str:
         return (iso or "")[:10]
 
 
+# ── Qué combinaciones equipo × país tienen sentido ───────────────────────────
+# El sitemap publicaba TODOS los equipos por TODOS los países: 423 × 11 = 4.653
+# URLs. Es casi exactamente el número de páginas sin indexar que diagnosticamos
+# (~5.100), y no es casualidad: nadie busca "dónde ver Rieleros de
+# Aguascalientes en Ecuador". Google las rastrea, no las indexa, y mientras
+# tanto diluyen la autoridad del sitio entre miles de páginas vacías.
+#
+# Una página equipo × país sólo tiene sentido en dos casos:
+#
+#   1. El país de la liga. Un mexicano buscando Liga MX en México.
+#   2. Donde hay diáspora de ese país. Un ecuatoriano en España buscando
+#      Emelec, o un dominicano en Estados Unidos buscando al Licey. Ahí no
+#      compites con nadie: Marca no va a escribir "dónde ver la LVBP en
+#      España", y los medios locales de cada país no escriben para fuera.
+#
+# Los dos destinos de diáspora son España y Estados Unidos, que además son el
+# 5% y el 9% de la audiencia y pagan mejor por impresión que el resto.
+_PAIS_DE_LIGA = {
+    "Liga MX": "mexico", "Liga MX Femenil": "mexico", "LMB": "mexico",
+    "LMP": "mexico", "LNBP": "mexico",
+    "LVBP": "venezuela", "LIDOM": "republica-dominicana",
+    "Liga BetPlay": "colombia", "Liga Argentina": "argentina",
+    "LigaPro Ecuador": "ecuador", "Liga 1 Perú": "peru", "Primera Chile": "chile",
+}
+# Donde vive la gente que busca su liga desde fuera.
+_DIASPORA = ("espana", "estados-unidos")
+# Las ligas que no son "de un país" tampoco se siguen en los once por igual.
+# El futbol europeo sí es universal entre hispanohablantes; el hockey no lo ve
+# nadie fuera de Estados Unidos, y el beisbol vive en el Caribe y México.
+# Poner las 423 fichas en los once países era multiplicar por once la parte
+# del catálogo que menos se busca.
+_TODOS = list(TEAM_COUNTRY_SEO)
+_BEISBOL = ["mexico", "estados-unidos", "venezuela", "republica-dominicana",
+            "panama", "colombia"]
+_MERCADOS_FICHA = {
+    # Futbol europeo: se sigue en todo el mundo hispano.
+    "Premier League": _TODOS, "La Liga": _TODOS, "Serie A": _TODOS,
+    "Bundesliga": _TODOS, "Ligue 1": _TODOS,
+    # Deportes de Estados Unidos: México y EE.UU., más España en basquet.
+    "MLB": _BEISBOL,
+    "NFL": ["mexico", "estados-unidos", "espana"],
+    "NBA": ["mexico", "estados-unidos", "espana", "argentina"],
+    "NHL": ["estados-unidos", "mexico"],
+    "MLS": ["mexico", "estados-unidos"],
+    # Ligas europeas menores para nuestra audiencia.
+    "Liga Portugal": ["espana", "mexico", "estados-unidos"],
+    "Eredivisie": ["espana", "mexico", "estados-unidos"],
+    "Liga Endesa": ["espana", "mexico", "estados-unidos", "argentina"],
+}
+
+
+def _paises_de_equipo(team_slug: str) -> list:
+    """Países en los que la página de este equipo responde a una búsqueda real."""
+    liga = (POPULAR_TEAMS.get(team_slug) or {}).get("league", "")
+    # Canelo, Checo y los pilotos no son equipos: /equipo/{slug} les redirige a
+    # su ficha de atleta, así que una página "equipo × país" para ellos es una
+    # URL que no lleva a lo que promete. Tienen sus propias páginas y las de
+    # /evento/, que es donde está el "dónde verlo" por país.
+    if liga in _ATHLETE_LEAGUES:
+        return []
+    if liga in _MERCADOS_FICHA:
+        return _MERCADOS_FICHA[liga]
+    propio = _PAIS_DE_LIGA.get(liga)
+    if not propio:
+        # Liga que no sabemos ubicar: se queda sólo en los mercados grandes,
+        # en vez de multiplicarse por once.
+        return ["mexico", *(_DIASPORA)]
+    return [propio, *(p for p in _DIASPORA if p != propio)]
+
+
 @app.get("/sitemap-equipos-paises.xml")
 async def sitemap_equipos_paises():
-    """Team × country pages — evergreen, monthly lastmod."""
+    """Team × country pages — evergreen, monthly lastmod.
+
+    Sólo las combinaciones con sentido. Ver _paises_de_equipo: pasamos de 4.653
+    URLs a unas pocas cientos. La ruta sigue respondiendo para cualquier
+    combinación —no rompemos enlaces que ya existan— pero dejamos de pedirle a
+    Google que rastree miles de páginas que nunca va a indexar.
+    """
     _, _, month_start = _sm_dates()
     urls = []
     for team_slug in sorted(POPULAR_TEAMS.keys()):
-        for c_slug in TEAM_COUNTRY_SEO:
+        for c_slug in _paises_de_equipo(team_slug):
             urls.append(_sm_url(f'{APP_URL}/equipo/{team_slug}/en/{c_slug}', month_start, "weekly", "0.6"))
     return _sm_wrap(urls)
 

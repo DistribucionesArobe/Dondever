@@ -70,6 +70,12 @@ EVENT_CHANNELS = {
         "VE": ["Paramount+"],
         "CO": ["Paramount+"],
         "AR": ["Paramount+"],
+        # Paramount+ lleva la UFC en toda Latinoamerica por 7 anos desde 2026.
+        "DO": ["Paramount+"],
+        "PE": ["Paramount+"],
+        "PA": ["Paramount+"],
+        "CL": ["Paramount+"],
+        "EC": ["Paramount+"],
         "ES": ["Eurosport", "HBO Max"],
     },
     "f1": {
@@ -82,6 +88,12 @@ EVENT_CHANNELS = {
         "VE": ["Disney+", "ESPN Latinoamérica"],
         "CO": ["Disney+", "ESPN Latinoamérica"],
         "AR": ["Disney+", "ESPN Latinoamérica"],
+        # ESPN tiene la F1 en Latinoamérica hasta 2028; México queda fuera porque
+        "DO": ["ESPN Latinoamérica", "Disney+"],
+        "PE": ["ESPN Latinoamérica", "Disney+"],
+        "PA": ["ESPN Latinoamérica", "Disney+"],
+        "CL": ["ESPN Latinoamérica", "Disney+"],
+        "EC": ["ESPN Latinoamérica", "Disney+"],
         "ES": ["DAZN"],
     },
     "boxing": {
@@ -98,6 +110,12 @@ EVENT_CHANNELS = {
         "VE": ["ESPN Latinoamérica", "Disney+"],
         "CO": ["ESPN Latinoamérica", "Disney+"],
         "AR": ["ESPN Latinoamérica", "Disney+"],
+        # Misma señal regional de ESPN que ya usábamos en VE, CO y AR.
+        "DO": ["ESPN Latinoamérica", "Disney+"],
+        "PE": ["ESPN Latinoamérica", "Disney+"],
+        "PA": ["ESPN Latinoamérica", "Disney+"],
+        "CL": ["ESPN Latinoamérica", "Disney+"],
+        "EC": ["ESPN Latinoamérica", "Disney+"],
         "ES": ["DAZN"],
     },
     # NASCAR en México y Latinoamérica es de FOX DEPORTES desde el 1 de febrero
@@ -114,6 +132,12 @@ EVENT_CHANNELS = {
         "VE": ["FOX Deportes"],
         "CO": ["FOX Deportes"],
         "AR": ["FOX Deportes"],
+        # FOX Deportes anuncio NASCAR para Mexico y Latinoamerica desde 2026.
+        "DO": ["FOX Deportes"],
+        "PE": ["FOX Deportes"],
+        "PA": ["FOX Deportes"],
+        "CL": ["FOX Deportes"],
+        "EC": ["FOX Deportes"],
         "ES": ["DAZN"],
     },
     "indycar": {
@@ -122,6 +146,12 @@ EVENT_CHANNELS = {
         "VE": ["ESPN Latinoamérica", "Disney+"],
         "CO": ["ESPN Latinoamérica", "Disney+"],
         "AR": ["ESPN Latinoamérica", "Disney+"],
+        # Misma señal regional de ESPN que ya usábamos en VE, CO y AR.
+        "DO": ["ESPN Latinoamérica", "Disney+"],
+        "PE": ["ESPN Latinoamérica", "Disney+"],
+        "PA": ["ESPN Latinoamérica", "Disney+"],
+        "CL": ["ESPN Latinoamérica", "Disney+"],
+        "EC": ["ESPN Latinoamérica", "Disney+"],
         "ES": ["DAZN"],
     },
     # Tenis y golf: canal HABITUAL de la categoría, no confirmado torneo por
