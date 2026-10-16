@@ -2832,6 +2832,53 @@
                 c.style.order = '';
             }
         });
+
+        // ── Si el filtro deja la página sin nada, decirlo ──
+        //
+        // Medido el 16/10/2026 en ?sport=baseball desde México: el único
+        // bloque de béisbol del día era la LVBP (data-geo-country="VE"), este
+        // filtro lo ocultaba, y la página quedaba vacía entre los filtros y
+        // "Tablas de posiciones". Sin partidos y sin explicación.
+        //
+        // El servidor no puede avisar: para él SÍ había partidos. El país
+        // sólo se conoce aquí, así que el aviso tiene que nacer aquí.
+        var ocultas = Array.prototype.filter.call(
+            document.querySelectorAll('.league-section[data-geo-country]'),
+            function(s) { return s.style.display === 'none'; }
+        );
+        var quedaAlgo = Array.prototype.some.call(
+            document.querySelectorAll('.league-section, .priority-section'),
+            function(s) { return s.offsetParent !== null && s.querySelector('.game-card'); }
+        );
+        var aviso = document.getElementById('geoVacio');
+        var cont = document.getElementById('gamesContainer');
+        if (!quedaAlgo && ocultas.length && cont) {
+            if (!aviso) {
+                aviso = document.createElement('div');
+                aviso.id = 'geoVacio';
+                aviso.className = 'no-games';
+                cont.insertBefore(aviso, cont.firstChild);
+            }
+            var nombres = ocultas.map(function(s) {
+                var h = s.querySelector('.league-header span');
+                return h ? h.textContent.replace(/[★☆]/g, '').trim() : '';
+            }).filter(Boolean);
+            var enlaces = ocultas.map(function(s) {
+                return '<a href="/liga/' + s.dataset.leagueSlug + '" style="display:inline-block;' +
+                       'background:var(--accent,#10b981);color:#fff;font-weight:700;margin:0 .3rem;' +
+                       'padding:0.6rem 1.2rem;border-radius:10px;text-decoration:none;">Ver ' +
+                       (s.dataset.leagueSlug || '').toUpperCase() + ' igual &rarr;</a>';
+            }).join('');
+            aviso.innerHTML =
+                '<h2>Nada para tu pa&iacute;s con este filtro</h2>' +
+                '<p style="margin-bottom:1rem;">Hoy s&oacute;lo hay ' + nombres.join(' y ') +
+                ', que es una liga local y no se sigue desde aqu&iacute;.</p>' + enlaces +
+                '<p style="margin-top:0.9rem;font-size:0.85rem;">' +
+                '<a href="/" style="color:var(--accent,#10b981);">o mira todo lo de hoy &rarr;</a></p>';
+            aviso.style.display = '';
+        } else if (aviso) {
+            aviso.style.display = 'none';
+        }
     }
 
     // Run geo-filter after timezone.js sets __DV_COUNTRY (defer)
