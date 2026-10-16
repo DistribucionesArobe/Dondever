@@ -501,7 +501,17 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                     '      var st = i.getAttribute("data-ad-status");\n'
                     '      var vacio = (st === "unfilled") ||\n'
                     '                  (!st && i.querySelectorAll("iframe").length === 0);\n'
-                    '      if(vacio) c.classList.add("dv-ad-vacio");\n'
+                    # classList.toggle y no add: la pasada de los 4s puede
+                    # marcar como vacío un bloque que todavía no había
+                    # respondido, y la de los 12s tiene que poder soltarlo.
+                    # Con add() la marca era definitiva: medido en vivo el
+                    # 16/10/2026, los tres bloques de la portada tenían
+                    # data-ad-status="filled" y un iframe dentro, y los tres
+                    # estaban en display:none con altura 0. Es decir, se
+                    # pedían anuncios, Google los servía, y nosotros los
+                    # tapábamos. Eso explica las impresiones por debajo de
+                    # las vistas de página mejor que ninguna otra cosa.
+                    '      c.classList.toggle("dv-ad-vacio", vacio);\n'
                     '    });\n'
                     '  }\n'
                     # 4s: AdSense suele resolver en 1-2s; el margen evita ocultar

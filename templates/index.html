@@ -1953,69 +1953,20 @@
     </section>
 
 
-    {# ── 🔥 LOS IMPERDIBLES DE HOY ── #}
-    {% if must_watch %}
-    <section class="priority-section" id="secMustWatch">
-        <h2 class="priority-header" style="background:linear-gradient(135deg,#ff6b35,#ff8c42);color:#fff;border-radius:12px 12px 0 0;">
-            <span style="font-weight:700;">&#128293; Lo imperdible de hoy</span>
-            <span class="league-count" style="background:rgba(255,255,255,.25);color:#fff;">{{ must_watch|length }} partido{{ 's' if must_watch|length != 1 else '' }}</span>
-        </h2>
-        {% for game in must_watch %}
-        {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
-        {% set top_team = game.home if home_left else game.away %}
-        {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card" style="border-left:3px solid #ff6b35;" data-game-id="{{ game.id }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-sport="{{ game.sport }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
-            <div class="gc-compact-top">
-                <div class="gc-compact-left">
-                    {% if game.status.state == 'pre' %}
-                    <span class="gc-time" data-utc="{{ game.date }}">{{ format_mx_time(game.date) }}</span>
-                    {% elif game.status.state == 'in' %}
-                    <span class="live-badge">&#128308; {{ game.status.detail or 'EN VIVO' }}</span>
-                    {% else %}
-                    <span class="gc-time">{{ game.status.display }}</span>
-                    {% endif %}
-                    {% if game.broadcasts %}{{ primary_channel_tag(game) }}{% endif %}
-                    <span class="game-card-league-tag">{{ game.emoji }} {{ game.league_name }}</span>
-                </div>
-                <button class="gc-toggle" onclick="toggleAccordion(this)" aria-label="Expandir">&#9660;</button>
-            </div>
-            <a href="{{ game|game_url }}" style="text-decoration:none;color:inherit;">
-                <div class="gc-row">
-                    {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
-                    <span class="team-name">{{ top_team.name }}</span>
-                    <span class="gc-right">
-                        {% if game.status.state == 'pre' %}
-                        <span class="gc-sub tz-hora-label">HORA MX</span>
-                        {% else %}
-                        <span class="team-score">{{ top_team.score }}</span>
-                        {% endif %}
-                    </span>
-                </div>
-                <div class="gc-row">
-                    {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">{% endif %}
-                    <span class="team-name">{{ bottom_team.name }}</span>
-                    <span class="gc-right">
-                        {% if game.status.state != 'pre' %}
-                        <span class="team-score">{{ bottom_team.score }}</span>
-                        {% endif %}
-                    </span>
-                </div>
-            </a>
-            {% if game.preview and game.preview.snippet %}
-            <div class="gc-preview-snippet">{{ game.preview.snippet }}</div>
-            {% endif %}
-            <div class="gc-accordion-body" style="display:none;">
-                <div class="gc-channels-full">
-                    {% for b in game.broadcasts %}
-                    <span class="channel-tag {{ b.info.get('type','unknown') if b.info else 'unknown' }}">{{ b.channel }}</span>
-                    {% endfor %}
-                </div>
-                <a href="{{ game|game_url }}" class="gc-details-link">Dónde ver →</a>
-            </div>
-        </div>
-        {% endfor %}
-    </section>
-    {% endif %}
+{#
+  "Lo imperdible de hoy" — retirado el 16/10/2026.
+
+  Era un bloque de cinco partidos elegidos por un algoritmo de puntuación.
+  El problema no era el formato sino el fondo: no tenemos con qué decidir
+  qué partido es imperdible. La portada del 16/10 ofrecía Frosinone-Sassuolo,
+  Deportivo-Levante, Raptors-Pistons, Necaxa-Atlas y Correcaminos-Dorados,
+  los cinco con la misma etiqueta: "Partido parejo". Ninguno es imperdible,
+  y afirmar que lo son le resta credibilidad a lo demás que dice la página
+  (que es dónde ver cada partido, y eso sí lo sabemos).
+
+  La lista se sigue calculando en el servidor (must_watch) porque de ahí sale
+  pick_game. Lo que se quitó es la promesa editorial que no podíamos cumplir.
+#}
 
     {#
       Anuncio superior.
