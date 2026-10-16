@@ -865,6 +865,32 @@ def format_mx_date_short(iso_date: str) -> str:
         return str(iso_date)[:10] if iso_date else ""
 
 
+def format_mx_date_range(ini: str, fin: str = "") -> str:
+    """'21 – 24 oct' para un torneo, 'dom 4 oct' si es de un solo día.
+
+    Un torneo de tenis o de golf dura días, y la lista de /liga/atp y /liga/pga
+    sólo enseñaba la fecha de inicio con una hora: "Domingo 4 oct · 10:00 PM".
+    Eso contesta mal la pregunta que trae el lector ("¿cuándo es?") y, cuando
+    el torneo está en curso, deja sin explicar por qué aparece como EN VIVO una
+    fecha que ya pasó. Con el rango completo la página se explica sola.
+    """
+    try:
+        a = datetime.fromisoformat(str(ini).replace("Z", "+00:00")).astimezone(TZ_MX)
+    except Exception:
+        return str(ini)[:10] if ini else ""
+    try:
+        b = datetime.fromisoformat(str(fin).replace("Z", "+00:00")).astimezone(TZ_MX)
+    except Exception:
+        b = a
+    if a.date() == b.date():
+        return f"{_DAYS_ES_SHORT[a.weekday()]} {a.day} {_MONTHS_ES_SHORT[a.month - 1]}"
+    # Mismo mes: "21 – 24 oct". Distinto mes: "28 oct – 2 nov".
+    if a.month == b.month and a.year == b.year:
+        return f"{a.day} – {b.day} {_MONTHS_ES_SHORT[b.month - 1]}"
+    return (f"{a.day} {_MONTHS_ES_SHORT[a.month - 1]} – "
+            f"{b.day} {_MONTHS_ES_SHORT[b.month - 1]}")
+
+
 def mx_when_label(iso_date: str) -> str:
     """'hoy', 'mañana', 'ayer' o 'el vie 18 sep' — según la fecha en México.
 
@@ -909,6 +935,7 @@ templates.env.globals["PLATAFORMAS_TODOS"] = _PLAT_TODOS
 templates.env.globals["format_mx_time"] = format_mx_time
 templates.env.globals["format_mx_day_time"] = format_mx_day_time
 templates.env.globals["format_mx_date_short"] = format_mx_date_short
+templates.env.globals["format_mx_date_range"] = format_mx_date_range
 templates.env.globals["mx_when_label"] = mx_when_label
 templates.env.globals["format_us_time"] = format_us_time
 # Hora en cualquier zona, para renderizar el bloque "Horario por país" en el

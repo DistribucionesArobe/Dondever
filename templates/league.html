@@ -294,6 +294,35 @@
         .cl-mini > *{position:relative;z-index:1;display:block}
         .cl-mini .cm-nb{font-size:.95rem;font-weight:900;line-height:1.2}
         .cl-mini .cm-tg{font-size:.72rem;font-weight:600;opacity:.92;margin-top:.2rem}
+
+        /* ── Torneos (tenis, golf, motor): tarjetas ───────────────────── */
+        .ev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.55rem;margin-top:.6rem}
+        .ev-card{display:block;padding:.7rem .8rem;border:1px solid var(--border,#e5e7eb);
+                 border-radius:12px;background:var(--bg-card,#fff);text-decoration:none;
+                 color:var(--text-primary,#1a1a2e);transition:border-color .15s,transform .15s}
+        .ev-card:hover{border-color:#f97316;transform:translateY(-1px)}
+        /* El que está en curso se lee primero: ocupa la fila entera y lleva
+           borde cálido. Sin fondo rojo, que gritaba más de lo necesario. */
+        .ev-card--live{grid-column:1/-1;border-color:#ef4444;border-width:2px;
+                       background:linear-gradient(180deg,#fff7ed 0%,var(--bg-card,#fff) 60%)}
+        .ev-card-top{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.3rem}
+        .ev-dates{font-size:.76rem;font-weight:800;color:#f97316;letter-spacing:.01em}
+        .ev-badge-live{display:inline-flex;align-items:center;gap:.25rem;background:#ef4444;color:#fff;
+                       font-size:.62rem;font-weight:900;letter-spacing:.06em;
+                       padding:.12rem .4rem;border-radius:5px}
+        .ev-dot{width:5px;height:5px;border-radius:50%;background:#fff;animation:pulse 1.5s infinite}
+        .ev-name{font-size:.92rem;font-weight:800;line-height:1.25}
+        .ev-card--live .ev-name{font-size:1.05rem}
+        .ev-place{font-size:.72rem;color:var(--text-secondary,#6b7280);margin-top:.18rem}
+        .ev-chans{display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.45rem}
+        .ev-chan{font-size:.65rem;font-weight:700;padding:.15rem .4rem;border-radius:5px;
+                 background:var(--bg,#f3f4f6);color:var(--text-secondary,#4b5563);
+                 border:1px solid var(--border,#e5e7eb)}
+        .ev-past{display:flex;justify-content:space-between;align-items:center;gap:.6rem;
+                 padding:.5rem .2rem;border-top:1px solid var(--border,#f3f4f6);
+                 text-decoration:none;color:var(--text-primary,#1a1a2e)}
+        .ev-past-name{font-weight:700;font-size:.85rem}
+        .ev-past-date{white-space:nowrap;color:#9ca3af;font-size:.76rem;font-weight:700}
     </style>
 </head>
 <body>
@@ -439,24 +468,47 @@
     <div class="standings-section" style="margin-bottom:1rem;">
         <h2 style="margin-bottom:0.5rem;">{% if is_race %}Calendario y programaci&oacute;n {{ league_name }} {{ now().year }}{% else %}Pr&oacute;ximos eventos de {{ league_name }}{% endif %}</h2>
         <div style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.4rem;">Hora del centro de M&eacute;xico &middot; toca {% if is_race %}una carrera para ver todas las sesiones, hora por pa&iacute;s y canal{% else %}un evento para ver cartelera, horarios por pa&iacute;s y canal{% endif %}</div>
+        {#
+          Tarjetas en vez de renglones de texto (16/10/2026).
+
+          Eran una lista plana: nombre, canales y una hora de inicio. En tenis
+          y golf un torneo dura días, así que "Domingo 4 oct · 10:00 PM" no
+          contesta "¿cuándo es?" — y cuando el torneo ya empezó, tampoco
+          explicaba por qué salía EN VIVO una fecha pasada. Ahora manda el
+          rango completo de fechas, el que está en curso va destacado arriba,
+          y los canales salen como etiquetas en vez de texto corrido.
+        #}
+        <div class="ev-grid">
         {% for e in upcoming_events %}
-        <a href="/evento/{{ e.slug }}" style="display:flex;justify-content:space-between;align-items:center;gap:0.6rem;padding:0.6rem 0.2rem;border-top:1px solid #f3f4f6;text-decoration:none;color:#1a1a2e;{% if e.status == 'in' %}background:#fef2f2;{% endif %}">
-            <div style="min-width:0;">
-                <div style="font-weight:800;font-size:0.9rem;">{% if e.status == 'in' %}<span style="color:#ef4444;">&#9679; EN VIVO</span> {% endif %}{{ e.name }}</div>
-                <div style="font-size:0.72rem;color:#6b7280;">{% if e.venue %}{{ e.venue }}{% if e.city %}, {{ e.city }}{% endif %} &middot; {% endif %}{{ (e.channels.MX or [])|join(', ') }}</div>
+        <a href="/evento/{{ e.slug }}" class="ev-card{% if e.status == 'in' %} ev-card--live{% endif %}">
+            <div class="ev-card-top">
+                {% if e.status == 'in' %}<span class="ev-badge-live"><span class="ev-dot"></span>EN CURSO</span>{% endif %}
+                <span class="ev-dates">{{ format_mx_date_range(e.start_date or e.date, e.end_date) }}</span>
             </div>
-            <div style="text-align:right;white-space:nowrap;font-weight:800;color:#f97316;font-size:0.82rem;">{{ format_mx_day_time(e.date) }}</div>
+            <div class="ev-name">{{ e.name }}</div>
+            {% if e.venue or e.city %}
+            <div class="ev-place">&#128205; {{ e.venue }}{% if e.venue and e.city %}, {% endif %}{{ e.city }}</div>
+            {% endif %}
+            {% if e.channels.MX %}
+            <div class="ev-chans">
+                {% for c in (e.channels.MX or [])[:3] %}<span class="ev-chan">{{ c }}</span>{% endfor %}
+            </div>
+            {% endif %}
         </a>
         {% endfor %}
+        </div>
     </div>
     {% endif %}
     {% if recent_events %}
     <div class="standings-section" style="margin-bottom:1rem;">
         <h2 style="margin-bottom:0.5rem;">{% if is_race %}&Uacute;ltimas carreras{% else %}&Uacute;ltimos eventos{% endif %} de {{ league_name }}</h2>
         {% for e in recent_events %}
-        <a href="/evento/{{ e.slug }}" style="display:flex;justify-content:space-between;align-items:center;gap:0.6rem;padding:0.5rem 0.2rem;border-top:1px solid #f3f4f6;text-decoration:none;color:#1a1a2e;">
-            <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;">{{ e.name }}</div><div style="font-size:0.7rem;color:#6b7280;">{{ e.venue }}{% if e.city %}, {{ e.city }}{% endif %}</div></div>
-            <div style="white-space:nowrap;color:#9ca3af;font-size:0.78rem;font-weight:700;">{{ format_mx_day_time(e.date).split(' · ')[0] }} &middot; Finalizado</div>
+        <a href="/evento/{{ e.slug }}" class="ev-past">
+            <div style="min-width:0;">
+                <div class="ev-past-name">{{ e.name }}</div>
+                {% if e.venue or e.city %}<div class="ev-place">{{ e.venue }}{% if e.venue and e.city %}, {% endif %}{{ e.city }}</div>{% endif %}
+            </div>
+            <div class="ev-past-date">{{ format_mx_date_range(e.start_date or e.date, e.end_date) }} &middot; Finalizado</div>
         </a>
         {% endfor %}
     </div>

@@ -2295,26 +2295,27 @@
 
     {% if deduped_games %}{% set _ = league_idx.__setitem__(0, league_idx[0] + 1) %}
 
-    {# ── Affiliate banner: after 4th league section (geo-targeted) ── #}
-    {% if league_idx[0] == 4 and not is_historical %}
-    {# MX: Jubilee #}
-    <div class="promo-interstitial" style="border-color:#d97706;" data-geo="mx" data-nosnippet>
-        <div class="promo-inter-title">&#127942; {{ affiliates.jubilee.name }} &mdash; {{ affiliates.jubilee.bonus }}</div>
-        <div class="promo-inter-sub">Bono de bienvenida disponible para nuevos usuarios. Verifica siempre que el operador tenga permiso vigente en tu pa&iacute;s.</div>
-        <a href="/go/jubilee?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="jubilee" class="promo-inter-cta" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Ver bono &#8599;</a>
-        <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
-    </div>
-    {# El promo de EE.UU. era de Betsson. Terminaron el programa el 24-sep-2026,
-       y a ese publico NO se le pone otra casa: en EE.UU. las apuestas se
-       licencian estado por estado y ninguno de nuestros socios opera ahi. #}
-    {# LATAM/resto: 1xBet #}
-    <div class="promo-interstitial" style="border-color:#1a5276;display:none;" data-geo="latam" data-nosnippet>
-        <div class="promo-inter-title">&#127942; {{ affiliates['1xbet'].name }} &mdash; {{ affiliates['1xbet'].bonus }}</div>
-        <div class="promo-inter-sub">Bono de bienvenida disponible para nuevos usuarios. Verifica siempre que el operador tenga permiso vigente en tu pa&iacute;s.</div>
-        <a href="/go/1xbet?s=interstitial" target="_blank" rel="sponsored nofollow noopener" data-affiliate="1xbet" class="promo-inter-cta" style="background:linear-gradient(135deg,#1a5276,#2c6e9e);">Ver bono &#8599;</a>
-        <div class="promo-inter-fine">+18 | Publicidad | T&eacute;rminos y condiciones aplican</div>
-    </div>
-    {% endif %}
+    {#
+      Banner de casa de apuestas tras la 4ª liga — retirado el 16/10/2026.
+
+      Eran dos versiones del mismo bloque: Jubilee para México y 1xBet para
+      el resto de LATAM, con su recuadro oscuro, su bono y su "Ver bono".
+
+      Se quitan los dos, no sólo el de México. Lo que sobraba no era la marca
+      sino el bloque: entre el anuncio de AdSense y la NBA había dos cosas
+      seguidas pidiendo un clic que no es el que la gente vino a dar. Dejar
+      el de 1xBet habría quitado el ingreso de México y conservado el estorbo
+      para los venezolanos y colombianos, que son el 1 y el 4 en clics.
+
+      Las apuestas siguen en el sitio donde tienen sentido: las cuotas dentro
+      de la ficha de partido, /pronosticos y /casinos, que es donde el lector
+      ya está pensando en eso. Si en algún momento quieres recuperar el
+      interstitial, basta con restaurar este bloque del historial de git.
+
+      (El de EE.UU. era de Betsson y ya se había caído solo: terminaron el
+      programa el 24-sep-2026 y a ese público no se le pone otra casa, porque
+      allí se licencia estado por estado y ningún socio nuestro opera ahí.)
+    #}
     {% endif %}{# end deduped_games guard for ads + counter #}
     {% endfor %}
     {# Close hiddenLeagues div if it was opened #}
