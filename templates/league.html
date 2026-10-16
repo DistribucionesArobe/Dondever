@@ -16,7 +16,7 @@
     <meta name="description" content="NFL en vivo hoy: partidos, horarios y dónde verlos en México. Canales confirmados (Canal 5, FOX, ESPN, DAZN), resultados, standings y momios actualizados.">
     {% else %}
     <title>{{ league_name }} en vivo hoy — Partidos, horarios y resultados | DondeVer.app</title>
-    <meta name="description" content="{{ league_name }} en vivo hoy: partidos, horarios, resultados y tabla de posiciones. Consulta que juegos hay ahora y donde verlos en Mexico, USA y Latinoamerica.">
+    <meta name="description" content="{{ league_name }} en vivo hoy: partidos, horarios, resultados y tabla de posiciones. Consulta que juegos hay ahora y donde verlos en {{ mercados }}.">
     {% endif %}
     <!-- Open Graph -->
     <meta property="og:title" content="{{ event_seo.title if event_seo else (league_seo_extra.title if league_seo_extra and league_seo_extra.title else league_name + ' en vivo hoy — Partidos y resultados | DondeVer') }}">
@@ -29,7 +29,7 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:site" content="@dondeverapp">
     <meta name="twitter:title" content="Donde ver {{ league_name }} hoy">
-    <meta name="twitter:description" content="{{ total_games }} juegos de {{ league_name }} hoy. Horarios y canales en Mexico, USA y Latinoamerica.">
+    <meta name="twitter:description" content="{{ total_games }} juegos de {{ league_name }} hoy. Horarios y canales en {{ mercados }}.">
     <link rel="canonical" href="{{ app_url }}/liga/{{ league_slug }}">
     {{ hreflang_tags(request.url) }}
     <!-- JSON-LD: BreadcrumbList -->
@@ -78,7 +78,7 @@
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       "name": "Donde ver {{ league_name }} en vivo",
-      "description": "Guia completa de donde ver juegos de {{ league_name }} en Mexico, Estados Unidos y Latinoamerica",
+      "description": "Guia completa de donde ver juegos de {{ league_name }} en {{ mercados }}",
       "url": "{{ app_url }}/liga/{{ league_slug }}",
       "mainEntity": {
         "@type": "SportsOrganization",
@@ -315,7 +315,7 @@
     <p>{{ event_seo.desc }}</p>
     {% else %}
     <h1>{{ emoji }} {{ league_name }} en vivo hoy — Partidos y resultados</h1>
-    <p>Todos los juegos de {{ league_name }} con horarios, canales de TV y opciones de streaming para Mexico, Estados Unidos y Latinoamerica.</p>
+    <p>Todos los juegos de {{ league_name }} con horarios, canales de TV y opciones de streaming para {{ mercados }}.</p>
     {% endif %}
 </div>
 
@@ -885,7 +885,7 @@
 <div class="seo-content">
     <div class="seo-card">
         <h2>Donde ver {{ league_name }} en vivo</h2>
-        <p>DondeVer.app actualiza diariamente los horarios y canales de transmision de {{ league_name }} para Mexico, Estados Unidos y toda Latinoamerica.</p>
+        <p>DondeVer.app actualiza diariamente los horarios y canales de transmision de {{ league_name }} para {{ mercados }}.</p>
 
         {% if league_channels_today %}
         <h3>Canales transmitiendo {{ league_name }} hoy</h3>

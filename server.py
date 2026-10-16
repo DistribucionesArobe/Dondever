@@ -1376,16 +1376,111 @@ _RACE_FREE_FAQ = {
     "indycar": ("¿Dónde ver IndyCar y a Pato O'Ward en México?",
                 "IndyCar se transmite en México y Latinoamérica por ESPN y Disney+. En Estados Unidos por FOX."),
 }
+# Los países que salen en las páginas de evento, en orden de audiencia real
+# (medida en GA, 28 días): MX 47%, VE 13%, US 9%, ES 5%, CO 4%, DO 3%, el resto
+# 2% cada uno. Argentina estaba en esta lista y no aparece en la audiencia;
+# República Dominicana, Perú, Panamá, Chile y Ecuador sí, y no estaban.
+#
+# Salir en esta lista NO significa que tengamos canal para ese país: significa
+# que mostramos su hora local y, si hay canal verificado, el canal. Ver
+# _canales_por_pais.
 _EVENT_COUNTRIES = [
     ("MX", "México", "🇲🇽", "America/Mexico_City"),
-    ("US", "EE.UU. (Este)", "🇺🇸", "America/New_York"),
     ("VE", "Venezuela", "🇻🇪", "America/Caracas"),
-    ("CO", "Colombia", "🇨🇴", "America/Bogota"),
-    ("AR", "Argentina", "🇦🇷", "America/Argentina/Buenos_Aires"),
+    ("US", "EE.UU. (Este)", "🇺🇸", "America/New_York"),
     ("ES", "España", "🇪🇸", "Europe/Madrid"),
+    ("CO", "Colombia", "🇨🇴", "America/Bogota"),
+    ("DO", "Rep. Dominicana", "🇩🇴", "America/Santo_Domingo"),
+    ("PE", "Perú", "🇵🇪", "America/Lima"),
+    ("PA", "Panamá", "🇵🇦", "America/Panama"),
+    ("CL", "Chile", "🇨🇱", "America/Santiago"),
+    ("EC", "Ecuador", "🇪🇨", "America/Guayaquil"),
+    ("AR", "Argentina", "🇦🇷", "America/Argentina/Buenos_Aires"),
 ]
 _DAYS_ES_SHORT = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
 _MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+# ── Mercados de cada liga ────────────────────────────────────────────────────
+# La plantilla de liga decía, en cinco sitios distintos y para TODAS las ligas,
+# "para México, Estados Unidos y Latinoamérica". Así que:
+#
+#   /liga/la-liga      le decía a un español que su liga es para mexicanos
+#   /liga/liga-endesa  lo mismo, y encima listaba canales españoles abajo
+#   /liga/lvbp         le decía a un venezolano que la LVBP es para México
+#   /liga/lidom        igual para un dominicano
+#
+# España es el 5% del tráfico y el mercado que mejor paga; Venezuela el 13%.
+# Son dos de los tres primeros países y la página los trataba de visitantes.
+#
+# El orden importa: lo primero que se nombra es donde está la liga.
+_MERCADOS_LIGA = {
+    # España
+    "la-liga": "España, México y Latinoamérica",
+    "liga-endesa": "España, México y Latinoamérica",
+    "copa-del-rey": "España, México y Latinoamérica",
+    # Europa, pan-regional: España primero porque es el único mercado nuestro
+    # donde estas competiciones son el deporte local.
+    "champions": "España, México, Estados Unidos y Latinoamérica",
+    "europa-league": "España, México, Estados Unidos y Latinoamérica",
+    "premier-league": "México, España, Estados Unidos y Latinoamérica",
+    "serie-a": "México, España, Estados Unidos y Latinoamérica",
+    "bundesliga": "México, España, Estados Unidos y Latinoamérica",
+    "ligue-1": "México, España, Estados Unidos y Latinoamérica",
+    "liga-portugal": "España, México y Latinoamérica",
+    "eredivisie": "México, España y Latinoamérica",
+    # Caribe y Sudamérica: el país de la liga primero.
+    "lvbp": "Venezuela, Estados Unidos y Latinoamérica",
+    "lidom": "República Dominicana, Estados Unidos y Latinoamérica",
+    "liga-colombia": "Colombia, Estados Unidos y Latinoamérica",
+    "liga-argentina": "Argentina, México y Latinoamérica",
+    "liga-chile": "Chile y Latinoamérica",
+    "liga-peru": "Perú y Latinoamérica",
+    "liga-ecuador": "Ecuador y Latinoamérica",
+    "liga-panama": "Panamá y Latinoamérica",
+    # Motor y combate: se siguen en todas partes, y España es grande en motor.
+    "f1": "México, España, Estados Unidos y Latinoamérica",
+    "motogp": "España, México y Latinoamérica",
+    "boxeo": "México, España, Estados Unidos y Latinoamérica",
+    "ufc": "México, España, Estados Unidos y Latinoamérica",
+}
+
+# Lo de siempre, para las ligas que de verdad son de México y Estados Unidos:
+# Liga MX, MLB, NFL, NBA, NHL, MLS, LMB, LMP, LNBP y las demás.
+_MERCADOS_DEFECTO = "México, Estados Unidos y Latinoamérica"
+
+
+def _mercados(liga_slug: str) -> str:
+    """Los países que nombra la página de una liga, en orden de pertenencia."""
+    return _MERCADOS_LIGA.get(liga_slug, _MERCADOS_DEFECTO)
+
+
+def _canales_por_pais(ev: dict) -> list:
+    """Hora local y canal de cada país, distinguiendo el hueco del dato.
+
+    AQUÍ VIVÍA UN ERROR FEO. La línea era:
+
+        ev["channels"].get(c) or ev["channels"].get("MX", [])
+
+    es decir: si no había canal para el país del lector, se le enseñaban los de
+    MÉXICO. Un dominicano veía "Canal 5" y un chileno "Sky Sports" como si
+    fueran sus canales. Eso no es un hueco, es una respuesta falsa — y en un
+    sitio cuyo único producto es decir dónde ver algo, es el peor error posible.
+
+    Ahora, si no hay canal verificado para ese país, se devuelve vacío y la
+    plantilla escribe "por confirmar". Más vale un hueco honesto que una
+    respuesta segura y equivocada.
+    """
+    salida = []
+    for c, n, f, tz in _EVENT_COUNTRIES:
+        chs = (ev.get("channels") or {}).get(c) or []
+        salida.append({
+            "code": c, "name": n, "flag": f,
+            "time": _fmt_local(ev["date"], tz, True),
+            "channels": chs,
+            "confirmado": bool(chs),
+        })
+    return salida
 
 
 def _fmt_local(iso: str, tz_name: str, with_day: bool = False) -> str:
@@ -1498,9 +1593,7 @@ async def evento_page(request: Request, slug: str):
     seo = _event_seo(ev)
     tz_rows = [{"code": c, "name": n, "flag": f, "time": _fmt_local(ev["date"], tz),
                 "day": _fmt_local(ev["date"], tz, True).split(" · ")[0]} for c, n, f, tz in _EVENT_COUNTRIES]
-    countries = [{"code": c, "name": n, "flag": f, "time": _fmt_local(ev["date"], tz, True),
-                  "channels": ev["channels"].get(c) or ev["channels"].get("MX", [])}
-                 for c, n, f, tz in _EVENT_COUNTRIES]
+    countries = _canales_por_pais(ev)
     related = [e for e in await fetch_events(ev["kind"], days_back=0, days_ahead=90)
                if e["slug"] != ev["slug"] and not e.get("is_minor")][:6]
     competitor_names = []
@@ -1513,6 +1606,9 @@ async def evento_page(request: Request, slug: str):
         "tz_rows": tz_rows, "countries": countries, "faq": _event_faq(ev), "related": related,
         "competitor_names": competitor_names, "is_race": ev["kind"] in _RACE_KINDS,
         "motor_links": [(k, _EVENT_META[k]["org"], _EVENT_META[k]["league_slug"]) for k in _RACE_KINDS if k != ev["kind"]],
+        # Para marcar "gratis" los canales de TV abierta, por país. Ya existía
+        # la función; aquí solo se expone a la plantilla.
+        "es_gratis": _is_free_broadcast,
         "fmt_day": lambda iso: _fmt_local(iso, "America/Mexico_City", True).split(" · ")[0],
         "fmt_time": lambda iso: _fmt_local(iso, "America/Mexico_City"),
         "year": datetime.now(TZ_MX).year,
@@ -2974,6 +3070,30 @@ async def legacy_game_redirect(request: Request, old_id: str):
 
 # ── League-specific SEO extra content ─────────────────────
 LEAGUE_SEO_EXTRA = {
+    # ── España ──────────────────────────────────────────────────────────
+    # La Liga y la Liga Endesa eran las dos únicas ligas españolas del sitio
+    # SIN texto propio: caían en el genérico, que hablaba de México.
+    # Reparto de derechos verificado el 15/10/2026 para la temporada 2026/27.
+    "la-liga": {
+        "title": "Donde ver LaLiga hoy en vivo — horarios y canales | DondeVer",
+        "meta_desc": "Donde ver LaLiga EA Sports en vivo: horarios y canales en Espana (Movistar Plus+, DAZN, Orange, Teledeporte) y en Mexico y Latinoamerica. Real Madrid, Barcelona, Atletico y los 20 equipos.",
+        "h2": "Donde ver LaLiga EA Sports en vivo",
+        "paragraphs": [
+            "En Espana los derechos de LaLiga 2026/27 estan repartidos entre Movistar Plus+ y DAZN: cada uno emite cinco partidos por jornada, y Movistar ademas tiene en exclusiva tres jornadas completas que no llegan a DAZN. Para ver TODOS los partidos hace falta Movistar u Orange, que tiene acuerdo con las dos plataformas; Vodafone da acceso a los cinco partidos de DAZN en 35 de las 38 jornadas.",
+            "Cada jornada hay un partido en abierto y gratuito, que se puede ver en Teledeporte. En Mexico y Latinoamerica LaLiga se sigue por otras plataformas: el canal exacto cambia segun el partido, asi que arriba te mostramos el confirmado para cada encuentro y tu pais.",
+        ],
+        "links": [],
+    },
+    "liga-endesa": {
+        "title": "Donde ver la Liga Endesa (ACB) hoy en vivo | DondeVer",
+        "meta_desc": "Donde ver la Liga Endesa ACB en vivo: horarios, canales y resultados. Real Madrid, Barca, Unicaja, Valencia Basket y todos los equipos del baloncesto espanol.",
+        "h2": "Donde ver la Liga Endesa (ACB) en vivo",
+        "paragraphs": [
+            "La Liga Endesa es la primera division del baloncesto espanol y una de las ligas mas fuertes de Europa. Real Madrid y Barca son los dos clubes con mas titulos, y varios equipos compiten tambien en la Euroliga.",
+            "En Espana los partidos se reparten habitualmente entre DAZN, Movistar Plus+, Orange TV y Teledeporte, segun el encuentro y la jornada. El canal exacto varia partido a partido: arriba te mostramos el confirmado para cada uno.",
+        ],
+        "links": [],
+    },
     "lmp": {
         "title": "Donde ver LMP hoy en vivo — Liga Mexicana del Pacifico | DondeVer",
         "meta_desc": "Donde ver la LMP (Liga Mexicana del Pacifico) en vivo hoy: horarios, canales y resultados. Tomateros, Naranjeros, Yaquis, Aguilas y todos los equipos. TUDN, ESPN y Canal 5.",
@@ -3119,7 +3239,7 @@ LEAGUE_SEO_EXTRA = {
     },
     "ufc": {
         "title": "Donde ver UFC hoy en vivo — Peleas MMA en Mexico | DondeVer",
-        "meta_desc": "Donde ver la UFC en vivo hoy en Mexico: horarios, cartelera y canales. Peleas de MMA, UFC Fight Night y PPV. Paramount+, Fox Sports MX.",
+        "meta_desc": "Donde ver la UFC en vivo hoy en Mexico y Latinoamerica: horarios y cartelera completa. Desde 2026 en exclusiva por Paramount+, sin pago por evento.",
         "h2": "Donde ver UFC en vivo hoy",
         "paragraphs": [
             "La UFC (Ultimate Fighting Championship) es la organizacion de MMA (artes marciales mixtas) mas importante del mundo. Realiza eventos casi cada semana entre UFC Fight Night (carteleras regulares) y eventos numerados PPV (UFC 324, 325, etc.) con peleas de campeonato. Peleadores mexicanos como Brandon Moreno y Alexa Grasso compiten regularmente.",
@@ -3141,10 +3261,25 @@ LEAGUE_SEO_EXTRA = {
     },
     "champions": {
         "title": "Donde ver Champions League hoy en vivo — Canales en Mexico | DondeVer",
-        "meta_desc": "Donde ver la Champions League en vivo hoy en Mexico: horarios, canales y resultados. ViX, TUDN, Amazon Prime, Fox Sports y Canal 5. Partidos de hoy.",
+        "meta_desc": "Donde ver la Champions League en vivo hoy en Mexico y Espana: horarios, canal confirmado por partido y resultados. Real Madrid, Barcelona, City, Bayern y mas.",
         "h2": "Donde ver la Champions League en Mexico",
         "paragraphs": [
-            "La UEFA Champions League es el torneo de clubes mas prestigioso del mundo. En Mexico se transmite por ViX Premium y TUDN (mayoria de partidos), Amazon Prime Video (partidos selectos de martes), Fox Sports MX (partidos selectos) y Canal 5 (1 partido gratis por jornada en TV abierta).",
+            # OJO — texto rebajado a propósito el 15/10/2026.
+            #
+            # Aquí se afirmaba: "En Mexico se transmite por ViX Premium y TUDN
+            # (mayoria de partidos), Amazon Prime Video (partidos selectos de
+            # martes), Fox Sports MX (partidos selectos) y Canal 5". Ese era el
+            # reparto de un ciclo ANTERIOR. Las fuentes que encontré hoy hablan
+            # de HBO Max, Fox One y TNT Sports para 2026-27, y de Paramount+ más
+            # ESPN/Disney+ a partir de 2027-28 — pero no coinciden entre ellas
+            # ni en las fechas, así que no sirven para afirmar nada.
+            #
+            # Antes que publicar un reparto equivocado con nombres concretos,
+            # se dice lo que sí es verdad y se remite al canal confirmado de
+            # cada partido, que es el dato que de verdad tenemos. Hay que
+            # cerrarlo contra fuente primaria (UEFA o la cadena) y volver a
+            # escribir este párrafo con nombres.
+            "La UEFA Champions League es el torneo de clubes mas prestigioso del mundo. Los derechos en Mexico cambiaron de manos recientemente y vuelven a cambiar en 2027, asi que el canal depende del partido y de la temporada: arriba te mostramos el confirmado para cada encuentro. Suele haber un partido por jornada en television abierta.",
             "Los partidos se juegan martes y miercoles a las 12:45 PM y 3:00 PM hora del centro de Mexico. Real Madrid, Barcelona, Manchester City, Bayern Munich y los clubes mas grandes de Europa compiten por el titulo. En DondeVer.app te mostramos el canal exacto para cada partido con horario de Mexico.",
         ],
         "links": [
@@ -3153,10 +3288,10 @@ LEAGUE_SEO_EXTRA = {
     },
     "copa-libertadores": {
         "title": "Donde ver Copa Libertadores hoy en vivo — Canales en Mexico | DondeVer",
-        "meta_desc": "Donde ver la Copa Libertadores en vivo hoy en Mexico: horarios, canales y resultados. ESPN MX, Disney+, Fox Sports. Boca, River, Flamengo y mas.",
+        "meta_desc": "Donde ver la Copa Libertadores en vivo hoy en Mexico y Latinoamerica: horarios, canales y resultados. ESPN y Disney+. Boca, River, Flamengo y mas.",
         "h2": "Donde ver la Copa Libertadores en Mexico",
         "paragraphs": [
-            "La Copa CONMEBOL Libertadores es el torneo de clubes mas importante de Sudamerica. En Mexico se transmite por ESPN MX (cable), Disney+ (streaming) y Fox Sports MX (partidos selectos). Boca Juniors, River Plate, Flamengo, Palmeiras y los mejores equipos del continente compiten por el titulo.",
+            "La Copa CONMEBOL Libertadores es el torneo de clubes mas importante de Sudamerica. En Mexico y Latinoamerica se transmite por ESPN (cable) y Disney+ (streaming). Boca Juniors, River Plate, Flamengo, Palmeiras y los mejores equipos del continente compiten por el titulo.",
             "Los partidos se juegan martes, miercoles y jueves entre las 5:00 PM y 8:00 PM hora de Mexico. El campeon clasifica al Mundial de Clubes de la FIFA. En DondeVer.app te mostramos donde ver cada partido de Libertadores con horario de Mexico.",
         ],
         "links": [
@@ -3500,6 +3635,8 @@ async def league_page(request: Request, league_slug: str):
             "league_name": display_name,
             "emoji": emoji,
             "sport": sport,
+            # Los países que nombra la página. Ver _MERCADOS_LIGA.
+            "mercados": _mercados(league_slug),
             # Rivalidades de esta liga (vacío en las que no tienen ninguna).
             "clasicos_liga": _clasicos_de_liga(league_slug),
             "games": games,
