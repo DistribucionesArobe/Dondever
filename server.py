@@ -1101,6 +1101,33 @@ async def home(
             }
         sports_grouped[league_name]["games"].append(game)
 
+    # ── Orden de las ligas en la portada ─────────────────
+    #
+    # Las ligas salían en el orden en que ESPN devolvía los partidos, y la
+    # plantilla sólo deja visibles las cinco primeras (MAX_VISIBLE_LEAGUES);
+    # el resto va detrás de "Mostrar más ligas".
+    #
+    # Medido en la portada el 16/10/2026: las cinco visibles eran Eredivisie,
+    # Liga 1 Perú, Bundesliga, Serie A y Ligue 1 — ligas europeas cuyos
+    # partidos ya habían acabado, o sea cinco cabeceras con un "Resultados"
+    # plegado y nada más. Los 16 partidos por jugar (NBA 9, futbol americano
+    # universitario 3, NHL 2, MLB 1, Liga Argentina 1) estaban TODOS
+    # colapsados. Una portada que se llama "dónde ver" enseñaba un partido.
+    #
+    # Ahora manda lo que queda por ver: primero las ligas con partidos en
+    # vivo o por empezar, de más a menos, y al final las que ya terminaron.
+    # Se ordena aquí y no en JavaScript para que el HTML salga bien de una vez
+    # — también para Googlebot, que no espera a que corra el script.
+    def _peso_liga(item):
+        juegos = item[1]["games"]
+        en_vivo = sum(1 for g in juegos if g["status"]["state"] == "in")
+        por_jugar = sum(1 for g in juegos if g["status"]["state"] == "pre")
+        # El 0/1 manda al final las ligas sin nada por ver. Los negativos
+        # ordenan de más partidos a menos, porque sorted() va ascendente.
+        return (0 if (en_vivo or por_jugar) else 1, -en_vivo, -por_jugar)
+
+    sports_grouped = dict(sorted(sports_grouped.items(), key=_peso_liga))
+
     # ── Fetch odds for homepage games ────────────────────
     # Collect unique league slugs from upcoming AND live games (live betting)
     odds_leagues = set()
