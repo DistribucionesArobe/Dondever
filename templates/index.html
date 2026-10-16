@@ -614,6 +614,10 @@
             .league-header { grid-column: 1 / -1; }
             .pick-card { grid-column: 1 / -1; }
             .game-card { margin-bottom: 0; }
+            /* El bloque de resultados caía en la columna izquierda y dejaba la
+               derecha en blanco: media pantalla vacía por cada liga acabada.
+               Ocupa el ancho entero, como la cabecera. */
+            .results-collapsed { grid-column: 1 / -1; }
         }
         .league-header {
             font-size: 0.9rem;
@@ -1528,6 +1532,13 @@
             display: flex; align-items: center; gap: 0.3rem;
         }
         .results-toggle:hover { color: #10b981; }
+        /* Etiqueta de los resultados que se muestran sin plegar (≤3). Mismo
+           tono discreto que el botón, pero sin aparentar que se puede pulsar. */
+        .results-label {
+            font-size: 0.72rem; font-weight: 700; color: #9ca3af;
+            text-transform: uppercase; letter-spacing: .05em;
+            margin-bottom: 0.35rem;
+        }
         .toggle-arrow { font-size: 0.65rem; }
         .result-mini {
             display: flex; justify-content: space-between; align-items: center;
@@ -2055,7 +2066,18 @@
     <section class="league-section" data-league-slug="{{ league_data.slug }}" data-sport="{{ (league_data.games[0].sport if league_data.games else '') }}"{% if league_data.slug in ('lvbp',) %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %}>
         <h2 class="league-header">
             <span>{{ league_data.emoji }} {{ league_name }}</span>
-            <span class="league-count">{{ active_games | length + finished_games | length }} partido{{ 's' if (active_games | length + finished_games | length) != 1 else '' }}</span>
+            {# Decía "1 partido" aunque ese partido ya hubiera terminado, y debajo
+               sólo había un "Resultados (1)" plegado. La cabecera prometía algo
+               que ver donde ya no quedaba nada. Si no hay nada por jugar, se
+               llama por su nombre: resultado. #}
+            {% set n_total = active_games | length + finished_games | length %}
+            <span class="league-count">
+                {%- if active_games -%}
+                {{ n_total }} partido{{ 's' if n_total != 1 }}
+                {%- else -%}
+                {{ n_total }} resultado{{ 's' if n_total != 1 }}
+                {%- endif -%}
+            </span>
         </h2>
 
         {# ── Active games (pre/in) shown directly ── #}
@@ -2225,11 +2247,21 @@
 
         {# ── Finished games collapsed ── #}
         {% if finished_games %}
+        {# Un marcador cabe en una línea. Esconder una línea detrás de un clic no
+           ahorra nada: lo único que se veía de la Eredivisie era un "Resultados
+           (1)" gris, y había que adivinar que ahí dentro estaba el marcador.
+           Hasta tres resultados se muestran de una vez; a partir de ahí sí
+           conviene plegarlos para no alargar la portada. #}
+        {% set plegar = finished_games | length > 3 %}
         <div class="results-collapsed">
+            {% if plegar %}
             <button class="results-toggle" onclick="var c=this.nextElementSibling;c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.toggle-arrow').textContent=c.style.display==='none'?'&#9660;':'&#9650;';">
                 Resultados ({{ finished_games | length }}) <span class="toggle-arrow">&#9660;</span>
             </button>
-            <div style="display:none;">
+            {% else %}
+            <div class="results-label">Resultado{{ 's' if finished_games | length != 1 }}</div>
+            {% endif %}
+            <div{% if plegar %} style="display:none;"{% endif %}>
             {% for game in league_data.games %}
             {% if game.id not in shown_ids and game.status.state == 'post' %}
             {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
