@@ -482,45 +482,33 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
                     # pinta hasta 3 veces por página: repetir el <style> sería
                     # repetir el CSS. El middleware lo inyecta una sola vez.
                     #
-                    # El :has() cubre el contenedor completo, para que no quede
-                    # flotando la etiqueta "Publicidad" sobre un hueco. El JS es
-                    # el respaldo para los bloques que ni siquiera llegan a
-                    # recibir status (quedan "sin status" cuando el push no se
-                    # resuelve) y para navegadores sin :has().
+                    # ── Por qué ya NO hay JavaScript aquí ──
+                    #
+                    # Había un temporizador que a los 4 y 12 segundos recorría
+                    # los bloques y ocultaba el que no tuviera data-ad-status ni
+                    # iframe dentro. La idea era tapar los huecos de los que no
+                    # se llenan. El efecto real era el contrario, y tardé tres
+                    # intentos en verlo:
+                    #
+                    #   "sin data-ad-status" no significa "vacío", significa
+                    #   "todavía trabajando".
+                    #
+                    # A los 4 segundos el bloque que aún no había respondido se
+                    # quedaba en display:none. Y un <ins> dentro de un padre
+                    # oculto mide 0 px de ancho, así que AdSense ya no puede
+                    # llenarlo nunca: necesita un ancho para elegir formato. El
+                    # script no tapaba huecos, los creaba. Medido el 16/10/2026
+                    # en la portada en vivo: los tres bloques con status null,
+                    # cero iframes, display:none, ancho 0.
+                    #
+                    # Queda sólo el CSS, que reacciona a lo que dice Google y no
+                    # a un reloj: si AdSense responde "unfilled", el bloque se
+                    # colapsa; si no ha respondido, se le deja en paz. Es además
+                    # lo que recomienda Google para colapsar unidades vacías.
                     '<style>\n'
                     '  ins.adsbygoogle[data-ad-status="unfilled"] { display: none !important; }\n'
                     '  .dv-ad:has(ins.adsbygoogle[data-ad-status="unfilled"]) { display: none !important; }\n'
-                    '  .dv-ad.dv-ad-vacio { display: none !important; }\n'
                     '</style>\n'
-                    '<script>\n'
-                    '(function(){\n'
-                    '  function limpiar(){\n'
-                    '    document.querySelectorAll(".dv-ad").forEach(function(c){\n'
-                    '      var i = c.querySelector("ins.adsbygoogle");\n'
-                    '      if(!i) return;\n'
-                    '      var st = i.getAttribute("data-ad-status");\n'
-                    '      var vacio = (st === "unfilled") ||\n'
-                    '                  (!st && i.querySelectorAll("iframe").length === 0);\n'
-                    # classList.toggle y no add: la pasada de los 4s puede
-                    # marcar como vacío un bloque que todavía no había
-                    # respondido, y la de los 12s tiene que poder soltarlo.
-                    # Con add() la marca era definitiva: medido en vivo el
-                    # 16/10/2026, los tres bloques de la portada tenían
-                    # data-ad-status="filled" y un iframe dentro, y los tres
-                    # estaban en display:none con altura 0. Es decir, se
-                    # pedían anuncios, Google los servía, y nosotros los
-                    # tapábamos. Eso explica las impresiones por debajo de
-                    # las vistas de página mejor que ninguna otra cosa.
-                    '      c.classList.toggle("dv-ad-vacio", vacio);\n'
-                    '    });\n'
-                    '  }\n'
-                    # 4s: AdSense suele resolver en 1-2s; el margen evita ocultar
-                    # un bloque que todavía iba a llenarse. Se repite a los 12s
-                    # por si la respuesta tardó más de lo normal.
-                    '  setTimeout(limpiar, 4000);\n'
-                    '  setTimeout(limpiar, 12000);\n'
-                    '})();\n'
-                    '</script>\n'
                 )
             if onesignal_id:
                 snippet += (
