@@ -1193,6 +1193,22 @@ async def home(
     for g in games:
         g["interest_score"] = score_game_interest(g)
 
+    # ── El próximo partido del día, para cuando no hay nada en vivo ──
+    #
+    # Sin EN VIVO, la portada se quedaba sin nada arriba: filtros, clásicos y
+    # directo al anuncio. "Entro y me salgo", en palabras del que la mira
+    # todos los días. Esto le da un ancla — qué es lo siguiente y cuánto
+    # falta— que además es la pregunta que trae a media audiencia.
+    #
+    # Es el más cercano en el tiempo, no el más interesante: quien entra y no
+    # ve nada en vivo quiere saber cuándo se enciende algo, no cuál es el
+    # mejor partido de la tarde.
+    proximo_hoy = min(
+        (g for g in games if g["status"]["state"] == "pre" and g.get("date")),
+        key=lambda g: g["date"],
+        default=None,
+    )
+
     # ── Must-watch "Lo imperdible" — send 15, JS picks best 5 per user ──
     # Se eligen por interés, pero se MUESTRAN por hora: una lista que va 1:30 PM,
     # 6:05 PM y luego vuelve a 11:00 AM se lee como un error. Y 15 partidos no son
@@ -1392,6 +1408,7 @@ async def home(
             "pick_game": pick_game,
             "live_games": live_games,
             "must_watch": must_watch,
+            "proximo_hoy": proximo_hoy,
             "big_events": big_events,
             "fmt_event_when": lambda iso: _fmt_local(iso, "America/Mexico_City", True),
             "free_games": free_games,

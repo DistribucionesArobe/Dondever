@@ -1532,6 +1532,30 @@
             display: flex; align-items: center; gap: 0.3rem;
         }
         .results-toggle:hover { color: #10b981; }
+
+        /* ── "Lo siguiente": el ancla cuando no hay nada en vivo ── */
+        .next-up { margin-bottom: 1rem; }
+        .nx-card {
+            display: block; padding: .85rem 1rem; border-radius: 14px;
+            text-decoration: none; color: #fff;
+            background: linear-gradient(135deg, #0f766e 0%, #10b981 55%, #34d399 100%);
+            transition: transform .15s;
+        }
+        .nx-card:hover { transform: translateY(-1px); }
+        .nx-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+        .nx-kicker { font-size: .66rem; font-weight: 900; letter-spacing: .09em;
+                     text-transform: uppercase; opacity: .9; }
+        /* La cuenta atrás la rellena el JS; hasta entonces se ve la hora, que
+           ya es una respuesta válida y no un hueco. */
+        .nx-count { font-size: .95rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+        .nx-teams { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
+        .nx-teams img { width: 22px; height: 22px; object-fit: contain; }
+        .nx-nm { font-size: 1rem; font-weight: 800; }
+        .nx-vs { font-size: .72rem; font-weight: 700; opacity: .75; margin: 0 .15rem; }
+        .nx-meta { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
+        .nx-liga, .nx-ch { font-size: .68rem; font-weight: 700;
+                           background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.28);
+                           border-radius: 6px; padding: .15rem .45rem; }
         /* Etiqueta de los resultados que se muestran sin plegar (≤3). Mismo
            tono discreto que el botón, pero sin aparentar que se puede pulsar. */
         .results-label {
@@ -1937,6 +1961,40 @@
             </div>
         </div>
         {% endfor %}
+    </section>
+    {% endif %}
+
+    {# ── ⏱ LO SIGUIENTE (sólo cuando no hay nada en vivo) ──
+
+       Sin EN VIVO la portada arrancaba vacía: filtros, clásicos y directo al
+       anuncio. Esto pone arriba el partido más cercano con su cuenta atrás,
+       que es justo lo que viene a preguntar quien entra y no ve nada rojo.
+
+       Lleva data-league para que el filtro de liga lo trate como a EN VIVO:
+       si filtras por una liga que no es la suya, se va. #}
+    {% if not live_games and proximo_hoy %}
+    {% set pg = proximo_hoy %}
+    {% set p_izq = pg.sport in ('soccer', 'boxing', 'mma') %}
+    {% set p_a = pg.home if p_izq else pg.away %}
+    {% set p_b = pg.away if p_izq else pg.home %}
+    <section class="next-up" id="secNextUp" data-league="{{ pg.league_slug }}">
+        <a href="{{ pg|game_url }}" class="nx-card">
+            <div class="nx-top">
+                <span class="nx-kicker">&#9201; Lo siguiente</span>
+                <span class="nx-count" data-utc="{{ pg.date }}">{{ format_mx_time(pg.date) }}</span>
+            </div>
+            <div class="nx-teams">
+                {% if p_a.logo %}<img src="{{ p_a.logo }}" alt="{{ p_a.name }}" loading="lazy">{% endif %}
+                <span class="nx-nm">{{ p_a.name }}</span>
+                <span class="nx-vs">vs</span>
+                {% if p_b.logo %}<img src="{{ p_b.logo }}" alt="{{ p_b.name }}" loading="lazy">{% endif %}
+                <span class="nx-nm">{{ p_b.name }}</span>
+            </div>
+            <div class="nx-meta">
+                <span class="nx-liga">{{ pg.emoji }} {{ pg.league_name }}</span>
+                {% if pg.broadcasts %}<span class="nx-ch">&#128250; {{ pg.broadcasts[0].channel }}</span>{% endif %}
+            </div>
+        </a>
     </section>
     {% endif %}
 
@@ -2773,6 +2831,11 @@
         // Cada tarjeta trae data-league con el slug, así que se filtra por ahí,
         // y la cuenta de la cabecera se recalcula para que no mienta.
         function filtrarEnVivo(soloSlug) {
+            // "Lo siguiente" sigue la misma regla: si filtras por otra liga,
+            // no pinta nada arriba un partido que no es el que pediste.
+            var nx = document.getElementById('secNextUp');
+            if (nx) nx.style.display =
+                (!soloSlug || nx.getAttribute('data-league') === soloSlug) ? '' : 'none';
             var sec = document.getElementById('secLive');
             if (!sec) return;
             var cards = sec.querySelectorAll('.game-card');
@@ -2939,6 +3002,30 @@
             }
         }
     }
+
+
+    // ── Cuenta atrás de "Lo siguiente" ──
+    //
+    // El servidor pinta la hora; esto la cambia por "en 2h 14m" cuando falta
+    // menos de un día. Si el JS no corre o tarda, se queda la hora, que ya
+    // contesta la pregunta: nunca hay un hueco ni un "--:--".
+    (function() {
+        var el = document.querySelector('#secNextUp .nx-count');
+        if (!el || !el.dataset.utc) return;
+        var t = Date.parse(el.dataset.utc);
+        if (isNaN(t)) return;
+        var hora = el.textContent;
+        function pinta() {
+            var ms = t - Date.now();
+            if (ms <= 0) { el.textContent = 'Empezando'; return; }
+            var min = Math.floor(ms / 60000);
+            if (min >= 1440) { el.textContent = hora; return; }
+            var h = Math.floor(min / 60), m = min % 60;
+            el.textContent = h ? ('en ' + h + 'h ' + m + 'm') : ('en ' + m + ' min');
+        }
+        pinta();
+        setInterval(pinta, 30000);
+    })();
 
     // ── Geo-filter: hide local leagues from non-matching countries ──
     function applyGeoFilter() {
