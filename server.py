@@ -944,6 +944,79 @@ templates.env.globals["format_us_time"] = format_us_time
 # JS lento veían un guion donde debía ir la hora.
 templates.env.globals["format_tz_time"] = lambda iso, tz: _fmt_local(iso, tz)
 
+
+_NOMBRE_SLUG_CACHE: dict = {}
+
+
+def _nombre_a_slug_equipo() -> dict:
+    """Nombre de equipo tal como lo manda la API → slug nuestro de POPULAR_TEAMS.
+
+    POR QUÉ HACE FALTA
+    ------------------
+    Las tarjetas de la portada llevaban los equipos sólo por NOMBRE
+    (data-teams), y "Mis equipos" se guarda por SLUG. Para la mayoría da
+    igual porque coinciden, pero no para los que tienen nombre popular
+    distinto del que manda ESPN. Caso real reportado el 17/10/2026: con
+    Chivas seguido y Chivas jugando contra Tigres, la portada decía
+    "ninguno de tus favoritos juega hoy".
+
+        slug seguido:        "chivas"
+        nombre en la tarjeta: "Guadalajara"
+
+    Nunca se iban a cruzar. El mismo agujero afecta a cualquier equipo con
+    alias: Pumas/UNAM, Águilas/América, San Luis/Atlético San Luis.
+
+    Se construye desde la config que ya existe, no a mano:
+      1. El nombre de cada equipo de POPULAR_TEAMS, en slug.
+      2. Los alias de búsqueda (TEAM_SEARCH_ALIASES), que ya mapean
+         "chivas" → "guadalajara"; aquí se usan al revés.
+    """
+    if _NOMBRE_SLUG_CACHE:
+        return _NOMBRE_SLUG_CACHE
+    import unicodedata as _ud
+
+    def _slug(s: str) -> str:
+        s = _ud.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+        return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+
+    mapa: dict = {}
+    for clave, info in POPULAR_TEAMS.items():
+        nombre = (info.get("name") or "").lower().strip()
+        if nombre:
+            mapa.setdefault(nombre, clave)
+        mapa.setdefault(clave.replace("-", " "), clave)
+
+    # TEAM_ALIASES dice "chivas" -> "guadalajara": cuando alguien escribe
+    # chivas se refiere al equipo que la API llama Guadalajara. Al revés es
+    # justo lo que falta aquí — que el nombre "guadalajara" lleve al slug
+    # "chivas", que es como lo guarda "Mis equipos".
+    #
+    # setdefault y no asignación directa: si un nombre ya salió de
+    # POPULAR_TEAMS, ese gana. Los alias son el respaldo, no la verdad.
+    for alias, nombre_api in (TEAM_ALIASES or {}).items():
+        slug_alias = _slug(alias)
+        if slug_alias in POPULAR_TEAMS and isinstance(nombre_api, str):
+            mapa.setdefault(nombre_api.lower().strip(), slug_alias)
+
+    _NOMBRE_SLUG_CACHE.update(mapa)
+    return _NOMBRE_SLUG_CACHE
+
+
+def slug_equipo(nombre: str) -> str:
+    """Slug del equipo a partir del nombre que manda la API. '' si no se sabe."""
+    import unicodedata as _ud
+    n = (nombre or "").lower().strip()
+    if not n:
+        return ""
+    directo = _nombre_a_slug_equipo().get(n)
+    if directo:
+        return directo
+    s = _ud.normalize("NFKD", n).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
+
+
+templates.env.globals["slug_equipo"] = slug_equipo
+
 # Etiquetas y orden de los países para el bloque "Dónde verlo en tu país".
 # El orden es el del tráfico real (Search Console, 28 días), no alfabético:
 # México, Venezuela y Panamá son los tres primeros por volumen de clics.

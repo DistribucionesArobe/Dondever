@@ -1919,7 +1919,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card live" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-sport="{{ game.sport }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card live" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-team-slugs="{{ slug_equipo(top_team.name) }},{{ slug_equipo(bottom_team.name) }}" data-league="{{ game.league_slug }}" data-sport="{{ game.sport }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
             <div class="gc-compact-top">
                 <div class="gc-compact-left">
                     <span class="live-badge"><span class="live-dot"></span>EN VIVO</span>
@@ -2228,7 +2228,7 @@
         {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
         {% set top_team = game.home if home_left else game.away %}
         {% set bottom_team = game.away if home_left else game.home %}
-        <div class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-league="{{ game.league_slug }}" data-sport="{{ game.sport }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
+        <div class="game-card {% if state == 'in' %}live{% elif state == 'post' %}final{% endif %}" data-game-id="{{ game.id }}" data-top="{{ 'home' if home_left else 'away' }}" data-date="{{ game.date }}" data-teams="{{ top_team.name|lower }},{{ bottom_team.name|lower }}" data-team-slugs="{{ slug_equipo(top_team.name) }},{{ slug_equipo(bottom_team.name) }}" data-league="{{ game.league_slug }}" data-sport="{{ game.sport }}" data-channels="{% for b in game.broadcasts %}{{ b.channel|lower }},{% endfor %}">
 
             {# ── Compact top: badge + primary channel + toggle ── #}
             <div class="gc-compact-top">
@@ -3823,9 +3823,23 @@
             '<span style="color:#fbbf24;">&#9733;</span> ' + chips + mas +
             ' <span style="opacity:.5;">&mdash;</span> ninguno juega hoy ' +
             '<span id="tiraProximo"></span>' +
+            // Sin esto no había forma de añadir equipos desde aquí: el botón
+            // "+" vivía en el recuadro naranja, que ahora no se pinta.
+            ' <button type="button" id="tiraAgregar" style="background:none;' +
+            'border:1px dashed rgba(255,255,255,.35);color:#cbd5e1;border-radius:14px;' +
+            'padding:.1rem .55rem;font-size:.7rem;font-weight:700;cursor:pointer;' +
+            'white-space:nowrap;">+ equipos</button>' +
             ' <a href="/mis-equipos" style="color:#10b981;font-weight:700;' +
             'text-decoration:none;white-space:nowrap;">agenda &rarr;</a>';
         tira.style.display = '';
+
+        var btnAgregar = document.getElementById('tiraAgregar');
+        if (btnAgregar) {
+            btnAgregar.onclick = function() {
+                if (typeof showOnboarding === 'function') showOnboarding();
+                else window.location.href = '/mis-equipos';
+            };
+        }
 
         // El próximo partido se pide a la misma API que ya usaba el recuadro,
         // así que no son llamadas nuevas: es la de siempre, con el resultado
@@ -3897,7 +3911,21 @@
             var gid = card.dataset.gameId;
             if (seenIds[gid]) return;
             var teams = (card.dataset.teams || '').split(',');
+            // Por NOMBRE (dv_favs, la estrella de la tarjeta)...
             var teamMatch = teams.some(function(t) { return favTeams.includes(t); });
+            // ...y por SLUG (dv_my_teams, el onboarding y la ficha de equipo).
+            //
+            // Esto segundo faltaba, y por eso el 17/10/2026 la portada decía
+            // "ninguno de tus favoritos juega hoy" con Chivas seguido y Chivas
+            // jugando contra Tigres: el slug guardado es "chivas" y el nombre
+            // que manda la API es "Guadalajara". El servidor ya resuelve esa
+            // equivalencia y la deja en data-team-slugs.
+            if (!teamMatch && myTeamSlugs.length) {
+                var slugs = (card.dataset.teamSlugs || '').split(',');
+                teamMatch = slugs.some(function(s) {
+                    return s && myTeamSlugs.indexOf(s) !== -1;
+                });
+            }
             var leagueMatch = favLeaguesList.includes(card.dataset.league);
             if (teamMatch || leagueMatch) {
                 seenIds[gid] = true;
