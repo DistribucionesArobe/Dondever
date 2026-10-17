@@ -4992,11 +4992,51 @@ function emailSubscribe(e) {
         var slug = card.getAttribute('data-slug');
         if (!slug) return;
         var idx = selected.indexOf(slug);
-        if (idx === -1) selected.push(slug);
+        var anadido = idx === -1;
+        if (anadido) selected.push(slug);
         else selected.splice(idx, 1);
         card.classList.toggle('selected');
         updateCount();
+
+        // Confirmación en palabras.
+        //
+        // Hasta aquí lo único que pasaba al tocar un equipo era un borde de
+        // color en la tarjeta. Si no sabes que ese borde significa "elegido",
+        // no te enteras de que pasó algo — y además hay que pulsar Guardar
+        // después, así que es fácil salirse creyendo que ya estaba hecho.
+        // La tarjeta es <span>INICIALES</span> + el nombre como nodo de texto.
+        // Si se lee card.textContent sale "GUA Guadalajara"; el último nodo es
+        // el nombre limpio.
+        var ultimo = card.lastChild;
+        var nombre = (ultimo && ultimo.nodeType === 3 ? ultimo.textContent : card.textContent).trim();
+        dvAvisoEquipo(anadido
+            ? '✓ Ya sigues a ' + nombre
+            : 'Quitaste a ' + nombre);
     });
+
+    // Un aviso que aparece abajo, dura dos segundos y se va. Uno a la vez: si
+    // eliges tres equipos seguidos, el tercero reemplaza al anterior en vez de
+    // apilarse y taparte la lista.
+    function dvAvisoEquipo(texto) {
+        var aviso = document.getElementById('dvAvisoEquipo');
+        if (!aviso) {
+            aviso = document.createElement('div');
+            aviso.id = 'dvAvisoEquipo';
+            aviso.setAttribute('role', 'status');
+            aviso.setAttribute('aria-live', 'polite');
+            aviso.style.cssText =
+                'position:fixed;left:50%;bottom:5.5rem;transform:translateX(-50%);' +
+                'z-index:100000;background:#111827;color:#fff;padding:.5rem 1rem;' +
+                'border-radius:22px;font-size:.82rem;font-weight:700;' +
+                'box-shadow:0 6px 20px rgba(0,0,0,.3);pointer-events:none;' +
+                'max-width:88vw;text-align:center;opacity:0;transition:opacity .15s;';
+            document.body.appendChild(aviso);
+        }
+        aviso.textContent = texto;
+        aviso.style.opacity = '1';
+        clearTimeout(aviso._t);
+        aviso._t = setTimeout(function() { aviso.style.opacity = '0'; }, 2000);
+    }
 
     searchInput.addEventListener('input', function() { renderGrid(this.value); });
 
