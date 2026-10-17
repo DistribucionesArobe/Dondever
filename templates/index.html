@@ -2118,6 +2118,29 @@
     {# ── ALL GAMES by league ── #}
     {% set league_idx = [0] %}
     {% set MAX_VISIBLE_LEAGUES = 5 %}
+
+    {#
+      Cuántas ligas se van a pintar de verdad, ANTES de empezar a pintarlas.
+
+      Hace falta porque los huecos de anuncio se colocaban en las posiciones
+      fijas 1 y 3. En la portada completa (22 ligas) eso funciona; en una vista
+      filtrada no. Medido el 17/10/2026 en ?sport=hockey: una sola liga (NHL),
+      así que el contador nunca llegaba a 1 ni a 3 y la página entera se
+      quedaba con UN anuncio, el del pie. Lo mismo con cualquier deporte de una
+      o dos ligas.
+
+      Con el total por delante se puede decidir: el primer hueco va siempre
+      tras la primera liga, y el segundo sólo existe si hay suficientes ligas
+      para que no acabe pegado al primero.
+    #}
+    {% set _ligas_con_juegos = [] %}
+    {% for _ln, _ld in sports_grouped.items() %}
+      {% if _ld.games | rejectattr('id', 'in', shown_ids) | list %}
+        {% if _ligas_con_juegos.append(_ln) %}{% endif %}
+      {% endif %}
+    {% endfor %}
+    {% set N_LIGAS = _ligas_con_juegos | length %}
+    {% set POS_MID = 3 if N_LIGAS >= 4 else -1 %}
     {% for league_name, league_data in sports_grouped.items() %}
     {% set deduped_games = league_data.games | rejectattr('id', 'in', shown_ids) | list %}
     {% set active_games = deduped_games | selectattr('status.state', 'in', ['pre', 'in']) | list %}
@@ -2128,7 +2151,7 @@
        tras la tercera. Antes los dos caían casi juntos arriba. #}
     {% if league_idx[0] == 1 %}
     {{ ad('top') }}
-    {% elif league_idx[0] == 3 %}
+    {% elif league_idx[0] == POS_MID %}
     {{ ad('mid') }}
     {% endif %}
 
@@ -2896,6 +2919,14 @@
         // Así que sólo se esconde el duplicado (mid) y el otro se MUEVE
         // debajo de los partidos. El anuncio sigue en la página y sigue
         // pudiendo verse; lo que deja de hacer es ponerse por delante.
+        //
+        // 17/10/2026: el ancla pasa a ser la PRIMERA liga visible, no la última.
+        // Mandarlo al final dejaba el bloque "Lo siguiente" y los partidos por
+        // delante, sí, pero cuando "Lo siguiente" no era de la liga filtrada
+        // —se esconde si el próximo partido del día es de otra— lo primero que
+        // quedaba bajo la cabecera volvía a ser el anuncio. Detrás de la primera
+        // liga se cumplen las dos cosas: nunca va por delante del contenido y
+        // sigue arriba, donde se ve.
         function anunciosIntercalados(visible, anclaFinal) {
             var top = document.querySelector('.dv-ad--top');
             var mid = document.querySelector('.dv-ad--mid');
@@ -2955,6 +2986,10 @@
             if (showMore) showMore.style.display = '';
             if (hidden) hidden.style.display = 'none';
             if (fallback) fallback.style.display = 'none';
+            // Al volver a "Todas", anunciosIntercalados() devuelve el anuncio a
+            // la posición con la que salió del servidor — que ya no es la buena,
+            // porque el reordenado por favoritos movió las ligas. applyGeoFilter
+            // termina llamando a reorderLeaguesForFavs(), que lo recoloca.
             applyGeoFilter();
             return;
         }
@@ -2975,17 +3010,20 @@
         if (showMore) showMore.style.display = 'none';
         if (hidden) hidden.style.display = 'block';
 
-        // El anuncio que quedaba por delante se recoloca detrás de la última
+        // El anuncio que quedaba por delante se recoloca detrás de la PRIMERA
         // sección visible de esta liga. Si la liga no tiene sección (sólo
         // partidos en vivo), se queda donde está: ahí ya no estorba.
-        var ultimaVisible = null;
+        var primeraVisible = null;
         sections.forEach(function(s) {
-            if (s.style.display !== 'none' && !s.closest('#hiddenLeagues')) ultimaVisible = s;
+            if (primeraVisible) return;
+            if (s.style.display !== 'none' && !s.closest('#hiddenLeagues')) primeraVisible = s;
         });
-        if (!ultimaVisible) {
-            sections.forEach(function(s) { if (s.style.display !== 'none') ultimaVisible = s; });
+        if (!primeraVisible) {
+            sections.forEach(function(s) {
+                if (!primeraVisible && s.style.display !== 'none') primeraVisible = s;
+            });
         }
-        anunciosIntercalados(false, ultimaVisible);
+        anunciosIntercalados(false, primeraVisible);
 
         // Si la liga no tiene sección pero SÍ tiene partidos en vivo, no es un
         // caso vacío: el aviso "no hay partidos" contradiría lo que se ve
@@ -3121,6 +3159,12 @@
         } else if (aviso) {
             aviso.style.display = 'none';
         }
+
+        // Este filtro corre DESPUÉS del reordenado por favoritos y puede dejar
+        // invisible justo la liga detrás de la que había quedado el anuncio
+        // (LVBP sale primera en béisbol y se esconde fuera de Venezuela). Hay
+        // que volver a repartir con lo que queda realmente a la vista.
+        if (typeof reorderLeaguesForFavs === 'function') reorderLeaguesForFavs();
     }
 
     // Run geo-filter after timezone.js sets __DV_COUNTRY (defer)
@@ -3740,6 +3784,79 @@
     // Cuántas ligas se ven antes del botón "Mostrar más ligas".
     var DV_MAX_VISIBLE_LEAGUES = {{ MAX_VISIBLE_LEAGUES | default(5) }};
 
+    // ── Repartir los anuncios entre las ligas que de verdad se ven ──
+    //
+    // POR QUÉ EXISTE ESTA FUNCIÓN
+    // ---------------------------
+    // El servidor pinta ad('top') tras la 1ª liga y ad('mid') tras la 3ª. Eso
+    // es correcto en el HTML que sale de Jinja; lo comprobé el 17/10/2026
+    // leyendo el HTML crudo de producción:
+    //
+    //   college-football · AD:top · nhl · mls · AD:mid · liga-expansion · …
+    //
+    // Pero acto seguido reorderLeaguesForFavs() MUEVE las secciones para poner
+    // delante los deportes y equipos del usuario — y mueve las <section>, no
+    // los anuncios. Con béisbol marcado, LVBP/LMP/MLB saltan al principio y
+    // los dos anuncios se quedan donde estaban: juntos, pegados, y por delante
+    // de todas las ligas. El DOM real de la portada quedaba así:
+    //
+    //   AD:top · AD:mid · lvbp · lmp · mlb · … (22 ligas) … · AD:bottom
+    //
+    // Dos anuncios seguidos arriba y veintidós ligas sin uno solo en medio.
+    //
+    // Había un intento de arreglo —buscaba #homeAdAfterLeague1 y lo recolocaba—
+    // pero ese id ya no existe: desde que los anuncios salen del macro _ad.html
+    // se llaman .dv-ad--top y .dv-ad--mid. Era código muerto, por eso nunca se
+    // notó que no hacía nada.
+    //
+    // REGLA: los anuncios se colocan al final, contra la lista de secciones que
+    // realmente quedan visibles y en el orden definitivo. Nunca dos seguidos.
+    //
+    // No se esconde ninguno: AdSense ya pidió y contó esas impresiones al
+    // cargar, así que esconderlas sólo destruiría visibilidad (Active View) sin
+    // devolver el hueco. Se MUEVEN, que es gratis y además las hace más
+    // visibles de lo que eran arriba del todo.
+    function dvRepartirAnuncios(visibles, container, anchor) {
+        var top = document.querySelector('.dv-ad--top');
+        var mid = document.querySelector('.dv-ad--mid');
+        if (!visibles || !visibles.length) return;
+
+        // "Visible" aquí tiene que ser visible DE VERDAD. La lista que llega de
+        // reorderLeaguesForFavs son las ligas que van arriba, pero el filtro
+        // geográfico esconde después LVBP fuera de Venezuela y LIDOM fuera de
+        // Dominicana. Si la primera de la lista es una de ésas, el anuncio
+        // aterriza detrás de una sección que nadie ve — o sea, otra vez arriba
+        // del todo, que es justo el defecto que estamos quitando.
+        visibles = visibles.filter(function(s) {
+            return s.offsetParent !== null || s.style.display !== 'none';
+        });
+        if (!visibles.length) return;
+
+        // Dónde va cada uno, contando secciones visibles:
+        //   top → después de la 1ª
+        //   mid → después de la 3ª, y sólo si hay al menos 4; con menos
+        //         acabaría pegado al otro, que es el defecto que arreglamos.
+        function colocar(ad, trasIndice) {
+            if (!ad) return;
+            var ref = visibles[trasIndice];
+            if (!ref || !ref.parentNode) return;
+            // insertBefore con el nodo ya en su sitio es un no-op caro en
+            // anuncios: reinsertar un <ins> de AdSense puede recargar el
+            // iframe. Sólo se toca si de verdad está en otro lugar.
+            if (ref.nextSibling === ad) return;
+            ref.parentNode.insertBefore(ad, ref.nextSibling);
+        }
+
+        colocar(top, 0);
+        if (visibles.length >= 4) {
+            colocar(mid, 2);
+        } else if (mid && top && visibles.length >= 2) {
+            // Pocas ligas: el segundo hueco se va al final del bloque, que es
+            // el único sitio donde no estorba ni se junta con el primero.
+            colocar(mid, visibles.length - 1);
+        }
+    }
+
     function reorderLeaguesForFavs() {
         var first = document.querySelector('.league-section');
         if (!first) return;
@@ -3818,12 +3935,7 @@
             resto.forEach(function(sec) { container.appendChild(sec); });
         }
 
-        // El anuncio vive entre la 1ª y la 2ª liga. Al mover las secciones se
-        // quedaba arriba de todas; lo devolvemos a su lugar.
-        var ad = document.getElementById('homeAdAfterLeague1');
-        if (ad && visibles.length >= 2 && visibles[0].nextSibling !== ad) {
-            container.insertBefore(ad, visibles[1]);
-        }
+        dvRepartirAnuncios(visibles, container, anchor);
 
         // Y que se VEA por qué está arriba.
         leagueFav.concat(teamFav).concat(sportFav).forEach(function(sec) {
