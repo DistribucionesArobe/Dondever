@@ -1569,8 +1569,18 @@
             padding: 0.35rem 0; border-bottom: 1px solid var(--border, #f3f4f6);
             font-size: 0.78rem;
         }
-        .rm-teams { font-weight: 600; color: var(--text-primary, #374151); }
-        .rm-status { font-size: 0.7rem; color: #6b7280; font-weight: 500; }
+        .rm-teams { font-weight: 600; color: var(--text-primary, #374151);
+                    display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; min-width: 0; }
+        .rm-teams img { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
+        .rm-nm { font-size: .82rem; font-weight: 600; }
+        /* El que ganó, en negrita. Es la respuesta que se busca al mirar un
+           resultado, y así no hay que comparar dos números. */
+        .rm-win { font-weight: 900; }
+        .rm-sc { font-weight: 900; font-size: .82rem; font-variant-numeric: tabular-nums;
+                 background: var(--bg, #f3f4f6); border: 1px solid var(--border, #e5e7eb);
+                 border-radius: 6px; padding: .1rem .4rem; margin: 0 .15rem; }
+        .rm-sc i { font-style: normal; opacity: .45; margin: 0 .15rem; }
+        .rm-status { font-size: 0.7rem; color: #6b7280; font-weight: 500; white-space: nowrap; }
         [data-theme="dark"] .rm-teams { color: #e2e8f0; }
 
         /* ── Auto-ads ──────────────────────────────────────────────
@@ -2344,8 +2354,21 @@
             {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
             {% set top_team = game.home if home_left else game.away %}
             {% set bottom_team = game.away if home_left else game.home %}
+            {# Antes era una línea de texto corrido: "Everton 0 - 2 Chelsea".
+               Correcta pero seca, y cuando una liga ya terminó es TODO lo que
+               queda de ella en la portada. Ahora lleva escudos y el marcador
+               en su propia caja, y el ganador va en negrita: se lee de un
+               vistazo quién ganó sin tener que comparar dos cifras. #}
+            {% set p_a = top_team.score | int(-1) %}
+            {% set p_b = bottom_team.score | int(-1) %}
             <a href="{{ game|game_url }}" class="result-mini" style="text-decoration:none;color:inherit;">
-                <span class="rm-teams">{{ top_team.name }} {{ top_team.score }} - {{ bottom_team.score }} {{ bottom_team.name }}</span>
+                <span class="rm-teams">
+                    {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="" loading="lazy">{% endif %}
+                    <span class="rm-nm{% if p_a > p_b %} rm-win{% endif %}">{{ top_team.name }}</span>
+                    <span class="rm-sc">{{ top_team.score }}<i>–</i>{{ bottom_team.score }}</span>
+                    {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="" loading="lazy">{% endif %}
+                    <span class="rm-nm{% if p_b > p_a %} rm-win{% endif %}">{{ bottom_team.name }}</span>
+                </span>
                 <span class="rm-status">{{ game.status.display or 'Final' }}</span>
             </a>
             {% endif %}
