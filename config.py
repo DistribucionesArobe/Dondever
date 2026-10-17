@@ -1160,6 +1160,36 @@ POPULAR_TEAMS = {
     "raptors": {"name": "Toronto Raptors", "league": "NBA"},
     "jazz": {"name": "Utah Jazz", "league": "NBA"},
     "wizards": {"name": "Washington Wizards", "league": "NBA"},
+    # Liga Endesa (ACB) — basquet de España.
+    #
+    # La liga llevaba meses configurada y la página /liga/liga-endesa servía
+    # calendario y resultados, pero sin un solo equipo en esta lista: los
+    # nombres salían como texto plano, sin ficha propia, sin entrar al sitemap
+    # y sin páginas equipo × país. España es el cuarto país del sitio y el que
+    # más crece (+242% en 30 días, 606 usuarios), así que era el hueco más
+    # caro que quedaba.
+    #
+    # Los nombres están copiados EXACTAMENTE como los devuelve nuestro propio
+    # pipeline en /liga/liga-endesa (TheSportsDB 4408), no escritos de memoria:
+    # si no coinciden, el emparejamiento por nombre falla y la ficha sale vacía.
+    "real-madrid-baloncesto": {"name": "Real Madrid Baloncesto", "league": "Liga Endesa"},
+    "barcelona-basquet": {"name": "FC Barcelona Basquet", "league": "Liga Endesa"},
+    "baskonia": {"name": "Baskonia", "league": "Liga Endesa"},
+    "valencia-basket": {"name": "Valencia Basket", "league": "Liga Endesa"},
+    "baloncesto-malaga": {"name": "Baloncesto Málaga", "league": "Liga Endesa"},
+    "joventut-badalona": {"name": "Joventut Badalona", "league": "Liga Endesa"},
+    "bilbao-basket": {"name": "Bilbao Basket", "league": "Liga Endesa"},
+    "basket-zaragoza": {"name": "Basket Zaragoza", "league": "Liga Endesa"},
+    "basquet-manresa": {"name": "Basquet Manresa", "league": "Liga Endesa"},
+    "basquet-girona": {"name": "Bàsquet Girona", "league": "Liga Endesa"},
+    "basquet-coruna": {"name": "Básquet Coruña", "league": "Liga Endesa"},
+    "cb-canarias": {"name": "CB 1939 Canarias", "league": "Liga Endesa"},
+    "cb-breogan": {"name": "CB Breogan", "league": "Liga Endesa"},
+    "cb-murcia": {"name": "CB Murcia", "league": "Liga Endesa"},
+    "cb-san-pablo-burgos": {"name": "CB San Pablo Burgos", "league": "Liga Endesa"},
+    "obradoiro": {"name": "Obradoiro CAB", "league": "Liga Endesa"},
+    "forca-lleida": {"name": "Força Lleida CE", "league": "Liga Endesa"},
+    "andorra-basket": {"name": "BC Andorra", "league": "Liga Endesa"},
     # LNBP (Liga Nacional de Baloncesto Profesional)
     "astros-jalisco": {"name": "Astros de Jalisco", "league": "LNBP"},
     "abejas-leon": {"name": "Abejas de León", "league": "LNBP"},

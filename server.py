@@ -7865,7 +7865,7 @@ _DEPORTE_POR_LIGA = {
                "Liga Argentina", "Liga BetPlay", "Primera Chile", "LigaPro Ecuador",
                "Liga 1 Perú"),
     "beisbol": ("MLB", "LMB", "LMP", "LVBP", "LIDOM"),
-    "basketball": ("NBA", "LNBP"),
+    "basketball": ("NBA", "LNBP", "Liga Endesa"),
     "futbol americano": ("NFL",),
     "hockey": ("NHL",),
     "MMA": ("UFC",),

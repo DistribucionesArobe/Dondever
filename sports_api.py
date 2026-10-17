@@ -2360,6 +2360,28 @@ TEAM_LEAGUE_MAP = {
     "tigres-quintana-roo": ("baseball", "sportsdb:5064"),
     "toros-tijuana": ("baseball", "sportsdb:5064"),
     # ── LNBP (TheSportsDB) ──
+    # Liga Endesa (ACB). Igual que la LNBP: el id es el de la LIGA, no el del
+    # equipo — compute_sportsdb_standings() recibe la liga y saca la tabla de
+    # los eventos de la temporada. Sin esta entrada, get_team_stats() devuelve
+    # {} y la ficha sale sin posición ni racha.
+    "real-madrid-baloncesto": ("basketball", "sportsdb:4408"),
+    "barcelona-basquet": ("basketball", "sportsdb:4408"),
+    "baskonia": ("basketball", "sportsdb:4408"),
+    "valencia-basket": ("basketball", "sportsdb:4408"),
+    "baloncesto-malaga": ("basketball", "sportsdb:4408"),
+    "joventut-badalona": ("basketball", "sportsdb:4408"),
+    "bilbao-basket": ("basketball", "sportsdb:4408"),
+    "basket-zaragoza": ("basketball", "sportsdb:4408"),
+    "basquet-manresa": ("basketball", "sportsdb:4408"),
+    "basquet-girona": ("basketball", "sportsdb:4408"),
+    "basquet-coruna": ("basketball", "sportsdb:4408"),
+    "cb-canarias": ("basketball", "sportsdb:4408"),
+    "cb-breogan": ("basketball", "sportsdb:4408"),
+    "cb-murcia": ("basketball", "sportsdb:4408"),
+    "cb-san-pablo-burgos": ("basketball", "sportsdb:4408"),
+    "obradoiro": ("basketball", "sportsdb:4408"),
+    "forca-lleida": ("basketball", "sportsdb:4408"),
+    "andorra-basket": ("basketball", "sportsdb:4408"),
     "astros-jalisco": ("basketball", "sportsdb:5119"),
     "abejas-leon": ("basketball", "sportsdb:5119"),
     "fuerza-regia": ("basketball", "sportsdb:5119"),
