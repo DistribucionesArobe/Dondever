@@ -2757,14 +2757,44 @@
         var hidden = document.getElementById('hiddenLeagues');
         var fallback = document.getElementById('leagueFilterFallback');
 
+        // ── EN VIVO también se filtra ──
+        //
+        // Esta función sólo tocaba .league-section. La sección EN VIVO se
+        // quedaba entera: al pulsar "Premier League" seguían saliendo arriba
+        // los 19 partidos en vivo de todas las ligas —Ligue 1, Serie A, futbol
+        // universitario— con la cabecera diciendo "19 partidos". El filtro
+        // parecía no hacer nada, porque lo primero que ve el lector no cambiaba.
+        //
+        // Cada tarjeta trae data-league con el slug, así que se filtra por ahí,
+        // y la cuenta de la cabecera se recalcula para que no mienta.
+        function filtrarEnVivo(soloSlug) {
+            var sec = document.getElementById('secLive');
+            if (!sec) return;
+            var cards = sec.querySelectorAll('.game-card');
+            var visibles = 0;
+            Array.prototype.forEach.call(cards, function(c) {
+                var ok = !soloSlug || c.getAttribute('data-league') === soloSlug;
+                c.style.display = ok ? '' : 'none';
+                if (ok) visibles++;
+            });
+            // Si no queda ninguno en vivo de esa liga, fuera la sección entera:
+            // una cabecera "EN VIVO · 0 partidos" no le sirve a nadie.
+            sec.style.display = visibles ? '' : 'none';
+            var cuenta = sec.querySelector('.league-count');
+            if (cuenta) cuenta.textContent = visibles + ' partido' + (visibles === 1 ? '' : 's');
+        }
+
         if (slug === 'all') {
             sections.forEach(function(s) { s.style.display = ''; });
+            filtrarEnVivo(null);
             if (showMore) showMore.style.display = '';
             if (hidden) hidden.style.display = 'none';
             if (fallback) fallback.style.display = 'none';
             applyGeoFilter();
             return;
         }
+
+        filtrarEnVivo(slug);
 
         // Check if any section matches this slug
         var found = false;
@@ -2779,9 +2809,18 @@
         if (showMore) showMore.style.display = 'none';
         if (hidden) hidden.style.display = 'block';
 
+        // Si la liga no tiene sección pero SÍ tiene partidos en vivo, no es un
+        // caso vacío: el aviso "no hay partidos" contradiría lo que se ve
+        // justo encima.
+        var hayEnVivo = (function() {
+            var sec = document.getElementById('secLive');
+            if (!sec || sec.style.display === 'none') return false;
+            return !!sec.querySelector('.game-card:not([style*="display: none"])');
+        })();
+
         // If no section matches → show fallback with league name, channels & links
         if (fallback) {
-            if (!found) {
+            if (!found && !hayEnVivo) {
                 var chipText = btn.textContent.trim();
                 var nameEl = document.getElementById('fallbackLeagueName');
                 var linkEl = document.getElementById('fallbackLeagueLink');
