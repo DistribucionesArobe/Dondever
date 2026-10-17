@@ -2140,7 +2140,18 @@
       {% endif %}
     {% endfor %}
     {% set N_LIGAS = _ligas_con_juegos | length %}
-    {% set POS_MID = 3 if N_LIGAS >= 4 else -1 %}
+    {#
+      Dónde cae el segundo hueco, según cuántas ligas haya:
+        4 o más → tras la 3ª, que es el reparto de siempre
+        exactamente 3 → tras la 2ª, separado del primero por una liga entera
+        1 ó 2 → no hay sitio sin que quede pegado al otro, así que no se pinta
+
+      Esto NUNCA quita un anuncio que antes existiera: con menos de 4 ligas el
+      contador jamás llegaba a 3, así que ese hueco ya no se pintaba. Lo que
+      cambia es que ahora el primero sí aparece siempre, y con 3 ligas aparecen
+      los dos. En todos los casos hay igual o más inventario que antes.
+    #}
+    {% set POS_MID = 3 if N_LIGAS >= 4 else (2 if N_LIGAS == 3 else -1) %}
     {% for league_name, league_data in sports_grouped.items() %}
     {% set deduped_games = league_data.games | rejectattr('id', 'in', shown_ids) | list %}
     {% set active_games = deduped_games | selectattr('status.state', 'in', ['pre', 'in']) | list %}
@@ -2898,62 +2909,83 @@
             if (cuenta) cuenta.textContent = visibles + ' partido' + (visibles === 1 ? '' : 's');
         }
 
-        // ── Los anuncios intercalados también se esconden al filtrar ──
+        // ── Los anuncios intercalados se RECOLOCAN al filtrar. Ninguno se
+        //    esconde. ──
         //
-        // ad('top') va tras la 1ª liga y ad('mid') tras la 3ª. Al filtrar, las
-        // secciones de en medio desaparecen pero los anuncios se quedaban, así
-        // que los dos acababan pegados uno encima del otro —el mismo creativo
-        // repetido— y por delante de los partidos. Con Liga MX filtrada y sin
-        // nada en vivo, lo primero de la página eran dos anuncios iguales.
+        // El problema: ad('top') va tras la 1ª liga y ad('mid') tras la 3ª. Al
+        // filtrar por liga, las secciones de en medio desaparecen pero los
+        // anuncios se quedaban, así que los dos acababan pegados uno encima del
+        // otro y por delante de los partidos. Con Liga MX filtrada y sin nada
+        // en vivo, lo primero de la página eran dos anuncios iguales.
         //
-        // El de abajo no se toca: ese va al final y nunca estorba.
+        // Lo que NO se puede hacer para arreglarlo —y estuve a punto—: esconder
+        // el sobrante. El filtro es JavaScript, no recarga la página, así que
+        // AdSense YA pidió y contó esas impresiones al cargar. Un display:none
+        // posterior no devuelve el hueco ni ahorra nada: deja una impresión ya
+        // contada sin poder verse, y la visibilidad (Active View) es justo la
+        // métrica que llevamos semanas levantando — venía del 28% y va por 39%.
+        // Sería cambiar un problema de diseño por uno de ingresos.
         //
-        // IMPORTANTE, y por poco lo hago mal: el primer intento escondía los
-        // dos. Pero el filtro es JavaScript, no recarga la página, así que
-        // AdSense YA pidió y contó esas impresiones al cargar. Esconderlas
-        // después no devuelve el hueco: lo que hace es que esa impresión ya
-        // contada deje de ser visible, y la visibilidad (Active View) es
-        // justo la métrica que arreglamos hoy — venía del 28% y va por 39%.
-        // Habría cambiado un problema de diseño por uno de ingresos.
+        // Así que los dos se MUEVEN. Siguen en la página, siguen pudiendo
+        // verse, y de hecho se ven mejor que apilados arriba del todo:
         //
-        // Así que sólo se esconde el duplicado (mid) y el otro se MUEVE
-        // debajo de los partidos. El anuncio sigue en la página y sigue
-        // pudiendo verse; lo que deja de hacer es ponerse por delante.
+        //   top → detrás de la primera liga visible
+        //   mid → detrás de la última liga visible
         //
-        // 17/10/2026: el ancla pasa a ser la PRIMERA liga visible, no la última.
-        // Mandarlo al final dejaba el bloque "Lo siguiente" y los partidos por
+        // Con una sola liga coinciden, y entonces mid se queda donde esté en
+        // lugar de duplicarse encima de top.
+        //
+        // 17/10/2026: antes top se iba al final. Dejaba los partidos por
         // delante, sí, pero cuando "Lo siguiente" no era de la liga filtrada
-        // —se esconde si el próximo partido del día es de otra— lo primero que
-        // quedaba bajo la cabecera volvía a ser el anuncio. Detrás de la primera
-        // liga se cumplen las dos cosas: nunca va por delante del contenido y
-        // sigue arriba, donde se ve.
-        function anunciosIntercalados(visible, anclaFinal) {
+        // —se esconde si el próximo partido del día es de otra— lo primero bajo
+        // la cabecera volvía a ser el anuncio. Detrás de la primera liga se
+        // cumplen las dos cosas: nunca va por delante del contenido y sigue
+        // arriba, donde se ve.
+        function anunciosIntercalados(visible, primera, ultima) {
             var top = document.querySelector('.dv-ad--top');
             var mid = document.querySelector('.dv-ad--mid');
-            if (mid) {
-                if (!visible) {
-                    if (mid.style.display !== 'none') mid.dataset.dvVisible = '1';
-                    mid.style.display = 'none';
-                } else if (mid.dataset.dvVisible === '1') {
-                    // Vacío lo decide el script de AdSense, no nosotros: si el
-                    // bloque estaba colapsado por no llenarse, sigue colapsado.
-                    mid.style.display = mid.classList.contains('dv-ad-vacio') ? 'none' : '';
+
+            // Se recuerda el sitio original de cada uno con una marca invisible
+            // para poder devolverlos al quitar el filtro.
+            function recordar(ad) {
+                if (!ad || ad.dataset.dvSitio || !ad.parentNode) return;
+                var marca = document.createComment('dv-ad');
+                ad.parentNode.insertBefore(marca, ad);
+                ad.dvMarca = marca;
+                ad.dataset.dvSitio = '1';
+            }
+            function mover(ad, ancla) {
+                if (!ad || !ancla || !ancla.parentNode) return;
+                if (ancla.nextSibling === ad) return;
+                recordar(ad);
+                ancla.parentNode.insertBefore(ad, ancla.nextSibling);
+            }
+            function devolver(ad) {
+                if (ad && ad.dataset.dvSitio && ad.dvMarca && ad.dvMarca.parentNode) {
+                    ad.dvMarca.parentNode.insertBefore(ad, ad.dvMarca);
                 }
             }
-            if (top && top.parentNode) {
-                if (!visible && anclaFinal && anclaFinal.parentNode === top.parentNode) {
-                    if (!top.dataset.dvSitio) {
-                        // Se recuerda dónde estaba para poder devolverlo.
-                        var marca = document.createComment('dv-ad-top');
-                        top.parentNode.insertBefore(marca, top);
-                        top.dvMarca = marca;
-                        top.dataset.dvSitio = '1';
-                    }
-                    anclaFinal.parentNode.insertBefore(top, anclaFinal.nextSibling);
-                } else if (visible && top.dataset.dvSitio && top.dvMarca &&
-                           top.dvMarca.parentNode) {
-                    top.dvMarca.parentNode.insertBefore(top, top.dvMarca);
-                }
+
+            if (visible) {
+                devolver(top);
+                devolver(mid);
+                return;
+            }
+            mover(top, primera);
+
+            // El segundo nunca se queda arriba. Si hay más de una liga visible
+            // va detrás de la última; si sólo hay una —que es el caso normal al
+            // filtrar— detrás de "Tablas de posiciones", que es el primer
+            // bloque de contenido tras los partidos. Así no queda pegado al
+            // otro anuncio y sigue habiendo contenido por delante.
+            //
+            // Comprobado en producción el 17/10/2026 con La Liga, Bundesliga y
+            // Premier filtradas: sin esto, mid se quedaba por encima de la liga
+            // y lo primero de la página volvía a ser un anuncio.
+            if (ultima && ultima !== primera) {
+                mover(mid, ultima);
+            } else {
+                mover(mid, document.querySelector('.standings-compact') || primera);
             }
         }
 
@@ -2982,7 +3014,7 @@
             sections.forEach(function(s) { s.style.display = ''; });
             filtrarEnVivo(null);
             mostrarMisEquipos(true);
-            anunciosIntercalados(true, null);
+            anunciosIntercalados(true, null, null);
             if (showMore) showMore.style.display = '';
             if (hidden) hidden.style.display = 'none';
             if (fallback) fallback.style.display = 'none';
@@ -3013,17 +3045,23 @@
         // El anuncio que quedaba por delante se recoloca detrás de la PRIMERA
         // sección visible de esta liga. Si la liga no tiene sección (sólo
         // partidos en vivo), se queda donde está: ahí ya no estorba.
-        var primeraVisible = null;
+        // OJO con el criterio de "visible" aquí. El primer intento descartaba
+        // todo lo que estuviera dentro de #hiddenLeagues, y eso rompía justo
+        // los casos que hay que arreglar: comprobado en producción el
+        // 17/10/2026, trece de las veintidós ligas viven ahí dentro —La Liga y
+        // la Bundesliga entre ellas—. Para ésas el ancla salía nula, el
+        // anuncio no se movía y seguía siendo lo primero de la página.
+        //
+        // Unas líneas más arriba ya se hizo hidden.style.display = 'block', así
+        // que estar dentro de #hiddenLeagues no significa estar escondido. Lo
+        // único que vale es si la sección se ve de verdad.
+        var primeraVisible = null, ultimaVisible = null;
         sections.forEach(function(s) {
-            if (primeraVisible) return;
-            if (s.style.display !== 'none' && !s.closest('#hiddenLeagues')) primeraVisible = s;
+            if (s.style.display === 'none' || s.offsetParent === null) return;
+            if (!primeraVisible) primeraVisible = s;
+            ultimaVisible = s;
         });
-        if (!primeraVisible) {
-            sections.forEach(function(s) {
-                if (!primeraVisible && s.style.display !== 'none') primeraVisible = s;
-            });
-        }
-        anunciosIntercalados(false, primeraVisible);
+        anunciosIntercalados(false, primeraVisible, ultimaVisible);
 
         // Si la liga no tiene sección pero SÍ tiene partidos en vivo, no es un
         // caso vacío: el aviso "no hay partidos" contradiría lo que se ve
