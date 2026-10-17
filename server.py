@@ -9299,12 +9299,24 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     st = search_term.lower()
     first_ch = (country_channels[0].get("name") if country_channels else "") or ""
     first_ch = first_ch.split(" / ")[0]
+    # "Por confirmar" es un marcador honesto DENTRO de la página, pero metido
+    # en el <title> se lee como un error. El 17/10/2026 la consulta número uno
+    # de España ("donde ver boca juniors hoy en españa") caía en una página
+    # titulada "Boca Juniors vs Independiente en España: Domingo 25 de octubre
+    # 9:00 PM en Por confirmar | Dónde ver". Eso es lo que veía el lector en
+    # Google, y parece roto aunque la página esté bien.
+    #
+    # Cuando no hay emisor confirmado, el título omite la cláusula del canal
+    # en vez de rellenarla. La página sigue diciendo "por confirmar" donde
+    # toca: en el cuerpo, que es donde se puede explicar.
+    _ch_ok = bool(first_ch) and "confirmar" not in first_ch.lower()
     cname = country["name"]
     _tshort = _short_team_name(team_name, team_league)
     seo_title = f"Dónde ver {_tshort} en {cname} hoy: canales y horario | DondeVer"
     seo_h1 = f"Dónde ver {team_name} en {cname} {country['flag']}"
     seo_desc = (f"¿Dónde ver a {team_name} en {cname} hoy? Canales de TV, cable y streaming "
-                f"({first_ch}) con horario de {cname}. {team_league} en vivo.")
+                + (f"({first_ch}) " if _ch_ok else "")
+                + f"con horario de {cname}. {team_league} en vivo.")
     today_g = next((g for g in games if (g.get("status") or {}).get("state") in ("pre", "in")), None)
 
     # ── Próximo partido (cuando hoy no juega): mismo dato que /equipo/{slug} ──
@@ -9347,9 +9359,14 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
             _nh, _na = next_game.get("home", ""), next_game.get("away", "")
             _opp = _short_team_name(_na if st in _nh.lower() else _nh, team_league)
             _ch_txt = local_chs[0] if local_chs else first_ch
-            seo_title = f"{_tshort} vs {_opp} en {cname}: {next_game['day_local']} {next_game['time_local']} en {_ch_txt} | Dónde ver"
+            _ch_txt_ok = bool(_ch_txt) and "confirmar" not in _ch_txt.lower()
+            _en_canal = f" en {_ch_txt}" if _ch_txt_ok else ""
+            seo_title = (f"{_tshort} vs {_opp} en {cname}: {next_game['day_local']} "
+                         f"{next_game['time_local']}{_en_canal} | Dónde ver")
             seo_desc = (f"Próximo partido de {team_name} en {cname}: {_tshort} vs {_opp} el {next_game['day_local']} a las "
-                        f"{next_game['time_local']} {tz_label}. Canal: {_ch_txt}. Todos los canales para ver {team_league} desde {cname}.")
+                        f"{next_game['time_local']} {tz_label}. "
+                        + (f"Canal: {_ch_txt}. " if _ch_txt_ok else "Emisor aún sin confirmar. ")
+                        + f"Todos los canales para ver {team_league} desde {cname}.")
     if today_g:
         home = today_g.get("home", {}) or {}
         away = today_g.get("away", {}) or {}
@@ -9357,14 +9374,18 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
         opp = _short_team_name(away.get("name", "") if is_home else home.get("name", ""), team_league)
         team_short = _short_team_name(team_name, team_league)
         if today_g["status"]["state"] == "in":
-            seo_title = f"{team_short} vs {opp} EN VIVO en {cname}: canal {first_ch} | Dónde ver"
+            seo_title = (f"{team_short} vs {opp} EN VIVO en {cname}"
+                         + (f": canal {first_ch}" if _ch_ok else "") + " | Dónde ver")
             seo_h1 = f"{team_short} vs {opp} en vivo en {cname} {country['flag']}"
         else:
             t_local = format_local_time(today_g.get("date", ""))
-            seo_title = f"{team_short} en {cname} hoy: {t_local} en {first_ch} vs {opp} | Dónde ver"
+            seo_title = (f"{team_short} en {cname} hoy: {t_local}"
+                         + (f" en {first_ch}" if _ch_ok else "")
+                         + f" vs {opp} | Dónde ver")
             seo_h1 = f"Dónde ver {team_short} vs {opp} en {cname}: {t_local} ({tz_label})"
             seo_desc = (f"{team_short} vs {opp} hoy a las {t_local} {tz_label} en {cname}. "
-                        f"Canal: {first_ch}. Todos los canales de TV y streaming para ver {team_league} desde {cname}.")
+                        + (f"Canal: {first_ch}. " if _ch_ok else "Emisor aún sin confirmar. ")
+                        + f"Todos los canales de TV y streaming para ver {team_league} desde {cname}.")
 
     return templates.TemplateResponse(request, "team_country.html", {
         "seo_title": seo_title,
