@@ -1,0 +1,182 @@
+{% from "_ad.html" import ad %}
+{#
+  Liga ASOBAL — página curada, sin calendario.
+
+  Por qué curada y no una liga normal: comprobé TheSportsDB antes de montarla
+  y tiene las 240 jornadas de 2025-26 y CERO de 2026-27, la que arrancó el 11
+  de septiembre. Una página de liga enseñaría partidos del año pasado o un
+  hueco. Así que se responde la pregunta que trae el lector —dónde se ve y
+  cuánto cuesta— con datos verificados a mano, igual que el boxeo.
+
+  Canales 2026-27, dos fuentes independientes cada uno:
+    ASOBAL TV        asobal.es (oficial, 26/27) + Mundoplus.tv
+    Eurosport 2      2Playbook + Roams
+    HBO Max          2Playbook + Roams
+  LaLiga+ cerró el 30/06/2026: cualquier guía que la cite está caducada.
+#}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dónde ver la Liga ASOBAL 2026/27: ASOBAL TV, Eurosport y HBO Max | DondeVer</title>
+    <meta name="description" content="Dónde ver el balonmano español: ASOBAL TV tiene los 240 partidos desde 5,99 €/mes, y Eurosport 2 y HBO Max emiten dos por jornada. Precios y qué incluye cada uno.">
+    <link rel="canonical" href="{{ app_url }}/liga/asobal">
+    <link rel="alternate" hreflang="es-ES" href="{{ app_url }}/liga/asobal">
+    <meta property="og:title" content="Dónde ver la Liga ASOBAL 2026/27">
+    <meta property="og:description" content="ASOBAL TV, Eurosport 2 y HBO Max: qué emite cada uno y cuánto cuesta.">
+    <meta property="og:url" content="{{ app_url }}/liga/asobal">
+    <meta property="og:image" content="{{ app_url }}/static/og-image.png?v=2">
+    <link rel="icon" type="image/png" href="/static/logo.png?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dark-mode.css">
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"¿Dónde se ve la Liga ASOBAL 2026/27?","acceptedAnswer":{"@type":"Answer","text":"ASOBAL TV, la plataforma propia de la liga, emite los 240 partidos de la temporada. Eurosport 2 y HBO Max emiten dos partidos por jornada."}},
+      {"@type":"Question","name":"¿Cuánto cuesta ASOBAL TV?","acceptedAnswer":{"@type":"Answer","text":"5,99 euros al mes o 49,99 euros la temporada completa."}},
+      {"@type":"Question","name":"¿Se puede ver la ASOBAL en LaLiga+?","acceptedAnswer":{"@type":"Answer","text":"No. LaLiga+ cerró su servicio el 30 de junio de 2026. Las guías que la mencionan están desactualizadas."}}
+    ]}
+    </script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:var(--bg,#f8f9fb);color:var(--text-primary,#1a1a2e)}
+        .header{background:#1a1a2e;padding:.6rem 0}
+        .header-inner{max-width:860px;margin:0 auto;padding:0 1rem;display:flex;align-items:center;justify-content:space-between}
+        .logo{font-size:1.2rem;font-weight:800;color:#10b981;text-decoration:none}
+        .logo span{color:#f8f9fb}
+        .back{color:#9ca3af;font-size:.8rem;text-decoration:none;font-weight:600}
+        .main{max-width:860px;margin:0 auto 3rem;padding:0 1rem}
+
+        /* Hero con el color del balonmano, no el verde de siempre */
+        .hero{background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 55%,#38bdf8 100%);
+              color:#fff;border-radius:0 0 18px 18px;padding:1.6rem 1.2rem 1.5rem;
+              margin:0 -1rem 1.2rem;text-align:center}
+        .hero .kicker{font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+        .hero h1{font-size:1.5rem;font-weight:900;line-height:1.2;margin:.35rem 0 .5rem}
+        .hero .sub{font-size:.88rem;opacity:.92;line-height:1.5;max-width:30rem;margin:0 auto}
+        .hero .pills{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin-top:.9rem}
+        .hero .pill{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);
+                    border-radius:20px;padding:.25rem .7rem;font-size:.72rem;font-weight:700}
+
+        h2{font-size:1.05rem;font-weight:800;margin:1.6rem 0 .7rem}
+
+        /* Tarjetas de opción: lo que el lector compara */
+        .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.7rem}
+        .opt{position:relative;background:var(--bg-card,#fff);border:1px solid var(--border,#e5e7eb);
+             border-radius:14px;padding:1rem .95rem;display:flex;flex-direction:column}
+        .opt--full{border-color:#2563eb;border-width:2px;
+                   background:linear-gradient(180deg,#eff6ff 0%,var(--bg-card,#fff) 55%)}
+        .opt .tag{position:absolute;top:-9px;left:.9rem;background:#2563eb;color:#fff;
+                  font-size:.6rem;font-weight:900;letter-spacing:.07em;padding:.18rem .5rem;border-radius:5px}
+        .opt .nm{font-size:1.05rem;font-weight:900;line-height:1.2}
+        .opt .kind{font-size:.68rem;font-weight:700;color:var(--text-secondary,#6b7280);
+                   text-transform:uppercase;letter-spacing:.05em;margin-top:.15rem}
+        .opt .what{font-size:.82rem;color:var(--text-secondary,#4b5563);line-height:1.5;margin:.55rem 0 .7rem;flex:1}
+        .opt .price{font-size:1.25rem;font-weight:900;color:#2563eb}
+        .opt .price small{font-size:.72rem;font-weight:700;color:var(--text-secondary,#6b7280)}
+        .opt .games{display:inline-block;background:var(--bg,#f3f4f6);border:1px solid var(--border,#e5e7eb);
+                    border-radius:7px;padding:.2rem .5rem;font-size:.7rem;font-weight:800;margin-top:.5rem}
+
+        .note{background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #f59e0b;
+              border-radius:10px;padding:.8rem .95rem;font-size:.85rem;line-height:1.55;margin-top:1rem}
+        .card{background:var(--bg-card,#fff);border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:1rem}
+        .card p{font-size:.88rem;line-height:1.6;color:var(--text-secondary,#4b5563)}
+        .card p + p{margin-top:.7rem}
+        .card b{color:var(--text-primary,#1a1a2e)}
+        .src{font-size:.72rem;color:#9ca3af;margin-top:.9rem;line-height:1.6}
+        .src a{color:#6b7280}
+        .more{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem}
+        .more a{padding:.35rem .75rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:18px;
+                color:#1e40af;font-weight:700;text-decoration:none;font-size:.78rem}
+        .footer{background:#1a1a2e;color:#9ca3af;text-align:center;padding:1.2rem;font-size:.8rem}
+        .footer a{color:#10b981;text-decoration:none}
+    </style>
+</head>
+<body>
+<header class="header"><div class="header-inner">
+    <a href="/" class="logo">Donde<span>Ver</span></a>
+    <a href="/liga/liga-endesa" class="back">&larr; Baloncesto español</a>
+</div></header>
+
+<main class="main">
+    <div class="hero">
+        <div class="kicker">🤾 Balonmano · España</div>
+        <h1>Dónde ver la Liga ASOBAL 2026/27</h1>
+        <p class="sub">Tres sitios se reparten la liga. Uno los tiene todos; los otros dos, dos partidos por jornada.</p>
+        <div class="pills">
+            <span class="pill">240 partidos</span>
+            <span class="pill">16 equipos</span>
+            <span class="pill">Desde el 11 de septiembre</span>
+        </div>
+    </div>
+
+    <h2>Las tres opciones</h2>
+    <div class="opts">
+        <div class="opt opt--full">
+            <span class="tag">LA LIGA COMPLETA</span>
+            <div class="nm">ASOBAL TV</div>
+            <div class="kind">Streaming · plataforma de la liga</div>
+            <p class="what">La OTT propia de la ASOBAL, estrenada esta temporada. Es la única donde están todos los partidos, incluidos los que no coge ningún canal.</p>
+            <div class="price">5,99 € <small>/ mes</small></div>
+            <div class="price" style="font-size:.95rem;margin-top:.15rem">49,99 € <small>/ temporada</small></div>
+            <span class="games">Los 240 partidos</span>
+        </div>
+
+        <div class="opt">
+            <div class="nm">Eurosport 2</div>
+            <div class="kind">Cable / satélite</div>
+            <p class="what">Emite en directo dos partidos de cada jornada. Entra en los paquetes de deporte de los operadores habituales.</p>
+            <span class="games">2 partidos por jornada</span>
+        </div>
+
+        <div class="opt">
+            <div class="nm">HBO Max</div>
+            <div class="kind">Streaming</div>
+            <p class="what">Los mismos dos partidos por jornada que Eurosport, dentro de la suscripción. Si ya la tienes por series, no pagas de más.</p>
+            <span class="games">2 partidos por jornada</span>
+        </div>
+    </div>
+
+    <div class="note">
+        <b>Si buscaste esto hace meses, lo que encontraste ya no sirve.</b>
+        La ASOBAL se veía en <b>LaLiga+</b>, que <b>cerró el 30 de junio de 2026</b>.
+        Las guías que todavía la mencionan están caducadas.
+    </div>
+
+    {{ ad('top') }}
+
+    <h2>Cuál te conviene</h2>
+    <div class="card">
+        <p><b>Sigues a un equipo concreto.</b> ASOBAL TV. Eurosport y HBO Max eligen dos partidos por jornada, y casi siempre son los del Barça y los de arriba: si tu equipo es de media tabla, puedes pasarte semanas sin verlo.</p>
+        <p><b>Te gusta el balonmano en general.</b> Con Eurosport 2 o HBO Max vas servido, y probablemente ya pagas uno de los dos por otra cosa.</p>
+        <p><b>Vas a ver la temporada entera.</b> El abono de 49,99 € sale a 4,17 € al mes contra los 5,99 € del mensual: a partir del noveno mes compensa.</p>
+    </div>
+
+    <h2>Preguntas frecuentes</h2>
+    <div class="card">
+        <p><b>¿Hay algún partido en abierto?</b> No nos consta un reparto en abierto confirmado para esta temporada. Si encuentras uno, <a href="/contacto" style="color:#2563eb;font-weight:700">dínoslo</a> y lo añadimos.</p>
+        <p><b>¿Por qué no sale el calendario aquí?</b> Porque nuestra fuente de datos todavía no tiene cargada la temporada 2026-27 de la ASOBAL. Preferimos no enseñar partidos del año pasado haciéndolos pasar por los de ahora. En cuanto estén, esta página pasa a tener calendario como el resto.</p>
+        <p><b>¿Y la Champions de balonmano?</b> Es otra competición y otros derechos. Todavía no la cubrimos.</p>
+    </div>
+
+    <div class="more">
+        <a href="/liga/liga-endesa">🏀 Liga Endesa</a>
+        <a href="/liga/liga-femenina">🏀 Liga Femenina</a>
+        <a href="/liga/primera-feb">🏀 Primera FEB</a>
+        <a href="/donde-ver-en-espana">🇪🇸 Todo el deporte en España</a>
+    </div>
+
+    <p class="src">
+        Canales verificados el 17/10/2026 contra
+        <a href="https://asobal.es/noticias/descubre-c-mo-ver-los-todos-partidos-de-la-liga-nexus-energ-a-asobal-26-27-por-asobal-tv/8701/" rel="nofollow noopener" target="_blank">asobal.es</a> (fuente oficial),
+        <a href="https://www.2playbook.com/media/asobal-tambien-se-vera-traves-eurosport-en-temporada-2026-2027_23548_102.html" rel="nofollow noopener" target="_blank">2Playbook</a> y
+        <a href="https://www.mundoplus.tv/streaming/asobal-tv-ya-esta-en-marcha-todos-los-partidos-de-la-liga-2026-2027-en-una-nueva-ott/" rel="nofollow noopener" target="_blank">Mundoplus.tv</a>.
+        Los precios y el reparto pueden cambiar durante la temporada.
+    </p>
+</main>
+{{ ad('bottom') }}
+
+<footer class="footer"><p>&copy; {{ year }} <a href="/">DondeVer.app</a> &mdash; Tu guía deportiva en España, México y Latinoamérica</p></footer>
+</body>
+</html>

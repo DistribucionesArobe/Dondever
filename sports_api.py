@@ -509,6 +509,18 @@ DEFAULT_LEAGUE_CHANNELS = {
     # ACB: DAZN al completo; Teledeporte y autonomicas, un partido por jornada
     # en abierto (por eso Teledeporte entra en "Gratis hoy" solo en Espana).
     "liga-endesa": ["DAZN Baloncesto", "Teledeporte", "Movistar Plus+", "Orange TV"],
+    # Liga Femenina Endesa 2026-27. Reparto confirmado por la propia FEB
+    # (feb.es, 11 y 23/09/2026) y recogido por TM Broadcast: Movistar Plus+
+    # lleva la competición completa (~250 partidos, uno exclusivo por
+    # jornada), Teledeporte el partido en abierto de cada jornada, Siroko TV
+    # siete por jornada, y las autonómicas los de su equipo.
+    "liga-femenina": ["Movistar Plus+", "Teledeporte", "Siroko TV",
+                      "TV3", "TVG", "Aragón TV", "IB3", "EITB"],
+    # Primera y Segunda FEB: la liga existe y el calendario entra solo, pero
+    # NO encontré fuente fiable del reparto de TV 2026-27. Se quedan vacías a
+    # propósito: la ficha dirá "por confirmar" en vez de inventar un canal.
+    "primera-feb": [],
+    "segunda-feb": [],
     # ES: canal DAZN MotoGP (dial 70), estrenado en 2026. Jerez, Catalunya y
     # Valencia se ven en abierto.
     "motogp": ["DAZN MotoGP"],
@@ -916,6 +928,9 @@ SPORTSDB_LEAGUE_MAP = {
     "liga-panama": "4819",
     # Liga Endesa (ACB): la liga grande de basquet en Espana.
     "liga-endesa": "4408",
+    "primera-feb": "5134",
+    "segunda-feb": "5509",
+    "liga-femenina": "5486",
     "liga-mx": "4350",
     "mls": "4346",
     "premier-league": "4328",

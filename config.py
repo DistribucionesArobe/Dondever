@@ -845,6 +845,13 @@ LEAGUES = {
     # Liga Endesa (ACB): la liga grande de basquet de Espana. ESPN no la publica
     # (basketball/esp.acb da 400); TheSportsDB si, con el id 4408.
     "liga-endesa":   ("basketball", "sportsdb:4408", "Liga Endesa", "\U0001f3c0"),
+    # Basquet español de nicho. Marca y AS cubren la ACB; estas tres casi no.
+    # Comprobado contra TheSportsDB antes de añadirlas: las tres tienen la
+    # temporada 2026-27 cargada (315, 364 y 240 partidos). La ASOBAL y el
+    # rugby se quedaron fuera por lo contrario — ahí sólo hay 2025-26.
+    "primera-feb":   ("basketball", "sportsdb:5134", "Primera FEB", "\U0001f3c0"),
+    "segunda-feb":   ("basketball", "sportsdb:5509", "Segunda FEB", "\U0001f3c0"),
+    "liga-femenina": ("basketball", "sportsdb:5486", "Liga Femenina Endesa", "\U0001f3c0"),
     # Beisbol
     "mlb":           ("baseball", "mlb",         "MLB",              "\u26be"),
     "lmp":           ("baseball", "sportsdb:5109", "Liga Mexicana del Pac\u00edfico", "\u26be"),
@@ -1723,6 +1730,16 @@ TEAM_ALIASES = {
     "lnbp": "lnbp",
     "basquetbol mexico": "lnbp",
     "basquetbol mexicano": "lnbp",
+    # Basquet español
+    "acb": "liga-endesa",
+    "liga femenina": "liga-femenina",
+    "lf endesa": "liga-femenina",
+    "liga femenina endesa": "liga-femenina",
+    "baloncesto femenino": "liga-femenina",
+    "primera feb": "primera-feb",
+    "leb oro": "primera-feb",
+    "segunda feb": "segunda-feb",
+    "leb plata": "segunda-feb",
     # LVBP
     "magallanes": "navegantes del magallanes",
     "navegantes": "navegantes del magallanes",

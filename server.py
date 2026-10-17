@@ -1481,6 +1481,11 @@ _MERCADOS_LIGA = {
     "la-liga": "España, México y Latinoamérica",
     "liga-endesa": "España, México y Latinoamérica",
     "copa-del-rey": "España, México y Latinoamérica",
+    # Las tres de nicho español: fuera de España casi no se siguen, así que no
+    # se les promete un mercado que no tienen.
+    "primera-feb": "España",
+    "segunda-feb": "España",
+    "liga-femenina": "España",
     # Europa, pan-regional: España primero porque es el único mercado nuestro
     # donde estas competiciones son el deporte local.
     "champions": "España, México, Estados Unidos y Latinoamérica",
@@ -3455,6 +3460,24 @@ NFL_TEAM_EXTRA = {
         "fun_fact": "El Lambeau Field, conocido como 'The Frozen Tundra', es uno de los estadios mas iconicos del deporte mundial.",
     },
 }
+
+
+@app.get("/liga/asobal", response_class=HTMLResponse)
+async def liga_asobal(request: Request):
+    """Liga ASOBAL — página curada, sin calendario.
+
+    Va ANTES de /liga/{league_slug} a propósito: FastAPI casa las rutas en
+    orden de declaración y el comodín se tragaría "asobal".
+
+    Es la única liga del sitio que se explica a mano. Comprobado el 17/10/2026
+    contra TheSportsDB: 240 partidos cargados de 2025-26 y CERO de 2026-27, la
+    temporada en curso. Con una página de liga normal saldrían los partidos
+    del año pasado. Así que se responde lo que trae al lector —dónde se ve y
+    cuánto cuesta— con datos verificados, y el calendario cuando lo haya.
+    """
+    return templates.TemplateResponse(
+        request, "asobal.html", {"year": datetime.now(TZ_MX).year}
+    )
 
 
 @app.get("/liga/{league_slug}", response_class=HTMLResponse)
