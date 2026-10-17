@@ -2784,6 +2784,30 @@
             if (cuenta) cuenta.textContent = visibles + ' partido' + (visibles === 1 ? '' : 's');
         }
 
+        // ── Los anuncios intercalados también se esconden al filtrar ──
+        //
+        // ad('top') va tras la 1ª liga y ad('mid') tras la 3ª. Al filtrar, las
+        // secciones de en medio desaparecen pero los anuncios se quedaban, así
+        // que los dos acababan pegados uno encima del otro —el mismo creativo
+        // repetido— y por delante de los partidos. Con Liga MX filtrada y sin
+        // nada en vivo, lo primero de la página eran dos anuncios iguales.
+        //
+        // El de abajo no se toca: ese va al final y nunca estorba.
+        function anunciosIntercalados(visible) {
+            ['top', 'mid'].forEach(function(pos) {
+                var a = document.querySelector('.dv-ad--' + pos);
+                if (!a) return;
+                if (!visible) {
+                    if (a.style.display !== 'none') a.dataset.dvVisible = '1';
+                    a.style.display = 'none';
+                } else if (a.dataset.dvVisible === '1') {
+                    // Vacío lo decide el script de AdSense, no nosotros: si el
+                    // bloque estaba colapsado por no llenarse, sigue colapsado.
+                    a.style.display = a.classList.contains('dv-ad-vacio') ? 'none' : '';
+                }
+            });
+        }
+
         // "Mis equipos" sólo con la portada sin filtrar.
         //
         // Es el mismo criterio que ya aplica el filtro por deporte (?sport=)
@@ -2809,6 +2833,7 @@
             sections.forEach(function(s) { s.style.display = ''; });
             filtrarEnVivo(null);
             mostrarMisEquipos(true);
+            anunciosIntercalados(true);
             if (showMore) showMore.style.display = '';
             if (hidden) hidden.style.display = 'none';
             if (fallback) fallback.style.display = 'none';
@@ -2818,6 +2843,7 @@
 
         filtrarEnVivo(slug);
         mostrarMisEquipos(false);
+        anunciosIntercalados(false);
 
         // Check if any section matches this slug
         var found = false;
