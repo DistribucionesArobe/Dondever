@@ -2784,9 +2784,31 @@
             if (cuenta) cuenta.textContent = visibles + ' partido' + (visibles === 1 ? '' : 's');
         }
 
+        // "Mis equipos" sólo con la portada sin filtrar.
+        //
+        // Es el mismo criterio que ya aplica el filtro por deporte (?sport=)
+        // desde el servidor: si alguien pulsó una liga ya dijo qué busca, y
+        // encontrarse "ninguno de tus favoritos juega hoy" ocupando un bloque
+        // entero antes del primer partido es contestarle otra cosa. Con la
+        // Liga MX filtrada, eso era literalmente lo primero de la página.
+        function mostrarMisEquipos(visible) {
+            var m = document.getElementById('secMyTeams');
+            if (!m) return;
+            // Sólo se vuelve a mostrar si el JS de favoritos lo había sacado:
+            // si no hay equipos seguidos, el bloque está oculto por su cuenta
+            // y aquí no hay que resucitarlo.
+            if (!visible) {
+                if (m.style.display !== 'none') m.dataset.dvVisible = '1';
+                m.style.display = 'none';
+            } else if (m.dataset.dvVisible === '1') {
+                m.style.display = '';
+            }
+        }
+
         if (slug === 'all') {
             sections.forEach(function(s) { s.style.display = ''; });
             filtrarEnVivo(null);
+            mostrarMisEquipos(true);
             if (showMore) showMore.style.display = '';
             if (hidden) hidden.style.display = 'none';
             if (fallback) fallback.style.display = 'none';
@@ -2795,6 +2817,7 @@
         }
 
         filtrarEnVivo(slug);
+        mostrarMisEquipos(false);
 
         // Check if any section matches this slug
         var found = false;
