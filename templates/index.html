@@ -2793,19 +2793,46 @@
         // nada en vivo, lo primero de la página eran dos anuncios iguales.
         //
         // El de abajo no se toca: ese va al final y nunca estorba.
-        function anunciosIntercalados(visible) {
-            ['top', 'mid'].forEach(function(pos) {
-                var a = document.querySelector('.dv-ad--' + pos);
-                if (!a) return;
+        //
+        // IMPORTANTE, y por poco lo hago mal: el primer intento escondía los
+        // dos. Pero el filtro es JavaScript, no recarga la página, así que
+        // AdSense YA pidió y contó esas impresiones al cargar. Esconderlas
+        // después no devuelve el hueco: lo que hace es que esa impresión ya
+        // contada deje de ser visible, y la visibilidad (Active View) es
+        // justo la métrica que arreglamos hoy — venía del 28% y va por 39%.
+        // Habría cambiado un problema de diseño por uno de ingresos.
+        //
+        // Así que sólo se esconde el duplicado (mid) y el otro se MUEVE
+        // debajo de los partidos. El anuncio sigue en la página y sigue
+        // pudiendo verse; lo que deja de hacer es ponerse por delante.
+        function anunciosIntercalados(visible, anclaFinal) {
+            var top = document.querySelector('.dv-ad--top');
+            var mid = document.querySelector('.dv-ad--mid');
+            if (mid) {
                 if (!visible) {
-                    if (a.style.display !== 'none') a.dataset.dvVisible = '1';
-                    a.style.display = 'none';
-                } else if (a.dataset.dvVisible === '1') {
+                    if (mid.style.display !== 'none') mid.dataset.dvVisible = '1';
+                    mid.style.display = 'none';
+                } else if (mid.dataset.dvVisible === '1') {
                     // Vacío lo decide el script de AdSense, no nosotros: si el
                     // bloque estaba colapsado por no llenarse, sigue colapsado.
-                    a.style.display = a.classList.contains('dv-ad-vacio') ? 'none' : '';
+                    mid.style.display = mid.classList.contains('dv-ad-vacio') ? 'none' : '';
                 }
-            });
+            }
+            if (top && top.parentNode) {
+                if (!visible && anclaFinal && anclaFinal.parentNode === top.parentNode) {
+                    if (!top.dataset.dvSitio) {
+                        // Se recuerda dónde estaba para poder devolverlo.
+                        var marca = document.createComment('dv-ad-top');
+                        top.parentNode.insertBefore(marca, top);
+                        top.dvMarca = marca;
+                        top.dataset.dvSitio = '1';
+                    }
+                    anclaFinal.parentNode.insertBefore(top, anclaFinal.nextSibling);
+                } else if (visible && top.dataset.dvSitio && top.dvMarca &&
+                           top.dvMarca.parentNode) {
+                    top.dvMarca.parentNode.insertBefore(top, top.dvMarca);
+                }
+            }
         }
 
         // "Mis equipos" sólo con la portada sin filtrar.
@@ -2833,7 +2860,7 @@
             sections.forEach(function(s) { s.style.display = ''; });
             filtrarEnVivo(null);
             mostrarMisEquipos(true);
-            anunciosIntercalados(true);
+            anunciosIntercalados(true, null);
             if (showMore) showMore.style.display = '';
             if (hidden) hidden.style.display = 'none';
             if (fallback) fallback.style.display = 'none';
@@ -2843,7 +2870,6 @@
 
         filtrarEnVivo(slug);
         mostrarMisEquipos(false);
-        anunciosIntercalados(false);
 
         // Check if any section matches this slug
         var found = false;
@@ -2857,6 +2883,18 @@
         });
         if (showMore) showMore.style.display = 'none';
         if (hidden) hidden.style.display = 'block';
+
+        // El anuncio que quedaba por delante se recoloca detrás de la última
+        // sección visible de esta liga. Si la liga no tiene sección (sólo
+        // partidos en vivo), se queda donde está: ahí ya no estorba.
+        var ultimaVisible = null;
+        sections.forEach(function(s) {
+            if (s.style.display !== 'none' && !s.closest('#hiddenLeagues')) ultimaVisible = s;
+        });
+        if (!ultimaVisible) {
+            sections.forEach(function(s) { if (s.style.display !== 'none') ultimaVisible = s; });
+        }
+        anunciosIntercalados(false, ultimaVisible);
 
         // Si la liga no tiene sección pero SÍ tiene partidos en vivo, no es un
         // caso vacío: el aviso "no hay partidos" contradiría lo que se ve
