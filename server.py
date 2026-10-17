@@ -1480,6 +1480,10 @@ _MERCADOS_LIGA = {
     # España
     "la-liga": "España, México y Latinoamérica",
     "liga-endesa": "España, México y Latinoamérica",
+    # La WNBA es la página de liga con más clics del sitio y su público
+    # no es sólo mexicano: hay consultas medidas desde Chile, Ecuador,
+    # Argentina y Panamá.
+    "wnba": "México, Estados Unidos y Latinoamérica",
     "copa-del-rey": "España, México y Latinoamérica",
     # Las tres de nicho español: fuera de España casi no se siguen, así que no
     # se les promete un mercado que no tienen.
@@ -3244,6 +3248,20 @@ LEAGUE_SEO_EXTRA = {
         ],
         "links": [],
     },
+    # La WNBA es la página de liga con más clics del sitio —420 de 596 en tres
+    # meses— y era la única del top 10 sin texto propio. El canal NO se
+    # inventa: League Pass está verificado contra support.wnba.com y los
+    # blackouts de EE.UU. y Canadá no afectan a México ni a LATAM.
+    "wnba": {
+        "title": "Donde ver la WNBA hoy en vivo — horarios y canales | DondeVer",
+        "meta_desc": "Donde ver la WNBA en vivo hoy: horarios en hora de Mexico, canales y resultados. Indiana Fever, Las Vegas Aces, New York Liberty, Atlanta Dream y los 15 equipos.",
+        "h2": "Donde ver la WNBA en vivo desde Mexico y Latinoamerica",
+        "paragraphs": [
+            "La WNBA es la liga profesional de basquetbol femenino de Estados Unidos. En 2026 son 15 equipos, dos de ellos de estreno: Portland Fire y Toronto Tempo, el primero fuera de Estados Unidos. La temporada regular va de mayo a septiembre y los playoffs terminan en octubre.",
+            "Desde Mexico y Latinoamerica, la forma de ver TODOS los partidos en vivo es WNBA League Pass, que se contrata en wnba.com o a traves de Prime Video. El soporte oficial de la WNBA confirma que los bloqueos por television local solo aplican en Estados Unidos y Canada, asi que desde Mexico no hay partidos bloqueados. En DondeVer.app te mostramos el horario de cada juego en hora del centro de Mexico y que opcion tienes en tu pais.",
+        ],
+        "links": [],
+    },
     "lnbp": {
         "title": "Donde ver LNBP hoy en vivo — Liga Nacional de Baloncesto Profesional | DondeVer",
         "meta_desc": "Donde ver la LNBP (Liga Nacional de Baloncesto Profesional) en vivo hoy: horarios, canales y resultados. Fuerza Regia, Capitanes, Soles y mas. ESPN MX y Claro Sports.",
@@ -4034,6 +4052,18 @@ async def futbol_femenil_redirect():
     return RedirectResponse(url="/liga/liga-mx-femenil", status_code=301)
 
 # ── LNBP SEO redirects ──
+@app.get("/wnba-hoy")
+async def wnba_hoy_redirect():
+    return RedirectResponse(url="/liga/wnba", status_code=301)
+
+@app.get("/wnba-en-vivo")
+async def wnba_en_vivo_redirect():
+    return RedirectResponse(url="/liga/wnba", status_code=301)
+
+@app.get("/donde-ver-wnba")
+async def donde_ver_wnba_redirect():
+    return RedirectResponse(url="/liga/wnba", status_code=301)
+
 @app.get("/lnbp-hoy")
 async def lnbp_hoy_redirect():
     return RedirectResponse(url="/liga/lnbp", status_code=301)
@@ -6338,6 +6368,9 @@ _MERCADOS_FICHA = {
     # y EE.UU.: NBA en los once, MLB en Chile y España, NFL en Dominicana y
     # Argentina, MLS en Argentina, Ecuador y Panamá.
     "MLB": _TODOS, "NFL": _TODOS, "NBA": _TODOS, "MLS": _TODOS,
+    # WNBA: hasta hoy caía en el caso "liga sin mapear". Tiene clics
+    # medidos en Chile, Ecuador, Argentina y Panamá, así que va a los once.
+    "WNBA": _TODOS,
     # El hockey es la única excepción real: no aparece en ninguna consulta de
     # GSC fuera de Estados Unidos y México.
     "NHL": ["estados-unidos", "mexico"],
@@ -7888,7 +7921,7 @@ _DEPORTE_POR_LIGA = {
                "Liga Argentina", "Liga BetPlay", "Primera Chile", "LigaPro Ecuador",
                "Liga 1 Perú"),
     "beisbol": ("MLB", "LMB", "LMP", "LVBP", "LIDOM"),
-    "basketball": ("NBA", "LNBP", "Liga Endesa"),
+    "basketball": ("NBA", "WNBA", "LNBP", "Liga Endesa"),
     "futbol americano": ("NFL",),
     "hockey": ("NHL",),
     "MMA": ("UFC",),

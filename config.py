@@ -1167,6 +1167,35 @@ POPULAR_TEAMS = {
     "raptors": {"name": "Toronto Raptors", "league": "NBA"},
     "jazz": {"name": "Utah Jazz", "league": "NBA"},
     "wizards": {"name": "Washington Wizards", "league": "NBA"},
+    # WNBA.
+    #
+    # Es, con diferencia, la página de liga que más clics trae: 420 de los 596
+    # de todo /liga/* en tres meses (GSC, 15 jul – 14 oct 2026). El 70%. Y no
+    # tenía un solo equipo aquí: funcionaba sola, de rebote, sin ficha propia
+    # ni entrada en el sitemap ni "equipos relacionados".
+    #
+    # Los quince nombres salen del atributo alt de los escudos de ESPN en
+    # nuestra propia tabla de posiciones, no de memoria. Importa sobre todo en
+    # las dos de 2026: Portland Fire y Toronto Tempo son equipos de expansión
+    # y no me fiaba de recordar sus nombres bien.
+    #
+    # Los slugs de Portland y Connecticut van con ciudad porque "fire" choca
+    # con el Chicago Fire de la MLS y "sun" es demasiado genérico.
+    "lynx": {"name": "Minnesota Lynx", "league": "WNBA"},
+    "valkyries": {"name": "Golden State Valkyries", "league": "WNBA"},
+    "aces": {"name": "Las Vegas Aces", "league": "WNBA"},
+    "dream": {"name": "Atlanta Dream", "league": "WNBA"},
+    "fever": {"name": "Indiana Fever", "league": "WNBA"},
+    "mystics": {"name": "Washington Mystics", "league": "WNBA"},
+    "wings": {"name": "Dallas Wings", "league": "WNBA"},
+    "liberty": {"name": "New York Liberty", "league": "WNBA"},
+    "portland-fire": {"name": "Portland Fire", "league": "WNBA"},
+    "mercury": {"name": "Phoenix Mercury", "league": "WNBA"},
+    "sky": {"name": "Chicago Sky", "league": "WNBA"},
+    "sparks": {"name": "Los Angeles Sparks", "league": "WNBA"},
+    "tempo": {"name": "Toronto Tempo", "league": "WNBA"},
+    "connecticut-sun": {"name": "Connecticut Sun", "league": "WNBA"},
+    "storm": {"name": "Seattle Storm", "league": "WNBA"},
     # Liga Endesa (ACB) — basquet de España.
     #
     # La liga llevaba meses configurada y la página /liga/liga-endesa servía
@@ -1730,6 +1759,15 @@ TEAM_ALIASES = {
     "lnbp": "lnbp",
     "basquetbol mexico": "lnbp",
     "basquetbol mexicano": "lnbp",
+    # WNBA
+    "wnba": "wnba",
+    "basquetbol femenino": "wnba",
+    "baloncesto femenil": "wnba",
+    "nba femenil": "wnba",
+    "caitlin clark": "fever",
+    "indiana fever": "fever",
+    "las vegas aces": "aces",
+    "new york liberty": "liberty",
     # Basquet español
     "acb": "liga-endesa",
     "liga femenina": "liga-femenina",

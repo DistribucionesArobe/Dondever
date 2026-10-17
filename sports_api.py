@@ -2375,6 +2375,23 @@ TEAM_LEAGUE_MAP = {
     "tigres-quintana-roo": ("baseball", "sportsdb:5064"),
     "toros-tijuana": ("baseball", "sportsdb:5064"),
     # ── LNBP (TheSportsDB) ──
+    # WNBA. Liga de ESPN, así que aquí va el slug de ESPN y no un id de
+    # TheSportsDB: get_team_stats() llama a fetch_standings("basketball","wnba").
+    "lynx": ("basketball", "wnba"),
+    "valkyries": ("basketball", "wnba"),
+    "aces": ("basketball", "wnba"),
+    "dream": ("basketball", "wnba"),
+    "fever": ("basketball", "wnba"),
+    "mystics": ("basketball", "wnba"),
+    "wings": ("basketball", "wnba"),
+    "liberty": ("basketball", "wnba"),
+    "portland-fire": ("basketball", "wnba"),
+    "mercury": ("basketball", "wnba"),
+    "sky": ("basketball", "wnba"),
+    "sparks": ("basketball", "wnba"),
+    "tempo": ("basketball", "wnba"),
+    "connecticut-sun": ("basketball", "wnba"),
+    "storm": ("basketball", "wnba"),
     # Liga Endesa (ACB). Igual que la LNBP: el id es el de la LIGA, no el del
     # equipo — compute_sportsdb_standings() recibe la liga y saca la tabla de
     # los eventos de la temporada. Sin esta entrada, get_team_stats() devuelve
