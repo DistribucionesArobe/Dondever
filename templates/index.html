@@ -2266,7 +2266,12 @@
            (1)" gris, y había que adivinar que ahí dentro estaba el marcador.
            Hasta tres resultados se muestran de una vez; a partir de ahí sí
            conviene plegarlos para no alargar la portada. #}
-        {% set plegar = finished_games | length > 3 %}
+        {# Umbral subido de 3 a 6 el 17/10/2026.
+           Con una liga ya terminada, un "Resultados (4) ▼" gris era todo el
+           contenido de la sección: la página se veía apagada y muerta. Los
+           marcadores son lo único con vida que queda cuando ya se jugó todo,
+           así que se enseñan. Seis caben sin alargar la portada. #}
+        {% set plegar = finished_games | length > 6 %}
         <div class="results-collapsed">
             {% if plegar %}
             <button class="results-toggle" onclick="var c=this.nextElementSibling;c.style.display=c.style.display==='none'?'block':'none';this.querySelector('.toggle-arrow').textContent=c.style.display==='none'?'&#9660;':'&#9650;';">
