@@ -1773,6 +1773,30 @@
         </div>
 
         {#
+          ── Mis equipos, en una línea ──
+
+          El recuadro naranja de "Mis equipos" vivía abajo, en el flujo
+          principal, entre los clásicos y la primera liga. Medido el
+          17/10/2026 con tres equipos seguidos y ninguno jugando hoy: ~300 px
+          de alto para decir "ninguno de tus favoritos juega hoy", tres chips
+          y dos partidos de la semana que viene. Todo eso por delante de los
+          partidos de hoy, que es a lo que viene la gente.
+
+          Cuando ninguno juega hoy, ese contenido cabe en un renglón, y su
+          sitio natural es aquí arriba, junto a los deportes favoritos: las
+          dos cosas son lo mismo —lo que el usuario marcó como suyo— y aquí
+          no le quita espacio a los partidos.
+
+          Si SÍ juega alguno, el recuadro de abajo se queda como está: ahí el
+          contenido es un partido de hoy y merece su tarjeta.
+
+          Lo rellena dvTiraMisEquipos() con lo que ya calcula
+          buildMyTeamsSection(); sin equipos seguidos no se pinta nada.
+        #}
+        <div id="misEquiposTira" style="display:none;text-align:center;font-size:0.72rem;
+                    color:#94a3b8;margin:0 0 0.5rem;padding:0 0.5rem;line-height:1.6;"></div>
+
+        {#
   Filtro de ligas. Vive aquí arriba, pegado a los deportes, desde el
   07/10/2026: antes estaba debajo de "Lo imperdible", o sea después de que el
   lector ya se había tragado la lista entera.
@@ -2445,7 +2469,19 @@
 <!-- Standings — compact link bar (full tables on league pages) -->
 {% if home_standings %}
 <div class="standings-compact" style="padding:0.8rem 1rem;">
-    <h2 style="font-size:1rem;margin-bottom:0.6rem;">&#127942; Tablas de posiciones</h2>
+    <h2 style="font-size:1rem;margin-bottom:0.6rem;" id="tablasTitulo">&#127942; Tablas de posiciones</h2>
+
+    {#
+      Aquí se pinta la tabla de la liga filtrada. Vacío por defecto: en la
+      portada sin filtrar no hay una liga concreta de la que hablar, y
+      veintidós tablas no caben.
+
+      El contenido lo trae /api/standings/{slug} cuando el usuario filtra.
+      Hasta entonces quedan debajo los enlaces de siempre, que además son
+      enlaces internos que le sirven al SEO.
+    #}
+    <div id="tablaLigaFiltrada" style="display:none;margin-bottom:0.7rem;"></div>
+
     <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
         {% for league_slug, st_data in home_standings.items() %}
         <a href="/liga/{{ league_slug }}" style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.4rem 0.8rem;background:var(--bg-muted,#f3f4f6);border-radius:6px;font-size:0.78rem;font-weight:600;color:var(--text-primary,#374151);text-decoration:none;">
@@ -3010,11 +3046,116 @@
             }
         }
 
+        // ── "Tablas de posiciones" tiene que hablar de la liga que estás viendo ──
+        //
+        // El bloque sale del servidor con cuatro ligas fijas (home_standings:
+        // Liga MX, Premier, MLB, NBA) y no sabe nada del filtro. Si filtras la
+        // Bundesliga, el encabezado dice "Tablas de posiciones" y debajo hay
+        // cuatro enlaces, ninguno de la Bundesliga: para la liga que estás
+        // mirando, el área está vacía.
+        //
+        // Se añade delante el enlace de esa liga. No se quitan los otros —son
+        // enlaces internos que ayudan al SEO— pero el primero ya responde a
+        // dónde estás.
+        function tablaDeEstaLiga(slug, chip) {
+            var bloque = document.querySelector('.standings-compact');
+            if (!bloque) return;
+            var fila = bloque.querySelector('div');
+            if (!fila) return;
+            var previo = bloque.querySelector('[data-dv-liga-actual]');
+            if (previo) previo.remove();
+            if (!slug || slug === 'all') return;
+            // Si esa liga ya estaba entre las cuatro fijas, no se duplica.
+            if (fila.querySelector('a[href="/liga/' + slug + '"]')) return;
+
+            // El nombre sale del propio chip pulsado, sin el contador.
+            var nombre = (chip ? chip.textContent : '').replace(/\d+/g, '').trim();
+            if (!nombre) return;
+            var a = document.createElement('a');
+            a.href = '/liga/' + slug;
+            a.setAttribute('data-dv-liga-actual', '1');
+            a.style.cssText = 'display:inline-flex;align-items:center;gap:0.3rem;' +
+                'padding:0.4rem 0.8rem;background:var(--accent,#10b981);border-radius:6px;' +
+                'font-size:0.78rem;font-weight:700;color:#fff;text-decoration:none;';
+            a.textContent = nombre + ' →';
+            fila.insertBefore(a, fila.firstChild);
+        }
+
+        // ── La tabla de verdad de la liga filtrada ──
+        //
+        // Un enlace que dice "Bundesliga →" bajo un encabezado que promete
+        // "Tablas de posiciones" sigue sin ser una tabla. Esto trae las cinco
+        // primeras posiciones de esa liga y las pinta ahí mismo.
+        //
+        // Se pide sólo al filtrar, nunca en la carga inicial: precargar las
+        // veintidós ligas serían veintidós llamadas a ESPN en cada visita a la
+        // portada. El endpoint cachea 15 minutos, que es más que suficiente
+        // para algo que cambia una vez por jornada.
+        function pintarTablaLiga(slug, nombreChip) {
+            var caja = document.getElementById('tablaLigaFiltrada');
+            var titulo = document.getElementById('tablasTitulo');
+            if (!caja) return;
+            if (!slug || slug === 'all') {
+                caja.style.display = 'none';
+                caja.innerHTML = '';
+                if (titulo) titulo.innerHTML = '🏆 Tablas de posiciones';
+                return;
+            }
+            if (caja.dataset.dvSlug === slug) { caja.style.display = ''; return; }
+            caja.dataset.dvSlug = slug;
+            caja.innerHTML = '';
+            caja.style.display = 'none';
+
+            fetch('/api/standings/' + encodeURIComponent(slug) + '?limit=5')
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(d) {
+                    // Sin datos no se inventa nada ni se deja un hueco: el
+                    // bloque se queda con los enlaces de siempre.
+                    if (!d || !d.entries || !d.entries.length) return;
+                    if (caja.dataset.dvSlug !== slug) return;  // llegó tarde
+
+                    var futbol = d.sport === 'soccer';
+                    var filas = d.entries.map(function(t, i) {
+                        var der = futbol
+                            ? '<b>' + (t.points != null ? t.points : '') + '</b>'
+                            : ((t.wins != null ? t.wins : '') + '-' + (t.losses != null ? t.losses : ''));
+                        var logo = t.team_logo
+                            ? '<img src="' + t.team_logo + '" alt="" width="16" height="16" ' +
+                              'style="vertical-align:-3px;margin-right:4px;" loading="lazy">'
+                            : '';
+                        var nm = (t.team_short || t.team_name || '');
+                        return '<tr>' +
+                               '<td style="padding:.25rem .4rem;color:#9ca3af;width:1.4rem;">' + (i + 1) + '</td>' +
+                               '<td style="padding:.25rem .4rem;">' + logo + dvEsc(nm) + '</td>' +
+                               '<td style="padding:.25rem .4rem;text-align:right;' +
+                               'font-variant-numeric:tabular-nums;">' + der + '</td></tr>';
+                    }).join('');
+
+                    caja.innerHTML =
+                        '<table style="width:100%;max-width:360px;border-collapse:collapse;' +
+                        'font-size:.78rem;background:var(--bg-card,#fff);border:1px solid ' +
+                        'var(--border-main,#e5e7eb);border-radius:8px;overflow:hidden;">' +
+                        '<tbody>' + filas + '</tbody></table>' +
+                        '<a href="/liga/' + slug + '" style="display:inline-block;margin-top:.35rem;' +
+                        'font-size:.72rem;font-weight:700;color:var(--accent,#10b981);' +
+                        'text-decoration:none;">Ver tabla completa →</a>';
+                    caja.style.display = '';
+                    if (titulo) {
+                        titulo.innerHTML = '🏆 Tabla de posiciones — ' +
+                                           dvEsc(d.name || nombreChip || '');
+                    }
+                })
+                .catch(function() { /* sin red, sin tabla: los enlaces siguen ahí */ });
+        }
+
+
         if (slug === 'all') {
             sections.forEach(function(s) { s.style.display = ''; });
             filtrarEnVivo(null);
             mostrarMisEquipos(true);
             anunciosIntercalados(true, null, null);
+            tablaDeEstaLiga('all', null);
+            pintarTablaLiga('all', null);
             if (showMore) showMore.style.display = '';
             if (hidden) hidden.style.display = 'none';
             if (fallback) fallback.style.display = 'none';
@@ -3062,6 +3203,8 @@
             ultimaVisible = s;
         });
         anunciosIntercalados(false, primeraVisible, ultimaVisible);
+        tablaDeEstaLiga(slug, btn);
+        pintarTablaLiga(slug, btn ? btn.textContent.replace(/\d+/g, '').trim() : '');
 
         // Si la liga no tiene sección pero SÍ tiene partidos en vivo, no es un
         // caso vacío: el aviso "no hay partidos" contradiría lo que se ve
@@ -3638,6 +3781,77 @@
     var myTeamSlugs = [];
     try { myTeamSlugs = JSON.parse(localStorage.getItem('dv_my_teams') || '[]'); } catch(e) {}
 
+    // Nombres de equipo y de liga vienen de APIs externas (ESPN,
+    // TheSportsDB). Nada de eso entra crudo en innerHTML. Global a propósito:
+    // lo usan tanto la tira de "Mis equipos" como la tabla de posiciones que
+    // se pinta al filtrar una liga.
+    window.dvEsc = window.dvEsc || function(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    };
+    var dvEsc = window.dvEsc;
+
+    // ── "Mis equipos" en una línea, arriba con los deportes ──
+    //
+    // Sustituye al recuadro naranja cuando ninguno de tus equipos juega hoy.
+    // Lleva lo único que ese recuadro decía en ese caso: quiénes son tus
+    // equipos y cuándo juega el próximo.
+    //
+    // slugs == null → se esconde (hay partidos tuyos hoy, manda el recuadro).
+    function dvTiraMisEquipos(slugs) {
+        var tira = document.getElementById('misEquiposTira');
+        if (!tira) return;
+        if (!slugs || !slugs.length) {
+            tira.style.display = 'none';
+            tira.innerHTML = '';
+            return;
+        }
+        function bonito(slug) {
+            return slug.replace(/-/g, ' ').replace(/\b\w/g, function(c) {
+                return c.toUpperCase();
+            });
+        }
+        var chips = slugs.slice(0, 5).map(function(s) {
+            return '<a href="/equipo/' + encodeURIComponent(s) + '" ' +
+                   'style="color:#e2e8f0;text-decoration:none;font-weight:600;">' +
+                   dvEsc(bonito(s)) + '</a>';
+        }).join(' <span style="opacity:.4;">&middot;</span> ');
+        var mas = slugs.length > 5 ? ' <span style="opacity:.6;">+' + (slugs.length - 5) + '</span>' : '';
+
+        tira.innerHTML =
+            '<span style="color:#fbbf24;">&#9733;</span> ' + chips + mas +
+            ' <span style="opacity:.5;">&mdash;</span> ninguno juega hoy ' +
+            '<span id="tiraProximo"></span>' +
+            ' <a href="/mis-equipos" style="color:#10b981;font-weight:700;' +
+            'text-decoration:none;white-space:nowrap;">agenda &rarr;</a>';
+        tira.style.display = '';
+
+        // El próximo partido se pide a la misma API que ya usaba el recuadro,
+        // así que no son llamadas nuevas: es la de siempre, con el resultado
+        // resumido a un renglón en vez de una lista de cuatro.
+        fetch('/api/mis-equipos?teams=' + encodeURIComponent(slugs.join(',')))
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(d) {
+                if (!d || !d.ok || !d.upcoming || !d.upcoming.length) return;
+                var g = d.upcoming[0];
+                var destino = document.getElementById('tiraProximo');
+                if (!destino) return;
+                var dias = ['dom','lun','mar','mié','jue','vie','sáb'];
+                var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+                var f = new Date(g.date);
+                var cuando = isNaN(f) ? '' :
+                    dias[f.getDay()] + ' ' + f.getDate() + ' ' + meses[f.getMonth()];
+                destino.innerHTML =
+                    '<span style="opacity:.5;">&middot;</span> pr&oacute;ximo: ' +
+                    '<a href="' + (g.url || '/mis-equipos') + '" style="color:#e2e8f0;' +
+                    'font-weight:600;text-decoration:none;">' +
+                    dvEsc((g.away_name || '?') + ' vs ' + (g.home_name || '?')) + '</a>' +
+                    (cuando ? ' <span style="opacity:.7;">' + cuando + '</span>' : '');
+            })
+            .catch(function() { /* sin próximo, la línea sigue siendo útil */ });
+    }
+
     // ── Build "Mis equipos" section at top ────────
     function buildMyTeamsSection() {
         var sec = document.getElementById('secMyTeams');
@@ -3662,6 +3876,9 @@
         var followedList = document.getElementById('myTeamsFollowedList');
 
         if (!hasFavs) {
+            // Sin equipos seguidos no hay nada que resumir arriba; el recuadro
+            // se queda porque es el que invita a seguir equipos.
+            dvTiraMisEquipos(null);
             sec.style.display = 'block';
             if (emptyEl) emptyEl.style.display = '';
             if (emptyMsg) emptyMsg.textContent = 'Sigue a tus equipos favoritos para ver sus partidos aquí';
@@ -3691,6 +3908,10 @@
         sec.style.display = 'block';
 
         if (matched.length === 0) {
+            // Nadie tuyo juega hoy: eso se dice arriba en una línea y el
+            // recuadro entero se va. Ver dvTiraMisEquipos.
+            sec.style.display = 'none';
+            dvTiraMisEquipos(myTeamSlugs);
             if (emptyEl) { emptyEl.style.display = ''; }
             if (emptyMsg) emptyMsg.textContent = 'Ninguno de tus favoritos juega hoy';
             if (quickAdd) quickAdd.style.display = 'none';
@@ -3707,6 +3928,9 @@
                 followedList.style.display = '';
             }
         } else {
+            // Sí juega alguno: el recuadro de abajo tiene algo que mostrar y
+            // la tira de arriba sobra.
+            dvTiraMisEquipos(null);
             if (emptyEl) emptyEl.style.display = 'none';
             if (followedList) followedList.style.display = 'none';
             countEl.textContent = matched.length + ' hoy';

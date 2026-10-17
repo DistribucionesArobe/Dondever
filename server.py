@@ -4458,6 +4458,38 @@ async def api_leagues():
     })
 
 
+@app.get("/api/standings/{league_slug}")
+async def api_standings(league_slug: str, limit: int = 5):
+    """Top N de la tabla de una liga, para pintarla en la portada al filtrar.
+
+    POR QUÉ EXISTE
+    --------------
+    La portada ya traía las tablas de cuatro ligas fijas (Liga MX, Premier,
+    MLB, NBA) en `home_standings`, pero la plantilla sólo pintaba el NOMBRE
+    como enlace y tiraba las posiciones. Y al filtrar una liga cualquiera
+    —Bundesliga, pongamos— el bloque seguía ofreciendo esas cuatro, ninguna
+    la que estabas viendo.
+
+    El servidor no puede precargar las veintidós: serían veintidós llamadas
+    a ESPN en cada carga de la portada. Así que se pide sólo la que haga
+    falta, cuando el usuario filtra.
+    """
+    cfg = ALL_LEAGUES.get(league_slug)
+    if not cfg:
+        return JSONResponse({"error": "liga desconocida"}, status_code=404)
+    sport, league_id, name, emoji = cfg[0], cfg[1], cfg[2], cfg[3]
+    try:
+        entries = await get_league_standings(sport, league_id, limit=max(1, min(limit, 10)))
+    except Exception:
+        entries = []
+    return JSONResponse(
+        {"slug": league_slug, "name": name, "emoji": emoji,
+         "sport": sport, "entries": entries or []},
+        # Una tabla de posiciones cambia como mucho una vez por jornada.
+        headers={"Cache-Control": "public, max-age=900"},
+    )
+
+
 @app.get("/api/team/{team_slug}")
 async def api_team_quick(team_slug: str):
     """
