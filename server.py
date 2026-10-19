@@ -8226,7 +8226,21 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         return {
             "title": f"Dónde ver {team_name} vs {opp} hoy:{t_txt}{ch_txt}",
             "h1": f"Dónde ver {team_name} hoy vs {opp}:{t_txt}{ch_txt}",
-            "desc": f"{team_name} vs {opp} hoy{t_txt} (hora de México){ch_txt}. Horario en tu país, canal de TV, streaming{lg_sfx} y qué hacer si no tienes cable.",
+            # "canal de transmisión", literal, porque es como se pregunta en
+            # México y LATAM. Medido el 19/10/2026, 90 días, filtrando
+            # "transmisi": 1.740 impresiones y 35 clics, CTR 2,0 %.
+            #
+            #   cruz azul transmisión              190 impr · 3,7 % · pos 5,7
+            #   transmision dodgers hoy             84      · 4,8 % · pos 7,6
+            #   transmisión cruz azul               70      · 1,4 % · pos 7,3
+            #   dodgers canal de transmisión        69      · 1,4 % · pos 5,8
+            #   canal de transmision dodgers hoy    68      · 1,5 % · pos 6,4
+            #
+            # Estamos en posiciones 5 a 8 —primera página— y aun así el CTR es
+            # de 1,4%. La misma gente, preguntando lo mismo con "donde ver",
+            # nos pulsa al 6,4%. La diferencia es que "transmisión" no aparecía
+            # en ningún título ni descripción nuestra.
+            "desc": f"{team_name} vs {opp} hoy{t_txt} (hora de México){ch_txt}. Canal de transmisión, horario en tu país, streaming{lg_sfx} y qué hacer si no tienes cable.",
         }
     if post:
         g = post[0]
@@ -8313,9 +8327,16 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
             "desc": f"{team_name} no juega hoy. El próximo es vs {opp}{when_txt}{' (hora de México)' if when_txt else ''}{ch_txt}. Calendario completo, canal de TV y streaming{lg_sfx}.",
         }
     return {
-        "title": f"Dónde ver {team_name} hoy: horario, canal y streaming",
+        # "canal de transmisión" en vez de "horario, canal y streaming": mismo
+        # largo, y añade la palabra con la que 1.740 impresiones nos buscan sin
+        # pulsarnos. Ver la nota de la rama `pre` para el detalle.
+        #
+        # "Dónde ver <equipo> hoy" se queda al frente y sin tocar: esa fórmula
+        # rinde 6,4 % en "donde ver yankees hoy" y 4,2 % en dodgers. No se
+        # arregla lo que funciona; se le añade lo que faltaba.
+        "title": f"Dónde ver {team_name} hoy: canal de transmisión y horario",
         "h1": f"Dónde ver {full_name} hoy en vivo",
-        "desc": f"Dónde ver a {team_name} hoy: horario en tu país, canal de TV y opciones de streaming{lg_sfx}. Calendario de los próximos partidos actualizado cada día.",
+        "desc": f"Dónde ver a {team_name} hoy: canal de transmisión, horario en tu país y opciones de streaming{lg_sfx}. Calendario de los próximos partidos actualizado cada día.",
     }
 
 
