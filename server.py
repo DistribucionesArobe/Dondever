@@ -8762,6 +8762,46 @@ async def team_page(request: Request, team_slug: str):
 # ── Programmatic SEO pages ────────────────────────────────
 
 # Country data for team × country pages
+# ── Cómo se dice "en vivo" en cada mercado ──────────────────────────────
+#
+# Medido en Search Console el 19/10/2026, 90 días. España son 985 clics y
+# 43.600 impresiones, pero con un vocabulario que no es el nuestro:
+#
+#   partidos de hoy en directo gratis                81 impr · pos  2,0
+#   dónde mirar toronto raptors contra miami heat    17      · CTR 17,6 %
+#   dónde mirar colorado rockies contra san diego     6      · CTR 33,3 %
+#   wnba en directo                                   3      · CTR 66,7 %
+#
+# Y lo que cuesta dinero, filtrando "directo" en todos los países:
+#
+#   premier league en directo      26 impr · 0 clics · pos 37,1
+#   ligue 1 en directo             20      · 0      · pos 32,0
+#   atlético de madrid en directo  17      · 0      · pos 20,8
+#   endesa en directo               7      · 0      · pos 37,7
+#
+# Cero clics en todas. Para "en vivo" estamos en posición 6-8; para la misma
+# consulta dicha a la española estamos en la página 3 o 4.
+#
+# Esto NO es meter sinónimos a la fuerza en todos los textos —eso se lee mal
+# y Google lo castiga—. Es decir cada cosa como se dice en el sitio donde se
+# lee, y sólo en las páginas donde el país lo fija la URL (/equipo/x/en/espana),
+# nunca adivinándolo, para no servirle a Google algo distinto que al visitante.
+VOCABULARIO_PAIS = {
+    # España: "en directo" en vez de "en vivo". "Mirar" aparece en las
+    # consultas con mejor CTR del país, pero "ver" también se usa allí y es lo
+    # que trae clics hoy ("donde ver boca juniors hoy en españa"), así que no
+    # se cambia el verbo: se cambia sólo lo que el dato respalda sin ambigüedad.
+    "espana": {"en_vivo": "en directo"},
+}
+_VOCAB_POR_DEFECTO = {"en_vivo": "en vivo"}
+
+
+def vocab(country_slug: str, palabra: str) -> str:
+    """La palabra como se dice en ese país. Cae al español neutro."""
+    return (VOCABULARIO_PAIS.get(country_slug) or _VOCAB_POR_DEFECTO).get(
+        palabra, _VOCAB_POR_DEFECTO.get(palabra, palabra))
+
+
 TEAM_COUNTRY_SEO = {
     "mexico": {"name": "México", "flag": "🇲🇽", "code": "MX"},
     "estados-unidos": {"name": "Estados Unidos", "flag": "🇺🇸", "code": "US"},
@@ -9515,11 +9555,18 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     _ch_ok = bool(first_ch) and "confirmar" not in first_ch.lower()
     cname = country["name"]
     _tshort = _short_team_name(team_name, team_league)
-    seo_title = f"Dónde ver {_tshort} en {cname} hoy: canales y horario | DondeVer"
-    seo_h1 = f"Dónde ver {team_name} en {cname} {country['flag']}"
-    seo_desc = (f"¿Dónde ver a {team_name} en {cname} hoy? Canales de TV, cable y streaming "
+    # En España esto dice "en directo"; en el resto, "en vivo". El país lo fija
+    # la URL, así que no hay riesgo de enseñarle a Google algo distinto que al
+    # visitante. Ver VOCABULARIO_PAIS.
+    _vivo = vocab(country_slug, "en_vivo")
+    # Cola corta: añadir "en directo" alargaba el título a 69 caracteres y
+    # Google corta cerca de 60. "Canales y horario" se dice en la descripción;
+    # lo que no puede recortarse es "Dónde ver <equipo> en directo en España".
+    seo_title = f"Dónde ver {_tshort} {_vivo} en {cname}: canales | DondeVer"
+    seo_h1 = f"Dónde ver {team_name} {_vivo} en {cname} {country['flag']}"
+    seo_desc = (f"¿Dónde ver a {team_name} {_vivo} en {cname} hoy? Canales de TV, cable y streaming "
                 + (f"({first_ch}) " if _ch_ok else "")
-                + f"con horario de {cname}. {team_league} en vivo.")
+                + f"con horario de {cname}. {team_league} {_vivo}.")
     today_g = next((g for g in games if (g.get("status") or {}).get("state") in ("pre", "in")), None)
 
     # ── Próximo partido (cuando hoy no juega): mismo dato que /equipo/{slug} ──
