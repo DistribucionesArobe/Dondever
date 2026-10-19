@@ -1790,6 +1790,27 @@ TEAM_ALIASES = {
     "tiburones guaira": "tiburones de la guaira",
     "caribes": "caribes de anzoategui",
     "bravos margarita": "bravos de margarita",
+    # Nombres cortos por región, que es como se nombra a estos equipos en
+    # Venezuela: "el Zulia", "la Guaira", "Lara", "Aragua". Faltaban todos, así
+    # que el buscador del sitio no encontraba a seis de los ocho equipos si no
+    # escribías el nombre completo.
+    #
+    # Se añaden el 19/10/2026 porque la LVBP fue el 22% del tráfico del día
+    # récord (18/10): Magallanes y su partido contra Cardenales encabezaron las
+    # páginas más vistas del sitio.
+    #
+    # Sólo los que NO chocan con otro equipo. Quedan fuera a propósito:
+    #   "bravos"     → también Bravos de Atlanta (MLB)
+    #   "leones"     → también Escogido (LIDOM) y Yucatán (LMB)
+    #   "tigres"     → ya apunta a Tigres UANL (Liga MX)
+    #   "cardenales" → ya apunta a los Cardinals de San Luis (MLB)
+    "zulia": "aguilas del zulia",
+    "la guaira": "tiburones de la guaira",
+    "guaira": "tiburones de la guaira",
+    "lara": "cardenales de lara",
+    "aragua": "tigres de aragua",
+    "margarita": "bravos de margarita",
+    "anzoategui": "caribes de anzoategui",
     "lvbp": "lvbp",
     "beisbol venezolano": "lvbp",
     "beisbol venezuela": "lvbp",

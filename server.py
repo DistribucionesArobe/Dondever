@@ -3286,8 +3286,29 @@ LEAGUE_SEO_EXTRA = {
         "links": [],
     },
     "lvbp": {
-        "title": "Donde ver LVBP hoy en vivo: beisbol venezolano | DondeVer",
-        "meta_desc": "LVBP en vivo hoy: horarios y canales del beisbol venezolano. Magallanes, Caracas, Aragua, Lara y Zulia. Gratis por Meridiano, Televen, Venevision y TVES.",
+        # Título reescrito el 19/10/2026 con las consultas reales de Search
+        # Console (últimos 30 días, 352 impresiones con "lvbp"):
+        #
+        #   lvbp en vivo                 11 clics ·  61 impr · 18,0 % · pos 16,3
+        #   transmisión de la lvbp hoy    1       ·  52      ·  1,9 % · pos  3,5
+        #   ver lvbp en vivo gratis       3       ·  32      ·  9,4 % · pos 17,2
+        #   lvbp en vivo hoy              4       ·  20      · 20,0 % · pos 14,2
+        #   lvbp en vivo gratis           1       ·  10      · 10,0 % · pos 27,6
+        #
+        # Dos lecturas. La primera: cuando aparecemos, nos pulsan — 18% y 20%
+        # de CTR es altísimo. La segunda es el problema: "transmisión de la
+        # lvbp hoy" está en posición 3,5 con 1,9% de CTR. Estar tercero y que
+        # casi nadie entre significa que el título no dice lo que buscaron, y
+        # "transmisión" no aparecía ni en el título ni en la descripción.
+        #
+        # "gratis" tampoco estaba en el título, y es nuestro mejor argumento:
+        # la LVBP se ve por señal abierta en Venezuela. Es cierto y nadie más
+        # lo pone delante.
+        #
+        # El nuevo título cubre las cinco formas en que se busca esto: lvbp,
+        # en vivo, hoy, dónde ver, transmisión y gratis.
+        "title": "LVBP en vivo hoy: dónde ver la transmisión gratis | DondeVer",
+        "meta_desc": "LVBP hoy en vivo y gratis: transmisión por Meridiano, Televen, Venevisión y TVES, más horarios y canales por país. Magallanes, Caracas, Lara, Zulia y Aragua.",
         "h2": "Donde ver la LVBP (beisbol venezolano) en vivo",
         "paragraphs": [
             "La LVBP (Liga Venezolana de Beisbol Profesional) es la liga de beisbol invernal de Venezuela, una de las mas importantes del Caribe. Cuenta con 8 equipos: Navegantes del Magallanes, Leones del Caracas, Tigres de Aragua, Cardenales de Lara, Aguilas del Zulia, Tiburones de La Guaira, Caribes de Anzoategui y Bravos de Margarita.",
@@ -8238,12 +8259,39 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         except (ValueError, TypeError):
             pass
         if _dias is not None and _dias > 21:
+            # "Programación de <equipo>", literal, al frente.
+            #
+            # Es la forma exacta en que se busca esto, y la rama que atiende a
+            # los equipos fuera de temporada es justo donde cae. Medido en
+            # Search Console el 17/10/2026, 90 días, con el título anterior
+            # —que decía "calendario" pero nunca "programación"—:
+            #
+            #   programación de tampa bay rays       2 clics · 31.603 impr · 0 %
+            #   programación de san diego padres     3       · 19.987     · 0 %
+            #   programación de atlanta braves       1       · 18.888     · 0 %
+            #   programación de boston red sox       3       · 18.176     · 0 %
+            #   programación de philadelphia phillies 2      · 16.444     · 0 %
+            #   programación de arizona diamondbacks 3       · 15.032     · 0 %
+            #   programación de texas rangers        2       · 12.425     · 0 %
+            #
+            # Unas 140.000 impresiones, 17 clics, todas en posición 8,6-9,9.
+            # Estar en la página 1 y no recibir un solo clic no es un problema
+            # de posición: es que el título no contiene lo que se buscó, y
+            # Google resalta en negritas la frase exacta cuando sí está.
+            #
+            # La comparación interna lo confirma: "donde ver yankees hoy" va a
+            # 6,4 % en posición 6,8, con un título que empieza por "Dónde ver".
+            # El patrón que funciona es poner la consulta al principio.
             return {
-                "title": f"Dónde ver {team_name}: calendario, canales y próximos partidos",
-                "h1": f"Dónde ver a {full_name}: calendario y canales",
-                "desc": (f"{team_name} no tiene partido próximo: su calendario se reanuda en unas semanas. "
-                         f"Aquí están la fecha del siguiente juego, los canales de TV y streaming{lg_sfx} "
-                         f"por país, y los últimos resultados."),
+                # Cola corta a propósito: con "calendario, horarios y canales"
+                # los nombres largos (Philadelphia Phillies, Arizona
+                # Diamondbacks) pasaban de 68 caracteres y Google los recorta.
+                # Lo que no puede recortarse es "Programación de <equipo>".
+                "title": f"Programación de {full_name}: calendario y canales",
+                "h1": f"Programación de {full_name}: calendario y dónde verlo",
+                "desc": (f"Programación completa de {team_name}: fecha y hora del próximo juego, "
+                         f"calendario de la temporada{lg_sfx}, canales de TV y streaming por país, "
+                         f"y los últimos resultados. Su calendario se reanuda en unas semanas."),
             }
         is_home = _es_nuestro(u.get("home", ""))
         opp = _short_team_name(u.get("away", "") if is_home else u.get("home", ""), lg)
