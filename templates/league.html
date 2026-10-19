@@ -15,8 +15,21 @@
     <title>NFL hoy en vivo: D&oacute;nde ver, horarios, canales y resultados | DondeVer.app</title>
     <meta name="description" content="NFL en vivo hoy: partidos, horarios y dónde verlos en México. Canales confirmados (Canal 5, FOX, ESPN, DAZN), resultados, standings y momios actualizados.">
     {% else %}
-    <title>{{ league_name }} en vivo hoy — Partidos, horarios y resultados | DondeVer.app</title>
-    <meta name="description" content="{{ league_name }} en vivo hoy: partidos, horarios, resultados y tabla de posiciones. Consulta que juegos hay ahora y donde verlos en {{ mercados }}.">
+    {#
+      Título por defecto de las ligas que no tienen texto propio en
+      LEAGUE_SEO_EXTRA. Decía "Partidos, horarios y resultados"; ahora dice
+      "transmisión y canales".
+
+      Medido en Search Console el 19/10/2026, 90 días, filtro "transmisi":
+      1.740 impresiones y 35 clics en todo el sitio. Las consultas caen en
+      posiciones 5-8 —primera página— con CTR de 1,4 % a 4,8 %, cuando la
+      misma pregunta con "dónde ver" rinde 6,4 %. La palabra no estaba en
+      ningún título nuestro.
+
+      "en vivo hoy" se queda al frente, que es la parte que ya funciona.
+    #}
+    <title>{{ league_name }} en vivo hoy: transmisión y canales | DondeVer.app</title>
+    <meta name="description" content="{{ league_name }} en vivo hoy: canal de transmisión, horarios, resultados y tabla de posiciones. Consulta que juegos hay ahora y donde verlos en {{ mercados }}.">
     {% endif %}
     <!-- Open Graph -->
     <meta property="og:title" content="{{ event_seo.title if event_seo else (league_seo_extra.title if league_seo_extra and league_seo_extra.title else league_name + ' en vivo hoy — Partidos y resultados | DondeVer') }}">

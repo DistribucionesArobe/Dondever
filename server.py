@@ -3364,8 +3364,21 @@ LEAGUE_SEO_EXTRA = {
     # inventa: League Pass está verificado contra support.wnba.com y los
     # blackouts de EE.UU. y Canadá no afectan a México ni a LATAM.
     "wnba": {
-        "title": "Donde ver la WNBA hoy en vivo — horarios y canales | DondeVer",
-        "meta_desc": "Donde ver la WNBA en vivo hoy: horarios en hora de Mexico, canales y resultados. Indiana Fever, Las Vegas Aces, New York Liberty, Atlanta Dream y los 15 equipos.",
+        # "online" y "gratis", que es como se busca la WNBA. Medido el
+        # 19/10/2026, 90 días, filtro "online" — 816 impresiones en total y la
+        # WNBA se lleva la mayoría:
+        #
+        #   wnba en vivo online           203 impr · 3,9 %  · pos  8,1
+        #   ver wnba en vivo online gratis 42      · 4,8 %  · pos  9,3
+        #   wnba ver online                39      · 12,8 % · pos  9,9
+        #   wnba en vivo gratis online     30      · 10,0 % · pos 10,4
+        #   ver wnba online                18      · 33,3 % · pos 11,7
+        #
+        # Las dos palabras van casi siempre juntas ("online gratis"), y
+        # "gratis" es cierto aquí: la WNBA tiene juegos libres en LATAM. Ya
+        # rinde 8,3 % en "wnba en vivo gratis"; lo que faltaba era "online".
+        "title": "Ver WNBA en vivo online y gratis hoy: canales | DondeVer",
+        "meta_desc": "Ver la WNBA en vivo online y gratis hoy: horarios en hora de Mexico, canales y resultados. Indiana Fever, Las Vegas Aces, New York Liberty, Atlanta Dream y los 15 equipos.",
         "h2": "Donde ver la WNBA en vivo desde Mexico y Latinoamerica",
         "paragraphs": [
             "La WNBA es la liga profesional de basquetbol femenino de Estados Unidos. En 2026 son 15 equipos, dos de ellos de estreno: Portland Fire y Toronto Tempo, el primero fuera de Estados Unidos. La temporada regular va de mayo a septiembre y los playoffs terminan en octubre.",
