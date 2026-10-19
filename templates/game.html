@@ -505,6 +505,10 @@
                     data-game-id="{{ game.id }}" data-kickoff="{{ game.date }}"
                     data-title="{{ left_team.name }} vs {{ right_team.name }}" data-league="{{ game.league_name }}"
                     data-channels="{% if game.broadcasts %}{{ game.broadcasts[0].channel }}{% endif %}"
+                    {# Los dos equipos, para poder ofrecer seguirlos después de
+                       que la persona ya dijo que sí a este partido. #}
+                    data-team-a="{{ slug_equipo(left_team.name) }}" data-team-a-name="{{ left_team.name }}"
+                    data-team-b="{{ slug_equipo(right_team.name) }}" data-team-b-name="{{ right_team.name }}"
                     data-label-off="&#128276; Avisarme de este partido"
                     data-label-on="&#10003; Siguiendo este partido &middot; toca para quitar">&#128276; Avisarme de este partido</button>
             <div id="followStatus" class="gd-follow-status"></div>

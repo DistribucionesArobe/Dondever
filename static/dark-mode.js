@@ -169,8 +169,80 @@
     btn.innerHTML = btn.getAttribute('data-label-on') || '&#128276; <span class="notify-label">Alertas</span>';
     // Push real (OneSignal): inicio, anotaciones y final aunque la pestaña esté cerrada
     notifyStatus(btn, 'pending');
-    if (window.dvPush) window.dvPush.enable({ add_games: [gid] }, function(code, extra) { notifyStatus(btn, code, extra); });
+    if (window.dvPush) window.dvPush.enable({ add_games: [gid] }, function(code, extra) {
+      notifyStatus(btn, code, extra);
+      if (code === 'ok') ofrecerSeguirEquipo(btn);
+    });
     else notifyStatus(btn, 'noid', 'SDK no cargado');
+  }
+
+  // ── Del partido suelto al equipo ────────────────────────────────────
+  //
+  // Medido el 19/10/2026 contra /api/internal/push-stats, con 14.000
+  // usuarios nuevos en 30 días:
+  //
+  //   97 suscripciones push en total   (0,7 % de la gente)
+  //   40 con al menos un equipo
+  //   28 siguiendo sólo un partido suelto
+  //
+  // Esas 28 son retención de un solo uso: cuando el partido termina, esa
+  // suscripción no tiene motivo de volver a sonar nunca. Seguir al EQUIPO
+  // sí lo tiene, cada jornada.
+  //
+  // Por eso la oferta va DESPUÉS de que la persona ya dijo que sí a este
+  // partido, no antes: ya dio permiso de notificaciones, ya demostró
+  // interés, y pedirle una cosa más no le cuesta otro permiso del
+  // navegador. Al que no sigue el partido no se le pregunta nada.
+  //
+  // Se muestra una sola vez por partido (no insiste si lo ignoras) y
+  // desaparece sola al elegir.
+  function ofrecerSeguirEquipo(btn) {
+    var cont = btn.parentNode;
+    if (!cont || document.getElementById('dvOfrecerEquipo')) return;
+
+    var equipos = [
+      { slug: btn.getAttribute('data-team-a'), nombre: btn.getAttribute('data-team-a-name') },
+      { slug: btn.getAttribute('data-team-b'), nombre: btn.getAttribute('data-team-b-name') }
+    ].filter(function(e) { return e.slug && e.nombre; });
+    if (!equipos.length) return;
+
+    // Si ya sigue a los dos, no hay nada que ofrecer.
+    var yaSigo = myTeams();
+    equipos = equipos.filter(function(e) { return yaSigo.indexOf(e.slug) === -1; });
+    if (!equipos.length) return;
+
+    var caja = document.createElement('div');
+    caja.id = 'dvOfrecerEquipo';
+    caja.setAttribute('role', 'status');
+    caja.style.cssText = 'margin-top:.6rem;padding:.7rem .8rem;border-radius:12px;' +
+      'background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.35);' +
+      'font-size:.85rem;line-height:1.5;';
+
+    var botones = equipos.map(function(e) {
+      return '<button type="button" data-slug="' + e.slug + '" ' +
+             'style="margin:.35rem .35rem 0 0;padding:.4rem .8rem;border-radius:18px;' +
+             'border:1.5px solid var(--accent,#10b981);background:var(--accent,#10b981);' +
+             'color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;">' +
+             '★ ' + e.nombre + '</button>';
+    }).join('');
+
+    caja.innerHTML = '<div>¿Te avisamos también de <b>todos</b> sus partidos?</div>' +
+                     '<div>' + botones + '</div>';
+    cont.appendChild(caja);
+
+    caja.addEventListener('click', function(ev) {
+      var b = ev.target.closest('button[data-slug]');
+      if (!b) return;
+      var slug = b.getAttribute('data-slug');
+      var mt = myTeams();
+      if (mt.indexOf(slug) === -1) mt.push(slug);
+      try { localStorage.setItem('dv_my_teams', JSON.stringify(mt)); } catch (e) {}
+      // Resincroniza la suscripción con el equipo añadido.
+      if (window.dvPush) window.dvPush.sync(true);
+      caja.innerHTML = '<div>✓ Listo. Te avisamos cuando juegue ' +
+                       b.textContent.replace('★ ', '') + '.</div>';
+      setTimeout(function() { if (caja.parentNode) caja.remove(); }, 4000);
+    });
   }
 
   // ── Push por equipo / partido (OneSignal v16 + /api/push/subscribe) ──
