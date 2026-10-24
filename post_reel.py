@@ -91,7 +91,7 @@ async def main(dry_run=False):
         # Recheck match time after rendering and upload.
         if not eligible([game],datetime.now(TZ_MX)):
             raise RuntimeError('Game starts too soon; publication stopped')
-        container = checked(client.post(f'{GRAPH}/{user}/media',data={'media_type':'REELS','video_url':hosted['video_url'],'caption':caption,'share_to_feed':'true','access_token':token}))['id']
+        container = checked(client.post(f'{GRAPH}/{user}/media',data={'media_type':'REELS','video_url':hosted['video_url'],'caption':caption,'share_to_feed':'true','thumb_offset':1000,'access_token':token}))['id']
         checked(client.post(endpoint+'/checkpoint',headers=private,json={'status':'container','container':container}))
         for _ in range(60):
             status = checked(client.get(f'{GRAPH}/{container}',params={'fields':'status_code','access_token':token}))['status_code']

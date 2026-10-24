@@ -175,7 +175,9 @@ def render(metadata,output):
                 x=int((30+18*math.sin(t*.2))*scale); y=int((54-32*t/DURATION)*scale)
                 frame=bg.crop((x,y,x+width,y+height))
                 # Text enters in 0.35 seconds, synchronized to major musical beats.
-                ease=1-(1-min(1,elapsed/.35))**3
+                # The opener must be visible from frame zero: Instagram may use it
+                # as a fallback thumbnail even when a later cover is requested.
+                ease=1.0 if index == 0 else 1-(1-min(1,elapsed/.35))**3
                 shifted=Image.new('RGBA',(width,height),(0,0,0,0))
                 shifted.alpha_composite(overlay,(0,int((1-ease)*85*scale)))
                 if ease<1:

@@ -20,3 +20,7 @@ Existing cron: `python post_daily_instagram.py`, schedule `0 13,18 * * *`: carou
 ## Approved Canva direction
 
 The opener uses the exact approved Canva PNG (design DAHXo0VXJ2s). Live data scenes use navy, off-white, lime angular accents and matching condensed type. Canva is the editable visual master; cron renders automatically from the exported local asset and does not need a live Canva login. To change the opener, export the approved Canva page as 1080x1920 PNG and replace static/reels/canva-approved-cover.png.
+
+## Cover visibility fix
+
+The opening match card is fully visible from frame zero. Publishing explicitly chooses thumb_offset=1000 ms, a fully rendered opening frame, to prevent black/empty grid covers. Existing published covers are not modified by this API setting.
