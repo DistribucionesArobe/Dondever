@@ -367,8 +367,12 @@
             <strong>Fundado:</strong> {{ sportsdb_team_info.formed_year }}
         </p>
         {% endif %}
-        {% if sportsdb_team_info.get('description') %}
-        <p style="margin:0 0 0.4rem;font-size:0.82rem;color:#4b5563;line-height:1.45;">{{ sportsdb_team_info.description[:300] }}{% if sportsdb_team_info.description|length > 300 %}…{% endif %}</p>
+        {# El resumen va en español. TheSportsDB sólo tiene descripción en
+           inglés (20 de 20 equipos comprobados el 24/10/2026), así que se usa
+           una frase armada con los datos estructurados. #}
+        {% set _resumen = sportsdb_team_info.get('description') or sportsdb_team_info.get('resumen_es') %}
+        {% if _resumen %}
+        <p style="margin:0 0 0.4rem;font-size:0.82rem;color:#4b5563;line-height:1.45;">{{ _resumen[:300] }}{% if _resumen|length > 300 %}…{% endif %}</p>
         {% endif %}
         {% if sportsdb_team_info.get('website') or sportsdb_team_info.get('facebook') or sportsdb_team_info.get('twitter') or sportsdb_team_info.get('instagram') %}
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.3rem;">
@@ -1251,9 +1255,10 @@
                 <h3>Próximas peleas de {{ team_name }}</h3>
                 <p>{{ team_name }} es la organización de artes marciales mixtas más importante del mundo. Las carteleras de la UFC incluyen eventos numerados (PPV), Fight Night y eventos especiales que se transmiten en México, USA y Latinoamérica. Aquí te mostramos dónde ver cada evento actualizado al día de hoy.</p>
                 {% else %}
-                {% if sportsdb_team_info and sportsdb_team_info.get('description') %}
+                {% set _resumen2 = sportsdb_team_info.get('description') or sportsdb_team_info.get('resumen_es') if sportsdb_team_info else '' %}
+                {% if _resumen2 %}
                 <h3>{{ team_name }} en la {{ team_league }} — Temporada actual</h3>
-                <p>{{ sportsdb_team_info.description }}</p>
+                <p>{{ _resumen2 }}</p>
                 {% if sportsdb_team_info.get('stadium') %}
                 <p><strong>Estadio:</strong> {{ sportsdb_team_info.stadium }}{% if sportsdb_team_info.get('stadium_capacity') %} (capacidad: {{ sportsdb_team_info.stadium_capacity }}){% endif %}{% if sportsdb_team_info.get('location') %} · <strong>Ciudad:</strong> {{ sportsdb_team_info.location }}{% endif %}{% if sportsdb_team_info.get('formed_year') %} · <strong>Fundado:</strong> {{ sportsdb_team_info.formed_year }}{% endif %}</p>
                 {% endif %}

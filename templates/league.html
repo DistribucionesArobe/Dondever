@@ -28,8 +28,13 @@
 
       "en vivo hoy" se queda al frente, que es la parte que ya funciona.
     #}
+    {%- if liga_inactiva %}
+    <title>{{ league_name }}: calendario, resultados y dónde verla | DondeVer.app</title>
+    <meta name="description" content="{{ league_name }} no se juega por ahora. Consulta el calendario, los últimos resultados y en qué canales se transmite en {{ mercados }} cuando vuelva.">
+    {%- else %}
     <title>{{ league_name }} en vivo hoy: transmisión y canales | DondeVer.app</title>
     <meta name="description" content="{{ league_name }} en vivo hoy: canal de transmisión, horarios, resultados y tabla de posiciones. Consulta que juegos hay ahora y donde verlos en {{ mercados }}.">
+    {%- endif %}
     {% endif %}
     <!-- Open Graph -->
     <meta property="og:title" content="{{ event_seo.title if event_seo else (league_seo_extra.title if league_seo_extra and league_seo_extra.title else league_name + ' en vivo hoy — Partidos y resultados | DondeVer') }}">
@@ -356,8 +361,16 @@
     <h1>{{ emoji }} {{ event_seo.h1 }}</h1>
     <p>{{ event_seo.desc }}</p>
     {% else %}
+    {%- if liga_inactiva %}
+    {# La competencia no está activa: ni partidos hoy, ni en 14 días, ni
+       resultados en 10. Prometer "en vivo hoy" aquí es falso, y era lo que
+       hacía /liga/copa-america en producción con un torneo de 2024. #}
+    <h1>{{ emoji }} {{ league_name }}: calendario, resultados y dónde verla</h1>
+    <p>{{ league_name }} no tiene partidos programados por ahora. Aquí te dejamos cómo y dónde se transmite cuando vuelve &mdash; y mientras tanto, <a href="/" style="color:#10b981;font-weight:600;">mira qué se juega hoy</a>.</p>
+    {%- else %}
     <h1>{{ emoji }} {{ league_name }} en vivo hoy — Partidos y resultados</h1>
     <p>Todos los juegos de {{ league_name }} con horarios, canales de TV y opciones de streaming para {{ mercados }}.</p>
+    {%- endif %}
     {% endif %}
 </div>
 
@@ -400,7 +413,9 @@
 </div>
 
 <!-- Affiliate Banner (geo-targeted) -->
-{% if affiliates.jubilee %}
+{# Sin competencia activa no hay nada que apostar: ofrecerlo es ruido
+   y además delata que la página no sabe que el torneo terminó. #}
+{% if affiliates.jubilee and not liga_inactiva %}
 <div class="promo-banner" data-geo="mx">
     <div class="promo-banner-inner">
         <div class="promo-left">
@@ -439,7 +454,10 @@
         <div class="stat-card">
             <div class="stat-card-icon">🏆</div>
             <div>
-                <div class="stat-card-label">L&iacute;der</div>
+                {# "Líder" en presente es mentira si el torneo ya acabó:
+                   /liga/copa-america mostraba "Líder Uruguay · 9 pts" de la
+                   edición de 2024 como si fuera de ahora. #}
+                <div class="stat-card-label">{% if liga_inactiva %}Campe&oacute;n / l&iacute;der final{% else %}L&iacute;der{% endif %}</div>
                 <div class="stat-card-value">{{ league_stats.leader }}</div>
                 <div class="stat-card-sub">{{ league_stats.leader_record }}{% if league_stats.leader_pts %} · {{ league_stats.leader_pts }} pts{% endif %}</div>
             </div>
@@ -664,6 +682,11 @@
 {% if standings %}
 <div class="standings-section">
     <h2>{{ emoji }} Tabla de posiciones — {{ league_name }}</h2>
+    {%- if liga_inactiva %}
+    {# Se dice de dónde viene la tabla. Mostrarla sin marca, como hacía
+       /liga/copa-america con datos de 2024, hace que se lea como actual. #}
+    <p style="margin:-0.3rem 0 0.7rem;font-size:0.78rem;color:#6b7280;">Clasificaci&oacute;n de la &uacute;ltima edici&oacute;n disputada. {{ league_name }} no tiene partidos programados por ahora.</p>
+    {%- endif %}
     <table class="standings-table" id="standings-table">
         <thead>
             <tr>

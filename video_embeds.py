@@ -234,14 +234,26 @@ def _cargar_canales() -> list[dict]:
     return canales
 
 
-def _entradas_feed(channel_id: str) -> list[dict]:
-    """Últimos videos del canal. Lista vacía si el feed falla: nunca revienta."""
+async def _entradas_feed(channel_id: str) -> list[dict]:
+    """Últimos videos del canal. Lista vacía si el feed falla: nunca revienta.
+
+    ASÍNCRONA A PROPÓSITO. La primera versión usaba httpx.get() síncrono, y
+    las dos llamadas (ficha de partido y página de liga) viven dentro de rutas
+    `async def`. Un get bloqueante ahí no frena sólo a esa petición: frena el
+    bucle de eventos entero, o sea a todos los visitantes a la vez. Con el
+    timeout de 10 s que tenía, un YouTube lento habría dejado el sitio clavado
+    diez segundos por cada fallo de caché.
+
+    El timeout es corto (4 s) por lo mismo: el video es un extra, y ninguna
+    página debe esperar por él más de lo que tarda en pintarse.
+    """
     if channel_id in _feed_cache:
         return _feed_cache[channel_id]
     try:
-        r = httpx.get(_FEED.format(cid=channel_id), timeout=10)
-        r.raise_for_status()
-        xml = r.text
+        async with httpx.AsyncClient(timeout=4) as client:
+            r = await client.get(_FEED.format(cid=channel_id))
+            r.raise_for_status()
+            xml = r.text
     except Exception as e:
         logger.warning("feed de %s falló: %s", channel_id, e)
         _feed_cache[channel_id] = []
@@ -264,7 +276,7 @@ def _entradas_feed(channel_id: str) -> list[dict]:
     return entradas
 
 
-def _video_auto(game: dict, liga: str) -> dict | None:
+async def _video_auto(game: dict, liga: str) -> dict | None:
     """Busca en los canales oficiales de esa liga un video de ESTE partido."""
     canales = [c for c in _cargar_canales() if c["liga"] == liga]
     if not canales:
@@ -297,7 +309,7 @@ def _video_auto(game: dict, liga: str) -> dict | None:
 
     candidatos = []
     for c in canales:
-        for e in _entradas_feed(c["channel_id"]):
+        for e in await _entradas_feed(c["channel_id"]):
             t = _norm(e["titulo"])
             if not (_equipo_en_titulo(casa, t) and _equipo_en_titulo(fuera, t)):
                 continue
@@ -338,7 +350,7 @@ def _video_auto(game: dict, liga: str) -> dict | None:
     }
 
 
-def video_de_partido(game: dict) -> dict | None:
+async def video_de_partido(game: dict) -> dict | None:
     """Video incrustable para este partido, o None.
 
     Orden: lo curado a mano gana siempre sobre lo automático.
@@ -359,13 +371,13 @@ def video_de_partido(game: dict) -> dict | None:
             return v
 
     try:
-        return _video_auto(game, liga)
+        return await _video_auto(game, liga)
     except Exception as e:   # el video es un extra: nunca debe tumbar la ficha
         logger.warning("emparejado automático falló (%s): %s", pid, e)
         return None
 
 
-def video_de_liga(league_slug: str, hoy: datetime | None = None) -> dict | None:
+async def video_de_liga(league_slug: str, hoy: datetime | None = None) -> dict | None:
     """Video del día para una página de liga, o None."""
     if not habilitado() or not league_slug:
         return None

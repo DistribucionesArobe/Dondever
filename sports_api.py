@@ -959,6 +959,11 @@ SPORTSDB_LEAGUE_MAP = {
     "lnbp": "5119",
     # Ligas caribeñas (TheSportsDB-only)
     "lvbp": "5112",
+    # Faltaba y se notó en producción: la liga estaba en LEAGUES pero no aquí,
+    # así que fetch_sportsdb_next_events no encontraba su slug y dejaba los
+    # próximos partidos sin canales. /liga/futve decía que IVC la transmite y
+    # la ficha de equipo decía "Canales por confirmar": se contradecían.
+    "futve": "4513",
 }
 
 # Leagues that use TheSportsDB as PRIMARY source (no ESPN data)
@@ -2511,6 +2516,63 @@ def _get_sportsdb_season(league_id: str) -> str:
         return str(now.year)
 
 
+def _resumen_es_equipo(t: dict) -> str:
+    """Una frase en español con lo que TheSportsDB sí da bien.
+
+    Sustituye al párrafo en inglés. Sólo usa datos estructurados —liga, año
+    de fundación, estadio y ciudad—, así que no hay nada que traducir ni que
+    pueda estar mal redactado. Si no hay suficientes datos, devuelve cadena
+    vacía y la plantilla no pinta nada: mejor eso que un texto de relleno.
+    """
+    nombre = (t.get("strTeam") or "").strip()
+    if not nombre:
+        return ""
+    anio = (t.get("intFormedYear") or "").strip()
+    estadio = (t.get("strStadium") or "").strip()
+    ciudad = (t.get("strLocation") or "").strip()
+
+    # NO se usa strLeague: TheSportsDB lo da en inglés ("Venezuelan
+    # Professional Baseball League", "Venezuela Primera Division") y meterlo
+    # aquí sería repetir en pequeño el defecto que esto viene a arreglar. La
+    # liga ya aparece bajo el nombre del equipo, con nuestro nombre en español.
+    partes = []
+    if anio and anio.isdigit() and 1800 < int(anio) <= datetime.now().year:
+        partes.append(f"{nombre} fue fundado en {anio}.")
+    if estadio:
+        donde = f"Juega de local en {estadio}"
+        if ciudad:
+            donde += f", en {ciudad}"
+        partes.append(donde + ".")
+    return " ".join(partes)
+
+
+# Palabras que no distinguen a un club de fútbol. El nombre corto de antes
+# —"la última palabra"— producía esto en la tabla de la FUTVE, en producción:
+#
+#   Portuguesa FC  → "FC"        Zamora FC            → "FC"   (¡la misma!)
+#   Universidad Central → "Central"   Academia Puerto Cabello → "Cabello"
+#
+# Dos equipos distintos con la misma etiqueta en una tabla de posiciones.
+_GENERICAS_CLUB = {"fc", "cf", "sc", "ac", "cd", "ud", "sd", "club",
+                   "deportivo", "academia", "universidad", "atletico",
+                   "atlético", "asociacion", "asociación"}
+
+
+def _corto_futbol(nombre: str) -> str:
+    """Nombre corto de un club quitando sólo las palabras genéricas."""
+    partes = [p for p in (nombre or "").split()
+              if _sin_acentos_min(p).strip(".") not in _GENERICAS_CLUB]
+    corto = " ".join(partes).strip()
+    # Si al quitar lo genérico no queda nada útil, vale más el nombre entero
+    # que una etiqueta vacía o de una letra.
+    return corto if len(corto) >= 3 else (nombre or "")
+
+
+def _sin_acentos_min(s: str) -> str:
+    return "".join(c for c in _ud.normalize("NFD", (s or "").lower())
+                   if _ud.category(c) != "Mn")
+
+
 async def compute_sportsdb_standings(league_id: str) -> list[dict]:
     # OJO: estas cuatro funciones usaban SPORTSDB_API_KEY, que NO EXISTE — la
     # constante se llama SPORTSDB_KEY. Y el f-string va ANTES del try, asi que
@@ -2538,6 +2600,24 @@ async def compute_sportsdb_standings(league_id: str) -> list[dict]:
             logger.warning(f"SportsDB season events error for {league_id}/{season}: {e}")
             return []
 
+    # ── ¿Es fútbol? ────────────────────────────────────────────────────────
+    # Esta función nació cuando todas las ligas de TheSportsDB eran béisbol o
+    # básquet, donde el empate casi no existe. Con la Liga FUTVE entró la
+    # primera de fútbol y la tabla salió rota en producción el 24/10/2026:
+    #
+    #   #  EQUIPO      PJ  G   E  P  GF GC DG PTS
+    #   1  Táchira     20  15     5
+    #   2  Metropolit. 20  15     5
+    #
+    # Empates, goles, diferencia y PUNTOS vacíos, y G+P siempre igual a PJ
+    # —o sea que los empates se contaban como derrotas—. En fútbol la tabla
+    # ES los puntos: así no dice nada y además miente.
+    _es_futbol = False
+    for _slug, _t in LEAGUES.items():
+        if _t[1] == f"sportsdb:{league_id}":
+            _es_futbol = _t[0] == "soccer"
+            break
+
     events = data.get("events") or []
     teams = {}  # team_name → {w, l, team_id, badge}
 
@@ -2557,9 +2637,14 @@ async def compute_sportsdb_standings(league_id: str) -> list[dict]:
         away = ev.get("strAwayTeam", "")
 
         if home not in teams:
-            teams[home] = {"w": 0, "l": 0, "team_id": ev.get("idHomeTeam", ""), "badge": ev.get("strHomeTeamBadge", "")}
+            teams[home] = {"w": 0, "l": 0, "d": 0, "gf": 0, "ga": 0,
+                           "team_id": ev.get("idHomeTeam", ""), "badge": ev.get("strHomeTeamBadge", "")}
         if away not in teams:
-            teams[away] = {"w": 0, "l": 0, "team_id": ev.get("idAwayTeam", ""), "badge": ev.get("strAwayTeamBadge", "")}
+            teams[away] = {"w": 0, "l": 0, "d": 0, "gf": 0, "ga": 0,
+                           "team_id": ev.get("idAwayTeam", ""), "badge": ev.get("strAwayTeamBadge", "")}
+
+        teams[home]["gf"] += hs; teams[home]["ga"] += aws
+        teams[away]["gf"] += aws; teams[away]["ga"] += hs
 
         if hs > aws:
             teams[home]["w"] += 1
@@ -2567,33 +2652,56 @@ async def compute_sportsdb_standings(league_id: str) -> list[dict]:
         elif aws > hs:
             teams[away]["w"] += 1
             teams[home]["l"] += 1
-        # ties: neither gets W or L (rare in baseball/basketball)
+        else:
+            # El empate es un resultado de pleno derecho en fútbol. Antes no
+            # se contaba en ningún lado y el equipo perdía esos partidos de
+            # su propio total.
+            teams[home]["d"] += 1
+            teams[away]["d"] += 1
 
     # Sort by win pct descending
     entries = []
-    sorted_teams = sorted(teams.items(), key=lambda x: x[1]["w"] / max(x[1]["w"] + x[1]["l"], 1), reverse=True)
+    if _es_futbol:
+        # Puntos: 3 por victoria, 1 por empate. Se desempata por diferencia de
+        # goles y luego por goles a favor, que es el criterio de la FUTVE y de
+        # casi todas las ligas de fútbol.
+        sorted_teams = sorted(
+            teams.items(),
+            key=lambda x: (3 * x[1]["w"] + x[1]["d"],
+                           x[1]["gf"] - x[1]["ga"],
+                           x[1]["gf"]),
+            reverse=True)
+    else:
+        sorted_teams = sorted(
+            teams.items(),
+            key=lambda x: x[1]["w"] / max(x[1]["w"] + x[1]["l"], 1), reverse=True)
 
     for rank, (name, stats) in enumerate(sorted_teams, 1):
-        total = stats["w"] + stats["l"]
-        pct = f"{stats['w'] / total:.3f}" if total > 0 else ".000"
+        total = stats["w"] + stats["l"] + (stats["d"] if _es_futbol else 0)
+        _den = stats["w"] + stats["l"]
+        pct = f"{stats['w'] / _den:.3f}" if _den > 0 else ".000"
         entries.append({
             "team_id": stats["team_id"],
             "team_name": name,
-            "team_short": name.split(" de ")[0] if " de " in name else name.split()[-1],
+            "team_short": _corto_futbol(name) if _es_futbol else (
+                name.split(" de ")[0] if " de " in name else name.split()[-1]),
             "team_logo": stats["badge"],
             "group": "",
             "rank": str(rank),
             "wins": str(stats["w"]),
             "losses": str(stats["l"]),
-            "ties": "",
-            "points": "",
+            "ties": str(stats["d"]) if _es_futbol else "",
+            "points": str(3 * stats["w"] + stats["d"]) if _es_futbol else "",
             "games_played": str(total),
-            "goals_for": "",
-            "goals_against": "",
-            "goal_diff": "",
+            "goals_for": str(stats["gf"]) if _es_futbol else "",
+            "goals_against": str(stats["ga"]) if _es_futbol else "",
+            "goal_diff": (f"+{stats['gf'] - stats['ga']}"
+                          if stats["gf"] - stats["ga"] > 0
+                          else str(stats["gf"] - stats["ga"])) if _es_futbol else "",
             "win_pct": pct,
             "streak": "",
-            "record": f"{stats['w']}-{stats['l']}",
+            "record": (f"{stats['w']}-{stats['d']}-{stats['l']}" if _es_futbol
+                       else f"{stats['w']}-{stats['l']}"),
             "all_stats": {"wins": str(stats["w"]), "losses": str(stats["l"]), "winPercent": pct},
         })
 
@@ -2630,7 +2738,18 @@ async def fetch_sportsdb_team_info(team_id: str) -> dict:
         "location": t.get("strLocation", ""),
         "stadium_capacity": t.get("intStadiumCapacity", ""),
         "formed_year": t.get("intFormedYear", ""),
-        "description": t.get("strDescriptionES") or t.get("strDescriptionEN") or "",
+        # NUNCA el texto en inglés. TheSportsDB tiene strDescriptionES, pero
+        # está vacío: comprobado el 24/10/2026 sobre 20 equipos nuestros —los
+        # 14 de la FUTVE más Leones del Caracas, Magallanes, Tigres de Aragua,
+        # Naranjeros, Charros y Fuerza Regia— y los 20 traían SOLO inglés.
+        # O sea que la rama "ES or EN" caía siempre al inglés, y las fichas de
+        # LVBP, LMP, LMB, LIDOM y LNBP llevan tiempo con un párrafo en inglés
+        # en un sitio que es íntegramente en español. Se deja la preferencia
+        # por si algún día la rellenan, pero el inglés ya no pasa.
+        "description": (t.get("strDescriptionES") or "").strip(),
+        # Sustituto en español hecho con los campos estructurados, que sí son
+        # fiables. No es prosa traducida: es el dato que ya mostramos arriba.
+        "resumen_es": _resumen_es_equipo(t),
         "badge": t.get("strBadge", ""),
         "jersey": t.get("strJersey", ""),
         "country": t.get("strCountry", ""),

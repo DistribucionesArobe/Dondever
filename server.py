@@ -1474,6 +1474,11 @@ async def home(
             "current_sport": sport,
             "current_league": league,
             "current_date": date or today.strftime("%Y%m%d"),
+            # Sufijo para conservar el día al cambiar de deporte. Vacío cuando
+            # el visitante NO pidió una fecha: si se pegara siempre, los chips
+            # de deporte apuntarían a "?sport=x&date=<hoy>", y las URLs con
+            # ?date= llevan noindex — se desindexarían las páginas de deporte.
+            "date_qs": f"&date={date}" if date else "",
             "today_display": format_date_es(viewing_date),
             "prev_date": prev_date,
             "next_date": next_date,
@@ -2394,6 +2399,11 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             "week_range": _SEMANA_DIAS,
             "leagues_here": leagues_here[:8],
             "current_date": date or today.strftime("%Y%m%d"),
+            # Sufijo para conservar el día al cambiar de deporte. Vacío cuando
+            # el visitante NO pidió una fecha: si se pegara siempre, los chips
+            # de deporte apuntarían a "?sport=x&date=<hoy>", y las URLs con
+            # ?date= llevan noindex — se desindexarían las páginas de deporte.
+            "date_qs": f"&date={date}" if date else "",
             "today_display": format_date_es(viewing_date),
             "prev_date": prev_date,
             "next_date": next_date,
@@ -2832,7 +2842,7 @@ async def game_semantic(request: Request, slug: str):
             "implied_probs": implied_probs,
             "match_preview": match_preview,
             "faq_items": _build_match_faq(game),
-            "video_oficial": video_de_partido(game),
+            "video_oficial": await video_de_partido(game),
             "noindex": noindex,
         }
     )
@@ -3780,6 +3790,27 @@ async def league_page(request: Request, league_slug: str):
     if isinstance(league_leaders, Exception):
         league_leaders = []
 
+    # ── ¿Esta liga está parada? ───────────────────────────────────────────
+    #
+    # De las 61 ligas configuradas, muchas son torneos con ventana: Copa
+    # América, Mundial, Eurocopa, Copa Oro, Leagues Cup, Libertadores… Fuera
+    # de su ventana la página seguía diciendo "en vivo hoy". Medido en
+    # producción el 24/10/2026 en /liga/copa-america:
+    #
+    #   title  "Copa America en vivo hoy: transmisión y canales"
+    #   h1     "Copa America en vivo hoy — Partidos y resultados"
+    #   bloque "Líder Uruguay · 3G 0E 0P · 9 pts"   ← edición de 2024
+    #   bloque "¿Quieres apostar en Copa America?"
+    #
+    # El torneo terminó hace más de dos años. La tabla de aquella edición se
+    # mostraba sin ninguna marca de que es vieja, así que quien llega la lee
+    # como actual: no es que falte información, es que la que hay engaña.
+    #
+    # La señal no cuesta ninguna petición extra: ya tenemos los partidos de
+    # hoy, los próximos 14 días y los resultados de los últimos 10. Si los
+    # tres están vacíos, la liga no está activa.
+    liga_inactiva = not games and not upcoming_games and not recent_results
+
     # Tenis y golf: ESPN devuelve TORNEOS, no enfrentamientos. Su scoreboard trae
     # el evento ("Guadalajara Open") con competitions vacío, así que el parser
     # produce "TBD vs TBD" y /liga/wta terminaba enlazando a tres
@@ -3889,11 +3920,16 @@ async def league_page(request: Request, league_slug: str):
             "league_teams": league_teams,
             "recent_results": recent_results,
             "upcoming_games": upcoming_games,
+            # True cuando no hay partidos hoy, ni en 14 días, ni resultados en
+            # los últimos 10. La plantilla deja entonces de prometer "hoy",
+            # marca la tabla como de la edición pasada y esconde el bloque de
+            # apuestas. Ver el comentario de liga_inactiva más arriba.
+            "liga_inactiva": liga_inactiva,
             "league_channels_today": league_channels_today[:8],
             "default_channels": default_channels,
             "league_leaders": league_leaders,
             "league_seo_extra": LEAGUE_SEO_EXTRA.get(league_slug),
-            "video_oficial": video_de_liga(league_slug),
+            "video_oficial": await video_de_liga(league_slug),
             "power_rankings": power_rankings,
             "nfl_picks": nfl_picks,
             "upcoming_events": upcoming_events,
@@ -6509,6 +6545,15 @@ _PAIS_DE_LIGA = {
     "Liga MX": "mexico", "Liga MX Femenil": "mexico", "LMB": "mexico",
     "LMP": "mexico", "LNBP": "mexico",
     "LVBP": "venezuela", "LIDOM": "republica-dominicana",
+    # Faltaba, y el fallo no era silencioso: sin entrada aquí la liga caía al
+    # escape de _TODOS —pensado para equipos autodescubiertos— y el sitemap
+    # publicó 154 páginas de FUTVE (14 equipos × 11 países). Medido el
+    # 24/10/2026 en sitemap-equipos-paises.xml, contra 3 por equipo que tiene
+    # la LVBP. Entre ellas /equipo/academia-puerto-cabello/en/argentina y
+    # /en/panama: nadie en esos países busca eso. Son exactamente las páginas
+    # delgadas de las 5.100 "descubiertas: sin indexar" que ya nos costaron
+    # presupuesto de rastreo. Con esto baja de 154 a 42.
+    "Liga FUTVE": "venezuela",
     "Liga BetPlay": "colombia", "Liga Argentina": "argentina",
     "LigaPro Ecuador": "ecuador", "Liga 1 Perú": "peru", "Primera Chile": "chile",
 }
@@ -8616,7 +8661,58 @@ async def team_page(request: Request, team_slug: str):
         # "america" no está dentro de "Club América", así que la cabecera del
         # América, el León y el Querétaro salía sin escudo.
         _busca = _sin_acentos(search_term)
+        # El nombre solo NO basta cuando dos equipos de ligas distintas lo
+        # comparten. search_games mira TODAS las ligas, y "caracas" está
+        # dentro de "Leones del Caracas" (LVBP) igual que dentro de "Caracas"
+        # (Liga FUTVE). Resultado en producción el 24/10/2026:
+        # /equipo/caracas-fc salía con la liga, el escudo y el marcador del
+        # equipo de béisbol.
+        #
+        # Se desempata por DEPORTE, no por liga. Dos razones, las dos medidas:
+        #
+        #  1. Filtrar por liga borraría partidos buenos. Cuatro valores de
+        #     `league` en POPULAR_TEAMS no existen literalmente en LEAGUES
+        #     —LMB, LMP, IndyCar y NASCAR—, así que a esos equipos se les
+        #     habrían ido TODOS los partidos.
+        #  2. Un equipo juega otras competiciones. El América en Concacaf o
+        #     el Caracas en Libertadores no son "Liga MX" ni "Liga FUTVE",
+        #     y son suyos igual.
+        #
+        # El deporte no tiene ese problema: un equipo de fútbol nunca aparece
+        # en un partido de béisbol, y las copas son del mismo deporte.
+        # CUIDADO CON LOS DOS VOCABULARIOS. El partido trae el deporte en
+        # inglés —game["sport"] sale de LEAGUES[...][0]: "soccer",
+        # "baseball"— y _DEPORTE_DE_LIGA lo da en español: "futbol",
+        # "beisbol". Comparar en crudo daría siempre falso y habría borrado
+        # los partidos de TODOS los equipos del sitio, no sólo los del
+        # Caracas. Por eso se normalizan los dos lados.
+        #
+        # Y ante la duda NO se filtra: si cualquiera de los dos deportes no
+        # está en la tabla, el partido se queda. Un partido de más es un
+        # defecto; un equipo sin sus partidos es la página rota.
+        _CANON_DEPORTE = {
+            "soccer": "futbol", "futbol": "futbol",
+            "baseball": "beisbol", "beisbol": "beisbol",
+            "basketball": "basket", "basquetbol": "basket",
+            "football": "americano", "college-football": "americano",
+            "futbol americano": "americano",
+            "hockey": "hockey",
+            "mma": "mma", "boxing": "boxeo", "boxeo": "boxeo",
+            "racing": "motor", "motor": "motor",
+        }
+        _esperado = _CANON_DEPORTE.get(
+            (team_sport or _DEPORTE_DE_LIGA.get(
+                (POPULAR_TEAMS.get(team_slug) or {}).get("league", ""), "")).lower())
+
+        def _es_su_deporte(g) -> bool:
+            if not _esperado:
+                return True          # equipo autodescubierto o deporte raro
+            d = _CANON_DEPORTE.get((g.get("sport") or "").lower())
+            return d is None or d == _esperado
+
         for game in games:
+            if not _es_su_deporte(game):
+                continue
             if _busca in _sin_acentos(game["home"]["name"]):
                 team_logo = game["home"].get("logo", "")
                 team_league = game.get("league_name", "")
@@ -8625,6 +8721,11 @@ async def team_page(request: Request, team_slug: str):
                 team_logo = game["away"].get("logo", "")
                 team_league = game.get("league_name", "")
                 break
+        # `games` alimenta además el bloque "partido de hoy" de la plantilla.
+        # Sin filtrarlo, /equipo/caracas-fc seguiría anunciando el juego de
+        # Leones del Caracas como si fuera suyo.
+        if _deporte_esperado:
+            games = [g for g in games if _es_su_deporte(g)]
 
     # Fetch team stats (standings, record, etc.)
     stats = await get_team_stats(team_slug)

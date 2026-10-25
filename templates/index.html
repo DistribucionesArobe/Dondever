@@ -1708,48 +1708,48 @@
             Toca la <span style="color:#fbbf24;">&#9733;</span> para elegir tus deportes favoritos y verlos primero
         </div>
         <div class="sport-cards" id="sportCards">
-            <a href="/" class="sport-card {% if not current_sport and not current_league %}active{% endif %}">
+            <a href="/{% if date_qs %}?date={{ current_date }}{% endif %}" class="sport-card {% if not current_sport and not current_league %}active{% endif %}">
                 <span class="sc-emoji">&#127942;</span>
                 <span class="sc-label">Todos</span>
                 <span class="sc-count">{% if sport_counts.get('all') %}{{ sport_counts['all'] }} hoy{% endif %}</span>
             </a>
-            <a href="/?sport=soccer" class="sport-card {% if is_soccer %}active{% endif %}{% if not sport_counts.get('soccer') %} vacio{% endif %}" data-sport="soccer">
+            <a href="/?sport=soccer{{ date_qs }}" class="sport-card {% if is_soccer %}active{% endif %}{% if not sport_counts.get('soccer') %} vacio{% endif %}" data-sport="soccer">
                 <span class="sc-star" onclick="dvToggleSport('soccer',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#9917;</span>
                 <span class="sc-label">F&uacute;tbol</span>
                 <span class="sc-count">{% if sport_counts.get('soccer') %}{{ sport_counts['soccer'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=baseball" class="sport-card {% if current_sport == 'baseball' %}active{% endif %}{% if not sport_counts.get('baseball') %} vacio{% endif %}" data-sport="baseball">
+            <a href="/?sport=baseball{{ date_qs }}" class="sport-card {% if current_sport == 'baseball' %}active{% endif %}{% if not sport_counts.get('baseball') %} vacio{% endif %}" data-sport="baseball">
                 <span class="sc-star" onclick="dvToggleSport('baseball',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#9918;</span>
                 <span class="sc-label">B&eacute;isbol</span>
                 <span class="sc-count">{% if sport_counts.get('baseball') %}{{ sport_counts['baseball'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=basketball" class="sport-card {% if current_sport == 'basketball' %}active{% endif %}{% if not sport_counts.get('basketball') %} vacio{% endif %}" data-sport="basketball">
+            <a href="/?sport=basketball{{ date_qs }}" class="sport-card {% if current_sport == 'basketball' %}active{% endif %}{% if not sport_counts.get('basketball') %} vacio{% endif %}" data-sport="basketball">
                 <span class="sc-star" onclick="dvToggleSport('basketball',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127936;</span>
                 <span class="sc-label">B&aacute;squet</span>
                 <span class="sc-count">{% if sport_counts.get('basketball') %}{{ sport_counts['basketball'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=football" class="sport-card {% if current_sport == 'football' %}active{% endif %}{% if not sport_counts.get('football') %} vacio{% endif %}" data-sport="football">
+            <a href="/?sport=football{{ date_qs }}" class="sport-card {% if current_sport == 'football' %}active{% endif %}{% if not sport_counts.get('football') %} vacio{% endif %}" data-sport="football">
                 <span class="sc-star" onclick="dvToggleSport('football',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127944;</span>
                 <span class="sc-label">NFL</span>
                 <span class="sc-count">{% if sport_counts.get('football') %}{{ sport_counts['football'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=hockey" class="sport-card {% if current_sport == 'hockey' %}active{% endif %}{% if not sport_counts.get('hockey') %} vacio{% endif %}" data-sport="hockey">
+            <a href="/?sport=hockey{{ date_qs }}" class="sport-card {% if current_sport == 'hockey' %}active{% endif %}{% if not sport_counts.get('hockey') %} vacio{% endif %}" data-sport="hockey">
                 <span class="sc-star" onclick="dvToggleSport('hockey',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127954;</span>
                 <span class="sc-label">NHL</span>
                 <span class="sc-count">{% if sport_counts.get('hockey') %}{{ sport_counts['hockey'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=mma" class="sport-card {% if current_sport == 'mma' %}active{% endif %}{% if not sport_counts.get('mma') %} vacio{% endif %}" data-sport="mma">
+            <a href="/?sport=mma{{ date_qs }}" class="sport-card {% if current_sport == 'mma' %}active{% endif %}{% if not sport_counts.get('mma') %} vacio{% endif %}" data-sport="mma">
                 <span class="sc-star" onclick="dvToggleSport('mma',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#129354;</span>
                 <span class="sc-label">UFC</span>
                 <span class="sc-count">{% if sport_counts.get('mma') %}{{ sport_counts['mma'] }}{% endif %}</span>
             </a>
-            <a href="/?sport=motorsports" class="sport-card {% if current_sport == 'motorsports' %}active{% endif %}{% if not sport_counts.get('motorsports') %} vacio{% endif %}" data-sport="motorsports">
+            <a href="/?sport=motorsports{{ date_qs }}" class="sport-card {% if current_sport == 'motorsports' %}active{% endif %}{% if not sport_counts.get('motorsports') %} vacio{% endif %}" data-sport="motorsports">
                 <span class="sc-star" onclick="dvToggleSport('motorsports',this,event)" title="Marcar como mi deporte">&#9734;</span>
                 <span class="sc-emoji">&#127950;</span>
                 <span class="sc-label">F1</span>
@@ -1826,9 +1826,9 @@
 
         <!-- Date nav -->
         <nav class="date-nav">
-            <a href="/?date={{ prev_date }}" class="date-tab">&larr; Ayer</a>
+            <a href="/?date={{ prev_date }}{% if current_sport %}&amp;sport={{ current_sport }}{% endif %}" class="date-tab">&larr; Ayer</a>
             <span class="date-tab active">{{ today_display }}</span>
-            <a href="/?date={{ next_date }}" class="date-tab">Ma&ntilde;ana &rarr;</a>
+            <a href="/?date={{ next_date }}{% if current_sport %}&amp;sport={{ current_sport }}{% endif %}" class="date-tab">Ma&ntilde;ana &rarr;</a>
         </nav>
     </div>
 </div>
