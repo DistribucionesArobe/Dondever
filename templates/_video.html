@@ -18,7 +18,13 @@
       allowfullscreen></iframe>
   </div>
   <p style="font-size:.78rem;color:#666;margin:.5rem 0 0;">
-    Transmisión del canal oficial{% if v.fuente %}, <a href="{{ v.fuente }}" rel="noopener nofollow" target="_blank">ver en YouTube</a>{% endif %}. DondeVer no retransmite señales.
+    Transmisión{% if v.canal %} de <strong>{{ v.canal }}</strong>{% else %} del canal oficial{% endif %}{% if v.fuente %},
+    <a href="{{ v.fuente }}" rel="noopener nofollow" target="_blank">ver en YouTube</a>{% endif %}.
+    {# El feed dice que el video existe, no que esté en directo. Se publica la
+       fecha para que se distinga un partido de hoy de una repetición, en vez
+       de etiquetarlo "EN VIVO" sin saberlo. #}
+    {%- if v.publicado %} Publicado el {{ v.publicado }}.{% endif %}
+    DondeVer no retransmite señales.
   </p>
 </section>
 {%- endif -%}

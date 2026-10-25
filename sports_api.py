@@ -10,7 +10,7 @@ import logging
 import os
 import re
 import unicodedata as _ud
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from typing import Optional
 from cachetools import TTLCache
 
@@ -497,6 +497,15 @@ DEFAULT_LEAGUE_CHANNELS = {
     "lvbp": ["Meridiano TV", "Televen", "Venevisión", "TVES", "Canal i",
              "IVC", "ByM Sport", "1 Baseball", "BeisbolPlay"],
     "lidom": ["CDN Deportes", "Teleantillas", "Coral 39", "Digital 15"],
+    # Liga FUTVE. Sólo IVC, que es quien la transmite y además la pone gratis
+    # en su canal de YouTube — comprobado el 24/10/2026 en su feed:
+    # "EN VIVO: Caracas FC vs. Deportivo Táchira | Liga FUTVE | 24/10/2026".
+    #
+    # NO se rellena con Meridiano/Televen/Venevisión por analogía con la LVBP.
+    # Serían canales que no comprobamos para esta liga, y un canal inventado
+    # es justo lo que hace que el lector deje de creerle a los que sí están
+    # bien. Si aparece otro, se agrega cuando se verifique.
+    "futve": ["IVC"],
     # ── Basquetbol México ──
     "lnbp": ["ESPN MX", "TUDN", "Claro Sports"],
     # ── NHL 2025-26 ──
@@ -2424,6 +2433,22 @@ TEAM_LEAGUE_MAP = {
     "dorados-chihuahua": ("basketball", "sportsdb:5119"),
     "correcaminos-uam": ("basketball", "sportsdb:5119"),
     "lenadores-durango": ("basketball", "sportsdb:5119"),
+    # Liga FUTVE (fútbol de Venezuela). Equipos sacados del calendario real de
+    # TheSportsDB 4513 el 24/10/2026.
+    "caracas-fc": ("soccer", "sportsdb:4513"),
+    "deportivo-tachira": ("soccer", "sportsdb:4513"),
+    "deportivo-la-guaira": ("soccer", "sportsdb:4513"),
+    "academia-puerto-cabello": ("soccer", "sportsdb:4513"),
+    "carabobo-fc": ("soccer", "sportsdb:4513"),
+    "monagas-sc": ("soccer", "sportsdb:4513"),
+    "zamora-fc": ("soccer", "sportsdb:4513"),
+    "portuguesa-fc": ("soccer", "sportsdb:4513"),
+    "metropolitanos-fc": ("soccer", "sportsdb:4513"),
+    "estudiantes-merida": ("soccer", "sportsdb:4513"),
+    "rayo-zuliano": ("soccer", "sportsdb:4513"),
+    "ucv-fc": ("soccer", "sportsdb:4513"),
+    "trujillanos-fc": ("soccer", "sportsdb:4513"),
+    "anzoategui-fc": ("soccer", "sportsdb:4513"),
     # LVBP (Liga Venezolana de Béisbol Profesional)
     "navegantes-del-magallanes": ("baseball", "sportsdb:5112"),
     "leones-del-caracas": ("baseball", "sportsdb:5112"),
@@ -3338,6 +3363,176 @@ async def fetch_mlbstats_leaders(liga_id: int, season: int, top_n: int = 5) -> l
     cats = [x for x in resultados if isinstance(x, dict)]
     _mlbstats_cache[clave] = cats
     return cats
+
+
+# ── MLB fuera de temporada ──────────────────────────────────────────────────
+#
+# De octubre a febrero, 29 de los 30 equipos de MLB no juegan. Sus páginas
+# siguen recibiendo tráfico —y mucho— pero no tienen nada que decir. Medido en
+# Search Console el 17/10/2026, 90 días:
+#
+#   programación de tampa bay rays        31.603 impr ·  2 clics · 0 %
+#   programación de san diego padres      19.987      ·  3       · 0 %
+#   programación de atlanta braves        18.888      ·  1       · 0 %
+#   programación de boston red sox        18.176      ·  3       · 0 %
+#   programación de philadelphia phillies 16.444      ·  2       · 0 %
+#
+# Unas 140.000 impresiones en posición 8-10 y 17 clics. El título ya se arregló
+# (ver _build_team_seo en server.py); lo que falta es que la página responda la
+# pregunta en vez de decir "se reanuda en unas semanas". statsapi publica el
+# calendario completo de pretemporada y el opener con meses de antelación.
+#
+# CUIDADO CON LA HORA. Comprobado el 24/10/2026 pidiendo el calendario de
+# pretemporada 2027 de los Yankees: 30 de los 32 partidos traen
+# status.startTimeTBD = true, y gameDate es un relleno (2027-02-19T08:33:00Z,
+# que en México son las 2:33 de la mañana). Por eso aquí sólo se usa
+# officialDate y la plantilla no muestra hora: la fecha es cierta, la hora no.
+_MLB_IDS_TTL = TTLCache(maxsize=4, ttl=86400)       # 24 h — 30 equipos fijos
+_mlb_offseason_cache = TTLCache(maxsize=64, ttl=43200)  # 12 h
+
+
+def _temporada_mlb_siguiente(hoy: date | None = None) -> int:
+    """Año de la próxima temporada de MLB.
+
+    La temporada regular va de marzo/abril a septiembre, y los playoffs a
+    octubre. A partir de octubre lo "siguiente" ya es el año que viene.
+    """
+    hoy = hoy or date.today()
+    return hoy.year + 1 if hoy.month >= 10 else hoy.year
+
+
+async def _ids_equipos_mlb(season: int) -> dict[str, int]:
+    """Mapa nombre → teamId de statsapi para los 30 equipos de MLB.
+
+    Se indexa por todas las formas en que statsapi nombra al equipo (name,
+    teamName, clubName, shortName, abbreviation) para que valga tanto
+    "New York Yankees" como "Yankees" o "NYY", que es lo que nos llega desde
+    POPULAR_TEAMS y desde ESPN.
+    """
+    if season in _MLB_IDS_TTL:
+        return _MLB_IDS_TTL[season]
+    url = f"https://statsapi.mlb.com/api/v1/teams?sportId=1&season={season}"
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get(url)
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        logger.warning("statsapi teams %s falló: %s", season, e)
+        return {}
+    mapa: dict[str, int] = {}
+    for t in data.get("teams") or []:
+        tid = t.get("id")
+        if not tid:
+            continue
+        for campo in ("name", "teamName", "clubName", "shortName", "abbreviation"):
+            v = (t.get(campo) or "").strip().lower()
+            # Sin sobrescribir: "Athletics" es a la vez name y teamName, y
+            # "Chicago" es shortName de Cubs y de White Sox. El primero gana,
+            # y los nombres completos van antes en el bucle.
+            if v and v not in mapa:
+                mapa[v] = tid
+    _MLB_IDS_TTL[season] = mapa
+    return mapa
+
+
+async def _calendario_mlb(team_id: int, season: int, game_type: str) -> list[dict]:
+    """Partidos de un equipo de MLB en una temporada. gameType S o R."""
+    url = ("https://statsapi.mlb.com/api/v1/schedule"
+           f"?sportId=1&teamId={team_id}&season={season}&gameType={game_type}")
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            r = await client.get(url)
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        logger.warning("statsapi calendario MLB %s/%s/%s falló: %s",
+                       team_id, season, game_type, e)
+        return []
+    juegos: list[dict] = []
+    for dia in data.get("dates") or []:
+        juegos.extend(dia.get("games") or [])
+    juegos.sort(key=lambda g: g.get("officialDate") or "")
+    return juegos
+
+
+def _fila_mlb(g: dict, team_id: int) -> dict:
+    """Una fila de calendario, ya resuelta de quién es casa y quién visita."""
+    eq = (g.get("teams") or {})
+    casa = ((eq.get("home") or {}).get("team") or {})
+    fuera = ((eq.get("away") or {}).get("team") or {})
+    es_casa = casa.get("id") == team_id
+    rival = fuera if es_casa else casa
+    return {
+        "fecha": g.get("officialDate") or "",
+        "rival": rival.get("name") or "",
+        "rival_id": rival.get("id"),
+        "en_casa": es_casa,
+        "estadio": ((g.get("venue") or {}).get("name") or ""),
+        # La plantilla no muestra hora cuando esto es True (casi siempre, en
+        # pretemporada). Ver el comentario de arriba.
+        "hora_por_confirmar": bool((g.get("status") or {}).get("startTimeTBD")),
+    }
+
+
+async def fetch_mlb_offseason(team_name: str, season: int | None = None) -> dict | None:
+    """Cuándo vuelve un equipo de MLB y con qué calendario.
+
+    Devuelve None si el equipo no es de MLB o si statsapi no tiene todavía el
+    calendario de esa temporada. Nunca inventa fechas: si no hay calendario,
+    la página no promete nada.
+    """
+    nombre = (team_name or "").strip().lower()
+    if not nombre:
+        return None
+    season = season or _temporada_mlb_siguiente()
+    clave = (nombre, season)
+    if clave in _mlb_offseason_cache:
+        return _mlb_offseason_cache[clave]
+
+    ids = await _ids_equipos_mlb(season)
+    tid = ids.get(nombre)
+    if not tid:
+        # Último intento: por última palabra ("Yankees" dentro de
+        # "New York Yankees"), que es como lo escribe la gente.
+        for k, v in ids.items():
+            if k and (nombre.endswith(" " + k) or k.endswith(" " + nombre)):
+                tid = v
+                break
+    if not tid:
+        return None
+
+    pre, reg = await asyncio.gather(
+        _calendario_mlb(tid, season, "S"),
+        _calendario_mlb(tid, season, "R"),
+        return_exceptions=True,
+    )
+    pre = pre if isinstance(pre, list) else []
+    reg = reg if isinstance(reg, list) else []
+    if not pre and not reg:
+        return None
+
+    filas_pre = [_fila_mlb(g, tid) for g in pre]
+    filas_pre = [f for f in filas_pre if f["fecha"] and f["rival"]]
+    opener = None
+    for g in reg:
+        f = _fila_mlb(g, tid)
+        if f["fecha"] and f["rival"]:
+            opener = f
+            break
+
+    out = {
+        "season": season,
+        "team_id": tid,
+        "escudo": _escudo_mlb(tid),
+        "pretemporada": filas_pre,
+        "pre_desde": filas_pre[0]["fecha"] if filas_pre else "",
+        "pre_hasta": filas_pre[-1]["fecha"] if filas_pre else "",
+        "opener": opener,
+        "n_regular": len(reg),
+    }
+    _mlb_offseason_cache[clave] = out
+    return out
 
 
 async def get_league_standings(sport: str, league: str, limit: int = 10) -> list[dict]:

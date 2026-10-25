@@ -858,6 +858,21 @@ LEAGUES = {
     "lmb":           ("baseball", "sportsdb:5064", "Liga Mexicana de B\u00e9isbol",   "\u26be"),
     "lvbp":          ("baseball", "sportsdb:5112", "LVBP",             "\u26be"),
     "lidom":         ("baseball", "sportsdb:lidom", "LIDOM",           "\u26be"),
+    # Liga FUTVE (primera divisi\u00f3n de f\u00fatbol de Venezuela).
+    #
+    # Entra por el video, no por el SEO. Medido en Google Trends Venezuela el
+    # 24/10/2026, 12 meses: "futve", "caracas fc" y "leones del caracas" est\u00e1n
+    # los tres en 2-5 sobre 100, contra "lvbp" en 50-85. Pero
+    # /equipo/leones-del-caracas es nuestra mejor p\u00e1gina venezolana (1.014
+    # impresiones en 90 d\u00edas), as\u00ed que ese nivel de demanda s\u00ed da tr\u00e1fico.
+    #
+    # Lo que la hace distinta: IVC Networks la transmite gratis, en directo y
+    # con la inserci\u00f3n habilitada, y nadie la agrega. Es la \u00fanica liga donde
+    # podemos pasar de "d\u00f3nde ver" a "aqu\u00ed mismo". Ver video_canales.json.
+    #
+    # Calendario verificado el 24/10/2026: TheSportsDB 4513 devolvi\u00f3 20
+    # partidos pr\u00f3ximos con hora y 14 equipos.
+    "futve":         ("soccer", "sportsdb:4513", "Liga FUTVE",        "\u26bd"),
     # Hockey
     "nhl":           ("hockey", "nhl",           "NHL",              "\U0001f3d2"),
     # Combate
@@ -1311,6 +1326,33 @@ POPULAR_TEAMS = {
     "estrellas-orientales": {"name": "Estrellas Orientales", "league": "LIDOM"},
     "gigantes-del-cibao": {"name": "Gigantes del Cibao", "league": "LIDOM"},
     "toros-del-este": {"name": "Toros del Este", "league": "LIDOM"},
+    # Liga FUTVE (fútbol de Venezuela). Los 14 equipos salieron del calendario
+    # real de TheSportsDB 4513 el 24/10/2026, no de memoria.
+    #
+    # "name" tiene que ser EXACTO al de la API, porque el filtrado de partidos
+    # por equipo compara por nombre.
+    #
+    # Los slugs llevan sufijo donde el nombre corto ya es de un equipo de la
+    # LVBP, que está en temporada al mismo tiempo y tiene mucho más tráfico:
+    #   caracas    -> Leones del Caracas (béisbol)  => aquí caracas-fc
+    #   anzoategui -> Caribes de Anzoátegui         => aquí anzoategui-fc
+    #   guaira     -> Tiburones de La Guaira        => aquí deportivo-la-guaira
+    # Robarle "caracas" al equipo que nos da 1.014 impresiones sería un mal
+    # negocio.
+    "caracas-fc": {"name": "Caracas", "league": "Liga FUTVE"},
+    "deportivo-tachira": {"name": "Deportivo Táchira", "league": "Liga FUTVE"},
+    "deportivo-la-guaira": {"name": "Deportivo La Guaira", "league": "Liga FUTVE"},
+    "academia-puerto-cabello": {"name": "Academia Puerto Cabello", "league": "Liga FUTVE"},
+    "carabobo-fc": {"name": "Carabobo", "league": "Liga FUTVE"},
+    "monagas-sc": {"name": "Monagas", "league": "Liga FUTVE"},
+    "zamora-fc": {"name": "Zamora FC", "league": "Liga FUTVE"},
+    "portuguesa-fc": {"name": "Portuguesa FC", "league": "Liga FUTVE"},
+    "metropolitanos-fc": {"name": "Metropolitanos", "league": "Liga FUTVE"},
+    "estudiantes-merida": {"name": "Estudiantes de Mérida", "league": "Liga FUTVE"},
+    "rayo-zuliano": {"name": "Deportivo Rayo Zuliano", "league": "Liga FUTVE"},
+    "ucv-fc": {"name": "Universidad Central", "league": "Liga FUTVE"},
+    "trujillanos-fc": {"name": "Trujillanos", "league": "Liga FUTVE"},
+    "anzoategui-fc": {"name": "Anzoátegui", "league": "Liga FUTVE"},
     # NHL
     "bruins": {"name": "Boston Bruins", "league": "NHL"},
     "golden-knights": {"name": "Vegas Golden Knights", "league": "NHL"},
@@ -1782,7 +1824,25 @@ TEAM_ALIASES = {
     "magallanes": "navegantes del magallanes",
     "navegantes": "navegantes del magallanes",
     "leones caracas": "leones del caracas",
+    # OJO: "caracas" a secas se queda en el béisbol. Leones del Caracas nos da
+    # 1.014 impresiones en 90 días (GSC, 24/10/2026) y las 97 consultas que
+    # llegan por "caracas" son todas de béisbol, ninguna de fútbol. El Caracas
+    # FC se busca por su nombre completo, y para eso está "caracas fc".
     "caracas": "leones del caracas",
+    "caracas fc": "caracas",
+    "deportivo tachira": "deportivo táchira",
+    "tachira": "deportivo táchira",
+    # "la guaira" NO se mapea: es ambiguo entre el Deportivo La Guaira
+    # (fútbol) y los Tiburones de La Guaira (béisbol), y el alias corto
+    # "guaira" ya apunta al de béisbol, que está en temporada y tiene más
+    # tráfico. Quien busque el de fútbol escribe "deportivo la guaira".
+    "deportivo la guaira": "deportivo la guaira",
+    "puerto cabello": "academia puerto cabello",
+    "rayo zuliano": "deportivo rayo zuliano",
+    "ucv": "universidad central",
+    "ucv fc": "universidad central",
+    "zamora": "zamora fc",
+    "portuguesa": "portuguesa fc",
     "tigres aragua": "tigres de aragua",
     "cardenales lara": "cardenales de lara",
     "aguilas zulia": "aguilas del zulia",
@@ -1814,6 +1874,13 @@ TEAM_ALIASES = {
     "lvbp": "lvbp",
     "beisbol venezolano": "lvbp",
     "beisbol venezuela": "lvbp",
+    # Liga FUTVE. "futbol venezolano" va aquí y NO a la LVBP: quien escribe
+    # "fútbol" no está buscando béisbol, aunque la LVBP sea más grande.
+    "futve": "futve",
+    "liga futve": "futve",
+    "futbol venezolano": "futve",
+    "futbol venezuela": "futve",
+    "primera division venezuela": "futve",
     # LIDOM
     "licey": "tigres del licey",
     "tigres licey": "tigres del licey",

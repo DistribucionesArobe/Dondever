@@ -495,6 +495,74 @@
 
     {% else %}
     <div class="no-games" style="text-align:left;background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;">
+        {% if offseason %}
+        {# ══ MLB FUERA DE TEMPORADA ══
+           De octubre a febrero 29 de los 30 equipos no juegan, y hasta ahora
+           esta ficha sólo decía "no hay partido hoy". La pregunta con la que
+           llega la gente es "¿cuándo vuelven?", y statsapi publica la
+           respuesta con meses de antelación.
+
+           NO SE MUESTRA HORA. Comprobado el 24/10/2026: 30 de los 32 partidos
+           de pretemporada 2027 traen startTimeTBD, y la hora de gameDate es un
+           relleno que en México cae a las 2:33 de la mañana. Se usa sólo
+           officialDate. La fecha es cierta; la hora, no. #}
+        {# Plural a propósito: todos los nombres cortos de MLB lo son (Yankees,
+           Dodgers, Rays, Athletics…). "Yankees no juega hoy" estaba mal y es
+           la primera línea que ve quien llega del buscador. #}
+        <h2 style="font-size:1.05rem;color:#1a1a2e;margin:0;">{{ team_name }} no juegan hoy: su temporada termin&oacute;</h2>
+        {% if offseason.pre_desde %}
+        <div style="margin-top:0.9rem;padding:0.9rem 1rem;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;color:#0369a1;font-weight:700;margin-bottom:0.35rem;">Vuelve a jugar</div>
+            <div style="font-weight:800;color:#0c4a6e;font-size:1rem;text-transform:capitalize;">{{ fecha_larga(offseason.pre_desde) }}</div>
+            <div style="font-size:0.8rem;color:#075985;margin-top:0.15rem;">
+                Primer partido de pretemporada{% if offseason.pretemporada %}:
+                    {% if offseason.pretemporada[0].en_casa %}en casa ante{% else %}de visita ante{% endif %}
+                    {{ offseason.pretemporada[0].rival }}{% endif %}
+            </div>
+            {% if offseason.opener %}
+            <div style="margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid #bae6fd;font-size:0.8rem;color:#075985;">
+                <span style="font-weight:700;text-transform:capitalize;">{{ fecha_larga(offseason.opener.fecha) }}</span>
+                &mdash; arranca la temporada {{ offseason.season }}
+                {% if offseason.opener.en_casa %}en casa ante{% else %}de visita ante{% endif %}
+                {{ offseason.opener.rival }}
+                {% if offseason.opener.estadio %}<span style="color:#0ea5e9;">({{ offseason.opener.estadio }})</span>{% endif %}
+            </div>
+            {% endif %}
+            <div style="margin-top:0.55rem;font-size:0.68rem;color:#0ea5e9;">
+                Fechas del calendario oficial de MLB. Los horarios se confirman m&aacute;s cerca de cada partido.
+            </div>
+        </div>
+        {% endif %}
+
+        {% if offseason.pretemporada %}
+        <details style="margin-top:0.8rem;">
+            <summary style="cursor:pointer;font-size:0.85rem;font-weight:700;color:#1a1a2e;list-style:none;">
+                Calendario completo de pretemporada {{ offseason.season }}
+                <span style="color:#6b7280;font-weight:500;">({{ offseason.pretemporada|length }} partidos)</span>
+                <span style="color:#059669;">&#9662;</span>
+            </summary>
+            <div style="margin-top:0.6rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+                {% for p in offseason.pretemporada %}
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;padding:0.45rem 0.7rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
+                    <span style="font-size:0.72rem;color:#f97316;font-weight:700;white-space:nowrap;text-transform:capitalize;">{{ fecha_larga(p.fecha, false) }}</span>
+                    <span style="font-size:0.78rem;font-weight:600;color:#1a1a2e;text-align:right;">
+                        {% if p.en_casa %}vs{% else %}en{% endif %} {{ p.rival }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            <div style="margin-top:0.4rem;font-size:0.65rem;color:#9ca3af;">
+                Pretemporada: del {{ fecha_larga(offseason.pre_desde, false) }} al {{ fecha_larga(offseason.pre_hasta, false) }}.
+                {% if offseason.n_regular %}Despu&eacute;s vienen {{ offseason.n_regular }} partidos de temporada regular.{% endif %}
+            </div>
+        </details>
+        {% endif %}
+
+        <div style="margin-top:0.9rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <a href="/" style="display:inline-block;background:#059669;color:white;padding:0.5rem 0.9rem;border-radius:8px;font-size:0.8rem;font-weight:700;text-decoration:none;">Ver qu&eacute; se juega hoy &rarr;</a>
+            <button type="button" onclick="if(window.dvPush)dvPush.enable();" style="background:white;border:1px solid #d1d5db;color:#374151;padding:0.5rem 0.9rem;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;">&#128276; Av&iacute;same cuando vuelvan</button>
+        </div>
+        {% else %}
         <h2 style="font-size:1.05rem;color:#1a1a2e;">No hay partido de {{ team_name }} hoy</h2>
         {% if upcoming_games %}
         {% set nxt = upcoming_games[0] %}
@@ -543,6 +611,7 @@
         {% else %}
         <p style="margin-top:0.5rem;color:#6b7280;">Consulta abajo los últimos resultados y activa alertas por WhatsApp para que te avisemos cuando jueguen.</p>
         {% endif %}
+        {% endif %}{# /offseason #}
     </div>
     {% endif %}
 

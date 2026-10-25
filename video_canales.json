@@ -1,0 +1,36 @@
+{
+  "_lee_esto_antes_de_agregar": [
+    "Solo canales del TITULAR DE LOS DERECHOS. Nunca un canal que resubió una señal ajena.",
+    "El emparejado es automático: lee el feed RSS del canal y casa el título con nuestros partidos.",
+    "Agregar un canal NO enciende su liga entera: solo casan los videos cuyo título nombre a los dos equipos.",
+    "Si el canal sube resúmenes ('Resumen ... 3-4'), no casará nada, y está bien: no es el partido.",
+    "Para sacar el channel_id: abre el canal y busca 'externalId' en el HTML, o usa la URL /channel/UC...",
+    "COMO VERIFICAR QUE SE PUEDE INCRUSTAR: NO sirve abrir youtube.com/embed/ID en una pestaña — eso da Error 153 SIEMPRE, incluso con videos que sí se incrustan. Hay que cargarlo en un <iframe> real desde una página propia (o con la IFrame API de YouTube y mirar onError: 101 y 150 = inserción deshabilitada).",
+    "'verificado' es la fecha en que comprobaste el canal. Sin eso, se ignora."
+  ],
+  "_campos": {
+    "liga": "slug de liga nuestro, p.ej. lnbp, futve.",
+    "channel_id": "id del canal, empieza por UC.",
+    "nombre": "cómo se le llama al canal en la página.",
+    "url": "URL pública del canal, para dar crédito.",
+    "verificado": "YYYY-MM-DD en que lo comprobaste."
+  },
+  "canales": [
+    {
+      "liga": "lnbp",
+      "channel_id": "UCUVSXKUvpiuQ0RnNpBcpuHQ",
+      "nombre": "LNBP Oficial",
+      "url": "https://www.youtube.com/@LNBPOFICIAL",
+      "verificado": "2026-10-24",
+      "_nota": "Sube partidos completos. Títulos tipo 'DORADOS DE CHIHUAHUA VS FUERZA REGIA'. Ojo: resube el mismo partido al día siguiente, por eso el emparejador se queda con el más antiguo de la ventana."
+    },
+    {
+      "liga": "futve",
+      "channel_id": "UCz22gaAIPdIfkYOSXYG6bqQ",
+      "nombre": "IVC Networks",
+      "url": "https://www.youtube.com/@IVCNetworks",
+      "verificado": "2026-10-24",
+      "_nota": "Transmite la Liga FUTVE en directo y gratis. Títulos tipo 'EN VIVO: Caracas FC vs. Deportivo Tachira | Liga FUTVE | 24/10/2026'. Su 'published' es la fecha en que se creo el directo programado, no la del partido: por eso manda la fecha del titulo."
+    }
+  ]
+}

@@ -1592,6 +1592,7 @@ _MERCADOS_LIGA = {
     "eredivisie": "México, España y Latinoamérica",
     # Caribe y Sudamérica: el país de la liga primero.
     "lvbp": "Venezuela, Estados Unidos y Latinoamérica",
+    "futve": "Venezuela, Estados Unidos y Latinoamérica",
     "lidom": "República Dominicana, Estados Unidos y Latinoamérica",
     "liga-colombia": "Colombia, Estados Unidos y Latinoamérica",
     "liga-argentina": "Argentina, México y Latinoamérica",
@@ -3316,6 +3317,21 @@ LEAGUE_SEO_EXTRA = {
         ],
         "links": [],
     },
+    "futve": {
+        # La FUTVE no entra por volumen de búsqueda: entra porque es la única
+        # liga donde podemos pasar de "dónde ver" a "verlo aquí". IVC la
+        # transmite gratis en YouTube con la inserción habilitada (comprobado
+        # el 24/10/2026 con la IFrame API desde dondever.app) y nadie la
+        # agrega. Por eso "gratis" y "online" van al frente del título.
+        "title": "Liga FUTVE en vivo hoy: dónde verla gratis y online | DondeVer",
+        "meta_desc": "Liga FUTVE hoy en vivo: calendario, horarios y dónde ver cada partido. IVC transmite gratis por YouTube. Caracas, Deportivo Táchira, La Guaira, Zamora y Carabobo.",
+        "h2": "Dónde ver la Liga FUTVE (fútbol venezolano) en vivo",
+        "paragraphs": [
+            "La Liga FUTVE es la primera división del fútbol profesional de Venezuela y la juegan 14 equipos: Caracas, Deportivo Táchira, Deportivo La Guaira, Academia Puerto Cabello, Carabobo, Monagas, Zamora FC, Portuguesa FC, Metropolitanos, Estudiantes de Mérida, Deportivo Rayo Zuliano, Universidad Central, Trujillanos y Anzoátegui.",
+            "IVC Networks transmite partidos de la FUTVE en directo y gratis por su canal de YouTube, sin suscripción ni cable. Es la forma más sencilla de verla dentro y fuera de Venezuela. En esta página publicamos el calendario con la hora de cada partido y, cuando IVC publica la transmisión, el reproductor queda aquí mismo. DondeVer no retransmite señales: lo que se ve es el video del propio canal oficial, con su reproductor y sus anuncios.",
+        ],
+        "links": [],
+    },
     # Tenis y golf: son TORNEOS, no jornadas. El texto responde a lo que la gente
     # escribe ("donde ver el US Open", "a que hora juega Alcaraz") y no a "partidos
     # de hoy", que en estos deportes casi nunca existe como pregunta.
@@ -4041,6 +4057,29 @@ _MESES_ES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "ag
 def _fecha_es_larga(d) -> str:
     """'martes 15 de septiembre de 2026' (sin depender del locale del servidor)."""
     return f"{_DIAS_ES[d.weekday()]} {d.day} de {_MESES_ES[d.month - 1]} de {d.year}"
+
+
+def _fecha_larga(ymd: str, con_anio: bool = True, con_dia: bool = True) -> str:
+    """'2027-02-19' → 'viernes 19 de febrero de 2027'.
+
+    Para las fechas de statsapi, que llegan como officialDate en texto. Se usa
+    officialDate y NO gameDate a propósito: en pretemporada 30 de los 32
+    partidos traen startTimeTBD y gameDate es un relleno (08:33 UTC, las 2:33
+    de la mañana en México). La fecha es cierta; la hora, no.
+
+    con_dia=False quita el día de la semana ('19 de febrero'). Es la forma que
+    se usa en title y description: con el día de la semana, "Programación de
+    Philadelphia Phillies: vuelve el viernes 19 de febrero" son 70 caracteres
+    y Google lo recorta justo donde está el dato que hace falta.
+    """
+    try:
+        d = _date.fromisoformat((ymd or "")[:10])
+    except (ValueError, TypeError):
+        return ""
+    base = f"{d.day} de {_MESES_ES[d.month - 1]}"
+    if con_dia:
+        base = f"{_DIAS_ES[d.weekday()]} {base}"
+    return f"{base} de {d.year}" if con_anio else base
 
 
 @app.get("/pronosticos-hoy", response_class=HTMLResponse)
@@ -8075,7 +8114,7 @@ _DEPORTE_POR_LIGA = {
     "futbol": ("Liga MX", "Liga MX Femenil", "Premier League", "La Liga", "Serie A",
                "Bundesliga", "Ligue 1", "Eredivisie", "Liga Portugal", "MLS",
                "Liga Argentina", "Liga BetPlay", "Primera Chile", "LigaPro Ecuador",
-               "Liga 1 Perú"),
+               "Liga 1 Perú", "Liga FUTVE"),
     "beisbol": ("MLB", "LMB", "LMP", "LVBP", "LIDOM"),
     "basketball": ("NBA", "WNBA", "LNBP", "Liga Endesa"),
     "futbol americano": ("NFL",),
@@ -8150,7 +8189,8 @@ def _short_team_name(full_name: str, league: str = "") -> str:
 
 
 def _build_team_seo(team_name: str, team_league: str, search_term: str, games: list,
-                    upcoming_games: list, recent_results: list, is_nfl: bool = False) -> dict:
+                    upcoming_games: list, recent_results: list, is_nfl: bool = False,
+                    offseason: dict | None = None) -> dict:
     """Title/description/H1 that answer hora + canal for today's game.
 
     Priority: live now → today (pre) → today finished → next game → default.
@@ -8266,6 +8306,52 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
             "title": f"{team_name} hoy{score} vs {opp} | Dónde ver el próximo juego",
             "h1": f"{team_name} hoy: resultado vs {opp} y próximo partido",
             "desc": f"{team_name} vs {opp}{score}: así quedó hoy. Y dónde ver el próximo juego — horario en tu país, canal de TV y streaming{lg_sfx}.",
+        }
+    # ── MLB fuera de temporada, con la fecha real de regreso ──────────────
+    #
+    # Esta rama va ANTES de upcoming_games porque para un equipo eliminado
+    # `upcoming_games` suele venir vacío (ESPN sólo mira 10 días) y entonces
+    # no entraba en ninguna rama: caía al texto genérico. Con `offseason`
+    # —que sale de statsapi— sí sabemos la fecha, así que se dice.
+    #
+    # Sólo la fecha, nunca la hora: 30 de los 32 partidos de pretemporada
+    # traen startTimeTBD en statsapi. Ver fetch_mlb_offseason.
+    if offseason and (offseason.get("pre_desde") or offseason.get("opener")):
+        _pre = offseason.get("pre_desde") or ""
+        _op = offseason.get("opener") or {}
+        # Sin día de la semana a propósito. Con él, "Programación de
+        # Philadelphia Phillies: vuelve el viernes 19 de febrero" son 70
+        # caracteres: Google corta justo en el dato que hace falta. Sin él son
+        # 62, y el peor caso de los 30 equipos cabe.
+        _d_pre = _fecha_larga(_pre, con_anio=False, con_dia=False)
+        _d_op = _fecha_larga(_op.get("fecha") or "", con_anio=False, con_dia=False)
+        _rival_op = _short_team_name(_op.get("rival") or "", lg) if _op.get("rival") else ""
+        # El título responde la pregunta que trae la gente —"¿cuándo vuelven?"—
+        # y mantiene "Programación de <equipo>" al frente, que es la frase
+        # literal con la que llegan esas 140.000 impresiones.
+        _t = (f"Programación de {full_name}: vuelven el {_d_pre}" if _d_pre
+              else f"Programación de {full_name}: calendario y canales")
+        if len(_t) > 65:
+            _t = f"Programación de {full_name}: calendario y canales"
+        # Todos los nombres cortos de MLB son plurales (Yankees, Dodgers, Rays,
+        # Athletics…), así que el verbo va en plural. "Yankees no juega hoy"
+        # estaba mal escrito y es lo primero que ve quien llega del buscador.
+        if _d_pre and _d_op:
+            _frase = (f"{team_name} no juegan hoy: vuelven el {_d_pre} en pretemporada "
+                      f"y abren la temporada el {_d_op}"
+                      + (f" vs {_rival_op}" if _rival_op else ""))
+        elif _d_pre:
+            _frase = f"{team_name} no juegan hoy: vuelven el {_d_pre} en pretemporada"
+        else:
+            _frase = f"Programación completa de {team_name}"
+        return {
+            "title": _t,
+            "h1": (f"Programación de {full_name}: vuelven el "
+                   f"{_fecha_larga(_pre, con_anio=False)}"
+                   if _d_pre else f"Programación de {full_name}: calendario y dónde verlo"),
+            # Corta: Google recorta la descripción alrededor de 160 caracteres,
+            # y la versión larga llegaba a 250 — se perdía la mitad.
+            "desc": f"{_frase}. Calendario, canales y streaming por país.",
         }
     if upcoming_games:
         u = upcoming_games[0]
@@ -8686,6 +8772,36 @@ async def team_page(request: Request, team_slug: str):
         else:
             form_guide.append("D")
 
+    # ── MLB fuera de temporada ────────────────────────────────────────────
+    #
+    # De octubre a febrero, 29 de los 30 equipos de MLB no juegan y su ficha no
+    # tiene nada que decir. Siguen recibiendo ~140.000 impresiones en 90 días
+    # por "programación de <equipo>" con 17 clics (GSC, 17/10/2026). El título
+    # ya se arregló; esto es para que la página responda de verdad: cuándo
+    # vuelven, contra quién, y el calendario completo de pretemporada.
+    #
+    # Sólo se activa si no juega hoy y su siguiente partido está a más de 21
+    # días —el mismo umbral que usa _build_team_seo— para que un equipo en
+    # playoffs o en temporada nunca vea este bloque.
+    offseason = None
+    if team_sport == "beisbol" and not games:
+        _lejos = not upcoming_games
+        if upcoming_games:
+            try:
+                _u0 = upcoming_games[0]
+                _du = datetime.fromisoformat(
+                    (_u0.get("date_utc") or _u0.get("date") or "").replace("Z", "+00:00"))
+                if _du.tzinfo:
+                    _lejos = (_du - datetime.now(_du.tzinfo)).days > 21
+            except (ValueError, TypeError):
+                _lejos = False
+        if _lejos:
+            try:
+                from sports_api import fetch_mlb_offseason
+                offseason = await fetch_mlb_offseason(team_name)
+            except Exception as e:
+                logger.warning("offseason MLB %s falló: %s", team_slug, e)
+
     # Build dynamic FAQ based on real data (not boilerplate)
     faq_items = _build_team_faq(
         team_name=team_name,
@@ -8707,6 +8823,7 @@ async def team_page(request: Request, team_slug: str):
         upcoming_games=upcoming_games,
         recent_results=recent_results,
         is_nfl=(team_sport == "futbol americano"),
+        offseason=offseason,
     )
 
     # ── ¿Esto es un equipo de verdad? ──────────────────────────────────────
@@ -8783,6 +8900,11 @@ async def team_page(request: Request, team_slug: str):
         "nfl_team_extra": NFL_TEAM_EXTRA.get(team_slug) if team_sport == "futbol americano" else None,
         "nfl_advanced": await get_nfl_team_advanced_stats(team_slug) if team_sport == "futbol americano" else {},
         "sportsdb_team_info": sportsdb_team_info,
+        # Sólo llega con dato cuando el equipo es de MLB y está fuera de
+        # temporada. Para los otros ~290 equipos es None y la plantilla no
+        # pinta nada.
+        "offseason": offseason,
+        "fecha_larga": _fecha_larga,
     })
     # Sin partido hoy no hay marcador ni hora que puedan quedar viejos: la
     # página es la misma durante horas. Se manda al caché de 30 minutos para

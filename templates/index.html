@@ -1814,7 +1814,7 @@
         {% for league_name, league_data in sports_grouped.items() %}
         {% set deduped = league_data.games | rejectattr('id', 'in', shown_ids) | list %}
         {% if deduped %}
-        <button class="lchip{% if league_data.slug in ('lvbp','lidom') %} geo-league{% endif %}" data-filter="{{ league_data.slug }}"{% if league_data.slug in ('lvbp',) %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %} onclick="filterLeague('{{ league_data.slug }}',this)" style="white-space:nowrap;padding:0.35rem 0.85rem;border-radius:20px;border:1.5px solid var(--border,#d1d5db);background:var(--bg-card,#fff);color:var(--text-primary,#374151);font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;">{{ league_data.emoji }} {{ league_name }} <span style="opacity:.6;font-weight:800;font-size:.68rem;">{{ deduped|length }}</span></button>
+        <button class="lchip{% if league_data.slug in ('lvbp','lidom','futve') %} geo-league{% endif %}" data-filter="{{ league_data.slug }}"{% if league_data.slug in ('lvbp','futve') %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %} onclick="filterLeague('{{ league_data.slug }}',this)" style="white-space:nowrap;padding:0.35rem 0.85rem;border-radius:20px;border:1.5px solid var(--border,#d1d5db);background:var(--bg-card,#fff);color:var(--text-primary,#374151);font-size:0.78rem;font-weight:600;cursor:pointer;flex-shrink:0;">{{ league_data.emoji }} {{ league_name }} <span style="opacity:.6;font-weight:800;font-size:.68rem;">{{ deduped|length }}</span></button>
         {% endif %}
         {% endfor %}
     </nav>
@@ -1855,18 +1855,22 @@
 
 
 
-{# ══ RIVALIDADES ══
-   Enlaces de verdad en el HTML. Las chips de liga de arriba se construyen en
-   el navegador a partir de los partidos del día, así que el robot no las ve y
-   además desaparecen cuando esa liga no juega hoy. Estas páginas son
-   permanentes y conviene que se alcancen desde la portada todos los días. #}
-{% if clasicos_home %}
-<nav class="cl-fila" aria-label="Cl&aacute;sicos">
-    <span class="cf-tt">Cl&aacute;sicos:</span>
-    {% for s, c in clasicos_home %}<a href="/clasico/{{ s }}">{{ c.nombre }}</a>{% if not loop.last %}<span class="cf-sep">&middot;</span>{% endif %}{% endfor %}
-    <a class="cf-todos" href="/clasicos">Ver todos &rarr;</a>
-</nav>
-{% endif %}
+{#
+  ══ RIVALIDADES ══ — movido al pie el 24/10/2026.
+
+  Estaba aquí arriba, entre la cabecera y los partidos: dos renglones de
+  enlaces a clásicos que ocupaban la primera pantalla y empujaban hacia
+  abajo lo único que la gente vino a buscar, que es el partido de hoy.
+
+  La razón de ponerlo en el HTML sigue siendo válida y no cambia: las chips
+  de liga se construyen en el navegador, así que el robot no las ve; estos
+  enlaces son permanentes y conviene que se alcancen desde la portada todos
+  los días. Pero para eso da igual que estén arriba o abajo — Google lee la
+  página entera. Para el lector no da igual.
+
+  Así que el bloque se conserva completo, con sus enlaces, justo encima del
+  pie. Busca "RIVALIDADES (pie)" más abajo.
+#}
 
 <!-- Games -->
 <main class="main" id="gamesContainer">
@@ -2203,7 +2207,7 @@
 
     {# data-sport permite ordenar las secciones por "mis deportes" sin volver a
        consultar al servidor. Sale del primer partido, que siempre existe aqui. #}
-    <section class="league-section" data-league-slug="{{ league_data.slug }}" data-sport="{{ (league_data.games[0].sport if league_data.games else '') }}"{% if league_data.slug in ('lvbp',) %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %}>
+    <section class="league-section" data-league-slug="{{ league_data.slug }}" data-sport="{{ (league_data.games[0].sport if league_data.games else '') }}"{% if league_data.slug in ('lvbp','futve') %} data-geo-country="VE"{% elif league_data.slug in ('lidom',) %} data-geo-country="DO"{% endif %}>
         <h2 class="league-header">
             <span>{{ league_data.emoji }} {{ league_name }}</span>
             {# Decía "1 partido" aunque ese partido ya hubiera terminado, y debajo
@@ -2614,6 +2618,18 @@
 
 <!-- Ad slot: bottom of page -->
 {{ ad('bottom') }}
+
+{# ══ RIVALIDADES (pie) ══
+   Venía de arriba de los partidos. Mismos enlaces, mismo propósito para el
+   rastreo; lo que cambia es que ya no se interpone entre quien llega y el
+   partido de hoy. Ver la nota en el sitio original. #}
+{% if clasicos_home %}
+<nav class="cl-fila" aria-label="Cl&aacute;sicos" style="max-width:1100px;margin:0 auto;">
+    <span class="cf-tt">Cl&aacute;sicos:</span>
+    {% for s, c in clasicos_home %}<a href="/clasico/{{ s }}">{{ c.nombre }}</a>{% if not loop.last %}<span class="cf-sep">&middot;</span>{% endif %}{% endfor %}
+    <a class="cf-todos" href="/clasicos">Ver todos &rarr;</a>
+</nav>
+{% endif %}
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Tu guia de donde ver deportes en vivo</p>
