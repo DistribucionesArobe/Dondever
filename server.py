@@ -5345,6 +5345,7 @@ async def events_diag(token: str = ""):
 async def whatsapp_diagnostics(key: str = ""):
     """Diagnostic endpoint: subscribe app to WABA + check templates."""
     import os as _os
+    import httpx
     internal_key = _os.getenv("INTERNAL_API_KEY", "")
     if not internal_key or key != internal_key:
         return JSONResponse(status_code=403, content={"error": "forbidden"})
@@ -5903,13 +5904,14 @@ async def whatsapp_delivery_log(token: str = "", to: str = ""):
 async def whatsapp_check_delivery():
     """Verifica el estado de entrega de los ultimos mensajes enviados por Twilio."""
     from whatsapp_broadcast import get_twilio_client
+    from config import TWILIO_WA_NUMBER
     client = get_twilio_client()
     if not client:
         return {"ok": False, "error": "Twilio no configurado"}
     try:
         # Get last 10 outbound messages
         messages = client.messages.list(
-            from_=TWILIO_WA_NUMBER if 'TWILIO_WA_NUMBER' in dir() else None,
+            from_=TWILIO_WA_NUMBER or None,
             limit=10
         )
         results = []

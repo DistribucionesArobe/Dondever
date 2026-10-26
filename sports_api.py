@@ -2553,19 +2553,49 @@ def _resumen_es_equipo(t: dict) -> str:
 #   Universidad Central → "Central"   Academia Puerto Cabello → "Cabello"
 #
 # Dos equipos distintos con la misma etiqueta en una tabla de posiciones.
+#
+# OJO con dos cosas que ya se probaron y salieron mal:
+#
+# 1) "atletico" y "universidad" NO van aquí. Distinguen de verdad:
+#    Atlético Madrid → "Madrid" choca con Real Madrid en la misma tabla, y
+#    Universidad Central → "Central" no es como se le llama a nadie.
+#    Esta función corre para CUALQUIER liga de fútbol de TheSportsDB, no
+#    sólo la FUTVE, así que LaLiga y Liga MX entran por aquí.
+#
+# 2) Sólo se quita por los extremos. Quitando en medio, "Atlético de
+#    Madrid" quedaba como "de Madrid".
 _GENERICAS_CLUB = {"fc", "cf", "sc", "ac", "cd", "ud", "sd", "club",
-                   "deportivo", "academia", "universidad", "atletico",
-                   "atlético", "asociacion", "asociación"}
+                   "deportivo", "academia", "asociacion", "asociación"}
 
 
 def _corto_futbol(nombre: str) -> str:
-    """Nombre corto de un club quitando sólo las palabras genéricas."""
-    partes = [p for p in (nombre or "").split()
-              if _sin_acentos_min(p).strip(".") not in _GENERICAS_CLUB]
+    """Nombre corto de un club quitando las palabras genéricas de los extremos."""
+    partes = (nombre or "").split()
+
+    def _es_generica(p: str) -> bool:
+        return _sin_acentos_min(p).strip(".") in _GENERICAS_CLUB
+
+    while partes and _es_generica(partes[0]):
+        partes.pop(0)
+    while partes and _es_generica(partes[-1]):
+        partes.pop()
     corto = " ".join(partes).strip()
     # Si al quitar lo genérico no queda nada útil, vale más el nombre entero
     # que una etiqueta vacía o de una letra.
     return corto if len(corto) >= 3 else (nombre or "")
+
+
+def _cortos_sin_choque(nombres: list[str]) -> dict[str, str]:
+    """Nombres cortos de una tabla, cayendo al nombre entero si dos coinciden.
+
+    Última red: si una liga futura vuelve a producir dos etiquetas iguales,
+    la tabla muestra el nombre completo en vez de mentir sobre quién es quién.
+    """
+    corto = {n: _corto_futbol(n) for n in nombres}
+    cuenta: dict[str, int] = {}
+    for c in corto.values():
+        cuenta[c.lower()] = cuenta.get(c.lower(), 0) + 1
+    return {n: (c if cuenta.get(c.lower(), 0) == 1 else n) for n, c in corto.items()}
 
 
 def _sin_acentos_min(s: str) -> str:
@@ -2676,6 +2706,8 @@ async def compute_sportsdb_standings(league_id: str) -> list[dict]:
             teams.items(),
             key=lambda x: x[1]["w"] / max(x[1]["w"] + x[1]["l"], 1), reverse=True)
 
+    _cortos = _cortos_sin_choque([n for n, _ in sorted_teams]) if _es_futbol else {}
+
     for rank, (name, stats) in enumerate(sorted_teams, 1):
         total = stats["w"] + stats["l"] + (stats["d"] if _es_futbol else 0)
         _den = stats["w"] + stats["l"]
@@ -2683,7 +2715,7 @@ async def compute_sportsdb_standings(league_id: str) -> list[dict]:
         entries.append({
             "team_id": stats["team_id"],
             "team_name": name,
-            "team_short": _corto_futbol(name) if _es_futbol else (
+            "team_short": _cortos.get(name, name) if _es_futbol else (
                 name.split(" de ")[0] if " de " in name else name.split()[-1]),
             "team_logo": stats["badge"],
             "group": "",
