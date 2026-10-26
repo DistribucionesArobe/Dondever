@@ -217,7 +217,11 @@
                 <span style="font-weight:800;color:#1a1a2e;">{{ next_game.away }}</span>
                 {% if next_game.away_logo %}<img src="{{ next_game.away_logo }}" alt="" style="width:24px;height:24px;object-fit:contain;">{% endif %}
             </div>
-            <div style="margin-top:0.4rem;font-weight:700;color:#f97316;font-size:0.9rem;">{{ next_game.day_local }} &middot; {{ next_game.time_local }} <span style="color:#9ca3af;font-weight:500;font-size:0.75rem;">({{ tz_label }})</span></div>
+            {# La hora sólo se pinta si es fiable. Un partido a más de 21 días
+               suele ser pretemporada, y statsapi lo manda con startTimeTBD:
+               la hora que trae es relleno (08:33 UTC). Ver `hora_fiable` en
+               la ruta. Antes esto decía "Viernes 19 de febrero · 3:33 AM". #}
+            <div style="margin-top:0.4rem;font-weight:700;color:#f97316;font-size:0.9rem;">{{ next_game.day_local }}{% if next_game.hora_fiable %} &middot; {{ next_game.time_local }} <span style="color:#9ca3af;font-weight:500;font-size:0.75rem;">({{ tz_label }})</span>{% else %} <span style="color:#9ca3af;font-weight:500;font-size:0.75rem;">(horario por confirmar)</span>{% endif %}</div>
             <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;font-size:0.75rem;color:#6b7280;">
                 <span>&#128250;</span>
                 {% if next_game.local_channels %}<span style="font-weight:600;">{{ country_flag }} {{ country_name }}:</span>{% for c in next_game.local_channels %}<span style="background:#f3f4f6;color:#374151;padding:0.15rem 0.5rem;border-radius:6px;font-weight:600;">{{ c }}</span>{% endfor %}

@@ -9737,9 +9737,11 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     if team_info:
         team_name = team_info["name"]
         team_league = team_info.get("league", "")
+        team_sport = team_info.get("sport", "")
     else:
         team_name = team_slug.replace("-", " ").title()
         team_league = ""
+        team_sport = ""
 
     # Get team logo and games
     search_term = TEAM_ALIASES.get(team_slug.replace("-", " "), team_slug.replace("-", " "))
@@ -9860,22 +9862,51 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
             next_game["local_channels"] = local_chs
             next_game["other_channels"] = other_chs[:4]
             next_game["time_local"] = format_local_time(next_game.get("date", ""))
+            # ¿El partido está tan lejos que ni la hora ni el canal son fiables?
+            # El 26/10/2026, en off-season, esta página decía:
+            #   "Dodgers vs White Sox en Estados Unidos: Viernes 19 de febrero
+            #    3:33 AM en FOX"
+            # Las dos cifras eran inventadas. La hora, porque los partidos de
+            # pretemporada vienen con startTimeTBD en statsapi y el 08:33 UTC es
+            # relleno —sólo officialDate es fiable—. Y "FOX" no era el canal de
+            # ESE partido: salía de _default_channels(país), el canal genérico
+            # del país, afirmado sobre una exhibición de febrero.
+            _dias_fuera = None
             try:
                 _dt = datetime.fromisoformat(str(next_game.get("date", "")).replace("Z", "+00:00")).astimezone(tz_local)
                 next_game["day_local"] = f"{_DIAS_ES[_dt.weekday()].capitalize()} {_dt.day} de {_MESES_ES[_dt.month - 1]}"
+                next_game["dia_corto"] = f"{_dt.day} de {_MESES_ES[_dt.month - 1]}"
+                _dias_fuera = (_dt - datetime.now(tz_local)).days
             except Exception:
                 next_game["day_local"] = ""
+                next_game["dia_corto"] = ""
+            # Mismo umbral de 21 días que usa _build_team_seo en la ficha principal.
+            _lejano = _dias_fuera is not None and _dias_fuera > 21
+            next_game["hora_fiable"] = not _lejano
             _nh, _na = next_game.get("home", ""), next_game.get("away", "")
             _opp = _short_team_name(_na if st in _nh.lower() else _nh, team_league)
-            _ch_txt = local_chs[0] if local_chs else first_ch
+            # Sólo los canales de ESE partido. first_ch es el canal por defecto
+            # del país y no dice nada de este encuentro: usarlo como relleno es
+            # lo que producía el "en FOX".
+            _ch_txt = local_chs[0] if local_chs else ""
             _ch_txt_ok = bool(_ch_txt) and "confirmar" not in _ch_txt.lower()
-            _en_canal = f" en {_ch_txt}" if _ch_txt_ok else ""
-            seo_title = (f"{_tshort} vs {_opp} en {cname}: {next_game['day_local']} "
-                         f"{next_game['time_local']}{_en_canal} | Dónde ver")
-            seo_desc = (f"Próximo partido de {team_name} en {cname}: {_tshort} vs {_opp} el {next_game['day_local']} a las "
-                        f"{next_game['time_local']} {tz_label}. "
-                        + (f"Canal: {_ch_txt}. " if _ch_txt_ok else "Emisor aún sin confirmar. ")
-                        + f"Todos los canales para ver {team_league} desde {cname}.")
+
+            if _lejano:
+                # Lejos: el día es lo único que sabemos. Sin hora y sin canal.
+                seo_title = f"{_tshort} en {cname}: vuelven el {next_game['dia_corto']} | Dónde ver"
+                if len(seo_title) > 65:
+                    seo_title = f"Dónde ver {_tshort} en {cname}: calendario y canales"
+                seo_desc = (f"{_tshort} vuelven el {next_game['dia_corto']} contra {_opp}. "
+                            f"Canales de TV y streaming para ver {team_league} desde {cname}, "
+                            f"con horario de {cname} cuando se confirme.")
+            else:
+                _en_canal = f" en {_ch_txt}" if _ch_txt_ok else ""
+                seo_title = (f"{_tshort} vs {_opp} en {cname}: {next_game['day_local']} "
+                             f"{next_game['time_local']}{_en_canal} | Dónde ver")
+                seo_desc = (f"Próximo partido de {team_name} en {cname}: {_tshort} vs {_opp} el {next_game['day_local']} a las "
+                            f"{next_game['time_local']} {tz_label}. "
+                            + (f"Canal: {_ch_txt}. " if _ch_txt_ok else "Emisor aún sin confirmar. ")
+                            + f"Todos los canales para ver {team_league} desde {cname}.")
     if today_g:
         home = today_g.get("home", {}) or {}
         away = today_g.get("away", {}) or {}
