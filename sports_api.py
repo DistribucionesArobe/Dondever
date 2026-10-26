@@ -2871,7 +2871,15 @@ async def fetch_sportsdb_next_events(league_id: str) -> list[dict]:
             "date": ev.get("strTimestamp") or ev.get("dateEvent", ""),
             "channels": chs or list(_default_chs),
         })
-    _sportsdb_events_cache[cache_key] = results
+    # No se cachea una lista vacía. Un `{"events": null}` momentáneo de
+    # TheSportsDB se quedaba 30 minutos en caché, y durante esa media hora
+    # /liga/{slug} veía cero próximos partidos: con `games`, `recent_results`
+    # y `upcoming_games` vacíos, `liga_inactiva` se enciende y la página
+    # declara la liga parada. El 26/10/2026 /liga/futve decía "Liga FUTVE no
+    # tiene partidos programados por ahora" mientras la API tenía 20, dos de
+    # ellos al día siguiente. Reintentar es baratísimo comparado con eso.
+    if results:
+        _sportsdb_events_cache[cache_key] = results
     return results
 
 

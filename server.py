@@ -8788,10 +8788,27 @@ async def team_page(request: Request, team_slug: str):
             pass
 
     # ── DB fallback: if ESPN returned nothing, use historical DB data ──
+    #
+    # El deporte NO es opcional aquí. Las tres consultas buscan por nombre con
+    # ILIKE '%nombre%', y hay clubes cuyo nombre está dentro del de otro de
+    # otro deporte. Medido en producción el 26/10/2026 en /equipo/caracas-fc,
+    # un club de FÚTBOL de la Liga FUTVE:
+    #
+    #   PRÓXIMO PARTIDO   Leones del Caracas vs Tigres de Aragua   ← LVBP
+    #   canales           Meridiano TV, Televen, BeisbolPlay       ← béisbol
+    #   title             "Dónde ver Caracas vs Tigres de Aragua"
+    #
+    # "Caracas" casa con "Leones del Caracas". Es el mismo choque de nombres
+    # que ya filtramos en `games` más arriba, pero por otro camino: este no
+    # pasa por search_games, sale de nuestra propia base.
+    #
+    # t_sport viene de TEAM_LEAGUE_MAP y es el deporte técnico en inglés
+    # ("soccer", "baseball"), que es lo que guarda la columna games.sport.
+    _dep_db = (league_info_map[0] if league_info_map else "") or ""
     top_channels = []
     try:
         if not recent_results:
-            db_history = await get_team_history(team_name, limit=5)
+            db_history = await get_team_history(team_name, limit=5, sport=_dep_db)
             for h in db_history:
                 recent_results.append({
                     "home": h["home_name"], "away": h["away_name"],
@@ -8799,7 +8816,7 @@ async def team_page(request: Request, team_slug: str):
                     "date": h["game_date"], "league": h.get("league_name", ""),
                 })
         if not upcoming_games:
-            db_upcoming = await get_team_upcoming(team_name, limit=5)
+            db_upcoming = await get_team_upcoming(team_name, limit=5, sport=_dep_db)
             for u in db_upcoming:
                 import json as _json_mod
                 ch_list = _json_mod.loads(u.get("channels_json", "[]")) if u.get("channels_json") else []
@@ -8810,7 +8827,7 @@ async def team_page(request: Request, team_slug: str):
                     "channels": ch_list,
                 })
         # Top channels for this team (always try)
-        top_channels = await get_team_channels(team_name)
+        top_channels = await get_team_channels(team_name, sport=_dep_db)
     except Exception:
         pass  # DB unavailable — degrade gracefully
 
@@ -9843,7 +9860,11 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
                         next_game = dict(u)
                         break
             if not next_game:
-                _db_up = await get_team_upcoming(team_name, limit=1)
+                # sport acotado: sin él, /equipo/caracas-fc/en/venezuela —un
+                # club de fútbol— sacaba el partido de los Leones del Caracas
+                # de la LVBP. Ver el comentario en get_team_upcoming.
+                _db_up = await get_team_upcoming(
+                    team_name, limit=1, sport=(_lm[0] if _lm else ""))
                 if _db_up:
                     u = _db_up[0]
                     import json as _json_mod
@@ -10536,7 +10557,16 @@ async def team_page_en(request: Request, team_slug: str):
     except Exception:
         pass
     try:
-        top_channels = await get_team_channels(team_name)
+        # Acotado por deporte: ver el comentario en get_team_channels. Sin
+        # esto, un club cuyo nombre esté dentro del de otro de otro deporte
+        # hereda sus canales.
+        _dep_en = ""
+        try:
+            from sports_api import TEAM_LEAGUE_MAP as _TLM3
+            _dep_en = (_TLM3.get(team_slug) or ("", ""))[0] or ""
+        except Exception:
+            pass
+        top_channels = await get_team_channels(team_name, sport=_dep_en)
     except Exception:
         pass  # la BD puede no estar: la página sigue sirviendo
 

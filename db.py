@@ -214,8 +214,12 @@ async def persist_games(games: list[dict], date_str: str):
 
 
 # ── Queries ─────────────────────────────────────────────────
-async def get_team_history(team_name: str, limit: int = 10) -> list[dict]:
-    """Get recent finished games for a team (home or away)."""
+async def get_team_history(team_name: str, limit: int = 10, sport: str = "") -> list[dict]:
+    """Partidos terminados de un equipo. `sport` acota por deporte.
+
+    Mismo motivo que en get_team_upcoming: el nombre se busca con ILIKE, y
+    "Caracas" (fútbol) casa con "Leones del Caracas" (béisbol).
+    """
     async with async_session() as session:
         result = await session.execute(
             text("""
@@ -227,17 +231,32 @@ async def get_team_history(team_name: str, limit: int = 10) -> list[dict]:
                 FROM games
                 WHERE state = 'post'
                   AND (home_name ILIKE :team OR away_name ILIKE :team)
+                  AND (:sport = '' OR sport = :sport)
                 ORDER BY game_date DESC, date_utc DESC
                 LIMIT :lim
             """),
-            {"team": f"%{team_name}%", "lim": limit}
+            {"team": f"%{team_name}%", "lim": limit, "sport": sport or ""}
         )
         rows = result.mappings().all()
         return [dict(r) for r in rows]
 
 
-async def get_team_upcoming(team_name: str, limit: int = 5) -> list[dict]:
+async def get_team_upcoming(team_name: str, limit: int = 5, sport: str = "") -> list[dict]:
     """Próximos partidos de un equipo. Próximo = EN EL FUTURO, no solo state='pre'.
+
+    `sport` acota por deporte y no es opcional en la práctica: el nombre se
+    busca con ILIKE '%nombre%', y hay clubes cuyo nombre está DENTRO del de
+    otro de otro deporte. Visto en producción el 26/10/2026:
+
+      /equipo/caracas-fc  (fútbol, Liga FUTVE)
+        → "PRÓXIMO PARTIDO: Leones del Caracas vs Tigres de Aragua"  ← LVBP
+        → canales: Meridiano TV, Televen, BeisbolPlay, 1 Baseball    ← béisbol
+        → title: "Dónde ver Caracas vs Tigres de Aragua"
+
+    "Caracas" casa con "Leones del Caracas". Se acota por DEPORTE y no por
+    liga a propósito: filtrando por liga, un equipo de Liga MX perdería sus
+    partidos de Concachampions y de Leagues Cup, que son otra liga pero el
+    mismo deporte.
 
     El filtro de fecha faltaba y el daño era grande. Medido en producción el
     06/10/2026:
@@ -275,16 +294,17 @@ async def get_team_upcoming(team_name: str, limit: int = 5) -> list[dict]:
                   AND date_utc IS NOT NULL
                   AND date_utc >= NOW() - INTERVAL '4 hours'
                   AND (home_name ILIKE :team OR away_name ILIKE :team)
+                  AND (:sport = '' OR sport = :sport)
                 ORDER BY date_utc ASC
                 LIMIT :lim
             """),
-            {"team": f"%{team_name}%", "lim": limit}
+            {"team": f"%{team_name}%", "lim": limit, "sport": sport or ""}
         )
         rows = result.mappings().all()
         return [dict(r) for r in rows]
 
 
-async def get_team_channels(team_name: str) -> list[tuple[str, int]]:
+async def get_team_channels(team_name: str, sport: str = "") -> list[tuple[str, int]]:
     """Canales en los que más se ha transmitido un equipo, del último año.
 
     La ventana de 12 meses faltaba, y sin ella el bloque "Canales donde más se
@@ -311,11 +331,12 @@ async def get_team_channels(team_name: str) -> list[tuple[str, int]]:
                 WHERE (home_name ILIKE :team OR away_name ILIKE :team)
                   AND date_utc IS NOT NULL
                   AND date_utc >= NOW() - INTERVAL '12 months'
+                  AND (:sport = '' OR sport = :sport)
                 GROUP BY ch
                 ORDER BY cnt DESC
                 LIMIT 5
             """),
-            {"team": f"%{team_name}%"}
+            {"team": f"%{team_name}%", "sport": sport or ""}
         )
         return [(r[0], r[1]) for r in result.all()]
 
