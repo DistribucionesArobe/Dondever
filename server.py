@@ -8724,7 +8724,7 @@ async def team_page(request: Request, team_slug: str):
         # `games` alimenta además el bloque "partido de hoy" de la plantilla.
         # Sin filtrarlo, /equipo/caracas-fc seguiría anunciando el juego de
         # Leones del Caracas como si fuera suyo.
-        if _deporte_esperado:
+        if _esperado:
             games = [g for g in games if _es_su_deporte(g)]
 
     # Fetch team stats (standings, record, etc.)

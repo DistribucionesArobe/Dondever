@@ -4628,11 +4628,25 @@
         if (s.rank || s.wins) {
             html += '<div class="tp-stats">';
             if (s.rank) html += '<div class="tp-stat"><div class="tp-stat-val">' + s.rank + '</div><div class="tp-stat-label">Posición</div></div>';
-            if (s.record_display) html += '<div class="tp-stat"><div class="tp-stat-val">' + s.record_display + '</div><div class="tp-stat-label">G-E-P</div></div>';
+            // El béisbol no tiene empates y no marca goles. La tarjeta decía
+            // "G-E-P" y "DIF. GOLES" para TODOS los deportes: en los Dodgers
+            // salía "100-62 · G-E-P" (dos números bajo una etiqueta de tres) y
+            // "+201 · DIF. GOLES", cuando son carreras. La ficha completa
+            // (team.html) ya lo hacía bien; esta tarjeta no.
+            //
+            // La etiqueta del récord se deduce del propio dato —"15-7-5" son
+            // tres partes, "100-62" son dos— así que no puede desincronizarse
+            // de lo que se muestra.
+            var _partes = String(s.record_display || '').split('-').length;
+            var _lblRec = _partes >= 3 ? 'G-E-P' : 'G-P';
+            var _dif = {baseball:'Dif. carreras', basketball:'Dif. puntos',
+                        football:'Dif. puntos', 'college-football':'Dif. puntos'};
+            var _lblDif = _dif[s.sport_type] || 'Dif. goles';
+            if (s.record_display) html += '<div class="tp-stat"><div class="tp-stat-val">' + s.record_display + '</div><div class="tp-stat-label">' + _lblRec + '</div></div>';
             if (s.points !== '' && s.points !== undefined && s.sport_type === 'soccer') html += '<div class="tp-stat"><div class="tp-stat-val green">' + s.points + '</div><div class="tp-stat-label">Puntos</div></div>';
             if (s.goal_diff !== '' && s.goal_diff !== undefined) {
                 var gdClass = Number(s.goal_diff) > 0 ? 'green' : (Number(s.goal_diff) < 0 ? 'red' : '');
-                html += '<div class="tp-stat"><div class="tp-stat-val ' + gdClass + '">' + s.goal_diff + '</div><div class="tp-stat-label">Dif. goles</div></div>';
+                html += '<div class="tp-stat"><div class="tp-stat-val ' + gdClass + '">' + s.goal_diff + '</div><div class="tp-stat-label">' + _lblDif + '</div></div>';
             }
             if (s.win_pct && s.sport_type !== 'soccer') html += '<div class="tp-stat"><div class="tp-stat-val">' + s.win_pct + '</div><div class="tp-stat-label">Win%</div></div>';
             if (s.streak) html += '<div class="tp-stat"><div class="tp-stat-val">' + s.streak + '</div><div class="tp-stat-label">Racha</div></div>';
