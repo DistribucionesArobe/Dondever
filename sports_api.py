@@ -966,8 +966,44 @@ SPORTSDB_LEAGUE_MAP = {
     "futve": "4513",
 }
 
+# Relleno automático desde LEAGUES. El mapa de arriba es manual y se queda corto
+# cada vez que entra una liga nueva: el 27/10/2026 le faltaba `lidom`, que sí
+# tiene "sportsdb:<id>" en la configuración. Sin la entrada, sus próximos
+# partidos salen sin canal. Lo escrito a mano manda —ahí hay ids elegidos a
+# propósito para ligas que TAMBIÉN están en ESPN, como liga-mx o premier—; esto
+# solo rellena lo que falte.
+# Sólo ids NUMÉRICOS. No todo lo que lleva el prefijo es un id de la API: LIDOM
+# se añadió a mano y su entrada es "sportsdb:lidom", un marcador. Copiándola tal
+# cual, el relleno pedía a TheSportsDB con id=lidom y traía basura. Es lo que
+# salió al verificar la primera versión de este bucle.
+for _slug, _t in ALL_LEAGUES.items():
+    if len(_t) >= 2 and str(_t[1]).startswith("sportsdb:"):
+        _id = str(_t[1]).split(":", 1)[1]
+        if _id.isdigit():
+            SPORTSDB_LEAGUE_MAP.setdefault(_slug, _id)
+del _slug, _t
+
 # Leagues that use TheSportsDB as PRIMARY source (no ESPN data)
-SPORTSDB_ONLY_LEAGUES = {"lmp", "lmb", "lnbp", "lvbp", "lidom"}
+# Ligas cuya única fuente es TheSportsDB: no se les pide nada a ESPN.
+#
+# Se DERIVA de la configuración, no se escribe a mano. Estaba fijo como
+# {"lmp","lmb","lnbp","lvbp","lidom"} y faltaban SEIS ligas que sí tienen id de
+# TheSportsDB: futve, liga-endesa, liga-femenina, liga-panama, primera-feb y
+# segunda-feb. A esas se les pedía el marcador del día a ESPN con un código de
+# liga "sportsdb:4513", que ESPN no entiende, así que get_todays_games devolvía
+# cero SIEMPRE. Consecuencias medidas el 27/10/2026, con la FUTVE jugando:
+#
+#   /liga/futve   "Liga FUTVE: próximos partidos"  ← teniendo partido ese día
+#   portada       la FUTVE no aparecía nunca
+#   reproductor   no podía encenderse: se engancha a los partidos de hoy
+#
+# Es la tercera vez que una liga nueva entra en unos mapas y no en otros (antes
+# pasó con SPORTSDB_LEAGUE_MAP y con _PAIS_DE_LIGA). Derivándolo, añadir una
+# liga a LEAGUES con "sportsdb:<id>" basta para que funcione el día de hoy.
+SPORTSDB_ONLY_LEAGUES = {
+    slug for slug, t in ALL_LEAGUES.items()
+    if len(t) >= 2 and str(t[1]).startswith("sportsdb:")
+}
 
 
 async def fetch_sportsdb_schedule(
