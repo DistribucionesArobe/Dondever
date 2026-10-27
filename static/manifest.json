@@ -2,7 +2,7 @@
   "name": "DondeVer — Dónde ver deportes en vivo",
   "short_name": "DondeVer",
   "description": "Guía de canales y horarios para ver deportes en vivo en México, USA y Latinoamérica.",
-  "start_url": "/?utm_source=pwa",
+  "start_url": "/?utm_source=pwa&utm_medium=app",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#10b981",

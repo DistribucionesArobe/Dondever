@@ -795,11 +795,11 @@ app.add_middleware(HTMLCacheMiddleware)  # outermost: caches the final (GA-injec
 
 
 # ── Template helpers ─────────────────────────────────────
-def format_mx_time(iso_date: str) -> str:
-    """Convert ISO date to Mexico City time (DST-aware)."""
+def format_mx_time(iso_date: str, tz=None) -> str:
+    """Hora local; México por defecto. Ver format_mx_day_time para el porqué de `tz`."""
     try:
         dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
-        mx = dt.astimezone(TZ_MX)
+        mx = dt.astimezone(tz or TZ_MX)
         return mx.strftime("%I:%M %p")
     except Exception:
         return ""
@@ -820,8 +820,14 @@ def format_date_es(dt) -> str:
     return f"{_DAYS_ES_FMT[dt.weekday()]} {dt.day} de {_MONTHS_ES[dt.month]}, {dt.year}"
 
 
-def format_mx_day_time(iso_date: str) -> str:
+def format_mx_day_time(iso_date: str, tz=None) -> str:
     """'Domingo 26 · 7:20 PM', y con el MES cuando la fecha no es de esta semana.
+
+    `tz` por defecto es México, que es el mercado principal. Se pasa otra zona
+    en las ligas cuyo público no está en México: en la LVBP y la FUTVE el que
+    busca está en Venezuela (3.500 usuarios/30d, +300 %), y un partido a las
+    7:00 PM de Caracas se anunciaba como "5:00 PM" porque el título siempre
+    hablaba hora de México.
 
     Por qué lleva el mes condicional. Esta función imprimía solo el día del mes
     en todas las tablas del sitio, y eso hizo INVISIBLE durante semanas el bug
@@ -840,10 +846,11 @@ def format_mx_day_time(iso_date: str) -> str:
     tipo. Una fecha que miente debe verse mintiendo.
     """
     try:
+        _tz = tz or TZ_MX
         dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
-        mx = dt.astimezone(TZ_MX)
+        mx = dt.astimezone(_tz)
         hora = mx.strftime('%I:%M %p').lstrip('0')
-        hoy = datetime.now(TZ_MX).date()
+        hoy = datetime.now(_tz).date()
         dias = (mx.date() - hoy).days
         mes = "" if -1 <= dias <= 6 else f" {_MONTHS_ES_SHORT[mx.month - 1]}"
         return f"{_DAYS_ES_FMT[mx.weekday()]} {mx.day}{mes} · {hora}"
@@ -3811,6 +3818,39 @@ async def league_page(request: Request, league_slug: str):
     # tres están vacíos, la liga no está activa.
     liga_inactiva = not games and not upcoming_games and not recent_results
 
+    # Estado intermedio: la liga está activa pero HOY no juega. `liga_inactiva`
+    # solo se enciende si los tres huecos están vacíos, así que este caso caía
+    # en la rama de "en vivo hoy". Visto el 26/10/2026 en /liga/futve, con la
+    # jornada empezando al día siguiente:
+    #
+    #   h1  "⚽ Liga FUTVE en vivo hoy — Partidos y resultados"
+    #   sub "Todos los juegos de Liga FUTVE con horarios, canales…"
+    #
+    # No hay ningún juego hoy. El <title> se deja como está a propósito: "en
+    # vivo hoy" es la frase con la que se busca y la página sí responde la
+    # pregunta (hoy no hay, el próximo es tal día). Lo que no puede decir eso
+    # es el H1, que es lo que lee la persona cuando ya entró.
+    sin_partidos_hoy = not games and not liga_inactiva
+
+    # País de la liga, cuando no es México. La fila de canales de la próxima
+    # jornada imprime "MX:" primero y a mano, así que en una liga local el
+    # emisor del propio país caía al montón sin etiquetar. Visto el 26/10/2026
+    # en /liga/futve:
+    #
+    #   📺 MX: por confirmar · IVC
+    #
+    # IVC es el que transmite la FUTVE en Venezuela, gratis. Sale sin etiqueta
+    # y detrás de un "por confirmar" de otro país. Son 8 ligas: LVBP, LIDOM,
+    # FUTVE, BetPlay, Liga Argentina, LigaPro, Liga 1 y Primera Chile — varias
+    # de ellas en los países que más crecen (Chile +329 %, Dominicana +221 %,
+    # Colombia +154 % en 30 días).
+    _pais_slug = _PAIS_DE_LIGA.get(display_name)
+    pais_liga = None
+    if isinstance(_pais_slug, str) and _pais_slug != "mexico":
+        _pc = TEAM_COUNTRY_SEO.get(_pais_slug)
+        if _pc and _pc.get("code"):
+            pais_liga = {"code": _pc["code"], "name": _pc["name"], "flag": _pc.get("flag", "")}
+
     # Tenis y golf: ESPN devuelve TORNEOS, no enfrentamientos. Su scoreboard trae
     # el evento ("Guadalajara Open") con competitions vacío, así que el parser
     # produce "TBD vs TBD" y /liga/wta terminaba enlazando a tres
@@ -3925,6 +3965,8 @@ async def league_page(request: Request, league_slug: str):
             # marca la tabla como de la edición pasada y esconde el bloque de
             # apuestas. Ver el comentario de liga_inactiva más arriba.
             "liga_inactiva": liga_inactiva,
+            "sin_partidos_hoy": sin_partidos_hoy,
+            "pais_liga": pais_liga,
             "league_channels_today": league_channels_today[:8],
             "default_channels": default_channels,
             "league_leaders": league_leaders,
@@ -8206,12 +8248,60 @@ _TWO_WORD_NICKS ={"red sox", "white sox", "blue jays", "maple leafs", "trail bla
 _US_STYLE_LEAGUES = {"MLB", "NBA", "NFL", "NHL", "WNBA", "MLS", "College Football", "NCAA"}
 
 
+# Nombres cortos de las ligas venezolanas. CURADOS, no deducidos.
+#
+# El acortador de abajo solo quita ruido de los extremos ("Club", "FC"), y los
+# nombres de las ligas de invierno son "{mote} de(l) {lugar}": no tienen ruido
+# que quitar, así que pasaban enteros. Medido en producción el 26/10/2026, la
+# ficha de Magallanes titulaba con 91 caracteres y Google corta en ~60:
+#
+#   Dónde ver Navegantes del Magallanes vs Tiburones de La Guaira: martes 27 5:00 PM MX y canal
+#   └────────────────── lo que se ve ──────────────────┘
+#
+# La hora caía en el carácter 74 y la palabra "canal" en el 87. Las dos
+# consultas que más nos ven en Venezuela, en 3 meses:
+#
+#   donde ver el juego de magallanes hoy          41 clics · 1.699 impr · 2,4 %
+#   que canal transmite el juego de magallanes hoy 13      · 1.622      · 0,8 %
+#
+# La segunda pide el canal literalmente y la palabra nunca se mostró. Para
+# contrastar: "lvbp en vivo" —título corto, que sí cabe— rinde 12 clics sobre
+# 84 impresiones, un 14,3 %.
+#
+# NO hay regla mecánica que acierte: en "Navegantes del Magallanes" se busca el
+# LUGAR ("magallanes", 3.321 impresiones lo prueban) y en "Tiburones de La
+# Guaira" se busca el MOTE ("tiburones"). Cada entrada sale de TEAM_ALIASES,
+# que es donde ya está registrado cómo busca la gente, y se comprueba que no
+# haya dos iguales dentro de la misma liga (ver el test de arranque abajo).
+#
+# Ojo con los choques entre ligas: "La Guaira" y "Caracas" los comparten un
+# equipo de LVBP y uno de FUTVE, así que ninguno de los dos se usa como corto.
+_CORTO_VE = {
+    # LVBP (béisbol)
+    "Águilas del Zulia": "Águilas",
+    "Bravos de Margarita": "Bravos",
+    "Cardenales de Lara": "Cardenales",
+    "Caribes de Anzoátegui": "Caribes",
+    "Leones del Caracas": "Leones",            # no "Caracas": choca con Caracas FC
+    "Navegantes del Magallanes": "Magallanes",  # el lugar, no el mote: lo dice GSC
+    "Tiburones de La Guaira": "Tiburones",      # no "La Guaira": choca con Dvo. La Guaira
+    "Tigres de Aragua": "Tigres",
+    # Liga FUTVE (fútbol) — solo los que no caben
+    "Academia Puerto Cabello": "Puerto Cabello",
+    "Estudiantes de Mérida": "Estudiantes",
+    "Universidad Central": "UCV",               # así se le llama y así se busca
+}
+
+
 def _short_team_name(full_name: str, league: str = "") -> str:
     """'Los Angeles Dodgers' → 'Dodgers'; 'Boston Red Sox' → 'Red Sox'; 'Tigres UANL' → 'Tigres'.
     Soccer clubs keep their name minus 'Club/FC/CF' noise. That's how people search."""
     if not full_name:
         return ""
     name = full_name.strip()
+    _ve = _CORTO_VE.get(name)
+    if _ve:
+        return _ve
     low = name.lower()
     # US-style "City Nickname" → nickname
     us_style = league in _US_STYLE_LEAGUES or any(
@@ -8248,6 +8338,14 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
     lg_sfx = f" {lg}" if lg else ""
     full_name = team_name
     team_name = _short_team_name(team_name, lg)  # "Los Angeles Dodgers" → "Dodgers" (como buscan)
+
+    # Ligas cuyo público NO está en México: el título da la hora del país que
+    # genera la consulta. Ver la nota de _CORTO_VE y de format_mx_day_time.
+    from zoneinfo import ZoneInfo as _ZoneInfo
+    _es_ve = lg in ("LVBP", "Liga FUTVE")
+    _tz_t = _ZoneInfo("America/Caracas") if _es_ve else TZ_MX
+    _tz_sigla = "VE" if _es_ve else "MX"
+    _tz_frase = "hora de Venezuela" if _es_ve else "hora de México"
 
     def _es_nuestro(nombre):
         """¿Este lado del partido es el equipo de la página?
@@ -8320,9 +8418,9 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
     if pre:
         g = pre[0]
         opp, ch = _opp_and_channel(g)
-        t = format_mx_time(g.get("date", "")).lstrip("0")
+        t = format_mx_time(g.get("date", ""), tz=_tz_t).lstrip("0")
         ch_txt = f" por {ch}" if ch else ""
-        t_txt = f" {t} MX" if t else ""
+        t_txt = f" {t} {_tz_sigla}" if t else ""
         return {
             "title": f"Dónde ver {team_name} vs {opp} hoy:{t_txt}{ch_txt}",
             "h1": f"Dónde ver {team_name} hoy vs {opp}:{t_txt}{ch_txt}",
@@ -8455,7 +8553,7 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
             }
         is_home = _es_nuestro(u.get("home", ""))
         opp = _short_team_name(u.get("away", "") if is_home else u.get("home", ""), lg)
-        when = format_mx_day_time(u.get("date_utc", "") or u.get("date", "") or "")
+        when = format_mx_day_time(u.get("date_utc", "") or u.get("date", "") or "", tz=_tz_t)
         chs = u.get("channels") or []
         ch = ""
         if chs:
@@ -8464,13 +8562,20 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         ch_txt = f" en {ch}" if ch else ""
         when_txt = f" {when}" if when else ""
         when_short = when.replace(" · ", " ")[:3].lower() + when.replace(" · ", " ")[3:] if when else ""
+        # En las ligas venezolanas el día va abreviado ("mar 27" y no "martes
+        # 27"). Son 3-4 caracteres y son los que decidían si "canal" entraba en
+        # los ~60 que muestra Google: "Puerto Cabello vs Caracas" daba 65.
+        if _es_ve and when_short:
+            _p = when_short.split(" ", 1)
+            if len(_p) == 2 and len(_p[0]) > 3:
+                when_short = f"{_p[0][:3]} {_p[1]}"
         when_short_txt = f" {when_short}" if when_short else ""
         return {
             # Sin fecha no se escribe " MX" suelto: quedaba "vs Mets: MX y canal".
-            "title": (f"Dónde ver {team_name} vs {opp}:{when_short_txt} MX y canal"
+            "title": (f"Dónde ver {team_name} vs {opp}:{when_short_txt} {_tz_sigla} y canal"
                       if when_short_txt else f"Dónde ver {team_name} vs {opp}: horario y canal"),
             "h1": f"Dónde ver {team_name}: próximo partido vs {opp}{when_txt}",
-            "desc": f"{team_name} no juega hoy. El próximo es vs {opp}{when_txt}{' (hora de México)' if when_txt else ''}{ch_txt}. Calendario completo, canal de TV y streaming{lg_sfx}.",
+            "desc": f"{team_name} no juega hoy. El próximo es vs {opp}{when_txt}{f' ({_tz_frase})' if when_txt else ''}{ch_txt}. Calendario completo, canal de TV y streaming{lg_sfx}.",
         }
     return {
         # "canal de transmisión" en vez de "horario, canal y streaming": mismo

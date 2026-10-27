@@ -1,3 +1,4 @@
+{% from "_app_banner.html" import app_banner %}
 {# Media kit. Las cifras están escritas a mano y cada una dice de dónde sale y
    de qué fecha es. Se actualizan cuando alguien las revise, no solas.
 
@@ -50,6 +51,7 @@
     </style>
 </head>
 <body>
+{{ app_banner() }}
 <div class="header">
     <div class="header-inner">
         <a href="/" class="logo">DondeVer<span>.app</span></a>

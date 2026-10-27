@@ -1,3 +1,4 @@
+{% from "_app_banner.html" import app_banner %}
 {% from "_ad.html" import ad %}
 {#
   Liga ASOBAL — página curada, sin calendario.
@@ -94,6 +95,7 @@
     </style>
 </head>
 <body>
+{{ app_banner() }}
 <header class="header"><div class="header-inner">
     <a href="/" class="logo">Donde<span>Ver</span></a>
     <a href="/liga/liga-endesa" class="back">&larr; Baloncesto español</a>

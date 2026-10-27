@@ -1,3 +1,4 @@
+{% from "_app_banner.html" import app_banner %}
 {% from "_ad.html" import ad %}
 {% from "_video.html" import video %}
 <!DOCTYPE html>
@@ -344,6 +345,7 @@
     </style>
 </head>
 <body>
+{{ app_banner() }}
 
 <header class="header">
     <div class="header-inner">
@@ -367,6 +369,12 @@
        hacía /liga/copa-america en producción con un torneo de 2024. #}
     <h1>{{ emoji }} {{ league_name }}: calendario, resultados y dónde verla</h1>
     <p>{{ league_name }} no tiene partidos programados por ahora. Aquí te dejamos cómo y dónde se transmite cuando vuelve &mdash; y mientras tanto, <a href="/" style="color:#10b981;font-weight:600;">mira qué se juega hoy</a>.</p>
+    {%- elif sin_partidos_hoy %}
+    {# La liga está activa pero hoy no juega. Decir "en vivo hoy" en el H1 es
+       falso: el 26/10/2026 /liga/futve lo decía con la jornada empezando al
+       día siguiente. El <title> sí conserva la frase, que es como se busca. #}
+    <h1>{{ emoji }} {{ league_name }}: pr&oacute;ximos partidos y d&oacute;nde verlos</h1>
+    <p>Hoy no hay juegos de {{ league_name }}. Abajo est&aacute; la pr&oacute;xima jornada con horarios y canales &mdash; o <a href="/" style="color:#10b981;font-weight:600;">mira qu&eacute; se juega hoy</a>.</p>
     {%- else %}
     <h1>{{ emoji }} {{ league_name }} en vivo hoy — Partidos y resultados</h1>
     <p>Todos los juegos de {{ league_name }} con horarios, canales de TV y opciones de streaming para {{ mercados }}.</p>
@@ -655,10 +663,20 @@
                                etiqueta justo despu&eacute;s de "MX:", as&iacute; que un lector en
                                M&eacute;xico las le&iacute;a como si fueran opci&oacute;n suya. Van al final y
                                dicen de d&oacute;nde son. #}
+                            {# En una liga local, el emisor de SU país va primero y
+                               etiquetado. Antes "MX:" iba fijo al frente y el canal
+                               del propio país caía al montón sin etiqueta: en
+                               /liga/futve se leía "MX: por confirmar · IVC", con IVC
+                               —que la transmite gratis en Venezuela— detrás de un
+                               "por confirmar" ajeno. Ver `pais_liga` en la ruta. #}
+                            {% set _lc = pais_liga.code if pais_liga else '' %}
+                            {% set loc_ch = u.channels|selectattr('country','equalto',_lc)|list if _lc else [] %}
                             {% set mx_ch = u.channels|selectattr('country','equalto','MX')|list %}
                             {% set us_ch = u.channels|rejectattr('is_us_regional')|selectattr('country','equalto','US')|list %}
                             {% set reg_ch = u.channels|selectattr('is_us_regional')|list %}
-                            {% set other_ch = u.channels|rejectattr('is_us_regional')|rejectattr('country','in',['MX','US'])|list %}
+                            {% set _ya = ['MX','US'] + ([_lc] if _lc else []) %}
+                            {% set other_ch = u.channels|rejectattr('is_us_regional')|rejectattr('country','in',_ya)|list %}
+                            {% if loc_ch %}<span data-ch-country="{{ _lc }}"><span style="font-weight:600;">{{ pais_liga.flag }} {{ pais_liga.name }}:</span> {{ loc_ch|map(attribute='name')|join(', ') }}</span> · {% endif %}
                             {% if mx_ch %}<span data-ch-country="MX"><span style="font-weight:600;">MX:</span> {{ mx_ch|map(attribute='name')|join(', ') }}</span>{% else %}<span data-ch-country="MX"><span style="font-weight:600;">MX:</span> <span style="opacity:0.6;">por confirmar</span></span>{% endif %}
                             {% if us_ch %}<span data-ch-country="US"> · <span style="font-weight:600;">USA:</span> {{ us_ch|map(attribute='name')|join(', ') }}</span>{% endif %}
                             {% if other_ch %} · {{ other_ch|map(attribute='name')|join(', ') }}{% endif %}

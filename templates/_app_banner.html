@@ -1,0 +1,110 @@
+{#
+  Barra de instalación de la app. UN archivo incluido en todas las páginas
+  de contenido, no copiado en cada plantilla.
+
+  Por qué existe. Medido el 26/10/2026: la invitación a instalar vivía SOLO
+  en index.html, y la portada es ~5 % de las vistas (609 de 12.000 en 7 días).
+  El 95 % de quien llega desde Google —a /equipo/ y /liga/— nunca se enteraba
+  de que hay app. Eso explica el 1,9 % de opt-in mucho mejor que cualquier
+  teoría sobre desinterés: no es que digan no, es que no se les preguntaba.
+
+  Cuatro decisiones que NO son cosméticas:
+
+  1. Va OCULTA por defecto y se muestra con un script síncrono justo debajo.
+     Al contrario (visible y luego ocultar) el navegador ya habría maquetado y
+     cada visitante con la barra descartada se comería un salto de layout.
+     El CLS es métrica de Core Web Vitals y el negocio entero es SEO: no se
+     paga recurrencia con posiciones.
+
+  2. No se muestra si YA está instalada (display-mode: standalone). Enseñarle
+     "instala la app" a quien la abrió desde la app es la señal más clara de
+     que el sitio no se fija en nada.
+
+  3. Se puede cerrar, y el cierre se recuerda 60 días. Una barra que no se
+     puede quitar es un banner de publicidad propia, y acabaría empujando a
+     la gente a cerrar la pestaña, que es lo contrario de lo que buscamos.
+
+  4. En iPhone NO existe beforeinstallprompt: Safari no deja instalar por
+     código. Ahí el botón manda a /app, que explica Compartir → Agregar a
+     pantalla de inicio. Llamar a prompt() en iOS no haría nada y el botón
+     parecería roto.
+
+  Va encima de .header y FUERA del flujo de anuncios, así que no compite con
+  ningún slot de AdSense ni lo desplaza.
+#}
+{% macro app_banner() %}
+<div id="dv-appbar" style="display:none;background:#fef3c7;border-bottom:1px solid #fcd34d;padding:0.5rem 0.75rem;">
+  <div style="max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:0.6rem;">
+    <span style="font-size:1.05rem;line-height:1;flex:0 0 auto;">&#128241;</span>
+    <span style="flex:1 1 auto;min-width:0;font-size:0.8rem;line-height:1.25;color:#78350f;font-weight:600;">
+      Instala DondeVer y abre los horarios de hoy en un toque, sin buscar.
+    </span>
+    <button type="button" id="dv-appbar-go"
+            style="flex:0 0 auto;background:#111827;color:#fff;border:0;border-radius:8px;padding:0.4rem 0.75rem;font-size:0.78rem;font-weight:800;cursor:pointer;white-space:nowrap;">
+      Instalar
+    </button>
+    <button type="button" id="dv-appbar-x" aria-label="Cerrar"
+            style="flex:0 0 auto;background:none;border:0;color:#92400e;font-size:1.15rem;line-height:1;padding:0 0.15rem;cursor:pointer;opacity:0.65;">
+      &times;
+    </button>
+  </div>
+</div>
+<style>
+  [data-theme="dark"] #dv-appbar { background:#422006; border-bottom-color:#78350f; }
+  [data-theme="dark"] #dv-appbar span[style*="color:#78350f"] { color:#fde68a !important; }
+  [data-theme="dark"] #dv-appbar #dv-appbar-x { color:#fde68a; }
+  [data-theme="dark"] #dv-appbar #dv-appbar-go { background:#fbbf24; color:#422006; }
+</style>
+<script>
+(function () {
+  var el = document.getElementById('dv-appbar');
+  if (!el) return;
+  var KEY = 'dv_appbar_off';
+
+  // Ya instalada: ni se muestra. (standalone en Android/escritorio,
+  // navigator.standalone en iOS, que no soporta display-mode.)
+  try {
+    if ((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true) return;
+  } catch (e) {}
+
+  // Cerrada hace poco: respetarlo.
+  try {
+    var hasta = parseInt(localStorage.getItem(KEY) || '0', 10);
+    if (hasta && Date.now() < hasta) return;
+  } catch (e) {}
+
+  // Se revela ANTES del primer pintado: entra en la maqueta inicial y no
+  // desplaza nada. Ver la nota 1 de arriba.
+  el.style.display = 'block';
+
+  function medir(nombre) {
+    try { if (typeof window.gtag === 'function') window.gtag('event', nombre); } catch (e) {}
+  }
+  medir('app_banner_view');
+
+  document.getElementById('dv-appbar-x').addEventListener('click', function () {
+    try { localStorage.setItem(KEY, String(Date.now() + 60 * 864e5)); } catch (e) {}
+    el.style.display = 'none';
+    medir('app_banner_dismiss');
+  });
+
+  document.getElementById('dv-appbar-go').addEventListener('click', function () {
+    medir('app_banner_install');
+    // Android/escritorio: el prompt nativo si el navegador ya lo ofreció.
+    if (window.__pwaPrompt) { try { window.__pwaPrompt.prompt(); return; } catch (e) {} }
+    // iPhone y cualquier caso sin prompt: instrucciones reales.
+    window.location.href = '/app';
+  });
+
+  // La captura de beforeinstallprompt vivía solo en index.html, así que en
+  // /equipo/ y /liga/ —donde está el tráfico— __pwaPrompt nunca existía y el
+  // botón habría mandado a /app incluso en Android, que sí puede instalar
+  // de un toque. Se captura aquí para que esté en todas las páginas.
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    window.__pwaPrompt = e;
+  });
+})();
+</script>
+{% endmacro %}

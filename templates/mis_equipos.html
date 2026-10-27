@@ -1,3 +1,4 @@
+{% from "_app_banner.html" import app_banner %}
 {% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
@@ -77,6 +78,7 @@
     </style>
 </head>
 <body>
+{{ app_banner() }}
 <div class="header">
     <a href="/" aria-label="DondeVer.app" style="text-decoration:none;display:block;"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" width="181" height="32" style="height:32px;width:auto;display:block;"></a>
     <button class="dm-toggle" id="dm-btn" onclick="toggleDarkMode()" title="Modo oscuro" style="background:none;border:none;cursor:pointer;font-size:1.1rem;padding:0.25rem 0.4rem;border-radius:8px;color:#94a3b8;">&#127769;</button>

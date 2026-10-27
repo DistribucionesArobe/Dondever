@@ -1,3 +1,4 @@
+{% from "_app_banner.html" import app_banner %}
 {% from "_ad.html" import ad %}
 <!DOCTYPE html>
 <html lang="es">
@@ -80,6 +81,7 @@
     </style>
 </head>
 <body>
+{{ app_banner() }}
 <div class="container">
     <div class="breadcrumb" style="display:flex;align-items:center;justify-content:center;gap:0.6rem;flex-wrap:wrap;">
         <a href="/" aria-label="DondeVer.app"><img src="/static/logo-dondever-sm.png" alt="DondeVer.app" width="181" height="32" style="height:26px;width:auto;display:inline-block;vertical-align:middle;"></a>
