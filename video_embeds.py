@@ -377,6 +377,23 @@ async def video_de_partido(game: dict) -> dict | None:
         return None
 
 
+def liga_con_transmision(liga: str) -> bool:
+    """¿Esta liga tiene alguna fuente de video configurada?
+
+    Filtro barato para los listados. Sin él, marcar los partidos de la portada
+    significaría llamar a video_de_partido() cincuenta veces; con él, las ligas
+    sin canal (hoy, 55 de 57) se descartan con una vuelta sobre una lista que
+    ya está en memoria. No toca la red ni el disco: _cargar_canales() y
+    _cargar() releen sólo si cambió el mtime del archivo.
+    """
+    if not habilitado() or not liga:
+        return False
+    liga = liga.lower()
+    if any(c["liga"] == liga for c in _cargar_canales()):
+        return True
+    return any(v["liga"] == liga for v in _cargar())
+
+
 async def video_de_liga(league_slug: str, hoy: datetime | None = None) -> dict | None:
     """Video del día para una página de liga, o None."""
     if not habilitado() or not league_slug:

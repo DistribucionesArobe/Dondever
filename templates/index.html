@@ -1970,6 +1970,19 @@
             <div class="gc-accordion">
                 <div class="gc-channels">
                     <span class="gc-channels-icon">&#128250;</span>
+                    {#- Transmisión gratuita encontrada en el canal oficial de la
+                        liga. `tiene_video` lo pone _marcar_transmisiones() en el
+                        servidor y sólo es verdadero cuando el emparejador
+                        devolvió un video con su id de YouTube: nunca se deduce
+                        de la liga ni del canal. Si saliera sin reproductor
+                        detrás, el lector llegaría a una página que no cumple.
+                        "EN DIRECTO" sólo con el estado 'in' de la API, que es
+                        el único dato que prueba que está jugándose ahora. -#}
+                    {% if game.tiene_video %}
+                    <span class="channel-tag" style="background:#c00;color:#fff;font-weight:700;">
+                        {%- if game.status.state == 'in' %}&#9654; EN DIRECTO AQU&Iacute;{% else %}&#9654; GRATIS AQU&Iacute;{% endif -%}
+                    </span>
+                    {% endif %}
                     {% if game.broadcasts %}
                         {% set ns_reg = namespace(count=0) %}
                         {% for b in game.broadcasts %}
@@ -2332,6 +2345,19 @@
                 {# ── Channels (hide US regional, show count) ── #}
                 <div class="gc-channels">
                     <span class="gc-channels-icon">&#128250;</span>
+                    {#- Transmisión gratuita encontrada en el canal oficial de la
+                        liga. `tiene_video` lo pone _marcar_transmisiones() en el
+                        servidor y sólo es verdadero cuando el emparejador
+                        devolvió un video con su id de YouTube: nunca se deduce
+                        de la liga ni del canal. Si saliera sin reproductor
+                        detrás, el lector llegaría a una página que no cumple.
+                        "EN DIRECTO" sólo con el estado 'in' de la API, que es
+                        el único dato que prueba que está jugándose ahora. -#}
+                    {% if game.tiene_video %}
+                    <span class="channel-tag" style="background:#c00;color:#fff;font-weight:700;">
+                        {%- if game.status.state == 'in' %}&#9654; EN DIRECTO AQU&Iacute;{% else %}&#9654; GRATIS AQU&Iacute;{% endif -%}
+                    </span>
+                    {% endif %}
                     {% if game.broadcasts %}
                         {% set ns_reg = namespace(count=0) %}
                         {% for b in game.broadcasts %}

@@ -27,5 +27,37 @@
     DondeVer no retransmite señales.
   </p>
 </section>
+{#- Datos estructurados del video.
+
+    Para qué sirve: con VideoObject, Google puede poner la MINIATURA junto al
+    resultado. En una lista de diez enlaces azules de "dónde ver X", ser el
+    único con imagen es la diferencia más barata de conseguir — y aquí pesa
+    doble, porque el problema medido es justo de CTR.
+
+    Va dentro del macro, no en la plantilla de partido, para que acompañe al
+    reproductor dondequiera que se use. Y va DENTRO del `if v.youtube_id`: sin
+    video no se emite nada. Marcar un video que no está en la página es de las
+    cosas por las que Google quita los resultados enriquecidos de un sitio.
+
+    Lo que NO se declara, a propósito: `publication` / `isLiveBroadcast`. El
+    feed RSS prueba que el video existe, no que esté emitiendo. Es la misma
+    regla que ya sigue el texto de arriba, que publica la fecha en vez de
+    poner "EN VIVO" sin saberlo. Declarar una emisión en directo que no lo
+    está es exactamente el tipo de dato falso que llevamos días quitando. -#}
+{%- if v.publicado %}
+<script type="application/ld+json">
+{{ {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": v.titulo,
+  "description": v.titulo,
+  "thumbnailUrl": "https://i.ytimg.com/vi/" ~ v.youtube_id ~ "/hqdefault.jpg",
+  "uploadDate": v.publicado,
+  "embedUrl": "https://www.youtube-nocookie.com/embed/" ~ v.youtube_id,
+  "contentUrl": v.fuente or ("https://www.youtube.com/watch?v=" ~ v.youtube_id),
+  "publisher": {"@type": "Organization", "name": v.canal or "Canal oficial"}
+} | tojson }}
+</script>
+{%- endif -%}
 {%- endif -%}
 {% endmacro %}

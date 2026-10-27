@@ -19,7 +19,7 @@ from fastapi.templating import Jinja2Templates
 from twilio.twiml.messaging_response import MessagingResponse
 
 from config import AFFILIATES, STREAMING_AFFILIATES, LEAGUES, ALL_LEAGUES, APP_URL, TZ_MX, TZ_ET, TEAM_ALIASES, TEAM_SHOP, MELI_AFF_PARAM, TEAM_SHOP_MELI, POPULAR_TEAMS
-from video_embeds import video_de_partido, video_de_liga
+from video_embeds import video_de_partido, video_de_liga, liga_con_transmision
 from db import init_db, persist_games, get_team_history, get_team_upcoming, get_team_channels
 import sports_api as _sports_api_mod
 from sports_api import (
@@ -1193,6 +1193,11 @@ async def home(
     games = await get_todays_games(
         date_str=date, sport_filter=sport, league_filter=league
     )
+
+    # Qué partidos se pueden ver gratis aquí mismo. Va ANTES de agrupar: los
+    # grupos guardan estos mismos diccionarios, así que una llamada marca la
+    # portada entera. Ver _marcar_transmisiones.
+    await _marcar_transmisiones(games)
 
     # Group games by sport
     sports_grouped = {}
@@ -3689,6 +3694,52 @@ async def liga_asobal(request: Request):
     )
 
 
+async def _marcar_transmisiones(games: list[dict], liga: str = "") -> int:
+    """Marca con `tiene_video` los partidos con transmisión gratuita encontrada.
+
+    Para qué: hasta ahora, el único sitio donde se veía que un partido se puede
+    ver gratis aquí mismo era la propia ficha de /partido/. Nadie que llegara
+    a /liga/futve o a la portada se enteraba. Esto lo pone en el listado.
+
+    `liga` fija la liga de todos los partidos (página de liga). Vacía, se toma
+    la de cada partido, que es el caso de la portada: ahí vienen 50 partidos de
+    20 ligas y sólo dos tienen canal.
+
+    La regla dura: se marca SÓLO si el emparejador devuelve un video real con
+    su youtube_id. No se adivina por liga, ni por canal, ni porque suela haber
+    transmisión los sábados. Un distintivo de "se ve aquí" en un partido sin
+    reproductor es el peor error posible en este sitio: manda al lector a una
+    página que no tiene lo que le prometimos.
+
+    Marca los propios diccionarios, así que en la portada basta llamarla una
+    vez sobre la lista plana: sports_grouped, destacados y "gratis hoy" guardan
+    esos mismos objetos, no copias.
+
+    Devuelve cuántos marcó, para poder afirmarlo en los tests.
+    """
+    if not games:
+        return 0
+    # Filtro barato primero: sin esto, la portada llamaría al emparejador 50
+    # veces para que 48 devolvieran None.
+    pendientes = [
+        g for g in games
+        if liga_con_transmision(liga or (g.get("league_slug") or ""))
+    ]
+    if not pendientes:
+        return 0
+    n = 0
+    for g in pendientes:
+        try:
+            v = await video_de_partido(g)
+        except Exception as e:   # el distintivo es un extra: nunca tumba la página
+            logger.warning("marcado de transmisión falló (%s): %s", g.get("id"), e)
+            continue
+        if v and v.get("youtube_id"):
+            g["tiene_video"] = True
+            n += 1
+    return n
+
+
 @app.get("/liga/{league_slug}", response_class=HTMLResponse)
 async def league_page(request: Request, league_slug: str):
     """
@@ -3976,6 +4027,9 @@ async def league_page(request: Request, league_slug: str):
                 nfl_picks = pk_res
         except Exception:
             pass
+
+    # Qué partidos de hoy se pueden ver gratis aquí mismo. Ver _marcar_transmisiones.
+    await _marcar_transmisiones(games, league_slug)
 
     _r = templates.TemplateResponse(
         request, "league.html", context={

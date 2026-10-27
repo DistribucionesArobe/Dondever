@@ -600,6 +600,25 @@
                     la liga. La etiqueta sola no distingue las dos cosas, y en
                     una lista de 20 partidos todos se leen igual de ciertos. -#}
                 {%- set _probable = not game.get('channels_confirmed', True) -%}
+                {#- Transmisión gratuita encontrada en el canal oficial de la liga.
+
+                    `tiene_video` lo pone _marcar_transmisiones() en el servidor y
+                    sólo es verdadero cuando el emparejador devolvió un video con
+                    su id de YouTube. No se deduce de la liga ni del canal: si el
+                    distintivo apareciera sin reproductor detrás, estaríamos
+                    mandando al lector a una página que no cumple lo prometido.
+
+                    Dos textos, porque dicen cosas distintas y las dos se pueden
+                    comprobar: con el partido en curso (estado "in", dato de la
+                    API) el video ES el directo; si no, existe pero puede ser la
+                    repetición. Por eso "EN DIRECTO" sólo en el primer caso —el
+                    mismo criterio por el que el reproductor publica la fecha en
+                    vez de etiquetarlo "EN VIVO" a ciegas. -#}
+                {% if game.tiene_video %}
+                <span class="channel-tag" style="background:#c00;color:#fff;font-weight:700;border:0;">
+                    {%- if game.status.state == 'in' %}&#9654; EN DIRECTO AQU&Iacute;{% else %}&#9654; GRATIS AQU&Iacute;{% endif -%}
+                </span>
+                {% endif %}
                 {% if game.broadcasts %}
                     {% for b in game.broadcasts %}
                     {#- Si el canal es una plataforma con programa de afiliados, el chip
