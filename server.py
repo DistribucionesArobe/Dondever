@@ -7460,6 +7460,39 @@ def _build_match_faq(game: dict) -> list[dict]:
                      + (f" Es partido de {lg}." if lg else "")
             })
 
+    # ── 1c. "mirar" y "contra": el español de Estados Unidos ──
+    #
+    # "Dónde MIRAR X CONTRA Y" es calco de "where to watch X vs Y". Nadie en
+    # México o Venezuela dice "mirar" un partido; se dice "ver". Suena raro, y
+    # por eso casi lo descarto — pero los números dicen otra cosa. Search
+    # Console, 1.000 consultas principales de 3 meses:
+    #
+    #   consultas con "mirar"   183 · 71.658 impresiones · 922 clics · 1,29 %
+    #     en posición <= 5       31 ·  5.851              · 226      · 3,86 %
+    #     en posición  > 5      152 · 65.807              · 696      · 1,06 %
+    #   consultas con "ver"     487 · 85.862              · 2.990    · 3,48 %
+    #
+    # Son 71.658 impresiones, el 18 % de todo lo medido: no es cola larga. Y la
+    # diferencia con "ver" no está en la palabra sino en la POSICIÓN — a
+    # igualdad de puesto las dos convierten parecido. La mejor del sitio por
+    # clics en esta familia:
+    #
+    #   "dónde mirar golden state valkyries contra atlanta dream"
+    #     63 clics · 623 impresiones · 10,1 % · posición 5,2
+    #
+    # Va UNA entrada, no tres variantes del mismo texto: la idea es cubrir una
+    # forma de preguntar que de verdad existe, no repetir palabras. Y va
+    # VISIBLE, en el FAQ que ya se renderiza. Texto oculto —misma letra que el
+    # fondo, display:none, 1px— es la categoría de spam que Google penaliza a
+    # nivel de SITIO, y con 1,57 M de impresiones eso no se arriesga por una
+    # palabra que se puede poner a la vista.
+    if canales:
+        faq.append({
+            "q": f"¿Dónde puedo mirar {home} contra {away}?",
+            "a": f"Puedes mirar {home} contra {away} por {', '.join(canales[:4])}. "
+                 f"Abajo está el horario convertido a la hora de cada país."
+        })
+
     # ── 2. A qué hora — en la hora de cada país, no solo México ──
     #
     # Ojo con España: un partido de Liga MX a las 4:50 PM de México cae a las
