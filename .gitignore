@@ -9,6 +9,19 @@ venv/
 .DS_Store
 static/tiktok/
 static/instagram/
-subscribers.json
 .instagram_token
 logs/
+
+# ── Datos de ejecución. El repo es público. ──────────────────────
+# Ninguno de estos se lee del repo en producción: todos se resuelven
+# bajo el padre de SUBSCRIBERS_FILE, que en Render es el disco /data.
+# Las copias que había versionadas eran restos de pruebas locales.
+subscribers.json
+wa_last_inbound.json      # traía un número de teléfono real
+wa_daily_sent.json
+push_subs.json
+affiliate_clicks.json     # ingresos por afiliado, día y país
+
+# Hojas de cálculo internas y sus locks de LibreOffice/Excel.
+*.xlsx
+.~lock.*#
