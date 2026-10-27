@@ -2789,6 +2789,40 @@ async def game_semantic(request: Request, slug: str):
         or game.get("away", {}).get("name", "") == "TBD"
     )
 
+    # ── Y los partidos que ya pasaron ─────────────────────────────────────
+    #
+    # Cada día se crean decenas de URLs /partido/<par>-<fecha> y hasta hoy no
+    # se retiraba NINGUNA. El único noindex era el de arriba, para partidos sin
+    # equipos definidos. Resultado, comprobado el 27/10/2026 con
+    # site:dondever.app/partido/ en Google:
+    #
+    #   "Argentina vs Benin: dónde ver el mar 6 oct"        ← 3 semanas antes
+    #   "Tigres UANL vs Toluca: dónde ver el vie 9 oct"
+    #   "Liverpool vs Manchester City: dónde ver el dom 11 oct"
+    #
+    # Siguen indexadas. "Dónde ver" es una pregunta en PRESENTE: esas páginas
+    # ya no le sirven a nadie que busque, y mientras tanto se comen presupuesto
+    # de rastreo y diluyen el sitio. Es casi seguro el grueso de las 5.100
+    # páginas que Search Console reporta sin indexar.
+    #
+    # El corte es "antes de HOY", no "ya terminó". Un partido que acabó hace
+    # dos horas sigue recibiendo búsquedas esa noche —marcador, resumen—, así
+    # que los de hoy se quedan indexados pase lo que pase. Se retiran los de
+    # ayer hacia atrás.
+    #
+    # No se pierde cobertura: un partido pasado ya tiene su página propia en
+    # /resultado/<slug>, que es la que corresponde a esa intención.
+    #
+    # La página sigue sirviéndose igual al usuario: noindex no la oculta, solo
+    # le dice a Google que no la guarde. Y es reversible en un commit.
+    try:
+        _d = datetime.fromisoformat(
+            (game.get("date") or "").replace("Z", "+00:00")).astimezone(TZ_MX).date()
+        if _d < datetime.now(TZ_MX).date():
+            noindex = True
+    except (ValueError, TypeError, AttributeError):
+        pass  # sin fecha fiable no se desindexa nada
+
     # ── Cuánto puede envejecer este HTML ──────────────────────────────────────
     # Se reportó que la portada mostraba Padres-Rockies en la alta de la novena
     # y esta página en la baja de la octava. La portada se cachea 60 s y esta
