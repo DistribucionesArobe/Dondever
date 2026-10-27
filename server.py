@@ -8293,6 +8293,22 @@ _CORTO_VE = {
 }
 
 
+def _tz_de_liga(liga: str):
+    """(zona, sigla, frase) para una liga. México salvo donde el público no está ahí.
+
+    Una sola fuente para esto. Estuvo duplicado media hora entre el generador
+    de títulos y la plantilla, y el resultado fue que /equipo/navegantes-del-
+    magallanes decía DOS horas distintas del mismo partido en la misma
+    pantalla: el <title> y el H1 en hora de Venezuela (7:00 PM) y el cuerpo en
+    hora de México (5:00 PM). Antes estaba mal de forma consistente; así
+    estaba peor, porque se contradecía sola.
+    """
+    from zoneinfo import ZoneInfo as _ZI
+    if liga in ("LVBP", "Liga FUTVE"):
+        return _ZI("America/Caracas"), "VE", "hora de Venezuela"
+    return TZ_MX, "MX", "hora de México"
+
+
 def _short_team_name(full_name: str, league: str = "") -> str:
     """'Los Angeles Dodgers' → 'Dodgers'; 'Boston Red Sox' → 'Red Sox'; 'Tigres UANL' → 'Tigres'.
     Soccer clubs keep their name minus 'Club/FC/CF' noise. That's how people search."""
@@ -8341,11 +8357,10 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
 
     # Ligas cuyo público NO está en México: el título da la hora del país que
     # genera la consulta. Ver la nota de _CORTO_VE y de format_mx_day_time.
-    from zoneinfo import ZoneInfo as _ZoneInfo
-    _es_ve = lg in ("LVBP", "Liga FUTVE")
-    _tz_t = _ZoneInfo("America/Caracas") if _es_ve else TZ_MX
-    _tz_sigla = "VE" if _es_ve else "MX"
-    _tz_frase = "hora de Venezuela" if _es_ve else "hora de México"
+    # La zona sale de _tz_de_liga, que es también la que usa la plantilla: si
+    # cada uno elige la suya, la página se contradice (ver esa función).
+    _tz_t, _tz_sigla, _tz_frase = _tz_de_liga(lg)
+    _es_ve = _tz_sigla == "VE"
 
     def _es_nuestro(nombre):
         """¿Este lado del partido es el equipo de la página?
@@ -9129,6 +9144,11 @@ async def team_page(request: Request, team_slug: str):
         # temporada. Para los otros ~290 equipos es None y la plantilla no
         # pinta nada.
         "offseason": offseason,
+        # Misma zona que usó el título. Si la plantilla siguiera con la de
+        # México por su cuenta, la página diría dos horas del mismo partido.
+        # Ver _tz_de_liga.
+        "tz_pagina": _tz_de_liga(final_league)[0],
+        "tz_frase": _tz_de_liga(final_league)[2],
         "fecha_larga": _fecha_larga,
     })
     # Sin partido hoy no hay marcador ni hora que puedan quedar viejos: la

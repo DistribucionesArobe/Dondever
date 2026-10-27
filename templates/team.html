@@ -581,7 +581,10 @@
                 <span style="font-weight:800;color:#1a1a2e;">{{ nxt.away }}</span>
                 {% if nxt.away_logo %}<img src="{{ nxt.away_logo }}" alt="" style="width:24px;height:24px;object-fit:contain;">{% endif %}
             </div>
-            <div style="margin-top:0.4rem;font-weight:700;color:#f97316;font-size:0.9rem;">{{ format_mx_day_time(nxt.date) }} <span style="color:#9ca3af;font-weight:500;font-size:0.75rem;">(hora CDMX)</span></div>
+            {# La zona la fija la ruta (tz_pagina), no esta plantilla: el titulo
+               y el H1 usan la misma. Cuando cada uno elegia la suya, la ficha de
+               Magallanes decia 7:00 PM arriba y 5:00 PM aqui. Ver _tz_de_liga. #}
+            <div style="margin-top:0.4rem;font-weight:700;color:#f97316;font-size:0.9rem;">{{ format_mx_day_time(nxt.date, tz_pagina) }} <span style="color:#9ca3af;font-weight:500;font-size:0.75rem;">({{ tz_frase }})</span></div>
             {% if nxt.channels %}
             <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;font-size:0.75rem;color:#6b7280;">
                 <span>&#128250;</span>
@@ -633,7 +636,7 @@
     {% if upcoming_games %}
     <div style="margin-top:1rem;">
         <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.6rem;color:#1a1a2e;">Calendario y programaci&oacute;n de {{ team_name }}: pr&oacute;ximos partidos</h2>
-        <div style="font-size:0.65rem;color:#9ca3af;margin-bottom:0.3rem;">Hora centro de M&eacute;xico (CDMX)</div>
+        <div style="font-size:0.65rem;color:#9ca3af;margin-bottom:0.3rem;">{{ tz_frase|capitalize }}</div>
         <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
             {% for u in upcoming_games %}
             <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
@@ -641,7 +644,7 @@
                     {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
                     <span style="font-size:0.8rem;font-weight:600;">{{ u.home }}</span>
                 </div>
-                <div style="font-weight:700;color:#f97316;font-size:0.72rem;padding:0 0.5rem;text-align:center;line-height:1.3;" data-utc="{{ u.date }}">{{ format_mx_day_time(u.date) }}</div>
+                <div style="font-weight:700;color:#f97316;font-size:0.72rem;padding:0 0.5rem;text-align:center;line-height:1.3;" data-utc="{{ u.date }}">{{ format_mx_day_time(u.date, tz_pagina) }}</div>
                 <div style="display:flex;align-items:center;gap:0.4rem;flex:1;justify-content:flex-end;">
                     <span style="font-size:0.8rem;font-weight:600;">{{ u.away }}</span>
                     {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
