@@ -304,7 +304,25 @@ async def _video_auto(game: dict, liga: str) -> dict | None:
     # Una ventana que arrancara en la hora del partido habría descartado justo
     # el video bueno. Por eso, cuando el título trae fecha, manda el título; y
     # sólo si no la trae se cae a `published`.
-    desde = dt - timedelta(hours=6)
+    # LA VENTANA ARRANCABA 6 HORAS ANTES, Y ESO SOLO VALE PARA IVC.
+    #
+    # Con un titulo fechado da igual: manda el titulo. Pero hay canales cuyos
+    # titulos NO llevan fecha, y ahi esta ventana es lo unico que decide.
+    # Comprobado el 28/10/2026 en TVMAX Panamá:
+    #
+    #   titulo  "TAURO FC VS PLAZA AMADOR | J-13 | APERTURA 2026 LPF | #ENVIVO"
+    #   fecha   no la trae
+    #
+    # Y sabemos, del propio IVC, que un directo programado se crea DIAS antes
+    # del partido. Con 6 horas, el video bueno quedaba fuera por el lado de
+    # atras y el canal no habria servido para nada — sin error, sin aviso, solo
+    # un partido sin video. Cuatro dias cubre la antelacion habitual.
+    #
+    # El riesgo de abrirla es casar el partido equivocado si los dos mismos
+    # equipos juegan dos veces en esa ventana. Pasa poco, y para eso esta el
+    # desempate de abajo: sin fecha en el titulo, gana el directo creado MAS
+    # CERCA de la hora del partido, no el mas antiguo.
+    desde = dt - timedelta(days=4)
     hasta = dt + timedelta(days=2)
 
     candidatos = []
@@ -330,9 +348,20 @@ async def _video_auto(game: dict, liga: str) -> dict | None:
 
     if not candidatos:
         return None
-    # Primero los que el título confirma; dentro de cada grupo, el más antiguo
-    # (la transmisión original, no la resubida del día siguiente).
-    candidatos.sort(key=lambda x: (x[0], x[1]))
+    # Primero los que el título confirma. Dentro de cada grupo, el desempate
+    # depende de POR QUÉ entró el candidato:
+    #
+    #   prioridad 0 (el título trae la fecha del partido): gana el más
+    #       ANTIGUO. La fecha ya garantiza que es este partido, así que lo
+    #       único que queda por evitar es quedarse con la resubida del día
+    #       siguiente en vez de la transmisión original. Es el caso de IVC.
+    #
+    #   prioridad 1 (sin fecha, entró por la ventana): gana el creado MÁS
+    #       CERCA de la hora del partido. Aquí "el más antiguo" sería un mal
+    #       criterio: con la ventana de cuatro días, el más antiguo es
+    #       justamente el candidato con más probabilidad de ser otro partido
+    #       entre los mismos dos equipos. Es el caso de TVMAX y de la LNBP.
+    candidatos.sort(key=lambda x: (x[0], x[1] if x[0] == 0 else abs(x[1] - dt)))
     _, pub, c, e = candidatos[0]
     return {
         "partido_id": str(game.get("id") or ""),

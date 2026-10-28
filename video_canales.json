@@ -31,6 +31,14 @@
       "url": "https://www.youtube.com/@IVCNetworks",
       "verificado": "2026-10-24",
       "_nota": "Transmite la Liga FUTVE en directo y gratis. Títulos tipo 'EN VIVO: Caracas FC vs. Deportivo Tachira | Liga FUTVE | 24/10/2026'. Su 'published' es la fecha en que se creo el directo programado, no la del partido: por eso manda la fecha del titulo."
+    },
+    {
+      "liga": "liga-panama",
+      "channel_id": "UC1ESp-VpmbrmKHmQIu_NOMQ",
+      "nombre": "TVMAX Panamá",
+      "url": "https://www.youtube.com/@TVMAXPANAMAYT",
+      "verificado": "2026-10-28",
+      "_nota": "Canal del grupo TVN, titular de derechos de la LPF. Transmite partidos completos en directo y gratis. Títulos tipo 'TAURO FC VS PLAZA AMADOR | J-13 | APERTURA 2026 LPF | #FULLTVMAX | #ENVIVO'. OJO: sus titulos NO llevan fecha, a diferencia de los de IVC, asi que el emparejado depende de la ventana de 'published'. Por eso se amplio esa ventana (ver _video_auto). Si un partido no casa, ese es el primer sitio donde mirar. Comprobado el 28/10/2026 leyendo el canal: 218 K suscriptores, J-12 y J-13 completas con 21 K y 72 K vistas."
     }
   ]
 }
