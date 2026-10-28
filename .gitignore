@@ -16,11 +16,17 @@ logs/
 # Ninguno de estos se lee del repo en producción: todos se resuelven
 # bajo el padre de SUBSCRIBERS_FILE, que en Render es el disco /data.
 # Las copias que había versionadas eran restos de pruebas locales.
+# OJO: git NO admite comentarios al final de una línea de patrón. Escritos
+# así, "wa_last_inbound.json  # traía un teléfono" se toma como el patrón
+# completo, con el comentario incluido, y el archivo sigue apareciendo sin
+# rastrear. Cada comentario va en su propia línea.
 subscribers.json
-wa_last_inbound.json      # traía un número de teléfono real
+# wa_last_inbound.json traía un número de teléfono real.
+wa_last_inbound.json
 wa_daily_sent.json
 push_subs.json
-affiliate_clicks.json     # ingresos por afiliado, día y país
+# affiliate_clicks.json tiene ingresos por afiliado, día y país.
+affiliate_clicks.json
 
 # Hojas de cálculo internas y sus locks de LibreOffice/Excel.
 *.xlsx

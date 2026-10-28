@@ -1634,6 +1634,26 @@ def _mercados(liga_slug: str) -> str:
     return _MERCADOS_LIGA.get(liga_slug, _MERCADOS_DEFECTO)
 
 
+# Nombre de liga → slug. Derivado de ALL_LEAGUES, no escrito a mano: así una
+# liga nueva no hay que acordarse de apuntarla también aquí.
+#
+# PARA QUÉ HACE FALTA. La ficha de equipo sólo conoce el NOMBRE de su liga
+# ("LVBP", "Liga MX"), porque es lo que trae POPULAR_TEAMS y lo que devuelve
+# ESPN en league_name. Pero _mercados() y las URLs /liga/{slug} piden el SLUG.
+# Sin este puente, la plantilla no podía decir de qué liga hablaba y acabó
+# escribiendo la liga a mano según el deporte — de ahí el error que esto
+# arregla: 39 fichas de béisbol decían "(MLB)" sin serlo (LMB, LMP, LVBP,
+# LIDOM) y 43 de basquetbol decían "(NBA)" (Liga Endesa, WNBA, LNBP).
+_SLUG_DE_LIGA = {
+    str(_t[2]): _s for _s, _t in ALL_LEAGUES.items() if len(_t) >= 3 and _t[2]
+}
+# ALL_LEAGUES guarda el nombre largo de estas dos; POPULAR_TEAMS, la sigla.
+# Las dos son mexicanas, así que el mercado por defecto ya era el correcto;
+# el alias sirve para poder enlazar a /liga/lmb y /liga/lmp.
+_SLUG_DE_LIGA.setdefault("LMB", "lmb")
+_SLUG_DE_LIGA.setdefault("LMP", "lmp")
+
+
 def _canales_por_pais(ev: dict) -> list:
     """Hora local y canal de cada país, distinguiendo el hueco del dato.
 
@@ -9240,6 +9260,11 @@ async def team_page(request: Request, team_slug: str):
         # están en _CLASICOS; la plantilla no pinta nada en ese caso.
         "clasicos_equipo": _clasicos_de_equipo(team_slug),
         "team_league": team_league or team_league_seo,
+        # Slug de la liga y países que nombra su guía. Antes la plantilla
+        # deducía la liga del DEPORTE y escribía "(MLB)" para cualquier equipo
+        # de béisbol. Ver _SLUG_DE_LIGA.
+        "liga_slug": _SLUG_DE_LIGA.get(team_league or team_league_seo, ""),
+        "mercados": _mercados(_SLUG_DE_LIGA.get(team_league or team_league_seo, "")),
         "team_sport": team_sport,
         "team_aka": team_aka,
         "games": games,

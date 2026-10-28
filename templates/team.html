@@ -1273,22 +1273,41 @@
                 {% endif %}
             </div>
 
+            {#- Guía "Cómo ver".
+
+                AQUÍ VIVÍA UN ERROR DE DATOS. El bloque se ramificaba por
+                `team_sport` y escribía la liga A MANO en cada rama: béisbol →
+                "(MLB)", basquetbol → "(NBA)". Como la plantilla sirve a 400+
+                equipos, eso puso una liga falsa en 82 fichas. Medido el
+                27/10/2026 sobre POPULAR_TEAMS:
+
+                  béisbol    69 equipos → 30 MLB correctos, 39 NO (LMB 15,
+                                          LMP 10, LVBP 8, LIDOM 6)
+                  basquetbol 73 equipos → 30 NBA correctos, 43 NO (Liga
+                                          Endesa 18, WNBA 15, LNBP 10)
+
+                Visto en producción en /equipo/navegantes-del-magallanes
+                (58.880 impresiones): "Cómo ver a Navegantes del Magallanes
+                (MLB)" y, debajo, "los derechos de transmisión de la MLB".
+                Magallanes es de la LVBP. En un sitio cuyo único producto es
+                decir dónde ver algo, atribuirle al equipo una liga y unos
+                derechos ajenos es el peor error posible.
+
+                Ahora la liga sale de `team_league` y los países de
+                `mercados`, los dos del contexto. Lo que el texto afirma —que
+                los canales cambian por partido y que mostramos el confirmado
+                de cada juego— es cierto para cualquier liga, así que no hace
+                falta una rama por deporte. La NFL conserva la suya porque
+                tiene datos propios verificados (nfl_team_extra).
+
+                LO QUE ESTE BLOQUE TODAVÍA NO HACE: nombrar quién tiene los
+                derechos en 2026 país por país. Eso exige fuente primaria por
+                liga y mercado, y va en su propio commit. Aquí sólo se quita
+                la mentira. -#}
             <div class="como-ver-guide" style="margin:0.75rem 0;border:none;padding:0;">
-                {% if team_sport == 'futbol' %}
-                <h2>Cómo ver a {{ team_name }} ({{ team_league }}) en México, USA y Latinoamérica</h2>
-                <p>Los canales que transmiten a {{ team_name }} cambian segun el partido, la jornada y los acuerdos de cada temporada. En DondeVer.app mostramos los canales confirmados para cada juego en tiempo real — consulta la seccion de partidos arriba para ver donde se transmite hoy.</p>
-                <p>Cubrimos TV abierta, cable y plataformas de streaming tanto en México como en Estados Unidos y Latinoamérica.</p>
-                {% elif team_sport == 'beisbol' %}
-                <h2>Cómo ver a {{ team_name }} (MLB) en México, USA y Latinoamérica</h2>
-                <p>Los derechos de transmision de la MLB varian por partido y mercado. Cada juego puede estar en un canal diferente dependiendo del equipo y la fecha. En DondeVer.app te mostramos el canal confirmado para cada juego de {{ team_name }} en tiempo real.</p>
-                <p>Cubrimos opciones de TV y streaming en México, Estados Unidos y Latinoamérica.</p>
-                {% elif team_sport == 'basketball' %}
-                <h2>Cómo ver a {{ team_name }} (NBA) en México, USA y Latinoamérica</h2>
-                <p>Los canales de la NBA cambian segun el partido y la semana. En DondeVer.app mostramos el canal confirmado para cada juego de {{ team_name }} actualizado en tiempo real.</p>
-                <p>Cubrimos TV abierta, cable y streaming en México, Estados Unidos y Latinoamérica.</p>
-                {% elif team_sport == 'futbol americano' %}
+                {% set _liga = team_league or '' %}
+                {% if team_sport == 'futbol americano' and nfl_team_extra %}
                 <h2>Cómo ver a {{ team_name }} (NFL) en México 2026</h2>
-                {% if nfl_team_extra %}
                 <h3>TV abierta</h3>
                 <p>Canal 5 (Televisa) transmite juegos selectos de la NFL cada domingo y en fechas especiales como Thanksgiving y playoffs. Si {{ team_name }} juega en horario estelar o es el juego destacado de la semana, es probable que lo pasen por Canal 5 gratis.</p>
                 <h3>Cable y streaming</h3>
@@ -1296,17 +1315,14 @@
                 <h3>Horarios en México</h3>
                 <p>Los juegos de {{ team_name }} generalmente se transmiten los domingos a las 12:00 PM o 3:25 PM (hora centro de México), con juegos de domingo por la noche a las 7:20 PM y Monday Night Football a las 7:15 PM. DondeVer.app te muestra el horario exacto de cada partido.</p>
                 {% else %}
-                <p>La NFL reparte sus juegos entre multiples cadenas y plataformas que rotan cada semana. En DondeVer.app te decimos exactamente donde ver cada partido de {{ team_name }} con el canal confirmado en tiempo real.</p>
-                <p>Cubrimos TV abierta, cable y streaming en México, Estados Unidos y Latinoamérica.</p>
+                <h2>Cómo ver a {{ team_name }}{% if _liga %} ({{ _liga }}){% endif %} en {{ mercados }}</h2>
+                <p>Los canales que transmiten a {{ team_name }} cambian según el partido, la jornada y los acuerdos de cada temporada{% if _liga %}, y la {{ _liga }} no es la excepción{% endif %}. En DondeVer.app mostramos el canal confirmado de cada juego, no el habitual: consulta la sección de partidos de arriba para ver dónde se transmite hoy.</p>
+                <p>Cubrimos TV abierta, cable y plataformas de streaming en {{ mercados }}. Cuando un partido todavía no tiene canal confirmado para tu país, lo decimos en vez de rellenarlo con el de otro mercado.</p>
+                {% if liga_slug %}
+                <p style="font-size:0.85rem;">Calendario completo y tabla de posiciones: <a href="/liga/{{ liga_slug }}">{{ _liga }} hoy</a>.</p>
                 {% endif %}
-                {% elif team_sport == 'hockey' %}
-                <h2>Cómo ver a {{ team_name }} (NHL) en México, USA y Latinoamérica</h2>
-                <p>Los partidos de la NHL se transmiten en diferentes canales segun el juego. En DondeVer.app mostramos el canal confirmado para cada partido de {{ team_name }} en tiempo real.</p>
-                {% elif team_sport == 'MMA' %}
-                <h2>Cómo ver {{ team_name }} en México, USA y Latinoamérica</h2>
-                <p>Los eventos de {{ team_name }} se transmiten en diferentes plataformas segun el tipo de cartelera (numerados, Fight Night, eventos especiales). En DondeVer.app te mostramos donde ver cada evento actualizado al dia de hoy.</p>
                 {% endif %}
-                <p style="font-size:0.8rem;color:#6b7280;margin-top:0.5rem;">Los canales se actualizan diariamente con informacion confirmada para cada partido.</p>
+                <p style="font-size:0.8rem;color:#6b7280;margin-top:0.5rem;">Los canales se actualizan a diario con información confirmada para cada partido.</p>
             </div>
 
             {% if faq_items %}
