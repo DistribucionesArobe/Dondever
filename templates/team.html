@@ -632,6 +632,32 @@
         <a href="https://wa.me/15715463202?text=alerta%20{{ team_slug }}">Activar alertas</a>
     </div>
 
+    {#- Primer anuncio: AQUÍ, y no más abajo.
+
+        MEDIDO EN PRODUCCIÓN el 27/10/2026, leyendo el DOM del sitio en vivo:
+
+          /equipo/dodgers (sin partido)   1er anuncio a 3.754 px de 4.764 → 79%
+          /equipo/navegantes-del-magallanes 1er anuncio a 1.988 px de 2.998 → 66%
+
+        Los dos bloques de esta plantilla estaban DESPUÉS de diez secciones
+        —calendario, resultados, clásicos, estadísticas, tienda, tabla de
+        posiciones, noticias, canales y otros equipos— y separados 566 px entre
+        sí, los dos al fondo. En el 92% del tráfico, que es móvil, eso son seis
+        pantallas de scroll antes del primer anuncio: no es que se vean poco,
+        es que no se ven. De ahí el Active View del 40% con /equipo/ siendo el
+        56% de los clics.
+
+        La regla que se respeta: nada de publicidad ANTES de la respuesta. El
+        lector llega buscando hora y canal, y eso está arriba —el bloque de
+        partidos de hoy, o el de temporada terminada, con su CTA de alertas—.
+        El anuncio va inmediatamente DESPUÉS, que es el primer sitio donde ya
+        no estorba y sí entra en pantalla.
+
+        Un bloque visible vale más que dos invisibles, así que no se añade
+        ninguno: son los mismos dos de antes, movidos. Ver también el segundo,
+        más abajo tras los últimos resultados. -#}
+    {{ ad('mid') }}
+
     {# ══ PROXIMOS PARTIDOS ══ #}
     {% if upcoming_games %}
     <div style="margin-top:1rem;">
@@ -750,6 +776,22 @@
         </div>
         {% endif %}
     </div>
+    {% endif %}
+
+    {#- Segundo anuncio. Estaba al final del todo, debajo del desplegable de
+        SEO, a 4.320 px de 4.764 en Dodgers: ni lo veía nadie. Aquí queda a
+        media página, después de calendario, resultados y estadísticas.
+
+        LA CONDICIÓN NO ES DECORATIVA. Las tres secciones que lo separan del
+        primer anuncio son condicionales, y hay equipos que no tienen ninguna:
+        sin próximos partidos, sin resultados recientes y sin estadísticas, los
+        dos bloques salían PEGADOS, uno tras otro, que es exactamente lo que
+        hay que evitar. Lo descubrió el test t22 al renderizar la ruta con las
+        APIs caídas —el estado de muchas fichas fuera de temporada—, no al leer
+        la plantilla. Si no hay contenido en medio, no hay segundo anuncio: un
+        bloque visible vale más que dos pegados que se reparten la impresión. -#}
+    {% if upcoming_games or recent_results or stats %}
+    {{ ad('bottom') }}
     {% endif %}
 
     {# ══ CLÁSICOS DE ESTE EQUIPO ══
@@ -1215,8 +1257,10 @@
     </div>
     {% endif %}
 
-    {# ══ ADSENSE MID-PAGE ══ #}
-    {{ ad('mid') }}
+    {# Aquí estaban los dos anuncios, al fondo de la página, donde no los veía
+       nadie. Ahora el 'mid' va justo después de la respuesta y el 'bottom' a
+       media página, tras los últimos resultados. Ver los comentarios en sus
+       nuevas posiciones. #}
 
     {# ══ SEO CONTENT (colapsado — click para expandir) ══ #}
     <div style="margin-top:1.5rem;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:white;">
@@ -1382,8 +1426,16 @@
     </div>
 </div>
 
-{{ ad('bottom') }}
+{#- Aquí había un tercer anuncio, pegado al pie, debajo del formulario de
+    correo. Era el más profundo de los tres: en /equipo/dodgers caía a 4.320 px
+    de una página de 4.764. Un bloque ahí no puede cumplir el requisito de
+    Active View —50% de los píxeles en pantalla durante 1 segundo— salvo que el
+    lector baje la página entera y se detenga en el pie.
 
+    Se quita en vez de moverse porque ya hay dos bloques bien colocados y
+    usaba el mismo slot que el de media página: dos unidades iguales en la
+    misma página se reparten las mismas impresiones y bajan el promedio de
+    visibilidad de las dos. Quedan dos, y los dos se ven. -#}
 
 <footer>
     <p><a href="/">DondeVer.app</a> &middot; <a href="/streaming">Comparar Streaming</a> &middot; <a href="/sobre-nosotros">Sobre nosotros</a></p>
