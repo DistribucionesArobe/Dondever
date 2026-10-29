@@ -161,14 +161,38 @@
     <a href="/">Inicio</a> &rsaquo; <a href="/canales">Canales</a> &rsaquo; {{ channel_name }}
 </nav>
 
+{#- Cabecera con el mismo molde que la ficha de equipo.
+
+    POR QUÉ SE CAMBIÓ. Visto en móvil el 28/10/2026, que es el 92% del
+    tráfico: la página era el logo pequeño, el H1, y acto seguido un anuncio
+    de media pantalla. Lo único con color y peso visual era la publicidad; la
+    respuesta —qué partidos hay y a qué hora— quedaba debajo en texto gris.
+
+    En /equipo/ eso ya está resuelto: tarjeta oscura con el escudo, el nombre
+    y la liga, y debajo el partido en una tarjeta blanca con logos y la hora
+    en naranja. Se entiende sin leer. Aquí se usa el mismo molde.
+
+    Importa más de lo que parece: las consultas de canal rinden 5,96% de CTR
+    contra el 1,42% del resto del sitio, y "tudn en vivo" saca 13,2% desde la
+    posición 23. Es tráfico que llega con mucha intención; la página no puede
+    recibirlo con un banner. -#}
 <div class="hero">
-    {% if saff %}
-    <div class="channel-badge" style="background:{{ saff.bg }};color:{{ saff.color }};">&#128250; {{ channel_name }}</div>
-    {% else %}
-    <div class="channel-badge" style="background:#1e293b;color:white;">&#128250; {{ channel_name }}</div>
-    {% endif %}
+    <div class="ch-hero-card" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:14px;padding:1rem 1.1rem;display:flex;align-items:center;gap:0.9rem;margin-bottom:1rem;">
+        <div style="flex:0 0 auto;width:56px;height:56px;border-radius:12px;background:{{ saff.bg if saff else '#0f172a' }};color:{{ saff.color if saff else '#fff' }};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.72rem;text-align:center;line-height:1.1;padding:0.3rem;overflow:hidden;">
+            {{ channel_name }}
+        </div>
+        <div style="flex:1;min-width:0;">
+            <div style="font-size:1.25rem;font-weight:800;color:#fff;line-height:1.2;">{{ channel_name }}</div>
+            <div style="font-size:0.78rem;color:#94a3b8;margin-top:0.15rem;">
+                {%- if ch_type == 'broadcast' %}TV abierta &middot; gratis
+                {%- elif ch_type == 'streaming' %}Streaming &middot; suscripci&oacute;n
+                {%- elif ch_type == 'cable' %}TV de paga &middot; cable o sat&eacute;lite
+                {%- else %}Canal de deportes{% endif -%}
+                {%- if leagues_here %} &middot; {{ leagues_here[:2]|join(', ') }}{% endif -%}
+            </div>
+        </div>
+    </div>
     <h1>{% if ch_cerrado %}{{ channel_name }} cerró: dónde ver ahora{% else %}{{ channel_name }} en vivo hoy: qué partidos pasan{% endif %}</h1>
-{{ ad('top') }}
 
     {% if ch_cerrado %}
     <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:0.9rem 1rem;border-radius:6px;margin:0 0 1rem;">
@@ -250,6 +274,13 @@
         {% endfor %}
     </section>
     {% endfor %}
+
+    {#- El anuncio, AQUÍ. Estaba entre el H1 y la primera línea útil, a 249 px
+        de la parte de arriba: lo primero que veía el lector era un banner de
+        media pantalla y la respuesta quedaba debajo. Ahora va después de los
+        partidos de hoy, que es a lo que vino. Misma regla que ya aplicamos en
+        la ficha de equipo. -#}
+    {{ ad('top') }}
 
     {# ── La semana del canal, día por día ──
        Solo salen los días con transmisión: siete pestañas donde seis dicen
