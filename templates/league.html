@@ -1012,12 +1012,39 @@
         <h2>Donde ver {{ league_name }} en vivo</h2>
         <p>DondeVer.app actualiza diariamente los horarios y canales de transmision de {{ league_name }} para {{ mercados }}.</p>
 
+        {#- Los canales, enlazados.
+
+            Estaban como texto plano, con un join(', '). Son 68 páginas de
+            liga nombrando sus canales y ni una enlazaba a /canal/.
+
+            Por qué importa, medido en Search Console el 28/10/2026: las
+            consultas de canal rinden 5,96% de CTR contra el 1,42% del resto
+            del sitio, y "tudn en vivo" saca 13,2% desde la posición 23.
+            Están enterradas, y la razón es que casi nadie las enlaza: los
+            únicos enlaces a /canal/ desde páginas de liga son los chips de
+            los partidos del día, que desaparecen al día siguiente. Google no
+            da autoridad con enlaces que van y vienen.
+
+            Este bloque sí es permanente: los canales habituales de una liga
+            no cambian a diario. Son enlaces estables los 365 días.
+
+            Se usa canal_url() y no el slug a pelo, por lo mismo que en
+            team.html: devuelve None cuando la página daría 404, y entonces
+            se escribe el nombre sin enlazar. Más vale texto que un enlace
+            roto. -#}
+        {%- macro canales_enlazados(lista) -%}
+            {%- for ch in lista -%}
+                {%- set _u = canal_url(ch) -%}
+                {%- if _u %}<a href="{{ _u }}">{{ ch }}</a>{% else %}{{ ch }}{% endif -%}
+                {{- ', ' if not loop.last else '' -}}
+            {%- endfor -%}
+        {%- endmacro -%}
         {% if league_channels_today %}
         <h3>Canales transmitiendo {{ league_name }} hoy</h3>
-        <p>Los partidos de {{ league_name }} de hoy se transmiten por: {{ league_channels_today|join(', ') }}.</p>
+        <p>Los partidos de {{ league_name }} de hoy se transmiten por: {{ canales_enlazados(league_channels_today) }}.</p>
         {% elif default_channels %}
         <h3>Canales habituales de {{ league_name }}</h3>
-        <p>{{ league_name }} se transmite habitualmente por {{ default_channels|join(', ') }}. Los canales exactos varian por partido — consulta cada juego arriba para ver el canal confirmado.</p>
+        <p>{{ league_name }} se transmite habitualmente por {{ canales_enlazados(default_channels) }}. Los canales exactos var&iacute;an por partido &mdash; consulta cada juego arriba para ver el canal confirmado.</p>
         {% endif %}
 
         {% if standings %}
