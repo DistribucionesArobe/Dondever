@@ -2815,7 +2815,15 @@ async def fetch_league_logo(sport: str, league_id: str) -> dict:
             if sdb_id.isdigit():
                 url = (f"https://www.thesportsdb.com/api/v1/json/"
                        f"{SPORTSDB_KEY}/lookupleague.php?id={sdb_id}")
-                async with httpx.AsyncClient(timeout=10) as client:
+                # 4 s y no 10. Para las ligas de ESPN el escudo sale del
+                # scoreboard que ya esta en cache y no cuesta nada, pero las 11
+                # ligas de TheSportsDB —LVBP, LMP, LMB, Liga Endesa, LPF
+                # Panama, FUTVE, LNBP…— si hacen una peticion nueva, y va al
+                # final de la ruta, en serie. Con 10 s, un dia lento de
+                # TheSportsDB podria tener la pagina de la LVBP colgada diez
+                # segundos por un escudo. Mejor sin escudo que sin pagina.
+                # Solo pasa la primera vez: despues queda en cache.
+                async with httpx.AsyncClient(timeout=4) as client:
                     resp = await client.get(url)
                     resp.raise_for_status()
                     ligas = (resp.json() or {}).get("leagues") or []
