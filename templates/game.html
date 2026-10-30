@@ -681,6 +681,33 @@
 
         {% if game.venue %}<div class="venue">Sede: {{ game.venue }}</div>{% endif %}
 
+        {# ── Primer anuncio: justo despues de la respuesta ──
+           Medido en produccion el 30/10/2026 en
+           /partido/le-havre-ac-vs-paris-saint-germain-2026-10-30:
+
+             128 px  H1
+             745 px  "DONDE VERLO"          ← la respuesta
+             838 px  "Transmisiones por pais"
+            1395 px  "Pronostico y analisis"
+            3138 px  ad('mid')              ← el PRIMER anuncio, al 59 %
+            4729 px  ad('bottom')
+            5292 px  fin de la pagina
+
+           O sea: quien entra, lee el canal y la hora y se va —que es el
+           visitante normal de esta pagina— no veia ni un anuncio. Es el mismo
+           arreglo que ya se hizo en /equipo/ (bajo de 79 % a 15 %), /liga/,
+           /canal/ y las fichas por pais, pero al reves: alli sobraba arriba,
+           aqui faltaba.
+
+           Va DENTRO del `if match_preview` a proposito. Si no hay previa, el
+           siguiente bloque puede estar vacio tambien y este anuncio quedaria
+           pegado al de 'mid'. Ese error ya lo cometi en team.html: mover un
+           bloque sin mirar que pasa cuando el contenido de en medio no
+           existe, y acabaron dos anuncios juntos. #}
+        {% if match_preview %}
+        {{ ad('top', max_w=650) }}
+        {% endif %}
+
         {% if match_preview %}
         <div class="preview-editorial" style="margin:1.25rem 0;padding:1.25rem;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:14px;border:1px solid #334155;">
             {# Header #}
