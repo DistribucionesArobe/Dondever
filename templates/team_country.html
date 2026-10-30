@@ -42,7 +42,7 @@
           "name": "¿En qué canal pasan a {{ team_name }} en {{ country_name }}?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "{{ team_name }} ({{ team_league }}) se puede ver en {{ country_name }} por: {% for ch in country_channels %}{{ ch.name }}{% if not loop.last %}, {% endif %}{% endfor %}. La disponibilidad varía por partido."
+            "text": "{{ team_name }}{% if team_league %} ({{ team_league }}){% endif %} se puede ver en {{ country_name }} por: {% for ch in country_channels %}{{ ch.name }}{% if not loop.last %}, {% endif %}{% endfor %}. La disponibilidad varía por partido."
           }
         },
         {
@@ -50,7 +50,7 @@
           "name": "¿Cómo ver a {{ team_name }} por streaming en {{ country_name }}?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Las opciones de streaming para ver {{ team_league }} en {{ country_name }} incluyen: {% for ch in country_channels %}{% if ch.type == 'streaming' %}{{ ch.name }}, {% endif %}{% endfor %}entre otros. Revisa DondeVer.app el día del partido para la transmisión exacta."
+            "text": "Las opciones de streaming para ver {{ team_league or team_name }} en {{ country_name }} incluyen: {% for ch in country_channels %}{% if ch.type == 'streaming' %}{{ ch.name }}, {% endif %}{% endfor %}entre otros. Revisa DondeVer.app el día del partido para la transmisión exacta."
           }
         }
       ]
@@ -124,18 +124,24 @@
     </div>
 </header>
 
+{# Aquí había un "&rsaquo; <a href=/clasicos>Clásicos</a> &middot;" que no
+   pinta nada en una ficha de país: era un resto copiado de clasico.html y
+   salía en TODAS las páginas /equipo/{slug}/en/{pais}. #}
 <nav class="breadcrumb">
-    <a href="/">Inicio</a> &rsaquo; <a href="/clasicos">Cl&aacute;sicos</a> &middot;
+    <a href="/">Inicio</a> &rsaquo;
         <a href="/equipos">Equipos</a> &rsaquo; <a href="/equipo/{{ team_slug }}">{{ team_name }}</a> &rsaquo; en {{ country_name }}
 </nav>
 
 <div class="hero">
     {% if team_logo %}<img src="{{ team_logo }}" alt="{{ team_name }}" class="team-logo-hero" loading="lazy">{% endif %}
     <h1>{{ seo_h1 }}</h1>
-{{ ad('top') }}
-
-    <p>Canales de TV, cable y streaming para ver los partidos de {{ team_name }} ({{ team_league }}) en vivo desde {{ country_name }}.</p>
+    {# El anuncio estaba AQUÍ, entre el H1 y la respuesta: lo primero que veía
+       quien llegaba de Google. Es el mismo arreglo que ya se hizo en
+       /equipo/, /liga/ y /canal/; bajó al final de la cabecera. #}
+    <p>Canales de TV, cable y streaming para ver los partidos de {{ team_name }}{% if team_league %} ({{ team_league }}){% endif %} en vivo desde {{ country_name }}.</p>
 </div>
+
+{{ ad('top') }}
 
 <main class="main">
     <!-- Country selector -->
@@ -146,7 +152,7 @@
     </div>
 
     <!-- Channels available in this country -->
-    <h2 class="section-title">Canales en {{ country_name }} para {{ team_league }}</h2>
+    <h2 class="section-title">Canales en {{ country_name }} para {{ team_league or team_name }}</h2>
     {% if country_channels %}
     <div class="channels-grid">
         {% for ch in country_channels %}
@@ -158,7 +164,7 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="tip-box">No tenemos datos específicos de canales para {{ team_league }} en {{ country_name }}. Revisa las opciones de streaming internacionales como ESPN+, Paramount+ o Apple TV+.</div>
+    <div class="tip-box">No tenemos datos específicos de canales para {{ team_league or team_name }} en {{ country_name }}. Revisa las opciones de streaming internacionales como ESPN+, Paramount+ o Apple TV+.</div>
     {% endif %}
 
     {% if country_tip %}

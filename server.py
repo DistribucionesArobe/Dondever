@@ -9075,6 +9075,9 @@ async def team_page(request: Request, team_slug: str):
                     "home": h["home_name"], "away": h["away_name"],
                     "home_score": h["home_score"], "away_score": h["away_score"],
                     "date": h["game_date"], "league": h.get("league_name", ""),
+                    # league_slug se arrastra para recuperar la liga del
+                    # equipo cuando hoy no juega. Ver el bloque de abajo.
+                    "league_slug": h.get("league_slug", ""),
                 })
         if not upcoming_games:
             db_upcoming = await get_team_upcoming(team_name, limit=5, sport=_dep_db)
@@ -9085,12 +9088,83 @@ async def team_page(request: Request, team_slug: str):
                     "home": u["home_name"], "away": u["away_name"],
                     "date_utc": str(u.get("date_utc", "")),
                     "league": u.get("league_name", ""),
+                    "league_slug": u.get("league_slug", ""),
                     "channels": ch_list,
                 })
         # Top channels for this team (always try)
         top_channels = await get_team_channels(team_name, sport=_dep_db)
     except Exception:
         pass  # DB unavailable — degrade gracefully
+
+    # ── La liga del equipo los días que NO juega ──
+    #
+    # team_league salía ÚNICAMENTE de los partidos de hoy. Un equipo sin
+    # partido se quedaba sin liga, y detrás de ella se caían cuatro cosas,
+    # todas medidas el 30/10/2026 en /equipo/poblense y en
+    # /equipo/auriense-cented-academy, las dos páginas que más tráfico de
+    # España trajeron el día anterior:
+    #
+    #   · el breadcrumb visible → "Inicio > > Poblense", con el enlace
+    #     apuntando a "/liga/" a secas
+    #   · el BreadcrumbList del schema → el mismo hueco, para Google
+    #   · el enlace al calendario y la tabla de la liga → no se pintaba
+    #   · los mercados de la guía "cómo ver" → se caía al texto por defecto
+    #
+    # Las fuentes van de la más fiable a la menos. La base guarda league_slug
+    # y league_name del día que el equipo jugó, así que es la buena: da el
+    # slug ya resuelto, sin tener que deducirlo del nombre.
+    _liga_slug_db = ""
+    if not team_league:
+        for _fuente in (upcoming_games, recent_results):
+            for _r in _fuente:
+                if _r.get("league"):
+                    team_league = _r["league"]
+                    _liga_slug_db = _r.get("league_slug") or ""
+                    break
+            if team_league:
+                break
+
+    # El slug de la liga para el breadcrumb y los enlaces internos.
+    #
+    # La plantilla lo sacaba con el filtro `channel_slug`, que es el
+    # slugificador de CANALES, no de ligas. De los 66 nombres de liga
+    # configurados, 27 NO coinciden con su slug real, y league_page devuelve
+    # un 404 duro cuando el slug no está en ALL_LEAGUES. Es decir: 27 ligas
+    # tenían el breadcrumb enlazando a un 404, en la página visible y en el
+    # schema. Entre ellas, las de nuestros mercados:
+    #
+    #   "Liga Mexicana del Pacífico" → /liga/liga-mexicana-del-pacifico  (es /liga/lmp)
+    #   "Liga Mexicana de Béisbol"   → /liga/liga-mexicana-de-beisbol    (es /liga/lmb)
+    #   "Liga FUTVE"                 → /liga/liga-futve                  (es /liga/futve)
+    #   "LPF Panamá"                 → /liga/lpf-panama                  (es /liga/liga-panama)
+    #   "Liga BetPlay"               → /liga/liga-betplay                (es /liga/liga-colombia)
+    #   "Liga 1 Perú"                → /liga/liga-1-peru                 (es /liga/liga-peru)
+    #   "Primera Chile", "LigaPro Ecuador", "Copa Libertadores",
+    #   "Copa Sudamericana", "Champions League", "Copa Oro"…
+    #
+    # _SLUG_DE_LIGA es el mapa autoritativo (se construye desde ALL_LEAGUES),
+    # y TEAM_LEAGUE_MAP sirve de última red para los equipos fijos.
+    _liga_final = team_league or team_league_seo
+    liga_slug = ""
+    if _liga_slug_db in ALL_LEAGUES:
+        liga_slug = _liga_slug_db
+    if not liga_slug:
+        liga_slug = _SLUG_DE_LIGA.get(_liga_final, "")
+    if not liga_slug and league_info_map:
+        _id_liga = league_info_map[1]
+        liga_slug = next((s for s, t in ALL_LEAGUES.items() if t[1] == _id_liga), "")
+    # Si la liga se recuperó por slug pero seguimos sin nombre, el nombre
+    # oficial sale de la propia configuración. Nunca se inventa.
+    if liga_slug and not _liga_final:
+        _liga_final = ALL_LEAGUES[liga_slug][2]
+        team_league = _liga_final
+
+    # related_teams se calculó antes de recuperar la liga, así que para un
+    # equipo sin partido hoy salía siempre vacío: cero enlaces internos.
+    if not related_teams and _liga_final:
+        related_teams = [{"slug": s, "name": i["name"]}
+                         for s, i in POPULAR_TEAMS.items()
+                         if s != team_slug and i.get("league") == _liga_final]
 
     # Fetch team news from ESPN
     team_news = []
@@ -9262,9 +9336,9 @@ async def team_page(request: Request, team_slug: str):
         "team_league": team_league or team_league_seo,
         # Slug de la liga y países que nombra su guía. Antes la plantilla
         # deducía la liga del DEPORTE y escribía "(MLB)" para cualquier equipo
-        # de béisbol. Ver _SLUG_DE_LIGA.
-        "liga_slug": _SLUG_DE_LIGA.get(team_league or team_league_seo, ""),
-        "mercados": _mercados(_SLUG_DE_LIGA.get(team_league or team_league_seo, "")),
+        # de béisbol. Ver _SLUG_DE_LIGA y el bloque que resuelve liga_slug.
+        "liga_slug": liga_slug,
+        "mercados": _mercados(liga_slug),
         "team_sport": team_sport,
         "team_aka": team_aka,
         "games": games,
@@ -10051,6 +10125,30 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
         try:
             stats = await get_team_stats(team_slug)
             team_logo = stats.get("team_logo", "")
+        except Exception:
+            pass
+
+    # La liga, los días que el equipo no juega. Mismo agujero que en
+    # /equipo/{slug} y aquí duele más, porque de team_league cuelga la tabla de
+    # canales del país: sin liga, LEAGUE_CHANNELS_BY_COUNTRY no encuentra nada
+    # y la página cae al canal por defecto. Es decir, la ficha de España de un
+    # equipo español terminaba diciendo "por confirmar" un día después de que
+    # su partido se emitiera en Movistar Plus+, con el dato en nuestra base.
+    # Tiene que ir ANTES de la consulta de canales.
+    #
+    # OJO con el deporte: games.sport guarda el técnico en INGLÉS ("soccer",
+    # "baseball") y POPULAR_TEAMS["sport"] está en español ("futbol"). Pasar
+    # team_sport en español filtraría por un valor que no existe en la columna
+    # y la consulta devolvería cero filas sin avisar. El valor bueno está en
+    # TEAM_LEAGUE_MAP; si el equipo no está ahí, se consulta sin acotar.
+    if not team_league:
+        try:
+            from sports_api import TEAM_LEAGUE_MAP as _TLM_GEO
+            _lm_geo = _TLM_GEO.get(team_slug)
+            _h = await get_team_history(
+                team_name, limit=1, sport=(_lm_geo[0] if _lm_geo else ""))
+            if _h and _h[0].get("league_name"):
+                team_league = _h[0]["league_name"]
         except Exception:
             pass
 

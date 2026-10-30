@@ -83,8 +83,11 @@
     <script type="application/ld+json">
     {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
       {"@type":"ListItem","position":1,"name":"Home","item":"{{ app_url }}/"},
-      {"@type":"ListItem","position":2,"name":"{{ league }}","item":"{{ app_url }}/en/{{ team_slug }}"},
-      {"@type":"ListItem","position":3,"name":"{{ team_name }}","item":"{{ app_url }}/en/{{ team_slug }}"}
+      {# El paso 2 era la liga, pero apuntaba a la MISMA URL que el paso 3: dos
+         escalones distintos con el mismo destino, y el nombre en blanco cuando
+         el equipo no tenía liga resuelta. Un breadcrumb de dos pasos correcto
+         vale más que uno de tres inventado. #}
+      {"@type":"ListItem","position":2,"name":"{{ team_name }}","item":"{{ app_url }}/en/{{ team_slug }}"}
     ]}
     </script>
 </head>
@@ -97,11 +100,13 @@
     </div>
 </header>
 <main class="main">
-    <nav class="crumb"><a href="/">Home</a> &rsaquo; {{ league }} &rsaquo; {{ team_name }}</nav>
+    <nav class="crumb"><a href="/">Home</a> &rsaquo;{% if league %} {{ league }} &rsaquo;{% endif %} {{ team_name }}</nav>
     <h1>{{ seo_h1 }}</h1>
-{{ ad('top') }}
 
-
+    {# El anuncio estaba entre el H1 y el bloque de respuesta, o sea lo primero
+       que veía quien llegaba de Google buscando "what channel is the X game
+       on". Baja a después de la respuesta, igual que en /equipo/, /liga/,
+       /canal/ y las fichas por país. #}
     <div class="answer">
         {% if today_game %}
         <div class="lbl">{% if today_game.status.state == 'in' %}Playing now{% else %}Today{% endif %}</div>
@@ -135,6 +140,8 @@
         <p class="none" style="margin-top:0.4rem;">No upcoming {{ team_name }} games found right now. Check back closer to the next matchup.</p>
         {% endif %}
     </div>
+
+{{ ad('top') }}
 
     {% if upcoming %}
     <h2>{{ team_name }} upcoming schedule</h2>

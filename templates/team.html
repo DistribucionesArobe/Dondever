@@ -60,7 +60,7 @@
       "@type": "BreadcrumbList",
       "itemListElement": [
         {"@type": "ListItem", "position": 1, "name": "DondeVer", "item": "https://dondever.app/"},
-        {% if team_league %}{"@type": "ListItem", "position": 2, "name": "{{ team_league }}", "item": "https://dondever.app/liga/{{ team_league|channel_slug }}"},{% else %}{"@type": "ListItem", "position": 2, "name": "Equipos", "item": "https://dondever.app/equipos"},{% endif %}
+        {% if liga_slug and team_league %}{"@type": "ListItem", "position": 2, "name": {{ team_league|tojson }}, "item": "https://dondever.app/liga/{{ liga_slug }}"},{% else %}{"@type": "ListItem", "position": 2, "name": "Equipos", "item": "https://dondever.app/equipos"},{% endif %}
         {"@type": "ListItem", "position": 3, "name": "{{ team_name }}"}
       ]
     }
@@ -333,7 +333,17 @@
 <div class="container">
     <nav style="font-size:0.7rem;color:#9ca3af;font-weight:500;margin-bottom:0.5rem;">
         <a href="/" style="color:#10b981;text-decoration:none;">Inicio</a> &rsaquo;
-        <a href="/liga/{{ team_league|channel_slug }}" style="color:#10b981;text-decoration:none;">{{ team_league }}</a> &rsaquo;
+        {# El enlace salía de `channel_slug`, que slugifica CANALES, no ligas:
+           27 de las 66 ligas enlazaban a un 404 (LMP, LMB, FUTVE, LPF Panamá,
+           Liga BetPlay, Liga 1 Perú, Libertadores, Champions…). Y sin partido
+           hoy la liga venía vacía y el enlace quedaba en "/liga/", con el
+           nombre en blanco: "Inicio > > Poblense". Ahora manda liga_slug, que
+           lo resuelve el servidor, y si no hay liga se cae a /equipos. #}
+        {% if liga_slug and team_league %}
+        <a href="/liga/{{ liga_slug }}" style="color:#10b981;text-decoration:none;">{{ team_league }}</a> &rsaquo;
+        {% else %}
+        <a href="/equipos" style="color:#10b981;text-decoration:none;">Equipos</a> &rsaquo;
+        {% endif %}
         <span>{{ team_name }}</span>
     </nav>
     <h1 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:0.6rem;">{{ seo_h1 }}</h1>
