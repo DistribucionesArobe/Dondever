@@ -3373,10 +3373,28 @@ LEAGUE_SEO_EXTRA = {
         # destacada y las ya jugadas apagadas.
         "calendario": {
             "titulo": "Camino a la final",
-            "nota": "Fechas de referencia de cada ronda. La RFEF reparte los partidos en varios días y fija los horarios tras cada sorteo: ahí se sabe qué canal lleva cada encuentro.",
+            "nota": "La RFEF suspendió los 24 partidos del 28 de octubre por el accidente ferroviario de Toledo: nueve se recuperaron el día 29 y los 16 restantes se juegan entre el 3 y el 13 de noviembre (el Mijas Las Lagunas - Real Jaén sigue sin fecha). Por eso el sorteo de la segunda ronda tampoco tiene día todavía. A partir de ahí son las fechas de referencia de cada ronda: la RFEF reparte los partidos en varios días y fija los horarios tras cada sorteo, y es entonces cuando se sabe qué canal lleva cada encuentro.",
             "rondas": [
-                {"ronda": "Primera ronda",       "fecha": "2026-10-29", "texto": "27, 28 y 29 de octubre de 2026"},
-                {"ronda": "Segunda ronda",       "fecha": "2026-12-02", "texto": "2 de diciembre de 2026"},
+                # CORREGIDO el 30/10/2026. Aqui ponia "27, 28 y 29 de octubre"
+                # y la segunda ronda "el 2 de diciembre", porque la guia con la
+                # que se escribio es del 27 — un dia ANTES de que la RFEF
+                # suspendiera los 24 partidos del 28 por el accidente
+                # ferroviario de Toledo. Nueve se recuperaron el jueves 29 y
+                # los 16 que quedan se reparten entre el 3 y el 13 de
+                # noviembre; el Mijas Las Lagunas - Real Jaen sigue sin fecha.
+                #
+                # La fecha de corte de la primera ronda es el 13/11 a
+                # proposito: mientras queden partidos por jugar, la ronda NO
+                # puede salir apagada como si hubiera terminado.
+                #
+                # Fuente, del 30/10/2026:
+                # https://www.sportaragon.com/futbol-aragon/partidos-aplazados-copa-rey-cuando-juegan-cuando-es-sorteo-segunda-ronda/20261030101155162063.html
+                {"ronda": "Primera ronda",       "fecha": "2026-11-13", "texto": "27-29 de octubre · aplazados hasta el 13 de noviembre"},
+                # Rango, no un dia: la RFEF la tiene prevista entre el 1 y el 3
+                # de diciembre y el sorteo ni siquiera tiene fecha todavia.
+                # Poner "2 de diciembre" era darle al lector una precision que
+                # nadie ha confirmado.
+                {"ronda": "Segunda ronda",       "fecha": "2026-12-03", "texto": "Entre el 1 y el 3 de diciembre de 2026"},
                 {"ronda": "Dieciseisavos",       "fecha": "2026-12-16", "texto": "16 de diciembre de 2026"},
                 {"ronda": "Octavos de final",    "fecha": "2027-01-06", "texto": "6 de enero de 2027"},
                 {"ronda": "Cuartos de final",    "fecha": "2027-01-13", "texto": "13 de enero de 2027"},
