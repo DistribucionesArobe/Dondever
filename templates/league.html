@@ -172,11 +172,8 @@
            relaciones distintas (ESPN los da cuadrados, TheSportsDB no siempre)
            y recortarlos los deja a medias. */
         .liga-escudo { width: 72px; height: 72px; object-fit: contain; margin: 0 auto 0.6rem; display: block; }
-        /* ESPN sirve una version para fondo oscuro. Se cambia con el mismo
-           interruptor que el resto del sitio: [data-theme="dark"]. */
-        .liga-escudo-oscuro { display: none; }
-        [data-theme="dark"] .liga-escudo-claro { display: none; }
-        [data-theme="dark"] .liga-escudo-oscuro { display: block; }
+        /* La variante para fondo oscuro la cambia dark-mode.js sobre esta
+           misma imagen; aqui no hace falta nada. */
         /* ── Camino a la final: el calendario como bloque, no como parrafo ── */
         .ruta { display: grid; gap: 0.4rem; margin: 0.9rem 0 0.6rem; }
         .ruta-paso { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.7rem;
@@ -400,13 +397,14 @@
        equipo (ESPN o TheSportsDB, ver fetch_league_logo). El onerror lo quita
        si la URL muere, igual que en la ficha de equipo: antes un hueco que un
        icono roto. Si no hay escudo no se pinta nada, y manda el emoji. #}
+    {# UNA sola imagen. La primera version pintaba dos (clara y oscura) y
+       escondia una con display:none, pero el navegador la descarga igual:
+       eran dos peticiones por pagina para enseñar una. El cambio de variante
+       lo hace dark-mode.js con data-claro / data-oscuro. #}
     {% if liga_logo and liga_logo.claro %}
-    <img src="{{ liga_logo.claro }}" alt="{{ league_name }}" class="liga-escudo liga-escudo-claro"
-         width="72" height="72" loading="eager" onerror="this.remove()">
-    {% if liga_logo.oscuro and liga_logo.oscuro != liga_logo.claro %}
-    <img src="{{ liga_logo.oscuro }}" alt="" class="liga-escudo liga-escudo-oscuro"
-         width="72" height="72" aria-hidden="true" onerror="this.remove()">
-    {% endif %}
+    <img src="{{ liga_logo.claro }}" alt="{{ league_name }}" class="liga-escudo"
+         data-claro="{{ liga_logo.claro }}" data-oscuro="{{ liga_logo.oscuro or liga_logo.claro }}"
+         width="72" height="72" onerror="this.remove()">
     {% endif %}
     {% if league_slug == 'nfl' %}
     <h1>{{ emoji }} NFL hoy en vivo: D&oacute;nde ver, horarios y resultados</h1>

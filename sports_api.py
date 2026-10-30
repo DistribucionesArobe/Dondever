@@ -2843,7 +2843,12 @@ async def fetch_league_logo(sport: str, league_id: str) -> dict:
         salida = {}
 
     salida = {k: v for k, v in salida.items() if v}
-    _logo_liga_cache[clave] = salida
+    # Solo se cachea lo que SIRVE. Guardar el vacio parecia inofensivo y no lo
+    # es: este cache no caduca, asi que un fallo pasajero de ESPN —un timeout,
+    # un 503— dejaba a esa liga sin escudo hasta que alguien reiniciara el
+    # proceso. Si no hubo escudo, el siguiente visitante lo vuelve a intentar.
+    if salida:
+        _logo_liga_cache[clave] = salida
     return salida
 
 

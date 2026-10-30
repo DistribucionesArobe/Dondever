@@ -18,6 +18,24 @@
   }
   updateThemeMeta();
 
+  // Escudo de liga: ESPN sirve una version para fondo oscuro.
+  //
+  // La primera version pintaba DOS <img>, una con display:none. El navegador
+  // descarga igual la imagen oculta, asi que eran dos peticiones por pagina de
+  // liga para enseñar una sola. Ahora va un unico <img> y aqui se le cambia el
+  // src. Si el escudo no trae variante oscura (TheSportsDB da solo una), el
+  // atributo no existe y no se toca nada.
+  function escudoLiga() {
+    var img = document.querySelector('.liga-escudo');
+    if (!img) return;
+    var oscuro = img.getAttribute('data-oscuro');
+    var claro = img.getAttribute('data-claro');
+    if (!oscuro || !claro) return;
+    var quiere = html.getAttribute('data-theme') === 'dark' ? oscuro : claro;
+    if (img.getAttribute('src') !== quiere) img.setAttribute('src', quiere);
+  }
+  escudoLiga();
+
   // Toggle handler — called by button click
   window.toggleDarkMode = function() {
     var current = html.getAttribute('data-theme');
@@ -31,6 +49,7 @@
     var stickyBtn = document.querySelector('.sticky-brand-toggle');
     if (stickyBtn) stickyBtn.textContent = icon;
     updateThemeMeta();
+    escudoLiga();
   };
 
   // Set initial icon when DOM is ready
