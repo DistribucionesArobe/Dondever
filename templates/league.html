@@ -168,6 +168,45 @@
         .back { color: #10b981; text-decoration: none; font-weight: 600; font-size: 0.85rem; }
         .hero { max-width: 900px; margin: 0 auto; padding: 2rem 1rem 1rem; text-align: center; }
         .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; }
+        /* Escudo de la liga. object-fit: contain porque los escudos vienen en
+           relaciones distintas (ESPN los da cuadrados, TheSportsDB no siempre)
+           y recortarlos los deja a medias. */
+        .liga-escudo { width: 72px; height: 72px; object-fit: contain; margin: 0 auto 0.6rem; display: block; }
+        /* ESPN sirve una version para fondo oscuro. Se cambia con el mismo
+           interruptor que el resto del sitio: [data-theme="dark"]. */
+        .liga-escudo-oscuro { display: none; }
+        [data-theme="dark"] .liga-escudo-claro { display: none; }
+        [data-theme="dark"] .liga-escudo-oscuro { display: block; }
+        /* ── Camino a la final: el calendario como bloque, no como parrafo ── */
+        .ruta { display: grid; gap: 0.4rem; margin: 0.9rem 0 0.6rem; }
+        .ruta-paso { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.7rem;
+                     border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
+        .ruta-paso .rp-num { flex: 0 0 24px; height: 24px; border-radius: 50%; background: #f3f4f6;
+                             color: #6b7280; font-size: 0.7rem; font-weight: 800; display: flex;
+                             align-items: center; justify-content: center; }
+        .ruta-paso .rp-ronda { font-size: 0.82rem; font-weight: 700; color: #1a1a2e; }
+        .ruta-paso .rp-fecha { font-size: 0.75rem; color: #6b7280; margin-left: auto; text-align: right; }
+        /* Ya jugada: se apaga, pero se deja. Saber que paso tambien es dato. */
+        .ruta-paso.rp-pasada { opacity: 0.5; }
+        .ruta-paso.rp-pasada .rp-num { background: #d1fae5; color: #047857; }
+        /* La siguiente ronda es LA respuesta de quien llega cinco semanas
+           despues del partido de su equipo. Por eso es la unica destacada. */
+        .ruta-paso.rp-proxima { border-color: #10b981; background: #f0fdf4; box-shadow: 0 1px 0 rgba(16,185,129,.15); }
+        .ruta-paso.rp-proxima .rp-num { background: #10b981; color: #fff; }
+        .ruta-paso.rp-proxima .rp-fecha { color: #047857; font-weight: 700; }
+        .ruta-etq { font-size: 0.62rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+                    color: #047857; background: #d1fae5; border-radius: 999px; padding: 0.1rem 0.4rem; margin-left: 0.4rem; }
+        .ruta-nota { font-size: 0.72rem; color: #9ca3af; line-height: 1.55; margin-top: 0.3rem; }
+        /* ── Canales del torneo, en tarjetas y con lo gratis primero ── */
+        .cn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
+        .cn-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.6rem 0.7rem; background: #fff; }
+        .cn-card.cn-gratis { border-color: #bbf7d0; background: #f0fdf4; }
+        .cn-nombre { font-size: 0.82rem; font-weight: 700; color: #1a1a2e; display: block; }
+        .cn-badge { display: inline-block; font-size: 0.6rem; font-weight: 800; letter-spacing: .04em;
+                    text-transform: uppercase; border-radius: 999px; padding: 0.1rem 0.4rem; margin-top: 0.25rem; }
+        .cn-badge.b-gratis { background: #d1fae5; color: #047857; }
+        .cn-badge.b-pago { background: #f3f4f6; color: #6b7280; }
+        .cn-nota { font-size: 0.72rem; color: #6b7280; line-height: 1.5; margin-top: 0.3rem; }
         .hero p { color: #6b7280; font-size: 0.9rem; max-width: 600px; margin: 0 auto; line-height: 1.6; }
         .main { max-width: 900px; margin: 1rem auto; padding: 0 1rem 2rem; }
         .game-card {
@@ -356,6 +395,19 @@
 </header>
 
 <div class="hero">
+    {# Escudo oficial de la liga. /liga/ era la unica pagina del sitio sin una
+       sola imagen: emoji y texto. Sale de la misma fuente que los escudos de
+       equipo (ESPN o TheSportsDB, ver fetch_league_logo). El onerror lo quita
+       si la URL muere, igual que en la ficha de equipo: antes un hueco que un
+       icono roto. Si no hay escudo no se pinta nada, y manda el emoji. #}
+    {% if liga_logo and liga_logo.claro %}
+    <img src="{{ liga_logo.claro }}" alt="{{ league_name }}" class="liga-escudo liga-escudo-claro"
+         width="72" height="72" loading="eager" onerror="this.remove()">
+    {% if liga_logo.oscuro and liga_logo.oscuro != liga_logo.claro %}
+    <img src="{{ liga_logo.oscuro }}" alt="" class="liga-escudo liga-escudo-oscuro"
+         width="72" height="72" aria-hidden="true" onerror="this.remove()">
+    {% endif %}
+    {% endif %}
     {% if league_slug == 'nfl' %}
     <h1>{{ emoji }} NFL hoy en vivo: D&oacute;nde ver, horarios y resultados</h1>
     <p>Todos los partidos de la NFL con canales confirmados para M&eacute;xico (Canal 5, FOX, ESPN), horarios y resultados en tiempo real.</p>
@@ -1068,6 +1120,44 @@
         {% for p in league_seo_extra.paragraphs %}
         <p>{{ p }}</p>
         {% endfor %}
+
+        {# ── Canales del torneo, en tarjetas ──
+           Iban dentro del parrafo y ahi no los lee nadie. Lo gratis va primero
+           y marcado: es lo que mas se busca y nuestro mejor argumento. #}
+        {% if league_seo_extra.canales_pais %}
+        <h3>{{ league_seo_extra.canales_pais.titulo }}</h3>
+        <div class="cn-grid">
+            {% for c in league_seo_extra.canales_pais.lista %}
+            {%- set _u = canal_url(c.nombre) -%}
+            <div class="cn-card {% if c.gratis %}cn-gratis{% endif %}">
+                {% if _u %}<a href="{{ _u }}" class="cn-nombre">{{ c.nombre }}</a>
+                {% else %}<span class="cn-nombre">{{ c.nombre }}</span>{% endif %}
+                <span class="cn-badge {% if c.gratis %}b-gratis{% else %}b-pago{% endif %}">{% if c.gratis %}Gratis{% else %}De pago{% endif %}</span>
+                <div class="cn-nota">{{ c.nota }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {# ── Camino a la final ──
+           La ronda que viene es la respuesta de quien entra semanas despues
+           del partido de su equipo, que es el caso normal en una copa. El
+           servidor marca cual ya paso y cual es la siguiente. #}
+        {% if league_seo_extra.calendario %}
+        <h3>{{ league_seo_extra.calendario.titulo }}</h3>
+        <div class="ruta">
+            {% for r in league_seo_extra.calendario.rondas %}
+            <div class="ruta-paso {% if r.pasada %}rp-pasada{% elif r.proxima %}rp-proxima{% endif %}">
+                <span class="rp-num">{% if r.pasada %}&#10003;{% else %}{{ loop.index }}{% endif %}</span>
+                <span class="rp-ronda">{{ r.ronda }}{% if r.proxima %}<span class="ruta-etq">Siguiente</span>{% endif %}</span>
+                <span class="rp-fecha">{{ r.texto }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% if league_seo_extra.calendario.nota %}
+        <p class="ruta-nota">{{ league_seo_extra.calendario.nota }}</p>
+        {% endif %}
+        {% endif %}
         {% if league_seo_extra.links %}
         <div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
             {% for link in league_seo_extra.links %}

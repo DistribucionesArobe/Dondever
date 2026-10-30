@@ -29,7 +29,7 @@ from sports_api import (
     fetch_meli_product_image, fetch_espn_event_summary,
     generate_nfl_power_rankings, generate_nfl_picks, get_nfl_team_advanced_stats,
     fetch_sportsdb_team_info, compute_sportsdb_standings,
-    fetch_league_leaders, fetch_team_form,
+    fetch_league_leaders, fetch_team_form, fetch_league_logo,
     DEFAULT_LEAGUE_CHANNELS,
 )
 from whatsapp_bot import handle_whatsapp_message
@@ -3307,18 +3307,128 @@ async def legacy_game_redirect(request: Request, old_id: str):
 
 
 # ── League-specific SEO extra content ─────────────────────
+def _seo_extra_con_ruta(league_slug: str):
+    """Marca que ronda del calendario ya paso y cual es la siguiente.
+
+    Se devuelve una COPIA. LEAGUE_SEO_EXTRA es un diccionario de modulo que
+    comparten todas las peticiones: escribirle "pasada" o "proxima" encima
+    dejaria el estado del dia pegado para siempre y, con varias peticiones a
+    la vez, mezclado. Es el mismo error que ya me costo cinco paginas de
+    equipo sin anuncios cuando mute templates.env.globals a mitad de un test.
+    """
+    extra = LEAGUE_SEO_EXTRA.get(league_slug)
+    if not extra or not extra.get("calendario"):
+        return extra
+    hoy = datetime.now(TZ_MX).date().isoformat()
+    rondas = []
+    ya_marcada = False
+    for r in extra["calendario"]["rondas"]:
+        paso = bool(r.get("fecha")) and r["fecha"] < hoy
+        # La "siguiente" es la primera que no ha pasado. Solo una.
+        proxima = (not paso) and not ya_marcada
+        if proxima:
+            ya_marcada = True
+        rondas.append({**r, "pasada": paso, "proxima": proxima})
+    return {**extra, "calendario": {**extra["calendario"], "rondas": rondas}}
+
+
 LEAGUE_SEO_EXTRA = {
+    # ── Copa del Rey ────────────────────────────────────────────────────
+    #
+    # Por qué entra ahora: el 29/10/2026 fue el primer día sin MLB y España
+    # pasó a ser el país número uno del sitio (280 de 727 clics, CTR 4,0 %
+    # frente al 2,7 % del día). Casi todo venía de la primera ronda de la
+    # Copa, en fichas de clubes diminutos que nadie más cubre:
+    #
+    #   /equipo/auriense-cented-academy   74 clics · 2.459 impr
+    #   /equipo/poblense                  53       ·   699
+    #   /equipo/ud-ourense                24       ·   299
+    #   /equipo/cieza                     17       ·   376
+    #
+    # El problema es la caducidad: la primera ronda se jugó el 27, 28 y 29 de
+    # octubre y hasta el 2 de diciembre no hay otra. Esas páginas se quedan
+    # mudas cinco semanas. Por eso lo que se escribe aquí es el CALENDARIO
+    # COMPLETO de las rondas que faltan: es la única respuesta que sigue
+    # siendo verdad mañana, y es justo lo que busca quien llega tarde.
+    #
+    # Todo lo de abajo —formato, fechas y televisión— está verificado el
+    # 30/10/2026 contra la guía de Sport Aragón del 27/10/2026:
+    # https://www.sportaragon.com/futbol-aragon/copa-rey-2026-27-formato-calendario-fechas-todas-rondas-donde-verla/20261027101124161838.html
+    # Las fechas son las de referencia de cada ronda; la RFEF fija los
+    # horarios y el reparto por días después de cada sorteo. Eso se dice en
+    # el texto en vez de fingir una precisión que no tenemos.
+    "copa-del-rey": {
+        "title": "Copa del Rey 2026/27: dónde verla y calendario de rondas | DondeVer",
+        "meta_desc": "Dónde ver la Copa del Rey 2026/27 en España: Movistar Plus+, Orange y los partidos gratis de La 1 y Teledeporte. Calendario completo de rondas hasta la final del 24 de abril en La Cartuja.",
+        "h2": "Donde ver la Copa del Rey en Espana",
+        "paragraphs": [
+            "Movistar Plus+ tiene los derechos de la Copa del Rey 2026/27 y emite el partido destacado de cada ronda; Orange TV da los mismos encuentros por su acuerdo con Telefonica. En abierto y gratis, TVE se suma en las rondas finales con partidos en La 1 y Teledeporte. En las primeras eliminatorias, ademas, varias televisiones autonomicas retransmiten los partidos de los clubes de su comunidad.",
+            "El formato explica por que aparecen equipos que no se ven el resto del ano: participan 116 clubes de siete categorias y las rondas se juegan a partido unico en el campo del equipo de MENOR categoria. Si hay empate, hay prorroga y penaltis. Solo las semifinales son a ida y vuelta, y la final es a partido unico en sede neutral. Real Madrid, Barcelona, Atletico y Real Sociedad, clasificados para la Supercopa, estan exentos de las dos primeras rondas y debutan en dieciseisavos.",
+        ],
+        # El calendario y los canales van como DATOS, no como parrafo. Antes
+        # estaban dentro del texto corrido y ahi no los lee nadie: la ficha de
+        # un club de Copa recibe la visita el dia del partido o cinco semanas
+        # despues, y en los dos casos lo que se busca es una fecha concreta.
+        # La plantilla los pinta como bloque visual, con la proxima ronda
+        # destacada y las ya jugadas apagadas.
+        "calendario": {
+            "titulo": "Camino a la final",
+            "nota": "Fechas de referencia de cada ronda. La RFEF reparte los partidos en varios días y fija los horarios tras cada sorteo: ahí se sabe qué canal lleva cada encuentro.",
+            "rondas": [
+                {"ronda": "Primera ronda",       "fecha": "2026-10-29", "texto": "27, 28 y 29 de octubre de 2026"},
+                {"ronda": "Segunda ronda",       "fecha": "2026-12-02", "texto": "2 de diciembre de 2026"},
+                {"ronda": "Dieciseisavos",       "fecha": "2026-12-16", "texto": "16 de diciembre de 2026"},
+                {"ronda": "Octavos de final",    "fecha": "2027-01-06", "texto": "6 de enero de 2027"},
+                {"ronda": "Cuartos de final",    "fecha": "2027-01-13", "texto": "13 de enero de 2027"},
+                {"ronda": "Semifinales (ida)",   "fecha": "2027-02-10", "texto": "10 de febrero de 2027"},
+                {"ronda": "Semifinales (vuelta)", "fecha": "2027-03-03", "texto": "3 de marzo de 2027"},
+                {"ronda": "Final",               "fecha": "2027-04-24", "texto": "24 de abril de 2027 · La Cartuja, Sevilla"},
+            ],
+        },
+        "canales_pais": {
+            "titulo": "Dónde verla en España",
+            # OJO: la clave NO puede llamarse "items". En Jinja, dict.items es
+            # el METODO del diccionario y gana sobre la clave: el for daba
+            # "builtin_function_or_method object is not iterable" y tumbaba
+            # la pagina entera con un 500.
+            "lista": [
+                {"nombre": "La 1 / RTVE Play", "gratis": True,
+                 "nota": "TVE se suma en las rondas finales, en abierto"},
+                {"nombre": "Teledeporte", "gratis": True,
+                 "nota": "Partidos de Copa en abierto junto a La 1"},
+                {"nombre": "Televisiones autonómicas", "gratis": True,
+                 "nota": "En las primeras rondas, a los clubes de su comunidad"},
+                {"nombre": "Movistar Plus+", "gratis": False,
+                 "nota": "Tiene los derechos: el partido destacado de cada ronda"},
+                {"nombre": "Orange TV", "gratis": False,
+                 "nota": "Los mismos partidos, por su acuerdo con Telefónica"},
+            ],
+        },
+        "links": [],
+    },
     # ── España ──────────────────────────────────────────────────────────
     # La Liga y la Liga Endesa eran las dos únicas ligas españolas del sitio
     # SIN texto propio: caían en el genérico, que hablaba de México.
     # Reparto de derechos verificado el 15/10/2026 para la temporada 2026/27.
     "la-liga": {
         "title": "Donde ver LaLiga hoy en vivo — horarios y canales | DondeVer",
-        "meta_desc": "Donde ver LaLiga EA Sports en vivo: horarios y canales en Espana (Movistar Plus+, DAZN, Orange, Teledeporte) y en Mexico y Latinoamerica. Real Madrid, Barcelona, Atletico y los 20 equipos.",
+        "meta_desc": "Donde ver LaLiga EA Sports en vivo: horarios y canales en Espana (Movistar Plus+, DAZN, Orange, Vodafone) y en Mexico y Latinoamerica. Cada jornada hay un partido gratis. Real Madrid, Barcelona, Atletico y los 20 equipos.",
         "h2": "Donde ver LaLiga EA Sports en vivo",
         "paragraphs": [
             "En Espana los derechos de LaLiga 2026/27 estan repartidos entre Movistar Plus+ y DAZN: cada uno emite cinco partidos por jornada, y Movistar ademas tiene en exclusiva tres jornadas completas que no llegan a DAZN. Para ver TODOS los partidos hace falta Movistar u Orange, que tiene acuerdo con las dos plataformas; Vodafone da acceso a los cinco partidos de DAZN en 35 de las 38 jornadas.",
-            "Cada jornada hay un partido en abierto y gratuito, que se puede ver en Teledeporte. En Mexico y Latinoamerica LaLiga se sigue por otras plataformas: el canal exacto cambia segun el partido, asi que arriba te mostramos el confirmado para cada encuentro y tu pais.",
+            # CORREGIDO el 30/10/2026. Aqui ponia que el partido gratis de cada
+            # jornada se veia en Teledeporte. Eso fue cierto en 2025/26, por un
+            # acuerdo de RTVE con DAZN, pero para 2026/27 no esta confirmado que
+            # siga, y ademas chocaba con lo que decimos en la ficha de pais de
+            # España, que ya hablaba de DAZN. Dos textos nuestros decian cosas
+            # distintas sobre el mismo partido.
+            #
+            # Fuente: la propia DAZN, que es quien tiene los derechos, el
+            # 30/10/2026: "en cada una de las 38 jornadas, DAZN emitira de forma
+            # gratuita un partido". Da ademas el de la jornada 11 con nombre y
+            # hora (Deportivo - Osasuna, lunes 2 de noviembre, 21:00).
+            # https://www.dazn.com/es-ES/news/futbol/partido-abierto-puede-ver-jornada-laliga-donde-ver-gratis-primera-division/1omdzebxomviu1jdn5k0sr9zhb
+            "Cada jornada hay un partido en abierto y gratuito: DAZN emite uno gratis en las 38 jornadas, y basta con crear una cuenta sin pagar para verlo. En Mexico y Latinoamerica LaLiga se sigue por otras plataformas: el canal exacto cambia segun el partido, asi que arriba te mostramos el confirmado para cada encuentro y tu pais.",
         ],
         "links": [],
     },
@@ -4078,7 +4188,12 @@ async def league_page(request: Request, league_slug: str):
             "league_channels_today": league_channels_today[:8],
             "default_channels": default_channels,
             "league_leaders": league_leaders,
-            "league_seo_extra": LEAGUE_SEO_EXTRA.get(league_slug),
+            "league_seo_extra": _seo_extra_con_ruta(league_slug),
+            # Escudo oficial de la liga. Hasta ahora /liga/ era la unica
+            # pagina del sitio sin una sola imagen: emoji y texto. Sale del
+            # mismo sitio que los escudos de equipo (ver fetch_league_logo);
+            # si no hay, la plantilla no pinta nada.
+            "liga_logo": await fetch_league_logo(sport, league_id),
             "video_oficial": await video_de_liga(league_slug),
             "power_rankings": power_rankings,
             "nfl_picks": nfl_picks,
@@ -7323,7 +7438,9 @@ COUNTRY_PAGES = {
     "espana": {
         "name": "España",
         "flag": "🇪🇸",
-        "desc": "Guía de dónde ver deportes en vivo en España: LaLiga, Champions, Liga Endesa, NBA, NFL, F1 y MotoGP. Canales de pago y qué se puede ver gratis en abierto.",
+        # La Copa del Rey faltaba en esta lista y es la competición que más
+        # tráfico de España nos trajo el 29/10/2026.
+        "desc": "Guía de dónde ver deportes en vivo en España: LaLiga, Copa del Rey, Champions, Liga Endesa, NBA, NFL, F1 y MotoGP. Canales de pago y qué se puede ver gratis en abierto.",
         "channels": [
             {"name": "Movistar Plus+", "type": "Cable/Streaming", "sports": "LaLiga (5 partidos por jornada), Champions League, Copa del Rey"},
             {"name": "DAZN España", "type": "Streaming", "sports": "LaLiga (5 partidos por jornada), NFL, NBA, Liga Endesa"},
@@ -9594,6 +9711,37 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
             {"name": "Disney+", "type": "Streaming", "sports": "La Liga completa"},
         ],
     },
+    # ── Copa del Rey ────────────────────────────────────────────────────
+    #
+    # No estaba en esta tabla, y es la competición que más tráfico de España
+    # nos trajo: el 29/10/2026 España fue el primer país del sitio con 280 de
+    # los 727 clics del día, casi todos en fichas de clubes modestos de la
+    # primera ronda (Poblense, Auriense, Cieza, Ribadesella, Numancia…).
+    # Sin entrada aquí, /equipo/{slug}/en/espana caía al canal por defecto
+    # del país, que dice "Por confirmar".
+    #
+    # Reparto verificado el 30/10/2026 para la temporada 2026/27 en la guía
+    # de Sport Aragón del 27/10/2026 (formato, calendario y televisión):
+    # https://www.sportaragon.com/futbol-aragon/copa-rey-2026-27-formato-calendario-fechas-todas-rondas-donde-verla/20261027101124161838.html
+    #
+    # Lo que NO se pone aquí porque no está confirmado: DAZN (esta temporada
+    # no tiene ningún partido de Copa) y Vodafone (tampoco tiene la Copa).
+    # Las autonómicas sí emiten, pero cada una solo a sus equipos y solo en
+    # las rondas iniciales, así que van descritas, no como canal del torneo.
+    "Copa del Rey": {
+        "espana": [
+            {"name": "Movistar Plus+", "type": "Cable/Streaming",
+             "sports": "Tiene los derechos: el partido destacado de cada ronda"},
+            {"name": "Orange TV", "type": "Cable/Streaming",
+             "sports": "Mismos partidos que Movistar, por su acuerdo con Telefónica"},
+            {"name": "La 1 / RTVE Play", "type": "TV Abierta (gratis)",
+             "sports": "TVE se suma en las rondas finales, en abierto"},
+            {"name": "Teledeporte", "type": "TV Abierta (gratis)",
+             "sports": "Partidos de Copa en abierto junto a La 1"},
+            {"name": "Televisiones autonómicas", "type": "TV Abierta (gratis)",
+             "sports": "En las primeras rondas, cada una a los clubes de su comunidad"},
+        ],
+    },
     "Champions League": {
         "espana": [
             {"name": "Movistar Plus+", "type": "Cable/Streaming", "sports": "Champions League: exclusiva junto a Orange"},
@@ -10073,6 +10221,26 @@ _TIP_POR_PAIS_Y_LIGA = {
         "Los juegos nacionales van por ESPN/ABC, TNT y NBA TV; el resto, por la cadena "
         "regional del equipo. League Pass tiene los juegos fuera de tu mercado, con las "
         "mismas reglas de blackout local que MLB."
+    ),
+    # España no tenía NI UNA entrada aquí, así que todas sus fichas caían en
+    # el consejo genérico del país. Y España fue el primer mercado del sitio
+    # el 29/10/2026: 280 de 727 clics.
+    #
+    # Verificado el 30/10/2026 en la guía de Sport Aragón del 27/10/2026:
+    # https://www.sportaragon.com/futbol-aragon/copa-rey-2026-27-formato-calendario-fechas-todas-rondas-donde-verla/20261027101124161838.html
+    ("espana", "Copa del Rey"): (
+        "Movistar Plus+ tiene los derechos de la Copa del Rey y emite el partido destacado "
+        "de cada ronda; Orange da los mismos encuentros por su acuerdo con Telefónica. "
+        "TVE se suma en las rondas finales con partidos gratis en La 1 y Teledeporte, y en "
+        "las primeras eliminatorias varias autonómicas retransmiten a los clubes de su "
+        "comunidad. El canal de cada partido se confirma después del sorteo de la ronda."
+    ),
+    ("espana", "La Liga"): (
+        "Los derechos de LaLiga 2026/27 están repartidos entre Movistar Plus+ y DAZN, con "
+        "cinco partidos por jornada cada uno; Movistar tiene además tres jornadas completas "
+        "en exclusiva. Orange da acceso a las dos plataformas y Vodafone solo a los partidos "
+        "de DAZN. Cada jornada hay un partido gratis: lo emite DAZN en abierto, y solo hace "
+        "falta crear una cuenta sin pagar."
     ),
 }
 

@@ -2778,6 +2778,75 @@ async def compute_sportsdb_standings(league_id: str) -> list[dict]:
     return entries
 
 
+_logo_liga_cache: dict[str, dict] = {}
+
+
+async def fetch_league_logo(sport: str, league_id: str) -> dict:
+    """Escudo oficial de la liga, con variante para modo oscuro.
+
+    Las paginas de liga eran las unicas del sitio sin ninguna imagen: solo un
+    emoji y texto. Los escudos salen de las MISMAS fuentes que ya usamos para
+    los equipos, no de un banco de imagenes ni de un generador:
+
+      · ESPN  -> scoreboard, leagues[0].logos[]. Es la respuesta que YA
+        pedimos para pintar los partidos del dia, asi que con la cache
+        caliente no cuesta una peticion extra. Verificado el 30/10/2026 con
+        esp.copa_del_rey:
+            https://a.espncdn.com/i/leaguelogos/soccer/500/80.png
+            https://a.espncdn.com/i/leaguelogos/soccer/500-dark/80.png
+        Mismo CDN del que ya salen los escudos de equipo.
+
+      · TheSportsDB -> lookupleague.php, campo strBadge. Verificado el
+        30/10/2026 con la LVBP (id 5112).
+
+    Devuelve {} cuando no hay escudo. La plantilla no pinta nada en ese caso:
+    un hueco vacio se ve mejor que una imagen rota, y un icono generico de
+    relleno no aporta nada.
+    """
+    clave = f"logo_liga:{sport}:{league_id}"
+    if clave in _logo_liga_cache:
+        return _logo_liga_cache[clave]
+
+    salida: dict = {}
+    try:
+        if str(league_id).startswith("sportsdb:"):
+            sdb_id = str(league_id).split(":", 1)[1]
+            # lidom no tiene id numerico: es una liga nuestra, montada a mano.
+            if sdb_id.isdigit():
+                url = (f"https://www.thesportsdb.com/api/v1/json/"
+                       f"{SPORTSDB_KEY}/lookupleague.php?id={sdb_id}")
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.get(url)
+                    resp.raise_for_status()
+                    ligas = (resp.json() or {}).get("leagues") or []
+                if ligas:
+                    insignia = ligas[0].get("strBadge") or ligas[0].get("strLogo") or ""
+                    if insignia:
+                        salida = {"claro": insignia, "oscuro": insignia}
+        else:
+            datos = await fetch_espn_scoreboard(sport, league_id)
+            ligas = (datos or {}).get("leagues") or []
+            if ligas:
+                for lg in ligas[0].get("logos") or []:
+                    rel = lg.get("rel") or []
+                    if "dark" in rel:
+                        salida.setdefault("oscuro", lg.get("href", ""))
+                    elif lg.get("href"):
+                        salida.setdefault("claro", lg["href"])
+                # Si solo vino uno de los dos, el que haya sirve para ambos.
+                if salida.get("claro") and not salida.get("oscuro"):
+                    salida["oscuro"] = salida["claro"]
+                if salida.get("oscuro") and not salida.get("claro"):
+                    salida["claro"] = salida["oscuro"]
+    except Exception as e:
+        logger.warning(f"Sin escudo de liga para {sport}/{league_id}: {e}")
+        salida = {}
+
+    salida = {k: v for k, v in salida.items() if v}
+    _logo_liga_cache[clave] = salida
+    return salida
+
+
 async def fetch_sportsdb_team_info(team_id: str) -> dict:
     """Fetch rich team info from TheSportsDB lookupteam endpoint."""
     cache_key = f"sdb_team:{team_id}"
