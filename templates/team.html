@@ -788,22 +788,6 @@
     </div>
     {% endif %}
 
-    {#- Segundo anuncio. Estaba al final del todo, debajo del desplegable de
-        SEO, a 4.320 px de 4.764 en Dodgers: ni lo veía nadie. Aquí queda a
-        media página, después de calendario, resultados y estadísticas.
-
-        LA CONDICIÓN NO ES DECORATIVA. Las tres secciones que lo separan del
-        primer anuncio son condicionales, y hay equipos que no tienen ninguna:
-        sin próximos partidos, sin resultados recientes y sin estadísticas, los
-        dos bloques salían PEGADOS, uno tras otro, que es exactamente lo que
-        hay que evitar. Lo descubrió el test t22 al renderizar la ruta con las
-        APIs caídas —el estado de muchas fichas fuera de temporada—, no al leer
-        la plantilla. Si no hay contenido en medio, no hay segundo anuncio: un
-        bloque visible vale más que dos pegados que se reparten la impresión. -#}
-    {% if upcoming_games or recent_results or stats %}
-    {{ ad('bottom') }}
-    {% endif %}
-
     {# ══ CLÁSICOS DE ESTE EQUIPO ══
        Solo aparece para los equipos que están en _CLASICOS. El enlace es lo
        que saca a /clasico/ de ser una página huérfana: sin esto solo existe
@@ -1141,6 +1125,34 @@
     <script>
     (function(){var s=document.querySelector('.shop-section');if(!s)return;if(!s.querySelector('.shop-card.has-img')){s.style.display='none';return;}var cc='';try{cc=(localStorage.getItem('dv_country')||'').toUpperCase();}catch(e){}if(cc==='US')s.classList.add('shop-us');})();
     </script>
+
+    {#- Segundo anuncio. HISTORIA, porque ya se movió dos veces y conviene no
+        repetir ninguno de los dos errores.
+
+        (1) Empezó al final del todo, debajo del desplegable de SEO, a 4.320 px
+        de 4.764 en Dodgers: no es que se viera poco, es que no se veía.
+
+        (2) Se subió hasta justo después de la tira de estadísticas, y ahí se
+        pasó de frenada. Medido el 31/10/2026 en /equipo/america con la
+        ventana en primer plano: primer anuncio en y=573, segundo en y=980.
+        Entre los dos sólo quedaba la tira de cinco cajitas (posición, G-E-P,
+        puntos, dif. goles, torneo), unos 130 px. Como AdSense suele servir al
+        mismo anunciante dos veces seguidas, los dos bloques salían con la
+        MISMA creatividad a cuatro dedos de distancia y parecían un error de
+        la página. Lo vio el usuario en captura, no el test.
+
+        Ahora va antes de la tabla de posiciones, que en esa misma ficha cae
+        sobre y=1.850: unos 880 px por debajo del primero, con clásicos,
+        estadísticas detalladas, guía de forma y tienda en medio.
+
+        LA CONDICIÓN NO ES DECORATIVA, y es más estricta que antes. No basta
+        con que exista `stats` —ése fue justo el fallo (2), porque `stats` a
+        secas es la tira de 130 px—. Se exige al menos un bloque ALTO de por
+        medio. Si no lo hay, no hay segundo anuncio: un bloque visible vale
+        más que dos pegados que se reparten la impresión. -#}
+    {% if upcoming_games or recent_results or clasicos_equipo or (stats and stats.all_stats) %}
+    {{ ad('bottom') }}
+    {% endif %}
 
     {# ══ TABLA DE POSICIONES ══ #}
     {% if league_standings %}
