@@ -3055,9 +3055,33 @@
         // la cabecera volvía a ser el anuncio. Detrás de la primera liga se
         // cumplen las dos cosas: nunca va por delante del contenido y sigue
         // arriba, donde se ve.
+        // 31/10/2026 — EL TERCER ANUNCIO SE QUEDÓ FUERA DE ESTA FUNCIÓN.
+        //
+        // Al añadir ad('vivo') debajo de la sección EN VIVO no se tocó este
+        // reparto, y el bloque nuevo no entraba en el baile. Resultado, visto
+        // en captura por el usuario con Fútbol › Liga MX filtrado: la sección
+        // EN VIVO se esconde porque ninguno de sus partidos es de la liga
+        // elegida, pero su anuncio se queda, y lo PRIMERO de la página bajo la
+        // barra de filtros era publicidad. Exactamente lo que esta función
+        // existe para impedir.
+        //
+        // Ahora son tres y hay tres anclas, porque .standings-compact aparece
+        // dos veces en la portada y sirven como dos sitios distintos:
+        //
+        //   vivo → detrás de la primera liga visible  (era el sitio de top)
+        //   top  → detrás de la última liga visible, o de la 1ª tabla
+        //   mid  → detrás de la 2ª tabla de posiciones
+        //
+        // Cada uno baja un escalón respecto a antes. Ninguno se esconde, por
+        // lo que explica el comentario de arriba: la impresión ya está contada
+        // y taparla sólo nos quitaría visibilidad.
         function anunciosIntercalados(visible, primera, ultima) {
+            var vivo = document.querySelector('.dv-ad--vivo');
             var top = document.querySelector('.dv-ad--top');
             var mid = document.querySelector('.dv-ad--mid');
+            var tablas = document.querySelectorAll('.standings-compact');
+            var tabla1 = tablas[0] || null;
+            var tabla2 = tablas[1] || tablas[0] || null;
 
             // Se recuerda el sitio original de cada uno con una marca invisible
             // para poder devolverlos al quitar el filtro.
@@ -3081,11 +3105,16 @@
             }
 
             if (visible) {
+                devolver(vivo);
                 devolver(top);
                 devolver(mid);
                 return;
             }
-            mover(top, primera);
+            // El primer hueco es para el de EN VIVO, que es el que estaba
+            // quedando arriba del todo. Si no hay ninguna liga visible se usa
+            // la tabla de posiciones: lo que no puede pasar es que se quede
+            // donde está, porque ahí es el primer elemento de la página.
+            mover(vivo, primera || tabla1);
 
             // El segundo nunca se queda arriba. Si hay más de una liga visible
             // va detrás de la última; si sólo hay una —que es el caso normal al
@@ -3096,10 +3125,17 @@
             // Comprobado en producción el 17/10/2026 con La Liga, Bundesliga y
             // Premier filtradas: sin esto, mid se quedaba por encima de la liga
             // y lo primero de la página volvía a ser un anuncio.
+            // mid se coloca ANTES que top a propósito. Los dos pueden acabar
+            // tras la misma ancla si la portada viene con una sola tabla, y
+            // insertar siempre en ancla.nextSibling invierte el orden: si se
+            // pusiera top primero, mid quedaría por delante. Haciéndolo al
+            // revés el orden visual sigue siendo top y luego mid.
             if (ultima && ultima !== primera) {
-                mover(mid, ultima);
+                mover(mid, tabla1 || ultima);
+                mover(top, ultima);
             } else {
-                mover(mid, document.querySelector('.standings-compact') || primera);
+                mover(mid, tabla2 || primera);
+                mover(top, tabla1 || primera);
             }
         }
 
