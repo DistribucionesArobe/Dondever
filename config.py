@@ -39,15 +39,16 @@ AFFILIATES = {
         "cta_twitter": "Bono + $100 freebet en Betsson",
         "bonus": "$3,000 bono + $100 freebet sin deposito",
     },
-    "cj": {
-        "name": "NordVPN",
-        "url": os.getenv("AFFILIATE_CJ", "") or "https://www.anrdoezrs.net/click-101647648-16968809",
-        "logo": "/static/affiliates/vpn.svg",
-        "cta": "Ver partidos de tu region",
-        "cta_short": "Desbloquea canales",
-        "cta_twitter": "Ve partidos bloqueados con VPN",
-        "bonus": "Hasta 72% de descuento",
-    },
+    # Aquí estaban NordVPN ("cj") y Surfshark — quitados el 31/10/2026.
+    #
+    # Sus reclamos eran "Desbloquea canales", "Ve partidos bloqueados con VPN"
+    # y "Desbloquea contenido deportivo con VPN": vender saltarse el bloqueo
+    # por región, que va contra los términos de servicio de las plataformas y
+    # contra la regla con la que está hecho el resto del sitio — no inventar
+    # canal ni derechos. Tampoco generaban ingresos.
+    #
+    # Si vuelve a hacer falta un afiliado para "no tengo cómo verlo", que sea
+    # el servicio que SÍ tiene los derechos en el país del visitante.
     "amazon": {
         "name": "Amazon Prime Video",
         "url": os.getenv("AFFILIATE_AMAZON", "") or "https://kdbov.com/g/6osk6x1ky49d38be8ce0ce4f0d0bb0/",
@@ -56,15 +57,6 @@ AFFILIATES = {
         "cta_short": "Ver en Prime Video",
         "cta_twitter": "Ve deportes en Amazon Prime Video",
         "bonus": "Deportes en vivo en Prime Video",
-    },
-    "surfshark": {
-        "name": "Surfshark VPN",
-        "url": os.getenv("AFFILIATE_SURFSHARK", "") or "https://www.jdoqocy.com/click-101647648-15741703",
-        "logo": "/static/affiliates/vpn.svg",
-        "cta": "Desbloquea contenido deportivo con VPN",
-        "cta_short": "VPN para deportes",
-        "cta_twitter": "Ve partidos de cualquier region con VPN",
-        "bonus": "Hasta 86% de descuento + 3 meses gratis",
     },
     "jubilee": {
         "name": "Jubilee",
