@@ -2015,6 +2015,40 @@
         </div>
         {% endfor %}
     </section>
+
+    {# ── Anuncio justo debajo de EN VIVO ──
+       Medido en producción el 31/10/2026, con la portada cargada de partidos:
+
+         114 px   H1
+         439 px   EN VIVO (11 partidos)
+        1.635 px  Próximos partidos
+        1.844 px  Fútbol Americano Universitario — 47 partidos
+        5.028 px  ad('top')      ← el PRIMER anuncio, al 55 %
+        5.807 px  ad('mid')
+        8.263 px  ad('bottom')
+        9.076 px  fin
+
+       El bloque de college football, con 47 partidos, ocupa 3.500 px él solo
+       y empuja el primer anuncio hasta la mitad de la página. Quien entra,
+       mira lo que está en vivo y se va no ve ninguno.
+
+       POR QUÉ UN HUECO NUEVO Y NO ad('top') AQUÍ
+       ------------------------------------------
+       Porque no funcionaría. Hay dos piezas de JS que reparten los anuncios
+       entre las ligas visibles —una al filtrar y otra al reordenar por
+       favoritos— y las dos los buscan con querySelector('.dv-ad--top'). Si
+       pongo un ad('top') aquí, lo encuentran primero y se lo llevan detrás de
+       la primera liga: el cambio se deshace solo al cargar.
+
+       Con un hueco propio, 'vivo', esos selectores no lo ven y se queda.
+
+       Va DENTRO del if de live_games: sin partidos en vivo esta sección no
+       existe, la portada es mucho más corta y el ad('top') de siempre ya cae
+       a una profundidad razonable. Así nunca hay un anuncio de más.
+
+       Si ADSENSE_SLOTS no trae la clave "vivo", el macro no pinta nada: no
+       hay riesgo de hueco vacío mientras no se configure. #}
+    {{ ad('vivo') }}
     {% endif %}
 
     {# ── ⏱ LO SIGUIENTE (sólo cuando no hay nada en vivo) ──
