@@ -562,8 +562,10 @@ DEFAULT_LEAGUE_CHANNELS = {
 #   · Santos: tenía TUDN + ViX. Es ViX + ESPN y Disney+.
 #   · Atlante: tenía Azteca 7 + Fox Sports MX. Es TV Azteca (Canal 7).
 #   · MAZATLÁN YA NO EXISTE en Liga MX: el Atlante compró la franquicia y
-#     volvió tras 12 años (El Informador, 16/07/2026). No tenía entrada aquí,
-#     pero conviene que quede escrito para que nadie se la agregue.
+#     volvió tras 12 años (El Informador, 16/07/2026). El 31/10/2026 se borró
+#     de POPULAR_TEAMS, TEAM_ALIASES, TEAM_LEAGUE_MAP, TEAM_SHOP_MELI y
+#     _TEAM_SEO_EXTRA, y se registró el Atlante en su lugar. Que nadie se lo
+#     vuelva a agregar: ESPN /soccer/mex.1/teams no lo devuelve.
 #
 # POR QUÉ CANAL 5 NO ESTÁ EN LOS CLUBES DE TELEVISA, aunque a veces lo lleven.
 #
@@ -2219,7 +2221,7 @@ TEAM_LEAGUE_MAP = {
     "leon": ("soccer", "mex.1"), "pachuca": ("soccer", "mex.1"),
     "atlas": ("soccer", "mex.1"), "necaxa": ("soccer", "mex.1"),
     "puebla": ("soccer", "mex.1"), "queretaro": ("soccer", "mex.1"),
-    "mazatlan": ("soccer", "mex.1"), "tijuana": ("soccer", "mex.1"),
+    "atlante": ("soccer", "mex.1"), "tijuana": ("soccer", "mex.1"),
     "juarez": ("soccer", "mex.1"),
     # Premier League
     "liverpool": ("soccer", "eng.1"), "manchester-city": ("soccer", "eng.1"),

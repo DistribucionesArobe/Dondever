@@ -129,7 +129,9 @@ TEAM_SHOP_MELI = {
     "necaxa":           "https://meli.la/2aV1G75",
     "puebla":           "https://meli.la/1skuqJp",
     "queretaro":        "https://meli.la/33L4r7T",
-    "mazatlan":         "https://meli.la/2MG5BTN",
+    # Sin entrada para "atlante": no hay enlace corto de Mercado Libre
+    # verificado para su playera y no se inventa uno. El del Mazatlán FC se
+    # quitó el 31/10/2026 al desaparecer el club de Liga MX.
     "tijuana":          "https://meli.la/2mwWWdZ",
     "juarez":           "https://meli.la/162PcPo",
     # ── Europa (12) ──
@@ -1053,7 +1055,13 @@ POPULAR_TEAMS = {
     "queretaro": {"name": "Querétaro", "league": "Liga MX"},
     # Era el único de los 18 de Liga MX sin página (07/10/2026).
     "atletico-san-luis": {"name": "Atlético de San Luis", "league": "Liga MX"},
-    "mazatlan": {"name": "Mazatlán FC", "league": "Liga MX"},
+    # Sustituye al Mazatlán FC: el Atlante compró la franquicia y volvió a
+    # Liga MX tras 12 años (El Informador, 16/07/2026). Comprobado el
+    # 31/10/2026 contra ESPN /soccer/mex.1/teams, que devuelve 18 equipos con
+    # Atlante (id 226) y sin Mazatlán. /equipo/atlante ya recibía 76 clics y
+    # 3.676 impresiones en 3 meses SIN estar registrado aquí; /equipo/mazatlan
+    # tenía 0 y 0, así que no hace falta redirección.
+    "atlante": {"name": "Atlante", "league": "Liga MX"},
     "tijuana": {"name": "Club Tijuana", "league": "Liga MX"},
     "juarez": {"name": "FC Juárez", "league": "Liga MX"},
     # Liga MX Femenil
@@ -1639,7 +1647,13 @@ TEAM_ALIASES = {
     "necaxa": "necaxa",
     "puebla": "puebla",
     "queretaro": "queretaro",
-    "mazatlan": "mazatlan",
+    # 31/10/2026: fuera "mazatlan". El Atlante compró la franquicia del
+    # Mazatlán FC y volvió a Liga MX (El Informador, 16/07/2026). ESPN
+    # /soccer/mex.1/teams devuelve 18 equipos CON Atlante y SIN Mazatlán.
+    # Ojo: "venados de mazatlan" (LMP) es otro equipo y sigue intacto.
+    "atlante": "atlante",
+    "potros de hierro": "atlante",
+    "potros": "atlante",
     "juarez": "juarez",
     # NFL
     "pats": "patriots",

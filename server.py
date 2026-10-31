@@ -8348,7 +8348,10 @@ _TEAM_SEO_EXTRA = {
     "necaxa": {"name": "Necaxa", "sport": "futbol", "league": "Liga MX", "aka": "Necaxa, Rayos"},
     "puebla": {"name": "Puebla", "sport": "futbol", "league": "Liga MX", "aka": "Puebla, La Franja, Camoteros"},
     "queretaro": {"name": "Querétaro", "sport": "futbol", "league": "Liga MX", "aka": "Querétaro, Gallos Blancos"},
-    "mazatlan": {"name": "Mazatlán FC", "sport": "futbol", "league": "Liga MX", "aka": "Mazatlán, Cañoneros"},
+    # 31/10/2026: el Atlante sustituye al Mazatlán FC (compró la franquicia,
+    # El Informador 16/07/2026). No se pone "Mazatlán" en el aka para no
+    # chocar con los Venados de Mazatlán de la LMP.
+    "atlante": {"name": "Atlante", "sport": "futbol", "league": "Liga MX", "aka": "Atlante, Potros de Hierro, Potros"},
     "tijuana": {"name": "Club Tijuana", "sport": "futbol", "league": "Liga MX", "aka": "Tijuana, Xolos, Xoloitzcuintles"},
     "juarez": {"name": "FC Juárez", "sport": "futbol", "league": "Liga MX", "aka": "Juárez, Bravos"},
     # Europa
