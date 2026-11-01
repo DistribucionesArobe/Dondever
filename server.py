@@ -3778,6 +3778,33 @@ LEAGUE_SEO_EXTRA = {
     },
 }
 
+
+def _titulo_reciente(team_slug: str, liga_slug: str):
+    """El título que acaba de ganar (o perder) este equipo, si lo hay.
+
+    Lee el bloque `campeon` de LEAGUE_SEO_EXTRA de SU liga y sólo devuelve
+    algo si el equipo es uno de los dos finalistas. Devuelve una COPIA: el
+    dict del módulo no se toca, que es el error que ya cometí una vez con
+    LEAGUE_SEO_EXTRA y el calendario de la Copa del Rey.
+
+    Por qué no se deduce de los resultados: ganar el último partido de una
+    temporada no es ganar un campeonato. Un equipo eliminado en semifinales
+    puede cerrar su año con victoria. El campeón se cura a mano o no se dice.
+    """
+    if not team_slug or not liga_slug:
+        return None
+    camp = (LEAGUE_SEO_EXTRA.get(liga_slug) or {}).get("campeon")
+    if not camp:
+        return None
+    es_campeon = team_slug == camp.get("equipo_slug")
+    es_finalista = team_slug == camp.get("rival_slug")
+    if not (es_campeon or es_finalista):
+        return None
+    salida = dict(camp)
+    salida["es_campeon"] = es_campeon
+    return salida
+
+
 # ── NFL team-specific SEO content for popular teams in Mexico ──
 NFL_TEAM_EXTRA = {
     "cowboys": {
@@ -9525,6 +9552,16 @@ async def team_page(request: Request, team_slug: str):
         # deducía la liga del DEPORTE y escribía "(MLB)" para cualquier equipo
         # de béisbol. Ver _SLUG_DE_LIGA y el bloque que resuelve liga_slug.
         "liga_slug": liga_slug,
+        # Título recién ganado, si este equipo es el campeón o el subcampeón
+        # de una competencia que acaba de cerrar. Sale del MISMO bloque
+        # `campeon` que pinta /liga/{slug}: una sola fuente, curada a mano y
+        # verificada. Si se duplicara aquí, tarde o temprano una de las dos
+        # copias diría otra cosa.
+        #
+        # El 31/10/2026 /equipo/valkyries recibió 16 clics y 315 impresiones
+        # el día del séptimo juego de las Finales de la WNBA, y la ficha no
+        # decía ni que hubiera Finales.
+        "titulo_reciente": _titulo_reciente(team_slug, liga_slug),
         "mercados": _mercados(liga_slug),
         "team_sport": team_sport,
         "team_aka": team_aka,

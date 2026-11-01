@@ -312,6 +312,17 @@
 
         /* ── Clásicos del equipo ──────────────────────────────────────── */
         .cl-equipo{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.6rem}
+        /* Título recién ganado. Dorado para el campeón, plata para el
+           subcampeón: se distinguen de un vistazo sin leer. */
+        .tr-caja{border-radius:12px;padding:0.75rem 0.9rem;margin:0 0 1rem;color:#fff;
+                 background:linear-gradient(135deg,#0b1020 0%,#1a1a2e 60%,#2d1b4e 100%)}
+        .tr-eti{font-size:0.7rem;font-weight:800;letter-spacing:0.07em;text-transform:uppercase;
+                margin-bottom:0.25rem}
+        .tr-gano .tr-eti{color:#fbbf24}
+        .tr-perdio .tr-eti{color:#cbd5e1}
+        .tr-perdio{opacity:.92}
+        .tr-txt{font-size:0.82rem;color:#e2e8f0;line-height:1.5}
+        .tr-txt a{color:#a5b4fc;text-decoration:none;font-weight:600}
         .cl-mini{position:relative;display:block;border-radius:12px;overflow:hidden;
                  padding:.75rem .85rem;color:#fff;text-decoration:none}
         .cl-mini::after{content:"";position:absolute;inset:0;background:rgba(5,8,20,.46);transition:background .15s}
@@ -394,6 +405,33 @@
             {% if sportsdb_team_info.get('instagram') %}<a href="{{ sportsdb_team_info.instagram }}" target="_blank" rel="noopener" style="font-size:0.8rem;color:#2563eb;text-decoration:none;">Instagram</a>{% endif %}
         </div>
         {% endif %}
+    </div>
+    {% endif %}
+
+    {#- ══ TÍTULO RECIÉN GANADO ══
+        Sólo para los dos finalistas de una competencia que acaba de cerrar, y
+        sólo si ese campeón está curado a mano en LEAGUE_SEO_EXTRA. Misma
+        fuente que la tarjeta de /liga/{slug}: si se escribiera aparte, una de
+        las dos copias acabaría diciendo otra cosa.
+
+        Va antes de "Partidos de hoy" porque cuando un equipo acaba de ganar
+        un título, eso ES la respuesta. Debajo sigue la ficha de siempre. -#}
+    {% if titulo_reciente %}
+    <div class="tr-caja {{ 'tr-gano' if titulo_reciente.es_campeon else 'tr-perdio' }}">
+        <div class="tr-eti">
+            {% if titulo_reciente.es_campeon %}&#127942; {{ titulo_reciente.titulo }}
+            {% else %}&#129352; Subcampeonas: {{ titulo_reciente.titulo }}{% endif %}
+        </div>
+        <div class="tr-txt">
+            {% if titulo_reciente.es_campeon %}
+                Serie ganada a <a href="/equipo/{{ titulo_reciente.rival_slug }}">{{ titulo_reciente.rival }}</a>
+                por {{ titulo_reciente.serie }}.
+            {% else %}
+                Serie perdida ante <a href="/equipo/{{ titulo_reciente.equipo_slug }}">{{ titulo_reciente.equipo }}</a>
+                por {{ titulo_reciente.serie }}.
+            {% endif %}
+            {% if liga_slug %}<a href="/liga/{{ liga_slug }}">Ver la serie completa &rarr;</a>{% endif %}
+        </div>
     </div>
     {% endif %}
 
