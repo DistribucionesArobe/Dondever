@@ -172,6 +172,31 @@
            relaciones distintas (ESPN los da cuadrados, TheSportsDB no siempre)
            y recortarlos los deja a medias. */
         .liga-escudo { width: 72px; height: 72px; object-fit: contain; margin: 0 auto 0.6rem; display: block; }
+        /* ── Tarjeta de campeón ──────────────────────────────────────────
+           Para cuando una competencia acaba de cerrar. Es lo primero bajo la
+           cabecera porque "quién ganó" es la consulta del día; el resto de la
+           página (canales, equipos, tabla) sigue abajo igual que siempre. */
+        .camp-card { max-width: 900px; margin: 0 auto 1rem; padding: 0 1rem; }
+        .camp-caja { background: linear-gradient(135deg,#0b1020 0%,#1a1a2e 55%,#2d1b4e 100%);
+                     border-radius: 14px; padding: 1.1rem 1.2rem; color: #fff; }
+        .camp-eti { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.09em;
+                    text-transform: uppercase; color: #fbbf24; margin-bottom: 0.35rem; }
+        .camp-eq { font-size: 1.35rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.2rem; }
+        .camp-eq a { color: #fff; text-decoration: none; }
+        .camp-vs { font-size: 0.82rem; color: #cbd5e1; margin-bottom: 0.8rem; }
+        .camp-vs a { color: #a5b4fc; text-decoration: none; }
+        .camp-serie { display: inline-block; background: rgba(251,191,36,.16); color: #fbbf24;
+                      border: 1px solid rgba(251,191,36,.35); border-radius: 999px;
+                      padding: 0.15rem 0.6rem; font-size: 0.78rem; font-weight: 800; }
+        .camp-juegos { display: grid; gap: 0.3rem; margin-top: 0.85rem; }
+        .cj { display: flex; align-items: center; gap: 0.6rem; background: rgba(255,255,255,.06);
+              border-radius: 8px; padding: 0.4rem 0.6rem; }
+        .cj-n { flex: 0 0 62px; font-size: 0.7rem; font-weight: 700; color: #94a3b8; }
+        .cj-txt { font-size: 0.8rem; font-weight: 600; }
+        .cj.gano { border-left: 3px solid #10b981; }
+        .cj.perdio { opacity: .55; border-left: 3px solid rgba(255,255,255,.18); }
+        .camp-cierre { font-size: 0.78rem; color: #cbd5e1; margin-top: 0.85rem; line-height: 1.5; }
+        [data-theme="dark"] .camp-caja { background: linear-gradient(135deg,#05070f 0%,#141427 55%,#241440 100%); }
         /* La variante para fondo oscuro la cambia dark-mode.js sobre esta
            misma imagen; aqui no hace falta nada. */
         /* ── Camino a la final: el calendario como bloque, no como parrafo ── */
@@ -413,7 +438,14 @@
     <h1>{{ emoji }} {{ event_seo.h1 }}</h1>
     <p>{{ event_seo.desc }}</p>
     {% else %}
-    {%- if liga_inactiva %}
+    {%- if league_seo_extra and league_seo_extra.campeon %}
+    {# Hay campeón recién coronado: ésa es LA pregunta que trae la gente, y
+       va en el H1. El 31/10/2026 /liga/wnba fue la página más clicada del
+       sitio mientras se jugaba el séptimo juego de las Finales, y el H1
+       decía "próximos partidos" sobre una temporada que acababa de cerrar. #}
+    <h1>{{ emoji }} {{ league_seo_extra.campeon.equipo }}, {{ league_seo_extra.campeon.frase or league_seo_extra.campeon.titulo }}</h1>
+    <p>{{ league_seo_extra.campeon.resumen }}</p>
+    {%- elif liga_inactiva %}
     {# La competencia no está activa: ni partidos hoy, ni en 14 días, ni
        resultados en 10. Prometer "en vivo hoy" aquí es falso, y era lo que
        hacía /liga/copa-america en producción con un torneo de 2024. #}
@@ -431,6 +463,44 @@
     {%- endif %}
     {% endif %}
 </div>
+
+{#- ══ CAMPEÓN RECIÉN CORONADO ══
+    Sale sólo si la liga tiene bloque `campeon` en LEAGUE_SEO_EXTRA, o sea
+    curado a mano y verificado. No se deduce de los datos: un "ganó el último
+    partido de la temporada" no es un campeonato, y preferimos no decir nada
+    antes que decirlo mal.
+
+    Va aquí arriba, antes de la parrilla, porque cuando una liga acaba de
+    cerrar la pregunta que trae a la gente es quién ganó, no qué hay hoy. -#}
+{% if league_seo_extra and league_seo_extra.campeon %}
+{%- set _c = league_seo_extra.campeon %}
+<div class="camp-card">
+  <div class="camp-caja">
+    <div class="camp-eti">&#127942; {{ _c.titulo }}</div>
+    <div class="camp-eq">
+      {% if _c.equipo_slug %}<a href="/equipo/{{ _c.equipo_slug }}">{{ _c.equipo }}</a>{% else %}{{ _c.equipo }}{% endif %}
+    </div>
+    {% if _c.rival %}
+    <div class="camp-vs">
+      Serie ganada a
+      {% if _c.rival_slug %}<a href="/equipo/{{ _c.rival_slug }}">{{ _c.rival }}</a>{% else %}{{ _c.rival }}{% endif %}
+      {% if _c.serie %}&nbsp;<span class="camp-serie">{{ _c.serie }}</span>{% endif %}
+    </div>
+    {% endif %}
+    {% if _c.juegos %}
+    <div class="camp-juegos">
+      {% for j in _c.juegos %}
+      <div class="cj {{ 'gano' if j.propio else 'perdio' }}">
+        <span class="cj-n">{{ j.n }}</span>
+        <span class="cj-txt">{{ j.texto }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if _c.cierre %}<div class="camp-cierre">{{ _c.cierre }}</div>{% endif %}
+  </div>
+</div>
+{% endif %}
 
 {#- Plataforma con TODOS los partidos de esta competencia, si existe.
     Va aquí, justo bajo el H1 y FUERA de cualquier condicional, porque la
@@ -690,7 +760,9 @@
         </div>
         {% endfor %}
     {% else %}
-        {% if not upcoming_events %}
+        {# Si ya hay tarjeta de campeón arriba, este cajón sobra: repite en
+           gris lo que la tarjeta acaba de explicar con el detalle completo. #}
+        {% if not upcoming_events and not (league_seo_extra and league_seo_extra.campeon) %}
         <div class="no-games">
             <h2>No hay juegos de {{ league_name }} hoy</h2>
             <p>Regresa cuando haya jornada o revisa <a href="/" style="color:#059669;">todos los juegos de hoy</a>.</p>

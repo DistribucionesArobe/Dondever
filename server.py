@@ -3597,9 +3597,58 @@ LEAGUE_SEO_EXTRA = {
         # Las dos palabras van casi siempre juntas ("online gratis"), y
         # "gratis" es cierto aquí: la WNBA tiene juegos libres en LATAM. Ya
         # rinde 8,3 % en "wnba en vivo gratis"; lo que faltaba era "online".
-        "title": "Ver WNBA en vivo online y gratis hoy: canales | DondeVer",
-        "meta_desc": "Ver la WNBA en vivo online y gratis hoy: horarios en hora de Mexico, canales y resultados. Indiana Fever, Las Vegas Aces, New York Liberty, Atlanta Dream y los 15 equipos.",
+        # ── 01/11/2026: LA TEMPORADA ACABÓ ANOCHE Y LA PÁGINA NO LO DECÍA ──
+        #
+        # /liga/wnba fue la página más clicada del sitio el 31/10 (23 clics,
+        # 265 impresiones) y /equipo/valkyries la cuarta (16 y 315). No era
+        # casualidad: se estaba jugando el SÉPTIMO juego de las Finales.
+        # Mientras tanto la página mostraba "No hay juegos de WNBA hoy".
+        #
+        # Verificado el 01/11/2026 contra dos fuentes de ESPN:
+        #   · scoreboard, los siete juegos con su nota "WNBA Finals - Game N"
+        #   · news, "How the Golden State Valkyries won the 2026 WNBA title"
+        #
+        # OJO AL CADUCAR ESTO: el bloque `campeon` y este title hablan de un
+        # hecho con fecha. Cuando arranque la temporada 2027 hay que volver al
+        # title de "en vivo online y gratis" —que estaba bien medido, ver los
+        # datos de abajo— y mover este campeón al histórico. ESPN da el 12 de
+        # abril de 2027 como inicio de la temporada 2027; ese campo incluye
+        # pretemporada, así que la regular empieza algunas semanas después.
+        "title": "Campeon WNBA 2026: Golden State Valkyries | DondeVer",
+        "meta_desc": "Las Golden State Valkyries son campeonas de la WNBA 2026: ganaron la serie 4-3 a las Atlanta Dream con un 68-63 en el séptimo juego. Resultado juego por juego y cuándo vuelve la WNBA.",
         "h2": "Donde ver la WNBA en vivo desde Mexico y Latinoamerica",
+        # El campeón va en estructura, no en prosa, para que la plantilla lo
+        # pueda pintar como tarjeta. Nada de esto es estimado: los siete
+        # marcadores salen del scoreboard de ESPN.
+        "campeon": {
+            "titulo": "Campeonas de la WNBA 2026",
+            # `frase` va dentro del H1, detrás del nombre del equipo, así que
+            # se escribe ya en minúscula inicial. Antes se sacaba del `titulo`
+            # con el filtro |lower de Jinja y salía "campeonas de la wnba
+            # 2026": el filtro no distingue una sigla de una palabra normal.
+            "frase": "campeonas de la WNBA 2026",
+            "equipo": "Golden State Valkyries",
+            "equipo_slug": "valkyries",
+            "rival": "Atlanta Dream",
+            "rival_slug": "dream",
+            "serie": "4-3",
+            "resumen": ("Las Golden State Valkyries ganaron su primer titulo de la WNBA al vencer "
+                        "68-63 a las Atlanta Dream en el septimo juego de las Finales. Es su segunda "
+                        "temporada desde que entraron a la liga."),
+            "cierre": ("La temporada 2026 termino. ESPN marca el 12 de abril de 2027 como arranque "
+                       "de la temporada 2027; el calendario de temporada regular se publica antes."),
+            # `propio` = lo ganó el campeón. La plantilla no sabe de equipos
+            # concretos; sólo pinta en verde lo que venga marcado aquí.
+            "juegos": [
+                {"n": "Juego 1", "texto": "Golden State 68 - 64 Atlanta", "propio": True},
+                {"n": "Juego 2", "texto": "Golden State 65 - 79 Atlanta", "propio": False},
+                {"n": "Juego 3", "texto": "Atlanta 97 - 71 Golden State", "propio": False},
+                {"n": "Juego 4", "texto": "Atlanta 62 - 67 Golden State", "propio": True},
+                {"n": "Juego 5", "texto": "Golden State 64 - 55 Atlanta", "propio": True},
+                {"n": "Juego 6", "texto": "Atlanta 80 - 69 Golden State", "propio": False},
+                {"n": "Juego 7", "texto": "Golden State 68 - 63 Atlanta", "propio": True},
+            ],
+        },
         "paragraphs": [
             "La WNBA es la liga profesional de basquetbol femenino de Estados Unidos. En 2026 son 15 equipos, dos de ellos de estreno: Portland Fire y Toronto Tempo, el primero fuera de Estados Unidos. La temporada regular va de mayo a septiembre y los playoffs terminan en octubre.",
             "Desde Mexico y Latinoamerica, la forma de ver TODOS los partidos en vivo es WNBA League Pass, que se contrata en wnba.com o a traves de Prime Video. El soporte oficial de la WNBA confirma que los bloqueos por television local solo aplican en Estados Unidos y Canada, asi que desde Mexico no hay partidos bloqueados. En DondeVer.app te mostramos el horario de cada juego en hora del centro de Mexico y que opcion tienes en tu pais.",
