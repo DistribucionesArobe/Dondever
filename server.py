@@ -10209,6 +10209,39 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
     },
 
+    # ── LAS DOS QUE SÍ TIENEN RESPUESTA FUERA DE SU PAÍS (02/11/2026) ──────
+    #
+    # Barrí las 14 ligas que aún decían "Por confirmar" en España. Para casi
+    # todas NO existe emisor español: ni la Liga MX, ni la Liga BetPlay, ni la
+    # LigaPro, ni la Liga 1 peruana se emiten aquí, y buscarlo sólo devuelve
+    # sitios de apuestas y guías que recomiendan VPN. Eso no se escribe.
+    #
+    # Estas dos son la excepción, y la respuesta no es un canal español sino
+    # la plataforma oficial de la propia liga, que sí llega a España:
+    "LVBP": {
+        # De nuestra propia investigación de derechos de octubre, ya en
+        # LEAGUE_SEO_EXTRA["lvbp"]: Meridiano, Televen, IVC o ByM Sport sólo
+        # se ven dentro de Venezuela; BeisbolPlay transmite a nivel nacional
+        # E INTERNACIONAL y es la única vía desde fuera del país. Para un
+        # venezolano en España es exactamente la respuesta que busca.
+        "espana": [
+            {"name": "BeisbolPlay", "type": "Streaming",
+             "sports": "Todos los juegos; única opción fuera de Venezuela"},
+        ],
+    },
+    "WNBA": {
+        # Mismo caso: no hay cadena española. El pase oficial de la liga sí
+        # funciona desde España —los bloqueos por TV local sólo aplican en
+        # EE.UU. y Canadá, como ya documentamos en LEAGUE_SEO_EXTRA["wnba"]—.
+        # A propósito NO se pone precio: lo vi en dólares en una guía de
+        # terceros, no en la web de la liga, y un precio mal puesto es peor
+        # que ninguno.
+        "espana": [
+            {"name": "WNBA League Pass", "type": "Streaming",
+             "sports": "Pase oficial de la liga; sin bloqueos fuera de EE.UU. y Canadá"},
+        ],
+    },
+
     # ── LIGA ENDESA / ACB (02/11/2026) ─────────────────────────────────────
     #
     # Esta entrada no existía, y era la más vergonzosa de todas: la liga de
@@ -10507,10 +10540,24 @@ _DEFAULT_LATAM_CHANNELS = [
 # ESPN no opera en España: el fallback de LATAM sería falso allí. Y como no
 # todas las ligas se emiten en España, preferimos "por confirmar" a inventar
 # un canal — mismo criterio que usamos con la NFL en México.
+#
+# 02/11/2026 — REESCRITO EL MENSAJE. Decía "Revisa la parrilla de Movistar
+# Plus+ y DAZN", y eso era un consejo ACTIVAMENTE FALSO para las ligas que
+# caen aquí: ninguna de las dos emite la Liga MX, la Liga BetPlay, la LigaPro
+# ecuatoriana ni la Liga 1 peruana. Mandábamos al lector a buscar donde no
+# está. Lo comprobé buscando liga por liga: para la mayoría no existe emisor
+# español, y lo único que devuelve la búsqueda son casas de apuestas y guías
+# que recomiendan VPN.
+#
+# El texto nuevo dice la verdad en las dos direcciones: que no lo tenemos
+# confirmado, y que muchas ligas locales de América sencillamente no se
+# emiten aquí. Sin mandar a nadie a una parrilla equivocada.
 _DEFAULT_CHANNELS_BY_COUNTRY = {
     "espana": [
-        {"name": "Por confirmar", "type": "—",
-         "sports": "Esta competición no tiene emisor confirmado en España. Revisa la parrilla de Movistar Plus+ y DAZN."},
+        {"name": "Sin emisor confirmado", "type": "—",
+         "sports": "No tenemos un emisor confirmado en España para esta competición. "
+                   "Muchas ligas locales de América no se emiten aquí; en cuanto haya uno, "
+                   "aparecerá en esta ficha."},
     ],
 }
 
