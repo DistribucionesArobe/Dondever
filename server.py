@@ -10208,6 +10208,23 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
              "sports": "3 partidos por jornada"},
         ],
     },
+    "Eredivisie": {
+        # Añadida el 02/11/2026. DAZN cerró los derechos en agosto de 2026
+        # (Roams, 05/08/2026, "con datos oficiales de DAZN"; Sportcal cita el
+        # acuerdo internacional vía IMG hasta 2029-30; la guía de
+        # futbolenlatv.es lista cada jornada de la temporada en DAZN).
+        #
+        # CUIDADO CON EL ALCANCE: son CUATRO partidos por jornada, no los
+        # nueve. Ajax, PSV y Feyenoord van garantizados; los otros once
+        # equipos sólo entran cuando les toca uno de esos cuatro huecos. Si
+        # la ficha de, digamos, el Heracles dijera "DAZN" a secas, estaríamos
+        # prometiendo un partido que puede no emitirse.
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "4 partidos por jornada; Ajax, PSV y Feyenoord "
+                       "siempre. También la KNVB Cup y la Supercopa"},
+        ],
+    },
 
     # ── LAS DOS QUE SÍ TIENEN RESPUESTA FUERA DE SU PAÍS (02/11/2026) ──────
     #
@@ -10750,6 +10767,21 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     _ch_placeholder = bool(country_channels) and bool(country_channels[0].get("placeholder"))
     _ch_ok = (bool(first_ch) and not _ch_placeholder
               and "confirmar" not in first_ch.lower())
+
+    # 02/11/2026: el mismo error de antes, un paso más abajo. Si no hay emisor
+    # confirmado, la ficha decía "No tenemos un emisor confirmado en España
+    # para esta competición" y A CONTINUACIÓN pintaba el consejo general del
+    # país: "Para ver LaLiga completa necesitas Movistar Plus+ y DAZN...".
+    # En /equipo/america-femenil/en/espana eso se lee como si Movistar y DAZN
+    # fueran la respuesta para la Liga MX Femenil, que es exactamente la
+    # confusión que acabábamos de quitar del mensaje por defecto.
+    #
+    # El consejo general sólo se mantiene cuando hay algo confirmado que
+    # contextualizar, o cuando existe un consejo escrito para esa liga y ese
+    # país (_TIP_POR_PAIS_Y_LIGA), que sí habla de lo que va la página.
+    if _ch_placeholder and not _tip_liga:
+        country_tip = ""
+
     cname = country["name"]
     _tshort = _short_team_name(team_name, team_league)
     # En España esto dice "en directo"; en el resto, "en vivo". El país lo fija
