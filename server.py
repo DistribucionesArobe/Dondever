@@ -10153,6 +10153,62 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         "republica-dominicana": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
     },
     # ── Ligas domésticas LATAM ──
+    # ── EL "BIG-5" EUROPEO EN ESPAÑA (02/11/2026) ──────────────────────────
+    #
+    # Serie A, Bundesliga, Ligue 1 y Liga Portugal no tenían entrada, y entre
+    # las cuatro son 69 páginas /equipo/{slug}/en/espana contestando "Por
+    # confirmar". La Premier y la Champions sí la tenían; éstas se quedaron
+    # fuera sin motivo.
+    #
+    # DOS FUENTES INDEPENDIENTES, y coinciden:
+    #
+    #   · futbolporlatele.com, tabla de derechos 2026-27, actualizada el
+    #     29/09/2026: quién emite cada competición y con qué alcance.
+    #   · 2Playbook, 07/05/2026, con cita del CEO de DAZN Iberia: "Además de
+    #     los cinco partidos por jornada de LaLiga EA Sports, DAZN emite todos
+    #     los encuentros de la Premier League, Serie A, Bundesliga y, ahora
+    #     también, de la Ligue 1". Acuerdo multianual con la LFP.
+    #
+    # O sea que DAZN es el "Big-5" entero en España. Pero NO se escribe sólo
+    # DAZN: en Serie A hay un partido por jornada en Movistar Plus+ y Orange
+    # revende DAZN, y quien ya paga uno de esos dos no necesita otra cuota.
+    # Esa es justo la pregunta que trae a la gente a estas páginas.
+    "Serie A": {
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "Competición completa, todos los partidos"},
+            {"name": "Orange TV", "type": "Cable",
+             "sports": "Competición completa, vía DAZN incluido en el paquete"},
+            {"name": "Movistar Plus+", "type": "Cable/Streaming",
+             "sports": "Un partido por jornada, según su programación"},
+        ],
+    },
+    "Bundesliga": {
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "Competición completa, en exclusiva hasta 2028-29"},
+            {"name": "Orange TV", "type": "Cable",
+             "sports": "Partidos seleccionados, vía DAZN en el paquete"},
+        ],
+    },
+    "Ligue 1": {
+        # La única de las cuatro que hasta mayo de 2026 no se veía en España:
+        # la liga francesa estuvo a oscuras tras romper con beIN Sports. DAZN
+        # la recuperó con un acuerdo multianual con la LFP.
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "Todos los encuentros (acuerdo multianual con la LFP)"},
+        ],
+    },
+    "Liga Portugal": {
+        # Ojo al alcance: son 3 por jornada, no la liga entera. Lo dice la
+        # tabla de derechos y conviene que la ficha no prometa de más.
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "3 partidos por jornada"},
+        ],
+    },
+
     # ── LIGA ENDESA / ACB (02/11/2026) ─────────────────────────────────────
     #
     # Esta entrada no existía, y era la más vergonzosa de todas: la liga de
