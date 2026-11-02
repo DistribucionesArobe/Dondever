@@ -10153,6 +10153,49 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         "republica-dominicana": [{"name": "Apple TV+ MLS Season Pass", "type": "Streaming", "sports": "MLS completa"}],
     },
     # ── Ligas domésticas LATAM ──
+    # ── LIGA ENDESA / ACB (02/11/2026) ─────────────────────────────────────
+    #
+    # Esta entrada no existía, y era la más vergonzosa de todas: la liga de
+    # baloncesto ESPAÑOLA, en un sitio que sirve a España, con 18 equipos y
+    # página /equipo/{slug}/en/espana para cada uno, contestando "Por
+    # confirmar · Esta competición no tiene emisor confirmado en España".
+    #
+    # FUENTE PRIMARIA: acb.com, "La Liga Endesa, en más sitios que nunca",
+    # publicado el 22/09/2026 para la temporada 2026-27. No es prensa ni una
+    # guía de terceros: es la propia liga enumerando sus emisores.
+    #
+    # Hay una contradicción en la prensa sobre si Movistar perdió los derechos
+    # frente a DAZN. Se resuelve con la fuente primaria: DAZN es el único con
+    # TODOS los partidos, y Movistar Plus+ lleva 2 por jornada. Las dos cosas
+    # son ciertas a la vez, y por eso cada fila dice su alcance.
+    #
+    # Lo que NO se escribe: varias guías mencionan un partido gratis por
+    # jornada en la app de DAZN. acb.com no lo dice, así que no va.
+    #
+    # Pendiente: acb.com tiene "Consulta dónde ver la Liga Endesa en cada
+    # país", pero la tabla es una imagen y no se puede leer. México, EE.UU. y
+    # Argentina —que también tienen páginas de esta liga— siguen sin canales.
+    "Liga Endesa": {
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "TODOS los partidos, más Copa del Rey y Supercopa (plan Baloncesto)"},
+            {"name": "Movistar Plus+", "type": "Cable/Streaming",
+             "sports": "2 partidos por jornada; la jornada entera con los canales DAZN Baloncesto"},
+            {"name": "Orange TV", "type": "Cable",
+             "sports": "Todos los partidos vía canales DAZN Baloncesto (pack Todo Deporte)"},
+            {"name": "Vodafone TV", "type": "Cable",
+             "sports": "Todas las competiciones acb en el Pack Premium de DAZN"},
+            {"name": "TV3 / 3Cat", "type": "TV Abierta (gratis)",
+             "sports": "Un partido por jornada en catalán, domingos por la mañana"},
+            {"name": "TVG / AGalega", "type": "TV Abierta (gratis)",
+             "sports": "Un partido por jornada en gallego, domingos por la mañana"},
+            {"name": "Aragón TV", "type": "TV Abierta (gratis)",
+             "sports": "10 partidos del Casademont Zaragoza por temporada"},
+            {"name": "EITB (ETB1 / ETB2)", "type": "TV Abierta (gratis)",
+             "sports": "10 partidos en euskera, domingos por la mañana"},
+        ],
+    },
+
     "Liga Argentina": {
         # ── ESPAÑA (02/11/2026) ────────────────────────────────────────────
         #
