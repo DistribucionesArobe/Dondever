@@ -245,6 +245,30 @@
     </div>
     {% endif %}
 
+    {#- Tercer bloque, traído de la portada (02/11/2026).
+
+        El bloque `vivo` vivía en la portada, dentro del "EN VIVO", y el 1 de
+        noviembre hizo 37 impresiones y 0,09 MXN en todo el día. No era mala
+        colocación: es que la portada son el 5,85 % de las vistas del sitio y
+        ni siquiera aparece en el informe de páginas de AdSense. Un bloque que
+        sólo existe ahí tiene el techo puesto por el tráfico, no por el diseño.
+
+        Aquí, en cambio, están las dos páginas que MÁS dinero hicieron ese día
+        (AdSense, Top pages, 1 nov):
+
+          /equipo/boca-juniors/en/espana   6,73 MXN · 89 vistas · RPM 75,62
+          /equipo/estudiantes/en/espana    4,87 MXN · 53 vistas · RPM 91,93
+          /equipo/navegantes-del-magallanes 1,80 MXN · 120 vistas · RPM 15,02
+
+        Dos páginas de este molde, con 142 vistas entre las dos, hicieron el
+        13 % del ingreso del día. Y la plantilla sólo tenía DOS bloques.
+
+        Va aquí y no más arriba por la regla de siempre: después de los canales
+        y después de los partidos, que son la respuesta. Y antes de "en otros
+        países", que es navegación. Si el equipo no tiene partido, el bloque de
+        arriba no existe y éste queda separado del `top` por los canales. -#}
+    {{ ad('vivo') }}
+
     <!-- Related: same team, other countries -->
     <h2 class="section-title" style="margin-top:1.5rem;">{{ team_name }} en otros países</h2>
     <div class="country-links">

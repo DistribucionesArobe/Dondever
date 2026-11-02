@@ -2047,8 +2047,15 @@
        a una profundidad razonable. Así nunca hay un anuncio de más.
 
        Si ADSENSE_SLOTS no trae la clave "vivo", el macro no pinta nada: no
-       hay riesgo de hueco vacío mientras no se configure. #}
-    {{ ad('vivo') }}
+       hay riesgo de hueco vacío mientras no se configure.
+
+       02/11/2026 — SE FUE A team_country.html. El bloque hizo 37 impresiones
+       y 0,09 MXN el 1 de noviembre. No era la colocación: la portada son el
+       5,85 % de las vistas del sitio y ni aparece en el informe de páginas de
+       AdSense, así que el techo lo ponía el tráfico. Se movió a las fichas
+       equipo×país, que ese mismo día fueron las dos páginas con más ingreso
+       (RPM 75,62 y 91,93). Lo de arriba se deja escrito porque el
+       razonamiento sigue siendo válido si algún día la portada pesa. #}
     {% endif %}
 
     {# ── ⏱ LO SIGUIENTE (sólo cuando no hay nada en vivo) ──
@@ -3065,8 +3072,13 @@
         // barra de filtros era publicidad. Exactamente lo que esta función
         // existe para impedir.
         //
-        // Ahora son tres y hay tres anclas, porque .standings-compact aparece
-        // dos veces en la portada y sirven como dos sitios distintos:
+        // 02/11/2026: el bloque `vivo` se movió a las fichas equipo×país, así
+        // que en la portada ya no existe y querySelector devuelve null. NO se
+        // quita este reparto: mover() y devolver() ya ignoran los nulos, y si
+        // algún día vuelve un tercer bloque, la lógica está lista y probada.
+        //
+        // Son tres anclas porque .standings-compact aparece dos veces en la
+        // portada y sirven como dos sitios distintos:
         //
         //   vivo → detrás de la primera liga visible  (era el sitio de top)
         //   top  → detrás de la última liga visible, o de la 1ª tabla
