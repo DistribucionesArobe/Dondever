@@ -10154,6 +10154,39 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
     },
     # ── Ligas domésticas LATAM ──
     "Liga Argentina": {
+        # ── ESPAÑA (02/11/2026) ────────────────────────────────────────────
+        #
+        # El 1 de noviembre, España fue el país con MÁS clics del sitio (318) y
+        # tres de sus cuatro páginas top eran de fútbol argentino:
+        #
+        #   /equipo/boca-juniors/en/espana   78 clics · 3.094 impresiones
+        #   /equipo/estudiantes/en/espana    49 ·   613
+        #   /equipo/river-plate/en/espana    25 ·   455
+        #
+        # Y esta liga NO tenía a España entre sus nueve países, así que las
+        # tres contestaban "Por confirmar · Esta competición no tiene emisor
+        # confirmado en España". 152 clics a una página que dice "no lo sé",
+        # en el mercado que paga RPM 55 —el segundo mejor después de EE.UU.—.
+        #
+        # VERIFICADO contra Roams (01/08/2026), que da canal, dial y precio:
+        # Movistar Plus+ recuperó la Liga Argentina junto al Brasileirão y las
+        # emite por Vamos por M+ (dial 8) y Liga de Campeones por M+ (dial 60),
+        # con el Plan Libre: Cine, Series y Deportes desde 4,99 €/mes los tres
+        # primeros meses y disponible para clientes de cualquier operador. La
+        # nota de prensa del propio Movistar lo anunció en 2025; no se usa como
+        # fuente principal porque no pude abrirla (dos tiempos de espera).
+        #
+        # OJO CON NO PROMETER DE MÁS: la fuente nombra los partidos de los
+        # equipos grandes (Racing, River, Boca, Newell's, Rosario Central,
+        # Estudiantes) y lista fechas sueltas, o sea una SELECCIÓN por jornada,
+        # no la liga completa. Si escribimos "todos los partidos" repetimos el
+        # error de Win Sports básico vs Win+ que ya documentamos en Colombia.
+        "espana": [
+            {"name": "Movistar Plus+", "type": "Cable/Streaming",
+             "sports": "Partidos seleccionados por fecha (Vamos por M+, dial 8)"},
+            {"name": "Liga de Campeones por M+", "type": "Cable/Streaming",
+             "sports": "Algunas fechas van por el dial 60"},
+        ],
         "argentina": [
             {"name": "TNT Sports", "type": "Cable", "sports": "Liga Profesional en vivo"},
             {"name": "ESPN Argentina", "type": "Cable", "sports": "Liga Profesional selectos"},
@@ -10291,6 +10324,14 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         ],
     },
     "Copa Libertadores": {
+        # España tampoco estaba aquí, y en este caso es más claro todavía:
+        # Movistar Plus+ la emite EN EXCLUSIVA tras un acuerdo directo con la
+        # CONMEBOL que sustituyó a la sublicencia con LaLiga+. Misma fuente y
+        # mismos canales que la Liga Argentina (Roams, 01/08/2026).
+        "espana": [
+            {"name": "Movistar Plus+", "type": "Cable/Streaming",
+             "sports": "Libertadores en exclusiva (acuerdo directo con CONMEBOL)"},
+        ],
         "mexico": [
             {"name": "ESPN MX", "type": "Cable", "sports": "Libertadores en vivo"},
             {"name": "Disney+", "type": "Streaming", "sports": "Libertadores completa"},
