@@ -622,6 +622,101 @@ def mark_sent(phone_norm: str) -> None:
     _ledger_save(data)
 
 
+# ── Tope de plantillas pagadas (02/11/2026) ───────────────────────────────────
+#
+# POR QUÉ EXISTE ESTE SEGUNDO LIBRO.
+#
+# Meta reclasificó dondever_resumen_diario de UTILITY a MARKETING, y la
+# MARKETING se cobra: ~1 MXN por mensaje. Como el resumen salía a diario a
+# todo suscriptor fuera de la ventana de 24 h, eso son ~500 MXN/mes sin
+# ingreso que lo cubra.
+#
+# El texto libre DENTRO de la ventana de 24 h sigue siendo gratis y no se
+# toca: esa rama (in_24h_window + send_text_with_buttons) manda igual que
+# siempre, todos los días. Lo que se limita es sólo la plantilla pagada.
+#
+# WA_TEMPLATE_MIN_DAYS = días mínimos entre plantillas pagadas al MISMO
+# número. Con 7 (el valor por defecto) el gasto baja a una séptima parte.
+# Con 0 no se manda ninguna plantilla pagada: el resumen queda sólo para
+# quien nos escribió en las últimas 24 h.
+_WA_TEMPLATE_MIN_DAYS_DEFAULT = 7
+
+
+def _tpl_min_days() -> int:
+    """Lee el tope cada vez, no al importar: el cron externo y los tests
+    pueden cambiar el entorno después de cargar el módulo."""
+    crudo = os.getenv("WA_TEMPLATE_MIN_DAYS", str(_WA_TEMPLATE_MIN_DAYS_DEFAULT))
+    try:
+        return max(0, int(crudo))
+    except (TypeError, ValueError):
+        logger.warning(
+            f"WA_TEMPLATE_MIN_DAYS={crudo!r} no es un número; "
+            f"se usa {_WA_TEMPLATE_MIN_DAYS_DEFAULT}")
+        return _WA_TEMPLATE_MIN_DAYS_DEFAULT
+
+
+def _tpl_ledger_path() -> Path:
+    """Mismo disco que subscribers.json (el /data de Render).
+
+    Se resuelve en cada llamada, al contrario que _LEDGER_FILE, para que un
+    cambio de SUBSCRIBERS_FILE posterior al import —tests, scripts— apunte
+    donde toca y no al directorio de trabajo."""
+    return Path(os.getenv("SUBSCRIBERS_FILE", "subscribers.json")).parent / "wa_template_sent.json"
+
+
+def _tpl_ledger_load() -> dict:
+    try:
+        with open(_tpl_ledger_path(), "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def _tpl_ledger_save(data: dict) -> None:
+    """Escritura atómica, igual que _ledger_save: a .tmp y os.replace. Si el
+    proceso muere a mitad, el fichero viejo sigue entero."""
+    ruta = _tpl_ledger_path()
+    try:
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        tmp = ruta.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+        os.replace(tmp, ruta)
+    except Exception as e:
+        logger.warning(f"No se pudo guardar el ledger de plantillas: {e}")
+
+
+def template_allowed(phone_norm: str) -> bool:
+    """¿Se le puede mandar HOY la plantilla pagada a este número?"""
+    dias = _tpl_min_days()
+    if dias <= 0:
+        return False
+    ultimo = _tpl_ledger_load().get(phone_norm)
+    if not ultimo:
+        return True
+    try:
+        fecha = datetime.strptime(str(ultimo), "%Y-%m-%d").date()
+    except ValueError:
+        # Entrada corrupta. Se deja pasar y mark_template_sent la reescribirá
+        # con una fecha buena: como mucho cuesta UN mensaje y se arregla sola.
+        # Bloquear sería peor: dejaría el número mudo para siempre.
+        logger.warning(f"Fecha ilegible en el ledger de plantillas para {phone_norm}: {ultimo!r}")
+        return True
+    return (datetime.now(TZ_MX).date() - fecha).days >= dias
+
+
+def mark_template_sent(phone_norm: str) -> None:
+    """Anota que hoy se le mandó la plantilla pagada.
+
+    No se poda por antigüedad a propósito: la fecha del último envío es
+    justamente el dato que hay que conservar, y el fichero es una línea corta
+    por suscriptor. Podarlo sólo serviría para volver a pagar de más."""
+    data = _tpl_ledger_load()
+    data[phone_norm] = _today_key()
+    _tpl_ledger_save(data)
+
+
 async def send_daily_broadcast(test_number: str | None = None):
     """
     Send daily WhatsApp broadcast via Meta Cloud API.
@@ -718,7 +813,7 @@ async def send_daily_broadcast(test_number: str | None = None):
     from meta_whatsapp import in_24h_window, pick_daily_template
     tpl_name, tpl_lang, tpl_cat = pick_daily_template()
     logger.info(f"Plantilla diaria: {tpl_name} ({tpl_lang}, {tpl_cat})")
-    via = {"freeform": 0, "template": 0}
+    via = {"freeform": 0, "template": 0, "skipped_cost": 0}
 
     for phone in recipients:
         # Diagnóstico con el webhook de estados (2026-09-14): la API acepta el texto libre
@@ -744,6 +839,19 @@ async def send_daily_broadcast(test_number: str | None = None):
                 logger.info(f"Freeform failed for {phone}: {result.get('error')}, trying template")
 
         if not sent_ok and v1_components:
+            # Aquí empieza lo que CUESTA dinero. Si a este número ya le mandamos
+            # plantilla hace menos de WA_TEMPLATE_MIN_DAYS días, se salta y no
+            # cuenta como fallo: no es un error, es la decisión de no pagar.
+            # En modo test_number no aplica el tope ni se escribe el ledger,
+            # para poder probar el envío real cuantas veces haga falta.
+            _norm = _normalize_to(phone)
+            if not test_number and not template_allowed(_norm):
+                via["skipped_cost"] += 1
+                logger.info(
+                    f"Plantilla omitida para {phone}: ya recibió una en los "
+                    f"últimos {_tpl_min_days()} días")
+                continue
+
             result = send_template(
                 phone,
                 template_name=tpl_name,
@@ -755,7 +863,8 @@ async def send_daily_broadcast(test_number: str | None = None):
                 sent_ok = True
                 via["template"] += 1
                 if not test_number:
-                    mark_sent(_normalize_to(phone))
+                    mark_sent(_norm)
+                    mark_template_sent(_norm)
                 logger.info(f"Sent {tpl_name} to {phone} — msg_id: {result['id']}")
             else:
                 failed += 1
@@ -764,7 +873,8 @@ async def send_daily_broadcast(test_number: str | None = None):
 
     summary = {"sent": sent, "failed": failed, "total": len(recipients), "errors": errors,
                "via": via, "template": tpl_name, "template_category": tpl_cat,
-               "already_sent_today": len(already)}
+               "already_sent_today": len(already),
+               "template_min_days": _tpl_min_days()}
     logger.info(f"Broadcast complete: {sent} sent, {failed} failed")
     return summary
 
