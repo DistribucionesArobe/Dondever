@@ -10554,7 +10554,14 @@ _DEFAULT_LATAM_CHANNELS = [
 # emiten aquí. Sin mandar a nadie a una parrilla equivocada.
 _DEFAULT_CHANNELS_BY_COUNTRY = {
     "espana": [
-        {"name": "Sin emisor confirmado", "type": "—",
+        # placeholder=True: esto NO es un canal, es un hueco honesto. Lo lee
+        # el guardia que evita meterlo en el <title> (ver _ch_ok). Antes ese
+        # guardia buscaba la palabra "confirmar" dentro del nombre, y al
+        # renombrar esta entrada a "Sin emisor confirmado" dejó de casar
+        # —"confirmado" no contiene "confirmar"— y el título habría salido
+        # "…9:00 PM: canal Sin emisor confirmado | Dónde ver". Una bandera
+        # explícita no se rompe al cambiar el texto.
+        {"name": "Sin emisor confirmado", "type": "—", "placeholder": True,
          "sports": "No tenemos un emisor confirmado en España para esta competición. "
                    "Muchas ligas locales de América no se emiten aquí; en cuanto haya uno, "
                    "aparecerá en esta ficha."},
@@ -10736,7 +10743,13 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     # Cuando no hay emisor confirmado, el título omite la cláusula del canal
     # en vez de rellenarla. La página sigue diciendo "por confirmar" donde
     # toca: en el cuerpo, que es donde se puede explicar.
-    _ch_ok = bool(first_ch) and "confirmar" not in first_ch.lower()
+    # 02/11/2026: la condición ya no depende de cómo esté redactado el nombre.
+    # Manda la bandera `placeholder` de la propia entrada; la búsqueda de
+    # "confirmar" se conserva para los huecos que vienen de los datos de
+    # partido, que no llevan bandera.
+    _ch_placeholder = bool(country_channels) and bool(country_channels[0].get("placeholder"))
+    _ch_ok = (bool(first_ch) and not _ch_placeholder
+              and "confirmar" not in first_ch.lower())
     cname = country["name"]
     _tshort = _short_team_name(team_name, team_league)
     # En España esto dice "en directo"; en el resto, "en vivo". El país lo fija
