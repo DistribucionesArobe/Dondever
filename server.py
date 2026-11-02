@@ -7357,6 +7357,81 @@ CHANNEL_PAGES = {
                  "GOLPERU. Esta en Movistar TV en los canales 11 y 14 (SD) y 711 y 714 (HD), sin "
                  "costo adicional para los clientes de la parrilla estandar, y en la Movistar TV App."),
     },
+
+    # ── VENEZUELA (01/11/2026) ─────────────────────────────────────────────
+    #
+    # POR QUÉ ESTÁN AQUÍ, QUE NO ES UN CAPRICHO.
+    #
+    # Las SIETE páginas de canal más vistas del sitio son venezolanas y
+    # ninguna estaba curada. GA4, 28 días (4-31 oct 2026):
+    #
+    #   /canal/ivc           566 vistas
+    #   /canal/bym-sport     439
+    #   /canal/meridiano-tv  316
+    #   /canal/1-baseball    199
+    #   /canal/televen       165
+    #   /canal/venevision    161
+    #   /canal/beisbolplay   124      → 1.970 vistas entre las siete
+    #
+    # Una página de canal SIN curar sólo existe mientras hay un partido de hoy
+    # que la mencione. Con la LVBP en temporada las siete responden 200; el día
+    # que no hay béisbol venezolano, las siete se caen a 404 "Canal no
+    # encontrado" — que el 01/11/2026 fue de las páginas más vistas del día,
+    # con 346 vistas. O sea que nuestro mayor tráfico de canales era también el
+    # más frágil. Curarlas las vuelve permanentes.
+    #
+    # Las descripciones NO son nuevas: salen del bloque ya verificado de
+    # LEAGUE_SEO_EXTRA["lvbp"], que se investigó contra fuente primaria en
+    # octubre. A propósito NO se ponen números de canal por operadora: cambian
+    # entre Inter, Simple TV y DirecTV, y es justo lo que no podemos sostener.
+    #
+    # Quedan fuera TVES y Canal i, que también llevan LVBP en señal abierta
+    # pero no aparecen con tráfico medido. Si asoman en GA4, van aquí mismo.
+    "ivc": {
+        "name": "IVC", "country": "VE", "type": "cable",
+        "desc": ("IVC es uno de los canales que transmite la LVBP (beisbol venezolano) por "
+                 "television de paga. Cuidado con una confusion habitual: Inter y Simple TV son "
+                 "las operadoras de cable, no los dueños de los derechos; quien las contrata ve "
+                 "la LVBP por IVC, ByM Sport o Meridiano. Ademas, IVC Networks transmite partidos "
+                 "de la FUTVE en directo y gratis por su canal oficial de YouTube, sin cable ni "
+                 "suscripcion."),
+    },
+    "bym-sport": {
+        "name": "ByM Sport", "country": "VE", "type": "cable",
+        "desc": ("ByM Sport transmite la LVBP (Liga Venezolana de Beisbol Profesional) por "
+                 "television de paga en Venezuela. Se ve a traves de las operadoras de cable del "
+                 "pais, como Inter y Simple TV. La temporada de la LVBP va de octubre a febrero."),
+    },
+    "meridiano-tv": {
+        "name": "Meridiano TV", "country": "VE", "type": "broadcast",
+        "desc": ("Meridiano TV es el canal deportivo de television abierta de Venezuela y uno de "
+                 "los que pasan la LVBP gratis, sin cable ni suscripcion. Junto con Televen, "
+                 "Venevision, TVES y Canal i forma el grupo de señal abierta que transmite el "
+                 "beisbol venezolano."),
+    },
+    "televen": {
+        "name": "Televen", "country": "VE", "type": "broadcast",
+        "desc": ("Televen es un canal de television abierta venezolana y transmite partidos de la "
+                 "LVBP gratis, sin suscripcion. Al ser señal abierta se ve con antena en todo el "
+                 "pais."),
+    },
+    "venevision": {
+        "name": "Venevisión", "country": "VE", "type": "broadcast",
+        "desc": ("Venevision es uno de los canales de television abierta de Venezuela que "
+                 "transmite la LVBP gratis. No hace falta cable ni suscripcion: es señal abierta."),
+    },
+    "1-baseball": {
+        "name": "1 Baseball", "country": "VE", "type": "cable",
+        "desc": ("1 Baseball transmite beisbol de la LVBP por television de paga en Venezuela, a "
+                 "traves de las operadoras de cable del pais."),
+    },
+    "beisbolplay": {
+        "name": "BeisbolPlay", "country": "VE", "type": "streaming",
+        "desc": ("BeisbolPlay es la plataforma de streaming de la LVBP y lleva TODOS los juegos de "
+                 "la temporada. Es ademas la unica opcion si estas fuera de Venezuela: transmite a "
+                 "nivel nacional e internacional, mientras que Meridiano, Televen, IVC o ByM Sport "
+                 "solo se ven dentro del pais."),
+    },
 }
 
 
