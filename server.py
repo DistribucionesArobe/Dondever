@@ -7983,12 +7983,88 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
             "a": f"Puedes ver el juego de {team_name} hoy por {ch_str}. "
                  f"Arriba está el horario convertido a la hora de tu país."
         })
+        # ── Lo que pregunta EE.UU. (Search Console, 28 días, filtro país) ──
+        #
+        # Dos familias con impresiones y casi ningún clic, las dos en español
+        # desde EE.UU., y ninguna de las dos la decíamos en la ficha de equipo:
+        #
+        #   "a que hora juegan los dodgers hoy y en que canal"  564 imp ·  8 clics
+        #   "dónde mirar 76ers contra knicks"                   328 imp ·  0 clics
+        #   "dónde mirar knicks contra 76ers"                   147 imp ·  0 clics
+        #
+        # La primera pide DOS cosas en una frase —hora Y canal— y nosotros las
+        # teníamos separadas. La segunda usa "mirar", calco de "to watch", que
+        # ya cubrimos en la ficha de partido (ver _build_match_faq, bloque 1c)
+        # pero no aquí. Misma respuesta, mismos datos: solo cambia el verbo.
+        _hora = format_mx_time(games[0].get("date", "")) if games else ""
+        if _hora:
+            faq.append({
+                "q": f"¿A qué hora juegan {team_name} hoy y en qué canal?",
+                "a": f"{team_name} juega hoy a las {_hora} (hora de México) y se "
+                     f"transmite por {ch_str}. Arriba está el horario convertido "
+                     f"a la hora de tu país."
+            })
+        faq.append({
+            "q": f"¿Dónde puedo mirar a {team_name}?",
+            "a": f"Puedes mirar a {team_name} por {ch_str}."
+                 + (f" Hoy juegan a las {_hora}, hora de México." if _hora else "")
+        })
     else:
         faq.append({
             "q": f"¿En qué canal transmiten los partidos de {team_name}?",
             "a": f"Hoy {today_date_str} no hay partidos de {team_name} programados. "
                  f"Los partidos de {team_league} se transmiten en distintos canales según el país — "
                  f"consulta esta página el día del juego para ver el canal exacto."
+        })
+        # ── La familia "programación de {equipo}" ──
+        #
+        # Search Console, EE.UU., 28 días. Cuatro consultas, CERO clics las
+        # cuatro, posición ~10:
+        #
+        #   "programación de cleveland guardians"  717 imp · 0 clics · pos 10,0
+        #   "programación de san diego padres"     512 imp · 0 clics · pos 10,4
+        #   "programación de timberwolves"         273 imp · 0 clics · pos 10,5
+        #   "programación de tampa bay rays"       231 imp · 0 clics · pos 10,4
+        #
+        # Esa gente NO pregunta por hoy: pide el calendario. El <title> ya lo
+        # dice desde el 26/10 ("Programación de ... : vuelven el 19 de febrero",
+        # commit c3f2f69) pero el FAQ seguía contestando solo "hoy no juegan",
+        # que es el final de la respuesta, no la respuesta.
+        #
+        # Esta rama cubre tanto off-season como un día suelto sin partido, así
+        # que el texto no afirma que la temporada terminó: dice lo único que se
+        # sabe con certeza aquí —cuándo es el próximo— y solo cuando lo hay.
+        # OJO con las claves: upcoming_games NO trae `date_str` ni `fecha`.
+        # Lo que devuelve sports_api (línea ~4558) es id/home/away/date/
+        # channels. Lo di por supuesto al escribir esto y el bloque se habría
+        # caído SIEMPRE al texto genérico sin dar ningún error: un fallo mudo.
+        _p = (upcoming_games or [None])[0]
+        _fecha_prox = _rival_prox = ""
+        if isinstance(_p, dict):
+            _fecha_prox = format_mx_day_time(_p.get("date", "")) or ""
+            _h, _a = _p.get("home", ""), _p.get("away", "")
+            _rival_prox = _a if _h and _h.lower() == team_name.lower() else _h
+        if _fecha_prox:
+            faq.append({
+                "q": f"¿Cuál es la programación de {team_name}?",
+                "a": f"El próximo partido de {team_name} es el {_fecha_prox}"
+                     + (f" ante {_rival_prox}" if _rival_prox else "") + ". "
+                     f"Arriba está el calendario completo con rival, fecha y el "
+                     f"canal de cada partido en cuanto se confirma."
+            })
+        else:
+            faq.append({
+                "q": f"¿Cuál es la programación de {team_name}?",
+                "a": f"Arriba está el calendario de {team_name} con el rival y la "
+                     f"fecha de cada partido. El canal se publica en cuanto la "
+                     f"transmisión está confirmada; no lo damos por supuesto."
+            })
+        # Mismo hueco que arriba, con el verbo de EE.UU.
+        faq.append({
+            "q": f"¿Dónde puedo mirar a {team_name}?",
+            "a": f"Hoy {today_date_str} {team_name} no juega. Cuando vuelva a "
+                 f"haber partido, el canal confirmado aparece en esta misma "
+                 f"página, junto al horario en la hora de tu país."
         })
 
     # ── 2. Record/posición — use standings data ──

@@ -140,6 +140,10 @@
         .follow-btn.following { background:#10b981; color:white; border-color:#10b981; }
         .follow-btn.following:hover { background:#ef4444; border-color:#ef4444; }
         .follow-btn .icon { font-size:1rem; }
+        .follow-nota { margin:0.5rem 0 0; padding:0.6rem 0.8rem; border-radius:10px;
+            font-size:0.8rem; line-height:1.5; background:#f3f4f6; color:#374151; }
+        .follow-nota.ok { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; }
+        .follow-nota.aviso { background:#fffbeb; border:1px solid #fde68a; color:#92400e; }
         @media (max-width:520px){
             .team-hero { flex-wrap:wrap; gap:.75rem; padding:1rem; }
             .follow-btn { margin-left:0; width:100%; justify-content:center; }
@@ -178,7 +182,13 @@
             padding:1rem 1.25rem; color:white; margin:1rem 0; display:flex;
             align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;
         }
-        .alert-box a { display:inline-block; background:#25d366; color:white; padding:0.5rem 1rem; border-radius:8px; font-weight:700; font-size:0.8rem; text-decoration:none; }
+        {#- El enlace de WhatsApp pasa de botón verde macizo a opción
+            secundaria: sigue siendo claro y pulsable, pero ya no compite con
+            el botón gratis de arriba. -#}
+        .alert-box a { display:inline-block; background:transparent; color:#d1fae5;
+            border:1px solid rgba(255,255,255,.45); padding:0.45rem 0.9rem;
+            border-radius:8px; font-weight:700; font-size:0.78rem; text-decoration:none; }
+        .alert-box a:hover { background:#25d366; border-color:#25d366; color:white; }
 
         .seo-text { font-size:0.85rem; color:#4b5563; line-height:1.6; margin:1rem 0; }
         .seo-text h2 { font-size:1.05rem; margin-bottom:0.5rem; color:#1a1a2e; }
@@ -372,10 +382,21 @@
             <div class="team-league">{{ team_league }}</div>
             {% endif %}
         </div>
+        {#- El botón decía sólo "Seguir" y no prometía nada, cuando por dentro
+            activa las alertas push del equipo (ver toggleFollow más abajo:
+            window.dvPush.enable()). Mientras tanto la caja de abajo vendía
+            "Recibe alertas de {equipo}" y mandaba a WhatsApp, que desde que
+            Meta reclasificó la plantilla a MARKETING cuesta ~1 MXN por aviso.
+            La promesa estaba pegada al canal caro y el gratis estaba mudo. -#}
         <button id="followBtn" class="follow-btn" data-slug="{{ team_slug }}" data-name="{{ team_name }}" onclick="toggleFollow()">
-            <span class="icon">☆</span> <span class="label">Seguir</span>
+            <span class="icon">☆</span> <span class="label">Avisarme</span>
         </button>
     </div>
+    {#- Confirmación de lo que se acaba de activar. Oculta por defecto: sólo
+        aparece al pulsar, y el texto lo pone el JS según si el navegador
+        concedió el permiso o no. Nunca se promete un aviso que el navegador
+        ha bloqueado. -#}
+    <div id="followNota" class="follow-nota" hidden></div>
 
     {# ══ INFO ENRIQUECIDA TheSportsDB (estadio, año, descripción, redes) ══ #}
     {% if sportsdb_team_info and sportsdb_team_info.get('name') %}
@@ -666,18 +687,30 @@
             {% endif %}
         </div>
         {% else %}
-        <p style="margin-top:0.5rem;color:#6b7280;">Consulta abajo los últimos resultados y activa alertas por WhatsApp para que te avisemos cuando jueguen.</p>
+        <p style="margin-top:0.5rem;color:#6b7280;">Consulta abajo los últimos resultados, o pulsa <b>&#9734; Avisarme</b> arriba y te avisamos cuando vuelvan a jugar.</p>
         {% endif %}
         {% endif %}{# /offseason #}
     </div>
     {% endif %}
 
+    {#- Esta caja vendía la promesa ("Recibe alertas de X: 1 hora antes +
+        aviso de goles") y mandaba a WhatsApp, mientras el botón de arriba
+        hacía exactamente eso GRATIS por push y no prometía nada. Desde que
+        Meta reclasificó la plantilla a MARKETING, cada aviso por WhatsApp
+        cuesta ~1 MXN; por eso existe el tope de WA_TEMPLATE_MIN_DAYS. Estar
+        empujando al canal caro desde la página con más intención era una
+        contradicción con esa decisión.
+
+        Ahora la promesa va con el botón de arriba (push, gratis, sin salir
+        del sitio) y WhatsApp queda como la alternativa para quien la
+        prefiera. No se quita: a quien ya usa WhatsApp le sirve, y además es
+        la única vía para el que tenga las notificaciones bloqueadas. -#}
     <div class="alert-box">
         <div>
             <div style="font-weight:700;font-size:0.9rem;">Recibe alertas de {{ team_name }}</div>
-            <div style="font-size:0.75rem;opacity:0.8;">1 hora antes del partido + {% if team_sport == 'beisbol' %}aviso de anotaciones{% elif team_sport == 'futbol' or team_sport == 'hockey' %}aviso de goles{% else %}aviso de anotaciones{% endif %}</div>
+            <div style="font-size:0.75rem;opacity:0.8;">1 hora antes del partido + {% if team_sport == 'beisbol' %}aviso de anotaciones{% elif team_sport == 'futbol' or team_sport == 'hockey' %}aviso de goles{% else %}aviso de anotaciones{% endif %}. Pulsa <b>&#9734; Avisarme</b> arriba y listo.</div>
         </div>
-        <a href="https://wa.me/15715463202?text=alerta%20{{ team_slug }}">Activar alertas</a>
+        <a href="https://wa.me/15715463202?text=alerta%20{{ team_slug }}" class="alert-wa">O por WhatsApp</a>
     </div>
 
     {#- Primer anuncio: AQUÍ, y no más abajo.
@@ -1335,7 +1368,7 @@
                 {% if games %}
                 <p>Hoy {{ today_date_str }}, {{ team_name }} tiene {{ games|length }} partido{{ 's' if games|length > 1 else '' }} programado{{ 's' if games|length > 1 else '' }}. En esta página encuentras los canales de TV, horarios en hora de México y opciones de streaming actualizados en tiempo real para que no te pierdas ningún juego.</p>
                 {% else %}
-                <p>Hoy {{ today_date_str }}, {{ team_name }} no tiene partidos programados. Sin embargo, puedes activar alertas por WhatsApp para recibir una notificación 1 hora antes de su próximo juego, así como avisos de {% if team_sport == 'beisbol' %}anotaciones{% elif team_sport == 'futbol' or team_sport == 'hockey' %}goles{% else %}scores{% endif %} en tiempo real.</p>
+                <p>Hoy {{ today_date_str }}, {{ team_name }} no tiene partidos programados. Sin embargo, puedes pulsar &#9734; Avisarme para recibir una notificación 1 hora antes de su próximo juego, así como avisos de {% if team_sport == 'beisbol' %}anotaciones{% elif team_sport == 'futbol' or team_sport == 'hockey' %}goles{% else %}scores{% endif %} en tiempo real.</p>
                 {% endif %}
 
                 {% if team_sport == 'futbol' %}
@@ -1581,15 +1614,43 @@ function emailSubscribe(e) {
 
   function isFollowing() { return getMyTeams().indexOf(slug) !== -1; }
 
+  var nota = document.getElementById('followNota');
+
+  // La nota dice lo que REALMENTE pasó, no lo que queríamos que pasara.
+  // dvPush.enable() devuelve 'ok' (suscrito), 'denied' (el navegador bloqueó
+  // las notificaciones) o 'noid' (OneSignal no cargó: bloqueador, sin red).
+  // Prometer "te aviso" cuando el permiso está denegado sería inventarle al
+  // lector un aviso que nunca va a recibir.
+  function verNota(estado, detalle) {
+    if (!nota) return;
+    if (!estado) { nota.hidden = true; return; }
+    if (estado === 'ok') {
+      nota.textContent = '✓ Te avisamos 1 hora antes de cada partido de ' + name + '.';
+      nota.className = 'follow-nota ok';
+    } else if (estado === 'denied') {
+      nota.textContent = 'Guardado en Mis equipos. Para recibir avisos tienes que '
+        + 'permitir las notificaciones de este sitio en tu navegador.';
+      nota.className = 'follow-nota aviso';
+    } else if (estado === 'pendiente') {
+      nota.textContent = 'Activando los avisos…';
+      nota.className = 'follow-nota';
+    } else {
+      nota.textContent = 'Guardado en Mis equipos. Los avisos no se pudieron '
+        + 'activar' + (detalle ? ' (' + detalle + ')' : '') + '.';
+      nota.className = 'follow-nota aviso';
+    }
+    nota.hidden = false;
+  }
+
   function render() {
     if (isFollowing()) {
       btn.classList.add('following');
       btn.querySelector('.icon').textContent = '★';
-      btn.querySelector('.label').textContent = 'Siguiendo';
+      btn.querySelector('.label').textContent = 'Avisando';
     } else {
       btn.classList.remove('following');
       btn.querySelector('.icon').textContent = '☆';
-      btn.querySelector('.label').textContent = 'Seguir';
+      btn.querySelector('.label').textContent = 'Avisarme';
     }
   }
 
@@ -1610,7 +1671,14 @@ function emailSubscribe(e) {
     saveLegacyFavs(favs);
     render();
     // Alertas push del equipo (inicio, goles/anotaciones, final)
-    if (window.dvPush) { if (idx === -1) window.dvPush.enable(); else window.dvPush.sync(true); }
+    if (idx === -1) {
+      verNota('pendiente');
+      if (window.dvPush) window.dvPush.enable(null, verNota);
+      else verNota('noid', 'no cargó el script de avisos');
+    } else {
+      verNota(null);
+      if (window.dvPush) window.dvPush.sync(true);
+    }
     if (typeof gtag === 'function') {
       gtag('event', idx === -1 ? 'team_follow' : 'team_unfollow', {
         event_category: 'mis_equipos', event_label: slug
