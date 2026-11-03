@@ -2603,10 +2603,40 @@
             <span><b>tigres</b> &rarr; tu equipo</span>
             <span><b>alerta tigres</b> &rarr; avisos</span>
         </div>
+        {#- La conversaci&oacute;n de ejemplo estaba escrita a mano: dec&iacute;a "Juegos de
+            hoy" y debajo "Am&eacute;rica vs Chivas 8:00 PM Canal 5, TUDN" y "Cowboys vs
+            Eagles 7:15 PM Fox Sports, ESPN". Hora y canal inventados, sin
+            ninguna etiqueta de ejemplo, presentados como la cartelera del d&iacute;a.
+            En todo el resto del sitio no inventamos hora ni canal; aqu&iacute; s&iacute;, y
+            encima en la portada.
+
+            Ahora se arman con los dos primeros partidos REALES del d&iacute;a que
+            tengan canal confirmado, que es justo lo que contestar&iacute;a el bot. Si
+            hoy no hay ninguno (madrugada, hueco de calendario, API ca&iacute;da), se
+            cae a un ejemplo ROTULADO como tal en vez de fingir una cartelera. -#}
+        {%- set ns_wa = namespace(vistos=[]) -%}
+        {%- for _ln, _ld in sports_grouped.items() -%}
+            {%- for g in _ld.games -%}
+                {%- if ns_wa.vistos|length < 2 and g.status.state == 'pre' and g.broadcasts -%}
+                    {%- set _ = ns_wa.vistos.append({
+                        'liga': _ln,
+                        'local': (g.home if g.sport in ('soccer', 'boxing', 'mma') else g.away).name,
+                        'visita': (g.away if g.sport in ('soccer', 'boxing', 'mma') else g.home).name,
+                        'hora': format_mx_time(g.date),
+                        'canales': g.broadcasts[:2]|map(attribute='channel')|join(', ')}) -%}
+                {%- endif -%}
+            {%- endfor -%}
+        {%- endfor -%}
         <div class="wa-how">
             <div class="wa-chat" aria-hidden="true">
                 <div class="m me">hoy</div>
-                <div class="m"><b>Juegos de hoy</b> 📺<br>⚽ Liga MX &middot; Am&eacute;rica vs Chivas<br>8:00 PM &middot; Canal 5, TUDN<br>🏈 NFL &middot; Cowboys vs Eagles<br>7:15 PM &middot; Fox Sports, ESPN
+                <div class="m">
+                    {%- if ns_wa.vistos -%}
+                    <b>Juegos de hoy</b> 📺
+                    {%- for j in ns_wa.vistos %}<br>{{ j.liga }} &middot; {{ j.local }} vs {{ j.visita }}<br>{{ j.hora }}{% if j.canales %} &middot; {{ j.canales }}{% endif %}{% endfor -%}
+                    {%- else -%}
+                    <b>As&iacute; se ve la respuesta</b> 📺<br><i>(ejemplo; el bot contesta con los partidos reales del d&iacute;a)</i><br>Liga &middot; Equipo vs Equipo<br>Hora &middot; Canal
+                    {%- endif -%}
                     <div class="btns"><span>📺 Juegos de hoy</span><span>🎯 Pick del d&iacute;a</span><span>⭐ Mis equipos</span></div>
                 </div>
             </div>
