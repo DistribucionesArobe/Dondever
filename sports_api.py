@@ -325,6 +325,21 @@ DEFAULT_LEAGUE_CHANNELS = {
     # ES 2026-27 verificado: Movistar y Orange llevan todos los partidos;
     # DAZN y Vodafone, cinco por jornada. No hay emision en abierto.
     "la-liga": ["SKY", "Movistar Plus+", "Orange TV", "DAZN España", "Vodafone TV"],
+    # Segunda (04/11/2026): este diccionario es el que alimenta el bloque
+    # "Canales habituales de {liga}" de /liga/, y es DISTINTO de
+    # LEAGUE_CHANNELS_BY_COUNTRY, que es el de las fichas equipo×país. Al
+    # añadir la Segunda sólo rellené el segundo, así que /liga/segunda salió
+    # sin nombrar un solo canal. Mismas fuentes que allí.
+    #
+    # Movistar NO está, igual que en el otro diccionario: su página oficial
+    # de la competición lleva ~957 días sin tocarse.
+    #
+    # Las autonómicas (Canal Sur, TV3, TVG, TV Canaria) tampoco: cada una
+    # emite sólo el partido de SU club, y la frase de esta plantilla dice
+    # "se transmite habitualmente por", sin sitio para matizar el alcance.
+    # En las fichas de país sí están, porque allí cada canal lleva su campo
+    # de alcance al lado.
+    "segunda": ["DAZN España", "Orange TV"],
     "serie-a": ["ESPN MX", "Disney+"],
     "bundesliga": ["Fox Sports MX"],
     "ligue-1": ["Fox Sports MX"],
