@@ -2229,6 +2229,25 @@ TEAM_LEAGUE_MAP = {
     "chelsea": ("soccer", "eng.1"),
     # La Liga
     "real-madrid": ("soccer", "esp.1"), "barcelona": ("soccer", "esp.1"),
+    # Los cinco que faltaban en Primera 2026-27 (ver config.py, 04/11/2026).
+    "deportivo": ("soccer", "esp.1"), "levante": ("soccer", "esp.1"),
+    "racing-santander": ("soccer", "esp.1"), "malaga": ("soccer", "esp.1"),
+    "elche": ("soccer", "esp.1"),
+    # LaLiga Hypermotion (Segunda). Sin esto la ficha no encuentra tabla ni
+    # estadísticas: get_team_stats busca por (deporte, liga) y sin entrada
+    # aquí el equipo sale sin posición ni récord, que es justo lo que la
+    # página promete.
+    "girona": ("soccer", "esp.2"), "las-palmas": ("soccer", "esp.2"),
+    "leganes": ("soccer", "esp.2"), "mallorca": ("soccer", "esp.2"),
+    "real-valladolid": ("soccer", "esp.2"), "albacete": ("soccer", "esp.2"),
+    "almeria": ("soccer", "esp.2"), "burgos": ("soccer", "esp.2"),
+    "cd-sabadell": ("soccer", "esp.2"), "castellon": ("soccer", "esp.2"),
+    "ceuta": ("soccer", "esp.2"), "cadiz": ("soccer", "esp.2"),
+    "cordoba": ("soccer", "esp.2"), "eibar": ("soccer", "esp.2"),
+    "eldense": ("soccer", "esp.2"), "fc-andorra": ("soccer", "esp.2"),
+    "granada": ("soccer", "esp.2"), "celta-fortuna": ("soccer", "esp.2"),
+    "real-oviedo": ("soccer", "esp.2"), "real-sociedad-ii": ("soccer", "esp.2"),
+    "sporting-gijon": ("soccer", "esp.2"), "tenerife": ("soccer", "esp.2"),
     # Serie A
     "juventus": ("soccer", "ita.1"), "inter-milan": ("soccer", "ita.1"),
     # Bundesliga
@@ -2301,13 +2320,21 @@ TEAM_LEAGUE_MAP = {
     "southampton": ("soccer", "eng.1"), "west-ham": ("soccer", "eng.1"),
     "wolverhampton": ("soccer", "eng.1"),
     # ── La Liga (remaining) ──
+    #
+    # Girona, Las Palmas, Leganés, Mallorca y Real Valladolid ESTABAN aquí y
+    # se quitaron el 04/11/2026: bajaron a Segunda y ahora viven en el bloque
+    # de esp.2, 85 líneas más arriba.
+    #
+    # Y esto casi se nos escapa. Los había añadido arriba con esp.2 sin borrar
+    # estas entradas, y en un dict literal de Python gana la ÚLTIMA clave: las
+    # de aquí abajo pisaban en silencio a las nuevas y los cinco seguían
+    # buscando su tabla en Primera, donde ya no están. No habría dado ningún
+    # error; la ficha simplemente habría salido sin posición ni récord.
     "alaves": ("soccer", "esp.1"), "athletic-club": ("soccer", "esp.1"),
     "celta-vigo": ("soccer", "esp.1"), "espanyol": ("soccer", "esp.1"),
-    "getafe": ("soccer", "esp.1"), "girona": ("soccer", "esp.1"),
-    "las-palmas": ("soccer", "esp.1"), "leganes": ("soccer", "esp.1"),
-    "mallorca": ("soccer", "esp.1"), "osasuna": ("soccer", "esp.1"),
+    "getafe": ("soccer", "esp.1"), "osasuna": ("soccer", "esp.1"),
     "rayo-vallecano": ("soccer", "esp.1"), "real-betis": ("soccer", "esp.1"),
-    "real-sociedad": ("soccer", "esp.1"), "real-valladolid": ("soccer", "esp.1"),
+    "real-sociedad": ("soccer", "esp.1"),
     "sevilla": ("soccer", "esp.1"), "valencia": ("soccer", "esp.1"),
     "villarreal": ("soccer", "esp.1"),
     # ── Serie A (remaining) ──

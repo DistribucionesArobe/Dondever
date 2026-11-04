@@ -6935,6 +6935,14 @@ _PAIS_DE_LIGA = {
     "Liga FUTVE": "venezuela",
     "Liga BetPlay": "colombia", "Liga Argentina": "argentina",
     "LigaPro Ecuador": "ecuador", "Liga 1 Perú": "peru", "Primera Chile": "chile",
+    # La Segunda española es una liga LOCAL, no un deporte global: va a su
+    # país más la diáspora (España + EE. UU.), como la Liga MX o la LVBP, y
+    # no a los once. Nadie en Panamá busca al Eldense. Esto la deja en 22
+    # equipos × 2 países = 44 páginas, en vez de 242.
+    #
+    # Ojo a la diferencia con La Liga: esa sí está en _MERCADOS_FICHA con los
+    # once países, y _MERCADOS_FICHA tiene prioridad sobre este diccionario.
+    "LaLiga Hypermotion": "espana",
 }
 # Donde vive la gente que busca su liga desde fuera.
 _DIASPORA = ("espana", "estados-unidos")
@@ -10330,6 +10338,29 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
         "espana": [
             {"name": "DAZN", "type": "Streaming",
              "sports": "3 partidos por jornada"},
+        ],
+    },
+    "LaLiga Hypermotion": {
+        # Segunda española, verificado el 04/11/2026. Coinciden la propia
+        # DAZN (dazn.com/es-ES), comparaiso, xatakamovil, kelisto, Yoigo,
+        # Rastreator y futbolporlatele: DAZN es la única que emite los DIEZ
+        # partidos de cada jornada.
+        #
+        # Movistar Plus+ se queda FUERA a propósito. Su página oficial sí la
+        # anuncia completa, pero el propio buscador avisa de que esa página
+        # tiene ~957 días: es de dos temporadas atrás. Entre poner un canal
+        # con una fuente caducada y no ponerlo, no se pone.
+        #
+        # Las autonómicas son la parte que más le importa al lector local
+        # —Canal Sur al Córdoba, la Canaria al Tenerife y Las Palmas, TV3 al
+        # Sabadell, TVG al Deportivo— y van marcadas como gratis.
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "Los 10 partidos de cada jornada"},
+            {"name": "Orange TV", "type": "Cable/Streaming",
+             "sports": "3 partidos por jornada"},
+            {"name": "Canal Sur, TV Canaria, TV3, TVG", "type": "TV Abierta (gratis)",
+             "sports": "Cada autonómica, los partidos del equipo de su comunidad"},
         ],
     },
     "Eredivisie": {

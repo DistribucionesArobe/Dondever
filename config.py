@@ -787,6 +787,10 @@ LEAGUES = {
     "liga-expansion": ("soccer", "mex.2",        "Liga Expansion MX","\u26bd"),
     "premier-league":("soccer", "eng.1",         "Premier League",   "\u26bd"),
     "la-liga":       ("soccer", "esp.1",         "La Liga",          "\u26bd"),
+    # Segunda espa\u00f1ola, a\u00f1adida el 04/11/2026. El nombre oficial desde 2023 es
+    # LaLiga Hypermotion; "Segunda Divisi\u00f3n" se cubre en los alias y en el
+    # texto SEO, que es como lo escribe la gente.
+    "segunda":       ("soccer", "esp.2",         "LaLiga Hypermotion", "\u26bd"),
     "serie-a":       ("soccer", "ita.1",         "Serie A",          "\u26bd"),
     "bundesliga":    ("soccer", "ger.1",         "Bundesliga",       "\u26bd"),
     "ligue-1":       ("soccer", "fra.1",         "Ligue 1",         "\u26bd"),
@@ -1414,18 +1418,58 @@ POPULAR_TEAMS = {
     "celta-vigo": {"name": "Celta de Vigo", "league": "La Liga"},
     "espanyol": {"name": "Espanyol", "league": "La Liga"},
     "getafe": {"name": "Getafe", "league": "La Liga"},
-    "girona": {"name": "Girona", "league": "La Liga"},
-    "las-palmas": {"name": "Las Palmas", "league": "La Liga"},
-    "leganes": {"name": "Leganés", "league": "La Liga"},
-    "mallorca": {"name": "Mallorca", "league": "La Liga"},
     "osasuna": {"name": "Osasuna", "league": "La Liga"},
     "rayo-vallecano": {"name": "Rayo Vallecano", "league": "La Liga"},
     "real-betis": {"name": "Real Betis", "league": "La Liga"},
     "real-sociedad": {"name": "Real Sociedad", "league": "La Liga"},
-    "real-valladolid": {"name": "Real Valladolid", "league": "La Liga"},
     "sevilla": {"name": "Sevilla FC", "league": "La Liga"},
     "valencia": {"name": "Valencia", "league": "La Liga"},
     "villarreal": {"name": "Villarreal", "league": "La Liga"},
+    # ── Los cinco que FALTABAN en Primera (04/11/2026) ────────────────────
+    #
+    # Nuestro plantel español estaba una temporada atrasado. Verificado contra
+    # DOS endpoints de ESPN, que coinciden:
+    #   esp.1/standings?season=2026 → la tabla 2026-27 trae estos cinco y NO
+    #     trae a Girona, Las Palmas, Leganés, Mallorca ni Valladolid.
+    #   esp.2/teams                 → esos cinco SÍ están en Segunda.
+    #
+    # El más caro de los que faltaban es el Deportivo: la consulta número uno
+    # de España en 90 días es "dónde mirar cented academy fs contra deportivo
+    # la coruña" (83 clics, 2.236 impresiones) y no teníamos ficha del club.
+    "deportivo": {"name": "Deportivo", "league": "La Liga"},
+    "levante": {"name": "Levante", "league": "La Liga"},
+    "racing-santander": {"name": "Racing Santander", "league": "La Liga"},
+    "malaga": {"name": "Málaga", "league": "La Liga"},
+    "elche": {"name": "Elche", "league": "La Liga"},
+    # ── LaLiga Hypermotion (Segunda División) ─────────────────────────────
+    #
+    # Plantel tal cual lo devuelve ESPN en esp.2/teams, temporada 2026: 22
+    # equipos. Los cinco primeros estaban etiquetados como "La Liga" y sólo
+    # se les cambia la liga; el slug y la URL no se tocan, para no romper lo
+    # que Google ya tenga indexado.
+    "girona": {"name": "Girona", "league": "LaLiga Hypermotion"},
+    "las-palmas": {"name": "Las Palmas", "league": "LaLiga Hypermotion"},
+    "leganes": {"name": "Leganés", "league": "LaLiga Hypermotion"},
+    "mallorca": {"name": "Mallorca", "league": "LaLiga Hypermotion"},
+    "real-valladolid": {"name": "Real Valladolid", "league": "LaLiga Hypermotion"},
+    "albacete": {"name": "Albacete", "league": "LaLiga Hypermotion"},
+    "almeria": {"name": "Almería", "league": "LaLiga Hypermotion"},
+    "burgos": {"name": "Burgos", "league": "LaLiga Hypermotion"},
+    "cd-sabadell": {"name": "CD Sabadell", "league": "LaLiga Hypermotion"},
+    "castellon": {"name": "Castellón", "league": "LaLiga Hypermotion"},
+    # El de la consulta "dónde mirar poblense contra ad ceuta".
+    "ceuta": {"name": "Ceuta", "league": "LaLiga Hypermotion"},
+    "cadiz": {"name": "Cádiz", "league": "LaLiga Hypermotion"},
+    "cordoba": {"name": "Córdoba", "league": "LaLiga Hypermotion"},
+    "eibar": {"name": "Eibar", "league": "LaLiga Hypermotion"},
+    "eldense": {"name": "Eldense", "league": "LaLiga Hypermotion"},
+    "fc-andorra": {"name": "FC Andorra", "league": "LaLiga Hypermotion"},
+    "granada": {"name": "Granada", "league": "LaLiga Hypermotion"},
+    "celta-fortuna": {"name": "RC Celta Fortuna", "league": "LaLiga Hypermotion"},
+    "real-oviedo": {"name": "Real Oviedo", "league": "LaLiga Hypermotion"},
+    "real-sociedad-ii": {"name": "Real Sociedad II", "league": "LaLiga Hypermotion"},
+    "sporting-gijon": {"name": "Sporting Gijón", "league": "LaLiga Hypermotion"},
+    "tenerife": {"name": "Tenerife", "league": "LaLiga Hypermotion"},
     # ── Serie A (remaining) ──
     "as-roma": {"name": "AS Roma", "league": "Serie A"},
     "atalanta": {"name": "Atalanta", "league": "Serie A"},
