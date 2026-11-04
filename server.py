@@ -4153,7 +4153,25 @@ async def league_page(request: Request, league_slug: str):
     # FUTVE, BetPlay, Liga Argentina, LigaPro, Liga 1 y Primera Chile — varias
     # de ellas en los países que más crecen (Chile +329 %, Dominicana +221 %,
     # Colombia +154 % en 30 días).
-    _pais_slug = _PAIS_DE_LIGA.get(display_name)
+    # 04/11/2026: _PAIS_DE_LIGA no tiene las competiciones de copa, así que la
+    # Copa del Rey caía al valor por defecto —México— y /liga/copa-del-rey le
+    # enseñaba al lector español "SKY" como primer canal y los horarios en
+    # "hora centro de México (CDMX)". En la competición más española que hay.
+    #
+    # No se añade a _PAIS_DE_LIGA porque ese diccionario decide OTRA cosa: qué
+    # páginas equipo×país se publican (ver _paises_de_equipo, que ya costó una
+    # vez 154 páginas delgadas de FUTVE en el sitemap). Mezclar las dos
+    # decisiones en un solo mapa es pedir una sorpresa.
+    #
+    # Aquí sólo entra la competición cuyo público es inequívoco: una copa
+    # doméstica. En las primeras rondas juegan clubes regionales —Portugalete,
+    # Amorebieta, CD Minera— que fuera de España no busca nadie. La Liga, la
+    # Champions o la Premier NO van aquí: esas sí se siguen en los once países
+    # y poner España por defecto sería el mismo error al revés.
+    _MERCADO_PAGINA_LIGA = {
+        "Copa del Rey": "espana",
+    }
+    _pais_slug = _MERCADO_PAGINA_LIGA.get(display_name) or _PAIS_DE_LIGA.get(display_name)
     pais_liga = None
     if isinstance(_pais_slug, str) and _pais_slug != "mexico":
         _pc = TEAM_COUNTRY_SEO.get(_pais_slug)
