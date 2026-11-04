@@ -7996,12 +7996,27 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
         # teníamos separadas. La segunda usa "mirar", calco de "to watch", que
         # ya cubrimos en la ficha de partido (ver _build_match_faq, bloque 1c)
         # pero no aquí. Misma respuesta, mismos datos: solo cambia el verbo.
-        _hora = format_mx_time(games[0].get("date", "")) if games else ""
+        # Sólo si el partido NO ha terminado. Con un juego ya cerrado esto
+        # decía "juega hoy a las 12:00 PM" a las ocho de la noche: futuro para
+        # algo que ya pasó. Y no se queda en la página —el FAQ va al JSON-LD—,
+        # así que una IA puede citarlo como horario vigente.
+        _g0 = games[0] if games else {}
+        _vivo_o_por_jugar = (_g0.get("status") or {}).get("state") in ("pre", "in")
+        _hora = format_mx_time(_g0.get("date", "")) if _vivo_o_por_jugar else ""
         if _hora:
+            # Los canales de ESTE partido, no los de los dos de hoy: con
+            # doblete, ch_str mezcla los del segundo juego con la hora del
+            # primero y la frase queda falsa sin que lo parezca.
+            _ch0 = []
+            for _b in (_g0.get("broadcasts") or []):
+                _c = _b.get("channel", "") if isinstance(_b, dict) else str(_b)
+                if _c and _c not in _ch0:
+                    _ch0.append(_c)
+            _ch0_str = ", ".join(_ch0[:5]) or ch_str
             faq.append({
                 "q": f"¿A qué hora juegan {team_name} hoy y en qué canal?",
                 "a": f"{team_name} juega hoy a las {_hora} (hora de México) y se "
-                     f"transmite por {ch_str}. Arriba está el horario convertido "
+                     f"transmite por {_ch0_str}. Arriba está el horario convertido "
                      f"a la hora de tu país."
             })
         faq.append({
@@ -8042,8 +8057,23 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
         _fecha_prox = _rival_prox = ""
         if isinstance(_p, dict):
             _fecha_prox = format_mx_day_time(_p.get("date", "")) or ""
-            _h, _a = _p.get("home", ""), _p.get("away", "")
-            _rival_prox = _a if _h and _h.lower() == team_name.lower() else _h
+            # El rival sale de comparar el nombre del equipo con el local. Con
+            # el nombre LARGO casa; con el corto no, y entonces devolvía el
+            # propio equipo: "El próximo partido de Guardians es el 19 feb
+            # ante Cleveland Guardians". Comprobado. La comparación es por
+            # contención en los dos sentidos, y si aun así el rival resulta
+            # ser el mismo equipo, se omite la cláusula en vez de escribir un
+            # disparate: el FAQ va también al JSON-LD.
+            _h, _a = (_p.get("home") or ""), (_p.get("away") or "")
+            _tn = team_name.lower()
+
+            def _es_el_mismo(n: str) -> bool:
+                n = (n or "").lower()
+                return bool(n) and (n in _tn or _tn in n)
+
+            _rival_prox = _a if _es_el_mismo(_h) else _h
+            if _es_el_mismo(_rival_prox):
+                _rival_prox = ""
         if _fecha_prox:
             faq.append({
                 "q": f"¿Cuál es la programación de {team_name}?",
@@ -10822,9 +10852,88 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
         except Exception:
             return ""
 
+    # ── Los emisores del partido, FILTRADOS AL PAÍS DE LA PÁGINA ──────────
+    #
+    # ENCONTRADO EL 04/11/2026 en producción, en /equipo/real-madrid/en/espana,
+    # que es de las páginas más valiosas del mercado español. Decía tres cosas
+    # a la vez y ninguna cuadraba:
+    #
+    #   <title>        "…hoy: 6:45 PM en Movistar Plus+ vs AEK Athens"
+    #   encabezado     "Canales en España para La Liga"
+    #   tarjeta        "AEK Athens vs Real Madrid · 6:45 PM · Paramount+"
+    #
+    # El partido era de Champions, no de LaLiga. Y Paramount+ es el emisor de
+    # la Champions en ESTADOS UNIDOS: en España es exclusiva de Movistar y
+    # Orange. La plantilla imprimía `game.broadcasts` entera, tal cual viene
+    # de la API, sin mirar el país de la página.
+    #
+    # OJO CON EL CAMPO. Escribí esto leyendo `b["cc"]`, que es lo que trae la
+    # respuesta cruda de TheSportsDB (sports_api línea ~1092). Pero los
+    # emisores que llegan al juego YA están normalizados y sólo tienen
+    # channel/market/info/source: `cc` no existe ahí. El filtro habría dejado
+    # pasar todo sin dar error — el mismo fallo mudo que el `date_str` de
+    # ayer. El país vive en `info.country`, que sale de CHANNEL_ALIASES:
+    # Paramount+ -> "US", Movistar Plus+ -> "ES", DAZN -> "LATAM".
+    #
+    # Si no queda ninguno NO se rellena con el de otro mercado: se devuelve
+    # vacío y la ficha dice que está por confirmar. Enseñarle Paramount+ a un
+    # español es peor que no decirle nada, porque parece una respuesta.
+    _cc_pais = (country.get("code") or "").upper()
+    # "LATAM" en CHANNEL_ALIASES significa toda Hispanoamérica, no España ni
+    # EE. UU. DAZN está marcado así y sí llega a España, pero como DAZN
+    # España, que es una entrada distinta: aquí no se cuela.
+    _es_latam = _cc_pais in ("MX", "VE", "DO", "PA", "AR", "CO", "CL", "PE", "EC")
+
+    def _emisores_del_pais(g: dict) -> list:
+        salida = []
+        for b in (g.get("broadcasts") or []):
+            if not isinstance(b, dict):
+                continue
+            # Las regionales de EE. UU. sólo tienen sentido dentro de EE. UU.
+            if b.get("is_us_regional") and _cc_pais != "US":
+                continue
+            pais = ((b.get("info") or {}).get("country") or "").upper()
+            # Sin país no se puede saber de dónde es. Se deja pasar: no
+            # sabemos que esté mal, y callarlo sería perder un dato bueno.
+            # Lo que se corta es lo que CONTRADICE al país de la página.
+            if not pais or pais == _cc_pais or (pais == "LATAM" and _es_latam):
+                salida.append(b)
+        return salida
+
+    for _g in (games or []):
+        if isinstance(_g, dict):
+            _g["broadcasts_pais"] = _emisores_del_pais(_g)
+
     # Dynamic SEO: "Dodgers en Venezuela hoy: 8:10 PM en ESPN vs Giants"
     st = search_term.lower()
-    first_ch = (country_channels[0].get("name") if country_channels else "") or ""
+    # El canal del título sale PRIMERO del partido de hoy, y sólo si ese no
+    # existe se cae a la parrilla habitual de la liga en el país.
+    #
+    # Antes salía siempre de `country_channels[0]`, o sea del primer canal de
+    # la liga HABITUAL del equipo. Por eso el 04/11/2026 el título de
+    # /equipo/real-madrid/en/espana decía "6:45 PM en Movistar Plus+" para un
+    # partido de CHAMPIONS: Movistar venía de la lista de LaLiga, no del
+    # partido. Que acertara era casualidad —la Champions en España también es
+    # de Movistar—, pero la próxima vez no tiene por qué.
+    _ch_de_hoy = ""
+    for _g in (games or []):
+        for _b in (_g.get("broadcasts_pais") or []):
+            _n = (_b.get("channel") or "").strip()
+            if _n:
+                _ch_de_hoy = _n
+                break
+        if _ch_de_hoy:
+            break
+    # Y si HAY partido hoy pero ninguno de sus emisores aplica a este país,
+    # el título NO se rellena con la parrilla habitual. Lo vi al probarlo:
+    # Real Madrid–AEK en México daba tarjeta "Canal por confirmar en México"
+    # y título "12:45 PM en SKY". La misma página diciendo las dos cosas.
+    # La parrilla de la liga sigue valiendo cuando no hay partido: ahí "canal
+    # habitual" es justo lo que el lector busca.
+    if games:
+        first_ch = _ch_de_hoy
+    else:
+        first_ch = (country_channels[0].get("name") if country_channels else "") or ""
     first_ch = first_ch.split(" / ")[0]
     # "Por confirmar" es un marcador honesto DENTRO de la página, pero metido
     # en el <title> se lee como un error. El 17/10/2026 la consulta número uno
@@ -10840,7 +10949,13 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     # Manda la bandera `placeholder` de la propia entrada; la búsqueda de
     # "confirmar" se conserva para los huecos que vienen de los datos de
     # partido, que no llevan bandera.
-    _ch_placeholder = bool(country_channels) and bool(country_channels[0].get("placeholder"))
+    # La bandera `placeholder` es de la parrilla del país, así que sólo manda
+    # cuando el canal del título sale de ahí. Si viene del partido de hoy es
+    # un canal real y no hay que callarlo porque la liga no tenga emisor
+    # habitual confirmado: son dos cosas distintas.
+    _ch_placeholder = (not _ch_de_hoy
+                       and bool(country_channels)
+                       and bool(country_channels[0].get("placeholder")))
     _ch_ok = (bool(first_ch) and not _ch_placeholder
               and "confirmar" not in first_ch.lower())
 

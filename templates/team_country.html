@@ -205,10 +205,18 @@
             <span class="team-score">{{ bottom_team.score }}</span>
             {% endif %}
         </div>
-        {% if game.broadcasts %}
-        {#- Mismo criterio que la portada: cuando el canal sale del default de
-            la liga, aquí también se dice. -#}
-        <div class="gc-channels">{{ game.broadcasts | map(attribute='channel') | join(', ') }}{% if not game.get('channels_confirmed', True) %} <span style="opacity:0.7;">&middot; probable</span>{% endif %}</div>
+        {#- `broadcasts_pais` lo arma la ruta: son los emisores de ESTE partido
+            que aplican a ESTE país. Antes aquí se imprimía `game.broadcasts`
+            entera y por eso /equipo/real-madrid/en/espana enseñaba Paramount+,
+            que emite la Champions en EE. UU., a un lector español.
+
+            Cuando no queda ninguno NO se rellena con el de otro mercado: se
+            dice que está por confirmar. Un canal equivocado se lee como una
+            respuesta; "por confirmar" se lee como lo que es. -#}
+        {% if game.broadcasts_pais %}
+        <div class="gc-channels">{{ game.broadcasts_pais | map(attribute='channel') | join(', ') }}{% if not game.get('channels_confirmed', True) %} <span style="opacity:0.7;">&middot; probable</span>{% endif %}</div>
+        {% else %}
+        <div class="gc-channels" style="color:#9ca3af;">Canal por confirmar en {{ country_name }}</div>
         {% endif %}
     </a>
     {% endfor %}
