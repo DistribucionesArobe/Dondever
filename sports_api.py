@@ -2184,6 +2184,13 @@ async def search_games(query: str, date_str: Optional[str] = None,
     if alias_target:
         search_terms.append(alias_target.lower())
 
+    # Lo buscado y su alias DIRECTO. Se guarda aparte porque la expansión de
+    # abajo mete nombres de OTROS equipos, y para decidir si hay coincidencia
+    # exacta eso no vale: "deportivo" está dentro de la clave de alias
+    # "deportivo tachira", así que sin esta separación el Táchira contaba
+    # como coincidencia exacta de /equipo/deportivo. Comprobado.
+    terminos_propios = list(search_terms)
+
     # Also check if query is part of a multi-word alias key
     for alias_key, alias_val in TEAM_ALIASES.items():
         if query_lower in alias_key and alias_key != query_lower:
@@ -2205,6 +2212,37 @@ async def search_games(query: str, date_str: Optional[str] = None,
 
         if any(_norm(term) in searchable for term in search_terms):
             matches.append(game)
+
+    # ── Si hay coincidencia EXACTA de nombre, manda esa ───────────────────
+    #
+    # La búsqueda es por subcadena, y eso basta mientras ningún equipo se
+    # llame como el principio de otro. Al añadir la Segunda española el
+    # 04/11/2026 dejó de ser cierto, y lo comprobé con partidos de prueba:
+    #
+    #   /equipo/deportivo     -> Deportivo vs Elche
+    #                            Deportivo Cali vs Millonarios        ← ajeno
+    #                            Deportivo Táchira vs Caracas FC      ← ajeno
+    #   /equipo/malaga        -> Málaga vs Cádiz
+    #                            Baloncesto Málaga vs Real Madrid     ← ajeno
+    #   /equipo/real-sociedad -> Real Sociedad vs Getafe
+    #                            Real Sociedad II vs Eldense          ← filial
+    #
+    # Tenemos siete "Deportivo" entre FUTVE, BetPlay y LigaPro. La ficha del
+    # Dépor habría listado los partidos de todos ellos.
+    #
+    # La regla: si algún partido tiene un equipo que se llama EXACTAMENTE
+    # como lo buscado, se devuelven sólo esos. Si no lo hay —porque el
+    # nombre nuestro y el de la API difieren, como "Chivas" y "Guadalajara"—
+    # se cae a la subcadena de siempre y no cambia nada.
+    #
+    # Sólo con solo_equipos=True, que es la ruta de la ficha de equipo. El
+    # buscador general sigue igual: ahí "nfl" SÍ debe traer toda la NFL.
+    if solo_equipos and matches:
+        exactos = [g for g in matches
+                   if any(_norm(g[lado]["name"]) == _norm(t)
+                          for lado in ("home", "away") for t in terminos_propios)]
+        if exactos:
+            return exactos
 
     return matches
 
