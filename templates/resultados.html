@@ -16,6 +16,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+{#- Va ANTES del <style> de abajo a proposito: asi las reglas oscuras propias
+    de esta pagina, que estan en ese <style>, ganan por orden a las generales
+    con la misma especificidad. Se me habia olvidado el enlace entero en el
+    primer intento: la pagina cargaba dark-mode.js, que pone data-theme, sin
+    las reglas. Modo oscuro a medias, que es peor que no tenerlo. -#}
+<link rel="stylesheet" href="/static/dark-mode.css">
 
 {#- El mismo CSS que la portada, no una copia.
 
@@ -77,6 +83,30 @@
         font-size: 0.82rem; font-weight: 700;
     }
     .res-ligas-grid a:hover { border-color: #10b981; }
+
+    /* ── Modo oscuro de lo propio de esta pagina ──────────
+       dark-mode.css cubre .game-card, .league-header, .hero y el footer,
+       que son de la portada. Lo de aqui abajo es nuestro y hay que
+       escribirlo: si no, en oscuro salen cajas blancas y, peor, el
+       marcador del ganador queda en #0f172a sobre fondo oscuro. */
+    [data-theme="dark"] .dia-chip {
+        background: #1e293b; border-color: #334155; color: #e2e8f0;
+    }
+    [data-theme="dark"] .dia-chip.activo {
+        background: #10b981; border-color: #10b981; color: #052e23;
+    }
+    [data-theme="dark"] .res-vacio {
+        background: #1e293b; border-color: #334155; color: #94a3b8;
+    }
+    [data-theme="dark"] .res-ligas h2 { color: #e2e8f0; }
+    [data-theme="dark"] .res-ligas-grid a {
+        background: #1e293b; border-color: #334155; color: #e2e8f0;
+    }
+    /* El ganador: claro sobre oscuro. Misma especificidad que la regla
+       general de dark-mode.css, y gana por ir despues en el documento. */
+    [data-theme="dark"] .game-card.final .team-score.gano { color: #f1f5f9; }
+    [data-theme="dark"] .game-card.final .team-score.perdio { color: #64748b; }
+    [data-theme="dark"] .game-card.final .team-name.gano { color: #f1f5f9; }
 </style>
 </head>
 <body>
@@ -124,11 +154,7 @@
 
     Así que el primero cae DESPUÉS de la primera liga y el segundo después
     de la tercera, que es el mismo reparto que usa la portada. -#}
-{% set ns = namespace(i=0) %}
 {% for league_name, league_data in sports_grouped.items() %}
-{% set ns.i = ns.i + 1 %}
-
-{% if ns.i == 2 %}{{ ad('top') }}{% elif ns.i == 4 %}{{ ad('mid') }}{% endif %}
 
 <section class="league-section" data-league-slug="{{ league_data.slug }}">
     <h2 class="league-header">
@@ -189,6 +215,15 @@
     </a>
     {% endfor %}
 </section>
+
+{#- El anuncio va DESPUES de la seccion, nunca antes: primero el marcador.
+
+    Y va aqui dentro del bucle, no contando secciones desde fuera, porque la
+    pagina de liga (/resultados/liga/{slug}) tiene UNA sola. Con el contador
+    de antes ese caso nunca llegaba a pintar el bloque de arriba y las 62
+    paginas de liga se quedaban solo con el del pie, que es justo el de peor
+    visibilidad (22,66% medido del 29 oct al 4 nov). -#}
+{% if loop.first %}{{ ad('top') }}{% elif loop.index == 3 %}{{ ad('mid') }}{% endif %}
 {% endfor %}
 
 {% if ligas_enlaces %}
@@ -204,7 +239,11 @@
 
 </main>
 
-{{ ad('bottom') }}
+{#- Con una sola liga, el de arriba ya quedo justo encima de esto y no hay
+    nada en medio. Dos bloques pegados salen con la misma creatividad y
+    parecen un error de la pagina: es el fallo que ya costo una captura en
+    /equipo/. Un bloque visible vale mas que dos juntos. -#}
+{% if sports_grouped | length > 1 %}{{ ad('bottom') }}{% endif %}
 
 <footer class="footer">
     <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>
