@@ -107,6 +107,31 @@
     [data-theme="dark"] .game-card.final .team-score.gano { color: #f1f5f9; }
     [data-theme="dark"] .game-card.final .team-score.perdio { color: #64748b; }
     [data-theme="dark"] .game-card.final .team-name.gano { color: #f1f5f9; }
+
+    /* ── Filtros de deporte y liga ────────────────────────
+       La portada los pinta con estilo en línea sobre .lchip; aquí se
+       escriben una vez y se aplican a los dos. */
+    .res-filtros {
+        display: flex; gap: 0.4rem; overflow-x: auto;
+        max-width: 1100px; margin: 0 auto; padding: 0 1rem 0.55rem;
+        scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    }
+    .res-filtros::-webkit-scrollbar { display: none; }
+    .res-filtros .lchip {
+        white-space: nowrap; flex-shrink: 0; cursor: pointer;
+        padding: 0.35rem 0.85rem; border-radius: 20px;
+        border: 1.5px solid #d1d5db; background: #fff; color: #374151;
+        font-size: 0.78rem; font-weight: 600; font-family: inherit;
+    }
+    .res-filtros .lchip.active {
+        border-color: #10b981; background: #10b981; color: #fff;
+    }
+    [data-theme="dark"] .res-filtros .lchip {
+        background: #1e293b; border-color: #334155; color: #cbd5e1;
+    }
+    [data-theme="dark"] .res-filtros .lchip.active {
+        background: #10b981; border-color: #10b981; color: #052e23;
+    }
 </style>
 </head>
 <body>
@@ -142,6 +167,41 @@
     {% endfor %}
 </nav>
 
+{#- Filtros, los mismos dos que la portada: deporte y liga.
+
+    Aquí son los DOS client-side, y en la portada el de deporte es por URL
+    (/?sport=soccer). El motivo: por URL cada deporte sería otra página de
+    resultados, y son páginas que repiten el mismo molde — justo lo que el
+    noindex de /?date= quería evitar. Escondiendo y mostrando secciones no
+    se crea ni una URL nueva y además es instantáneo.
+
+    Se reutiliza .lchip, que es la clase de los chips de liga de la portada:
+    mismo aspecto sin escribir CSS nuevo. -#}
+{% if sports_grouped | length > 1 %}
+{% set deportes = sports_grouped.values() | map(attribute='sport') | select | unique | list %}
+{% if deportes | length > 1 %}
+<nav class="res-filtros" id="resDeportes" aria-label="Filtrar por deporte">
+    <button class="lchip active" data-sport="all" onclick="resFiltrar('sport','all',this)">Todos</button>
+    {% for d in deportes %}
+    <button class="lchip" data-sport="{{ d }}" onclick="resFiltrar('sport','{{ d }}',this)">
+        {{ {'soccer':'⚽ Fútbol','baseball':'⚾ Béisbol','basketball':'🏀 Basquetbol',
+            'football':'🏈 Americano','hockey':'🏒 Hockey','mma':'🥊 MMA',
+            'boxing':'🥊 Boxeo','motorsports':'🏁 Motor'}.get(d, d) }}
+    </button>
+    {% endfor %}
+</nav>
+{% endif %}
+
+<nav class="res-filtros" id="resLigas" aria-label="Filtrar por liga">
+    <button class="lchip active" data-liga="all" onclick="resFiltrar('liga','all',this)">Todas</button>
+    {% for league_name, ld in sports_grouped.items() %}
+    <button class="lchip" data-liga="{{ ld.slug }}" onclick="resFiltrar('liga','{{ ld.slug }}',this)">
+        {{ ld.emoji }} {{ league_name }} <span style="opacity:.6;font-weight:800;font-size:.68rem;">{{ ld.games | length }}</span>
+    </button>
+    {% endfor %}
+</nav>
+{% endif %}
+
 <main class="main">
 
 {% if not sports_grouped %}
@@ -166,9 +226,28 @@
 
     Así que el primero cae DESPUÉS de la primera liga y el segundo después
     de la tercera, que es el mismo reparto que usa la portada. -#}
-{% for league_name, league_data in sports_grouped.items() %}
+{#- CORTE = cuántas tarjetas se ven antes del primer anuncio.
 
-<section class="league-section" data-league-slug="{{ league_data.slug }}">
+    Historia de esto, que ya va por la tercera versión y conviene no repetir
+    ninguna de las dos anteriores:
+
+      (1) El anuncio arriba del todo. Mal: publicidad antes de la respuesta.
+      (2) Después de la PRIMERA LIGA entera. Mal también, y lo cazó
+          Alejandro: la LVBP mete ocho partidos, así que para llegar al
+          anuncio había que bajar media página. Con los filtros encima,
+          peor.
+
+    Ahora se corta DENTRO de la primera liga, tras tres marcadores: ya se
+    vio la respuesta y el anuncio entra en la primera o segunda pantalla.
+    Se parte la sección en dos (la segunda sin cabecera, es la misma liga)
+    porque .league-section es una rejilla en escritorio y meterle un div
+    suelto dentro lo colocaría en una celda. -#}
+{% set CORTE = 3 %}
+{% for league_name, league_data in sports_grouped.items() %}
+{% set es_primera = loop.first %}
+{% set parte = es_primera and (league_data.games | length) > CORTE + 1 %}
+
+<section class="league-section" data-league-slug="{{ league_data.slug }}" data-sport="{{ league_data.sport }}">
     <h2 class="league-header">
         <span>{{ league_data.emoji }} {{ league_name }}</span>
         <span class="league-count">{{ league_data.games | length }} resultado{{ 's' if league_data.games | length != 1 }}</span>
@@ -225,18 +304,26 @@
         </div>
         {% endif %}
     </a>
+    {%- if parte and loop.index == CORTE %}
+</section>
+{{ ad('top') }}
+<section class="league-section" data-league-slug="{{ league_data.slug }}" data-sport="{{ league_data.sport }}">
+    {%- endif %}
     {% endfor %}
 </section>
 
-{#- El anuncio va DESPUES de la seccion, nunca antes: primero el marcador.
-
-    Y va aqui dentro del bucle, no contando secciones desde fuera, porque la
-    pagina de liga (/resultados/liga/{slug}) tiene UNA sola. Con el contador
-    de antes ese caso nunca llegaba a pintar el bloque de arriba y las 62
-    paginas de liga se quedaban solo con el del pie, que es justo el de peor
-    visibilidad (22,66% medido del 29 oct al 4 nov). -#}
-{% if loop.first %}{{ ad('top') }}{% elif loop.index == 3 %}{{ ad('mid') }}{% endif %}
+{#- Si la primera liga era corta no hubo corte, así que el anuncio va aquí,
+    después de la sección. Y va dentro del bucle y no contando secciones
+    desde fuera porque /resultados/liga/{slug} tiene UNA sola: con el
+    contador anterior esas 62 páginas no pintaban el bloque de arriba y se
+    quedaban sólo con el del pie, el de peor visibilidad (22,66%). -#}
+{% if es_primera and not parte %}{{ ad('top') }}{% elif loop.index == 3 %}{{ ad('mid') }}{% endif %}
 {% endfor %}
+
+{#- Lo pinta el JS cuando una combinación de filtros no deja nada. -#}
+<div class="res-vacio" id="resSinFiltro" style="display:none;">
+    No hay resultados con esos filtros.
+</div>
 
 {% if ligas_enlaces %}
 <div class="res-ligas">
@@ -266,6 +353,63 @@
     </p>
 </footer>
 
+<script>
+/* Filtros de deporte y liga. Esconden y muestran secciones ya pintadas:
+   no recargan, no piden nada al servidor y no crean URLs.
+
+   Los dos filtros se combinan (futbol + Liga MX), por eso hay un estado y
+   una sola funcion que lo aplica, en vez de que cada boton toque el DOM.
+
+   OJO con la seccion partida: la primera liga se divide en dos <section>
+   para colar el anuncio en medio, y las DOS llevan el mismo
+   data-league-slug y data-sport. Por eso se recorren todas y no se asume
+   una seccion por liga. */
+(function () {
+  var estado = { sport: 'all', liga: 'all' };
+
+  function aplica() {
+    var secciones = document.querySelectorAll('main .league-section');
+    var visibles = 0;
+    secciones.forEach(function (s) {
+      var okD = estado.sport === 'all' || s.dataset.sport === estado.sport;
+      var okL = estado.liga === 'all' || s.dataset.leagueSlug === estado.liga;
+      var ver = okD && okL;
+      s.style.display = ver ? '' : 'none';
+      if (ver) visibles++;
+    });
+    var aviso = document.getElementById('resSinFiltro');
+    if (aviso) aviso.style.display = visibles ? 'none' : '';
+
+    /* Si se filtra por deporte, las ligas de otro deporte sobran: se
+       esconden sus chips en vez de dejarlos ahi sin hacer nada. */
+    document.querySelectorAll('#resLigas .lchip').forEach(function (b) {
+      var slug = b.dataset.liga;
+      if (slug === 'all') return;
+      var s = document.querySelector('main .league-section[data-league-slug="' + slug + '"]');
+      var cabe = estado.sport === 'all' || (s && s.dataset.sport === estado.sport);
+      b.style.display = cabe ? '' : 'none';
+    });
+  }
+
+  window.resFiltrar = function (tipo, valor, boton) {
+    estado[tipo] = valor;
+    /* Al cambiar de deporte se suelta el filtro de liga: si no, puedes
+       quedarte en "Beisbol + Liga MX" y no ver nada sin entender por que. */
+    if (tipo === 'sport') {
+      estado.liga = 'all';
+      var todas = document.querySelector('#resLigas .lchip[data-liga="all"]');
+      document.querySelectorAll('#resLigas .lchip').forEach(function (b) {
+        b.classList.remove('active');
+      });
+      if (todas) todas.classList.add('active');
+    }
+    var barra = boton.parentElement;
+    barra.querySelectorAll('.lchip').forEach(function (b) { b.classList.remove('active'); });
+    boton.classList.add('active');
+    aplica();
+  };
+})();
+</script>
 <script src="/static/dark-mode.js" defer></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
 </body>

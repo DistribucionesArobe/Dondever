@@ -2057,7 +2057,14 @@ async def _res_terminados(fechas):
         g["hora_texto"] = format_mx_day_time(g.get("date", "")) or ""
         nombre = g.get("league_name") or "Otros"
         if nombre not in grupos:
-            grupos[nombre] = {"emoji": g.get("emoji", ""), "slug": g.get("league_slug", ""), "games": []}
+            grupos[nombre] = {
+                "emoji": g.get("emoji", ""),
+                "slug": g.get("league_slug", ""),
+                # El deporte de la liga, para el filtro de arriba. Sale del
+                # primer partido porque una liga no mezcla deportes.
+                "sport": g.get("sport", ""),
+                "games": [],
+            }
         grupos[nombre]["games"].append(g)
 
     # La liga con más partidos arriba. En la portada manda lo que queda por
