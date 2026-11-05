@@ -1506,3 +1506,32 @@
             display: none !important;
         }
     
+        /* ── Pestañas Hoy / Resultados ────────────────────────
+           Añadidas el 05/11/2026, al montar /resultados. Viven aquí y no
+           en una plantilla porque salen en las DOS: la portada y la sección
+           nueva. Es el mismo motivo por el que existe este archivo.
+
+           Lo pidió el usuario que dijo "yo entro a buscar resultados": con
+           el enlace escondido a la derecha se veía, pero no pegaba. Esto
+           convierte los resultados en una de las dos cosas que hace el
+           sitio, no en un enlace más. */
+        .dv-tabs {
+            display: flex; gap: 0.3rem; max-width: 1100px;
+            margin: 0 auto 0.6rem; padding: 0 1rem;
+        }
+        .dv-tab {
+            flex: 0 0 auto; padding: 0.45rem 1.1rem; border-radius: 999px;
+            font-size: 0.86rem; font-weight: 800; text-decoration: none;
+            color: #64748b; background: transparent; border: 1.5px solid transparent;
+            transition: all 0.15s;
+        }
+        .dv-tab:hover { color: #0f172a; background: #f1f5f9; }
+        .dv-tab.activo {
+            color: #0f172a; background: #fff; border-color: #e5e7eb;
+            box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+        }
+        [data-theme="dark"] .dv-tab { color: #94a3b8; }
+        [data-theme="dark"] .dv-tab:hover { background: #1e293b; color: #e2e8f0; }
+        [data-theme="dark"] .dv-tab.activo {
+            background: #1e293b; border-color: #334155; color: #f1f5f9;
+        }

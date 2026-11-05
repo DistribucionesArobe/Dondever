@@ -320,16 +320,20 @@
   Solo aparece cuando hay más de una liga con partidos, y cada botón trae el
   número de partidos de esa liga.
 #}
-{#- Entrada a /resultados. Va arriba y no en el pie porque la sección se montó
-    justamente porque un usuario dijo que entraba a buscar resultados y no los
-    encontraba; enterrarla en el footer sería no haber arreglado nada. -#}
-    <div style="display:flex;justify-content:flex-end;padding:0 0 0.4rem;">
-        <a href="/resultados" style="display:inline-flex;align-items:center;gap:0.35rem;
-           font-size:0.82rem;font-weight:700;color:#0f172a;text-decoration:none;
-           background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:0.35rem 0.9rem;">
-            &#128202; Resultados de ayer <span style="color:#10b981;">&rarr;</span>
-        </a>
-    </div>
+{#- Las dos cosas que hace el sitio, una al lado de la otra.
+
+    Primero puse un chip pequeño alineado a la derecha y Alejandro dijo que
+    "no pegaba". Tenía razón: el usuario que se quejó de que no encontraba
+    los resultados tampoco habría visto eso. Esto los pone al mismo nivel
+    que "hoy", que es lo que son.
+
+    Cuesta ~40 px de la primera pantalla y la regla de la portada es que
+    ahí vaya la respuesta, no navegación. Se acepta el coste porque son dos
+    palabras y resuelven una queja real de un usuario. -#}
+    <nav class="dv-tabs" aria-label="Hoy o resultados">
+        <a href="/" class="dv-tab activo" aria-current="page">Hoy</a>
+        <a href="/resultados" class="dv-tab">Resultados</a>
+    </nav>
 
 {# ── LEAGUE FILTER CHIPS ── #}
     {% if sports_grouped|length > 1 %}

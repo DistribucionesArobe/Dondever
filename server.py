@@ -2011,7 +2011,11 @@ def _res_tira_dias(activa, base="/resultados"):
     for i in range(0, 7):
         d = hoy - timedelta(days=i)
         salida.append({
-            "nombre": "Hoy" if i == 0 else ("Ayer" if i == 1 else _DIAS_ES[d.weekday()][:3]),
+            # El de hoy NO dice "Hoy": esa palabra es de la pestaña de
+            # arriba, que significa otra cosa (lo que se juega hoy). Aquí
+            # todo son resultados, así que el chip lleva el día. "Ayer" se
+            # queda porque es el que más se busca y no se confunde con nada.
+            "nombre": "Ayer" if i == 1 else _DIAS_ES[d.weekday()][:3],
             "num": d.day,
             "mes": _MESES_ES[d.month - 1][:3],
             "url": "/resultados" if i == 0 else f"/resultados/{d.isoformat()}",

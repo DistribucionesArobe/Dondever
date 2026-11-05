@@ -119,7 +119,19 @@
     </div>
 </div>
 
-{#- Tira de días. Sólo hacia atrás: "resultados de mañana" no existe. -#}
+{#- Las mismas dos pestañas que la portada, en el mismo sitio. -#}
+<nav class="dv-tabs" aria-label="Hoy o resultados">
+    <a href="/" class="dv-tab">Hoy</a>
+    <a href="/resultados" class="dv-tab activo" aria-current="page">Resultados</a>
+</nav>
+
+{#- Tira de días. Sólo hacia atrás: "resultados de mañana" no existe.
+
+    OJO con el primer chip: antes decía "Hoy", y con la pestaña de arriba
+    quedaban dos "Hoy" en la misma pantalla queriendo decir cosas
+    distintas — la pestaña es "lo que se juega hoy" y el chip era "los
+    resultados de hoy". Ahora el chip lleva el día de la semana y "Hoy"
+    sólo existe arriba. -#}
 <nav class="dias-tira" aria-label="Resultados por día">
     {% for d in dias %}
     <a href="{{ d.url }}" class="dia-chip{% if d.activo %} activo{% endif %}"{% if d.activo %} aria-current="page"{% endif %}>
