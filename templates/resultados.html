@@ -1,0 +1,221 @@
+{% from "_ad.html" import ad %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ seo_title }}</title>
+<meta name="description" content="{{ seo_desc }}">
+{% if noindex %}<meta name="robots" content="noindex, follow">{% endif %}
+<link rel="canonical" href="https://dondever.app{{ canonical }}">
+<meta property="og:title" content="{{ seo_title }}">
+<meta property="og:description" content="{{ seo_desc }}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://dondever.app{{ canonical }}">
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+{#- El mismo CSS que la portada, no una copia.
+
+    El encargo fue que esta sección "se vea bonita como la main page", y la
+    manera de que siga viéndose así dentro de seis meses no es copiar los
+    estilos sino compartirlos. Por eso _estilos_portada.html: lo incluye
+    index.html y lo incluye esto. Si mañana cambia un color allí, cambia aquí.
+
+    Debajo van sólo las reglas que esta página necesita y la portada no. -#}
+<style>
+{% include "_estilos_portada.html" %}
+
+    /* ── Propio de /resultados ───────────────────────────── */
+
+    /* Tira de días. Mismo tamaño de letra que los chips de liga de la
+       portada: no se encoge nada por ser navegación. */
+    .dias-tira {
+        display: flex; gap: 0.5rem; overflow-x: auto;
+        padding: 0.25rem 1rem 0.75rem; margin: 0 auto 0.5rem;
+        max-width: 1100px; -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .dias-tira::-webkit-scrollbar { display: none; }
+    .dia-chip {
+        flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
+        min-width: 4.4rem; padding: 0.5rem 0.7rem; border-radius: 12px;
+        background: white; border: 1px solid #e5e7eb; text-decoration: none;
+        color: #0f172a; transition: all 0.15s;
+    }
+    .dia-chip:hover { border-color: #10b981; box-shadow: 0 2px 8px rgba(16,185,129,0.12); }
+    .dia-chip.activo { background: #0f172a; border-color: #0f172a; color: white; }
+    .dia-chip .dia-nombre {
+        font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.04em; opacity: 0.65;
+    }
+    .dia-chip .dia-num { font-size: 1.15rem; font-weight: 900; line-height: 1.15; }
+    .dia-chip .dia-mes { font-size: 0.65rem; font-weight: 600; opacity: 0.6; }
+
+    /* Marcador del ganador: el que gana va en negro y el otro en gris.
+       Es lo único que esta página añade a la tarjeta de la portada, y es
+       justo el dato que la gente viene a buscar. */
+    .game-card.final .team-score.gano { color: #0f172a; font-weight: 900; }
+    .game-card.final .team-score.perdio { color: #9ca3af; }
+    .game-card.final .team-name.gano { color: #0f172a; font-weight: 800; }
+
+    .res-vacio {
+        background: white; border: 1px solid #e5e7eb; border-radius: 14px;
+        padding: 2rem 1.25rem; text-align: center; color: #6b7280;
+        font-size: 0.95rem; margin-bottom: 1rem;
+    }
+    .res-ligas { max-width: 1100px; margin: 1.5rem auto 0; padding: 0 1rem; }
+    .res-ligas h2 {
+        font-size: 1rem; font-weight: 800; color: #0f172a; margin-bottom: 0.6rem;
+    }
+    .res-ligas-grid { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+    .res-ligas-grid a {
+        background: white; border: 1px solid #e5e7eb; border-radius: 999px;
+        padding: 0.4rem 0.85rem; text-decoration: none; color: #0f172a;
+        font-size: 0.82rem; font-weight: 700;
+    }
+    .res-ligas-grid a:hover { border-color: #10b981; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+    <div class="hero-inner">
+        <a href="/" aria-label="DondeVer.app &mdash; inicio"><img src="/static/logo-dondever-md.png" alt="DondeVer.app" class="hero-logo"></a>
+        <h1>{{ h1 | safe }}</h1>
+        <div class="hero-sub">{{ subtitulo }}</div>
+    </div>
+</div>
+
+{#- Tira de días. Sólo hacia atrás: "resultados de mañana" no existe. -#}
+<nav class="dias-tira" aria-label="Resultados por día">
+    {% for d in dias %}
+    <a href="{{ d.url }}" class="dia-chip{% if d.activo %} activo{% endif %}"{% if d.activo %} aria-current="page"{% endif %}>
+        <span class="dia-nombre">{{ d.nombre }}</span>
+        <span class="dia-num">{{ d.num }}</span>
+        <span class="dia-mes">{{ d.mes }}</span>
+    </a>
+    {% endfor %}
+</nav>
+
+<main class="main">
+
+{% if not sports_grouped %}
+<div class="res-vacio">
+    {% if liga_nombre %}
+    No hay resultados de {{ liga_nombre }} en estos d&iacute;as.
+    {% else %}
+    Todav&iacute;a no hay partidos terminados {{ cuando_texto }}.
+    {% endif %}
+    <div style="margin-top:0.75rem;">
+        <a href="/" style="color:#10b981;font-weight:700;text-decoration:none;">Ver qu&eacute; se juega hoy &rarr;</a>
+    </div>
+</div>
+{% endif %}
+
+{#- Orden: fecha → contenido → anuncio → contenido → anuncio.
+
+    El primer anuncio NO va arriba del todo. La regla del sitio es que nada
+    de publicidad aparezca ANTES de la respuesta, y aquí la respuesta es el
+    marcador: quien entra buscando "resultados" tiene que ver un resultado
+    en la primera pantalla, no un banner. Lo tuve mal en el primer intento.
+
+    Así que el primero cae DESPUÉS de la primera liga y el segundo después
+    de la tercera, que es el mismo reparto que usa la portada. -#}
+{% set ns = namespace(i=0) %}
+{% for league_name, league_data in sports_grouped.items() %}
+{% set ns.i = ns.i + 1 %}
+
+{% if ns.i == 2 %}{{ ad('top') }}{% elif ns.i == 4 %}{{ ad('mid') }}{% endif %}
+
+<section class="league-section" data-league-slug="{{ league_data.slug }}">
+    <h2 class="league-header">
+        <span>{{ league_data.emoji }} {{ league_name }}</span>
+        <span class="league-count">{{ league_data.games | length }} resultado{{ 's' if league_data.games | length != 1 }}</span>
+    </h2>
+
+    {% for game in league_data.games %}
+    {#- Mismo criterio que la portada: en futbol y combate el local va arriba;
+        en los deportes de EE.UU. el visitante va primero. No se inventa aqui. -#}
+    {% set home_left = game.sport in ('soccer', 'boxing', 'mma') %}
+    {% set top_team = game.home if home_left else game.away %}
+    {% set bottom_team = game.away if home_left else game.home %}
+    {#- Quien gano. Los marcadores llegan como texto; si alguno no es un
+        numero (partido sin marcador, suspendido) no se marca a nadie, que es
+        mejor que coronar al equivocado. -#}
+    {% set ts = top_team.score | string %}
+    {% set bs = bottom_team.score | string %}
+    {% set hay_marcador = ts.isdigit() and bs.isdigit() %}
+    {% set gana_arriba = hay_marcador and (ts | int) > (bs | int) %}
+    {% set gana_abajo = hay_marcador and (bs | int) > (ts | int) %}
+
+    <a href="/partido/{{ game.slug }}" class="game-card final" style="display:block;text-decoration:none;color:inherit;">
+        <div class="gc-compact-top">
+            <div class="gc-compact-left">
+                <span class="final-badge">FINAL</span>
+                <span class="gc-sub">{{ game.hora_texto }}</span>
+            </div>
+        </div>
+
+        <div class="gc-row">
+            {% if top_team.logo %}<img src="{{ top_team.logo }}" alt="{{ top_team.name }}" class="team-logo" loading="lazy">{% endif %}
+            <span class="team-name{% if gana_arriba %} gano{% endif %}">{{ top_team.name }}</span>
+            <span class="gc-right">
+                <span class="team-score {% if gana_arriba %}gano{% elif gana_abajo %}perdio{% endif %}">{{ top_team.score }}</span>
+            </span>
+        </div>
+        <div class="gc-row">
+            {% if bottom_team.logo %}<img src="{{ bottom_team.logo }}" alt="{{ bottom_team.name }}" class="team-logo" loading="lazy">{% endif %}
+            <span class="team-name{% if gana_abajo %} gano{% endif %}">{{ bottom_team.name }}</span>
+            <span class="gc-right">
+                <span class="team-score {% if gana_abajo %}gano{% elif gana_arriba %}perdio{% endif %}">{{ bottom_team.score }}</span>
+            </span>
+        </div>
+
+        {% if game.recap and game.recap.headline %}
+        <div class="gc-recap">
+            <p class="recap-headline">{{ game.recap.headline }}</p>
+            {% if game.recap.mvp %}
+            <div class="recap-mvp">
+                <span class="recap-mvp-label">&#11088; MVP</span>
+                <span class="recap-mvp-name">{{ game.recap.mvp.short or game.recap.mvp.name }}</span>
+                <span class="recap-mvp-stat">{{ game.recap.mvp.stat }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </a>
+    {% endfor %}
+</section>
+{% endfor %}
+
+{% if ligas_enlaces %}
+<div class="res-ligas">
+    <h2>Resultados por liga</h2>
+    <div class="res-ligas-grid">
+        {% for l in ligas_enlaces %}
+        <a href="/resultados/liga/{{ l.slug }}">{{ l.emoji }} {{ l.nombre }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+</main>
+
+{{ ad('bottom') }}
+
+<footer class="footer">
+    <p>&copy; {{ now().year }} <a href="/">DondeVer.app</a> &mdash; Todos los derechos reservados.</p>
+    <p style="margin-top:0.3rem;">
+        <a href="/">Qu&eacute; se juega hoy</a> &middot;
+        <a href="/resultados">Resultados</a> &middot;
+        <a href="/canales">Canales</a>
+    </p>
+</footer>
+
+<script src="/static/dark-mode.js" defer></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
+</body>
+</html>

@@ -2294,7 +2294,7 @@ TEAM_LEAGUE_MAP = {
     "leganes": ("soccer", "esp.2"), "mallorca": ("soccer", "esp.2"),
     "real-valladolid": ("soccer", "esp.2"), "albacete": ("soccer", "esp.2"),
     "almeria": ("soccer", "esp.2"), "burgos": ("soccer", "esp.2"),
-    "cd-sabadell": ("soccer", "esp.2"), "castellon": ("soccer", "esp.2"),
+    "sabadell": ("soccer", "esp.2"), "castellon": ("soccer", "esp.2"),
     "ceuta": ("soccer", "esp.2"), "cadiz": ("soccer", "esp.2"),
     "cordoba": ("soccer", "esp.2"), "eibar": ("soccer", "esp.2"),
     "eldense": ("soccer", "esp.2"), "fc-andorra": ("soccer", "esp.2"),

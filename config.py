@@ -1455,7 +1455,11 @@ POPULAR_TEAMS = {
     "albacete": {"name": "Albacete", "league": "LaLiga Hypermotion"},
     "almeria": {"name": "Almería", "league": "LaLiga Hypermotion"},
     "burgos": {"name": "Burgos", "league": "LaLiga Hypermotion"},
-    "cd-sabadell": {"name": "CD Sabadell", "league": "LaLiga Hypermotion"},
+    # ESPN lo llama "CD Sabadell" y de ahí salió. Está mal: el club es el
+    # Centre d'Esports Sabadell, CE. Comprobado en laliga.com (clasificación
+    # oficial de Hypermotion 2026/27). El slug también se corrige: se añadió
+    # hoy, no hay nada indexado, así que sale gratis.
+    "sabadell": {"name": "CE Sabadell", "league": "LaLiga Hypermotion"},
     "castellon": {"name": "Castellón", "league": "LaLiga Hypermotion"},
     # El de la consulta "dónde mirar poblense contra ad ceuta".
     "ceuta": {"name": "Ceuta", "league": "LaLiga Hypermotion"},
@@ -1467,7 +1471,11 @@ POPULAR_TEAMS = {
     "granada": {"name": "Granada", "league": "LaLiga Hypermotion"},
     "celta-fortuna": {"name": "RC Celta Fortuna", "league": "LaLiga Hypermotion"},
     "real-oviedo": {"name": "Real Oviedo", "league": "LaLiga Hypermotion"},
-    "real-sociedad-ii": {"name": "Real Sociedad II", "league": "LaLiga Hypermotion"},
+    # El filial. ESPN lo llama "Real Sociedad II"; laliga.com y la propia
+    # Real lo llaman "Real Sociedad B", y así lo busca la gente. Se cambia el
+    # nombre visible, NO el slug: la búsqueda de la ficha usa el slug y tiene
+    # que seguir cuadrando con el nombre que trae ESPN en los partidos.
+    "real-sociedad-ii": {"name": "Real Sociedad B", "league": "LaLiga Hypermotion"},
     "sporting-gijon": {"name": "Sporting Gijón", "league": "LaLiga Hypermotion"},
     "tenerife": {"name": "Tenerife", "league": "LaLiga Hypermotion"},
     # ── Serie A (remaining) ──

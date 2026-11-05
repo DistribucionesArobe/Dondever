@@ -12,7 +12,7 @@ import unicodedata
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import FastAPI, Request, Form, Query
+from fastapi import FastAPI, Request, Form, Query, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -694,8 +694,9 @@ def _es_portada_de_otro_dia(request) -> bool:
 
 
 _HTML_CACHE_PREFIXES = ("/equipo/", "/liga/", "/partido/", "/evento/", "/canal/", "/donde-ver/",
-                        "/guia/", "/resultado/", "/donde-ver-en-", "/equipos", "/widget/")
-_HTML_CACHE_HUBS = {"/playoffs-mlb", "/gratis-hoy", "/pronosticos-hoy", "/futbol-hoy",
+                        "/guia/", "/resultado/", "/resultados/", "/donde-ver-en-", "/equipos",
+                        "/widget/")
+_HTML_CACHE_HUBS = {"/resultados", "/playoffs-mlb", "/gratis-hoy", "/pronosticos-hoy", "/futbol-hoy",
                     "/futbol-americano-hoy", "/basquetbol-hoy", "/beisbol-hoy", "/hockey-hoy",
                     "/streaming", "/casinos"}
 
@@ -1969,6 +1970,202 @@ async def playoffs_mlb(request: Request):
         "today_display": format_date_es(now),
         "format_mx_time": format_mx_time, "format_mx_day_time": format_mx_day_time,
     })
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  RESULTADOS
+# ══════════════════════════════════════════════════════════════════════
+#
+# De dónde sale esto. Un usuario le dijo a Alejandro: "yo entro a buscar
+# resultados". Fui a comprobarlo a Search Console (90 días, 05/11/2026):
+#
+#     consultas que contienen "resultado"   0 clics · 54 impresiones
+#     consultas que contienen "marcador"    0 clics ·  5 impresiones
+#
+# Un cero ahí NO significa que no haya demanda: Search Console sólo informa
+# de consultas donde ya aparecemos, y no aparecíamos. Lo que sí demuestra es
+# que de ese tráfico no capturábamos nada.
+#
+# Y el motivo estaba en casa: /?date=2026-11-04 ya generaba una página cuyo
+# propio <title> decía "Resultados y horarios"… con noindex puesto por
+# nosotros (tarea #42). El noindex era correcto para un calendario infinito
+# de fechas; lo que faltaba era una sección acotada y enlazada.
+#
+# Acotada quiere decir: sólo hacia atrás, sólo 30 días, e indexables sólo
+# los 7 últimos. Más allá son páginas delgadas que repiten el mismo molde,
+# que es exactamente lo que el noindex original quería evitar.
+_RES_DIAS_INDEXABLES = 7
+_RES_DIAS_MAXIMO = 30
+
+
+def _res_dia_valido(d):
+    """La fecha cae dentro de la ventana permitida (hoy ... hoy-30)."""
+    hoy = datetime.now(TZ_MX).date()
+    return hoy - timedelta(days=_RES_DIAS_MAXIMO) <= d <= hoy
+
+
+def _res_tira_dias(activa, base="/resultados"):
+    """Los siete chips de arriba. Sólo pasado: 'resultados de mañana' no existe."""
+    hoy = datetime.now(TZ_MX).date()
+    salida = []
+    for i in range(0, 7):
+        d = hoy - timedelta(days=i)
+        salida.append({
+            "nombre": "Hoy" if i == 0 else ("Ayer" if i == 1 else _DIAS_ES[d.weekday()][:3]),
+            "num": d.day,
+            "mes": _MESES_ES[d.month - 1][:3],
+            "url": "/resultados" if i == 0 else f"/resultados/{d.isoformat()}",
+            "activo": d == activa,
+        })
+    return salida
+
+
+async def _res_terminados(fechas):
+    """Partidos ya jugados de una o varias fechas, agrupados por liga.
+
+    Las fechas se piden en paralelo. get_todays_games cachea por fecha, así
+    que pedir tres días aquí no son tres llamadas por visita: son las mismas
+    que ya hace el resto del sitio para esos días.
+    """
+    import asyncio as _a
+    listas = await _a.gather(*[
+        get_todays_games(date_str=f.strftime("%Y%m%d"), persist=False) for f in fechas
+    ], return_exceptions=True)
+
+    juegos = []
+    for l in listas:
+        if isinstance(l, Exception):
+            continue
+        juegos.extend(l or [])
+
+    grupos = {}
+    vistos = set()
+    for g in juegos:
+        if not isinstance(g, dict):
+            continue
+        if (g.get("status") or {}).get("state") != "post":
+            continue
+        gid = g.get("id")
+        if gid in vistos:          # un partido puede salir en dos fechas por zona horaria
+            continue
+        vistos.add(gid)
+        g["slug"] = _make_game_slug(g)
+        g["hora_texto"] = format_mx_day_time(g.get("date", "")) or ""
+        nombre = g.get("league_name") or "Otros"
+        if nombre not in grupos:
+            grupos[nombre] = {"emoji": g.get("emoji", ""), "slug": g.get("league_slug", ""), "games": []}
+        grupos[nombre]["games"].append(g)
+
+    # La liga con más partidos arriba. En la portada manda lo que queda por
+    # ver; aquí no queda nada por ver, así que manda el volumen.
+    return dict(sorted(grupos.items(), key=lambda kv: -len(kv[1]["games"])))
+
+
+def _res_enlaces_ligas(grupos):
+    """Chips a /resultados/liga/{slug}, sólo de ligas que de verdad tenemos."""
+    salida = []
+    for nombre, d in grupos.items():
+        if d.get("slug") and d["slug"] in LEAGUES:
+            salida.append({"slug": d["slug"], "nombre": nombre, "emoji": d.get("emoji", "")})
+    return salida[:14]
+
+
+async def _res_render(request, fechas, *, activa, titulo_h1, subtitulo, seo_title,
+                      seo_desc, canonical, noindex, cuando_texto="",
+                      liga_nombre="", base_tira="/resultados"):
+    grupos = await _res_terminados(fechas)
+    return templates.TemplateResponse("resultados.html", {
+        "request": request,
+        "sports_grouped": grupos,
+        "dias": _res_tira_dias(activa, base_tira),
+        "ligas_enlaces": _res_enlaces_ligas(grupos) if not liga_nombre else [],
+        "h1": titulo_h1,
+        "subtitulo": subtitulo,
+        "seo_title": seo_title,
+        "seo_desc": seo_desc,
+        "canonical": canonical,
+        "noindex": noindex,
+        "cuando_texto": cuando_texto,
+        "liga_nombre": liga_nombre,
+        "now": datetime.now,
+    })
+
+
+@app.get("/resultados", response_class=HTMLResponse)
+async def resultados_hub(request: Request):
+    """Hub: lo que ya terminó hoy y lo de ayer, que es lo que se busca."""
+    hoy = datetime.now(TZ_MX).date()
+    ayer = hoy - timedelta(days=1)
+    return await _res_render(
+        request, [hoy, ayer], activa=hoy,
+        titulo_h1='Resultados de <span class="accent">hoy y ayer</span>',
+        subtitulo="Marcadores finales de futbol, beisbol, NFL, NBA y mas",
+        seo_title="Resultados de hoy: marcadores finales de todos los deportes | DondeVer",
+        seo_desc=("Marcadores finales de hoy y ayer: Liga MX, LaLiga, Champions, NFL, "
+                  "NBA, MLB, LVBP y mas. Quien gano, con marcador y resumen."),
+        canonical="/resultados", noindex=False,
+        cuando_texto="hoy ni ayer")
+
+
+@app.get("/resultados/liga/{league_slug}", response_class=HTMLResponse)
+async def resultados_liga(request: Request, league_slug: str):
+    """Resultados recientes de una liga. Tres dias: una jornada entera en
+    casi todas, y acota el coste a tres peticiones que ya estan cacheadas."""
+    if league_slug not in LEAGUES:
+        raise HTTPException(status_code=404, detail="Liga no encontrada")
+    _sport, _lid, nombre, emoji = LEAGUES[league_slug]
+    hoy = datetime.now(TZ_MX).date()
+    fechas = [hoy - timedelta(days=i) for i in range(0, 3)]
+
+    grupos = await _res_terminados(fechas)
+    grupos = {k: v for k, v in grupos.items() if v.get("slug") == league_slug}
+
+    return templates.TemplateResponse("resultados.html", {
+        "request": request,
+        "sports_grouped": grupos,
+        "dias": _res_tira_dias(hoy),
+        "ligas_enlaces": [],
+        "h1": f'Resultados de <span class="accent">{nombre}</span>',
+        "subtitulo": "Marcadores finales de los ultimos dias",
+        "seo_title": f"Resultados de {nombre}: marcadores y quien gano | DondeVer",
+        "seo_desc": (f"Resultados recientes de {nombre}. Marcador final de cada partido, "
+                     f"con resumen y donde se transmitio."),
+        "canonical": f"/resultados/liga/{league_slug}",
+        # Sin partidos no hay contenido: que no entre al indice un molde vacio.
+        "noindex": not grupos,
+        "cuando_texto": "",
+        "liga_nombre": nombre,
+        "now": datetime.now,
+    })
+
+
+@app.get("/resultados/{fecha}", response_class=HTMLResponse)
+async def resultados_fecha(request: Request, fecha: str):
+    """Resultados de un dia concreto. YYYY-MM-DD y dentro de la ventana."""
+    try:
+        d = datetime.strptime(fecha, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Fecha no valida")
+    if not _res_dia_valido(d):
+        raise HTTPException(status_code=404, detail="Fecha fuera de rango")
+
+    hoy = datetime.now(TZ_MX).date()
+    if d == hoy:
+        return RedirectResponse(url="/resultados", status_code=301)
+
+    largo = _fecha_es_larga(d)
+    dias_atras = (hoy - d).days
+    return await _res_render(
+        request, [d], activa=d,
+        titulo_h1=f'Resultados del <span class="accent">{d.day} de {_MESES_ES[d.month - 1]}</span>',
+        subtitulo=largo.capitalize(),
+        seo_title=f"Resultados del {d.day} de {_MESES_ES[d.month - 1]} de {d.year}: todos los marcadores | DondeVer",
+        seo_desc=(f"Marcadores finales del {largo}. Futbol, beisbol, NFL, NBA y mas, "
+                  f"con el resultado de cada partido."),
+        canonical=f"/resultados/{d.isoformat()}",
+        # Mas alla de una semana son paginas delgadas que repiten el molde.
+        noindex=dias_atras > _RES_DIAS_INDEXABLES,
+        cuando_texto=f"el {largo}")
 
 
 @app.get("/gratis-hoy", response_class=HTMLResponse)
@@ -7072,6 +7269,11 @@ async def sitemap_core():
         # *-hoy hubs de ligas ahora son 301 → /liga/{slug} (ya listadas abajo); no van en sitemap
         ("gratis-hoy", "daily", "0.9"),
         ("playoffs-mlb", "daily", "0.9"),
+        # Resultados (05/11/2026). Van el hub y los SEIS dias anteriores, no
+        # mas: a partir de ahi la ruta pone noindex y meterlos en el sitemap
+        # seria pedirle a Google que rastree lo que le decimos que no indexe.
+        # Las de liga se anaden justo debajo, junto a las ligas.
+        ("resultados", "hourly", "0.9"),
         ("guia/mejores-casas-apuestas-liga-mx", "weekly", "0.9"),
         ("guia/donde-ver-champions-en-mexico", "weekly", "0.8"),
         ("guia/donde-ver-copa-america-en-mexico", "weekly", "0.8"),
@@ -7104,9 +7306,18 @@ async def sitemap_core():
         lm = today_str if page.endswith("-hoy") else _SM_STATIC_LASTMOD
         urls.append(_sm_url(f'{APP_URL}/{page}', lm, freq, priority, hreflang=True))
 
+    # Resultados por dia: los seis anteriores a hoy. El septimo ya cae fuera
+    # de _RES_DIAS_INDEXABLES y la ruta le pone noindex.
+    _hoy_res = datetime.now(TZ_MX).date()
+    for _i in range(1, _RES_DIAS_INDEXABLES):
+        _d = _hoy_res - timedelta(days=_i)
+        urls.append(_sm_url(f'{APP_URL}/resultados/{_d.isoformat()}',
+                            _d.isoformat(), "daily" if _i < 3 else "weekly", "0.7"))
+
     # Permanent league landing pages (daily content)
     for slug in LEAGUES:
         urls.append(_sm_url(f'{APP_URL}/liga/{slug}', today_str, "daily", "0.9", hreflang=True))
+        urls.append(_sm_url(f'{APP_URL}/resultados/liga/{slug}', today_str, "daily", "0.7"))
     urls.append(_sm_url(f'{APP_URL}/widget', _SM_STATIC_LASTMOD, "monthly", "0.5"))
     urls.append(_sm_url(f'{APP_URL}/contacto', _SM_STATIC_LASTMOD, "monthly", "0.4"))
     urls.append(_sm_url(f'{APP_URL}/whatsapp', _SM_STATIC_LASTMOD, "monthly", "0.6"))
@@ -9268,6 +9479,18 @@ def _alias_slug_equipo() -> dict:
         s = _slug(info.get("name", ""))
         if s and s != clave and s not in POPULAR_TEAMS:
             mapa[s] = clave
+
+    # Slugs retirados a mano. Lo de arriba sólo cubre los alias que SALEN del
+    # nombre actual del equipo; cuando se corrige un slug, el viejo ya no se
+    # deriva de nada y se quedaría devolviendo 404 con la URL publicada en el
+    # sitemap. Aquí van esos casos, y no deberían ser muchos.
+    #
+    # cd-sabadell (04/11/2026): se publicó con el prefijo de ESPN, que está
+    # mal — el club es el Centre d'Esports, CE. Vivió unas horas, pero salió
+    # en el sitemap, así que se redirige en vez de romperlo.
+    for viejo, nuevo in (("cd-sabadell", "sabadell"),):
+        if viejo not in POPULAR_TEAMS and nuevo in POPULAR_TEAMS:
+            mapa[viejo] = nuevo
     return mapa
 
 
