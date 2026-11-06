@@ -1285,32 +1285,41 @@
     </div>
     {% endif %}
 
-    {#- Tercer anuncio (05/11/2026). Es el hueco `vivo`, no uno nuevo.
+    {#- ══ TERCER ANUNCIO: PUESTO EL 05/11 Y RETIRADO EL 06/11 ══
 
-        POR QUÉ. Esta plantilla tenía DOS bloques y la de país tiene TRES, y
-        resulta que /equipo/ es la página más vista del sitio: el 4 de
-        noviembre, /equipo/navegantes-del-magallanes hizo 358 vistas, el 18 %
-        de todo el tráfico del día, más que ninguna otra. Medido en vivo ese
-        día, la ficha mide 3.002 px y los dos anuncios caen en 574 y 1.690:
-        los últimos 1.300 px —posiciones, noticias, canales, calendario,
-        equipos relacionados y el desplegable de SEO— no tienen ninguno.
+        NO LO VUELVAS A PONER SIN LEER ESTO.
 
-        POR QUÉ `vivo` Y NO UNO NUEVO. El hueco ya existe y está casi parado:
-        375 impresiones en siete días (29 oct–4 nov) porque sólo vive en las
-        páginas de país. No hay que crear unidad en AdSense ni tocar
-        ADSENSE_SLOTS; si la variable no trae la clave, el macro no pinta
-        nada y esto es inocuo. Ojo con el nombre: en AdSense esta unidad se
-        llama "DondeVer bottom" (ID 6272863835) y la del pie se llama
-        "DondeVer bottom 2" (2593730431). Los nombres están cruzados.
+        Lo propuse yo con un argumento que parecia bueno: /equipo/ es la
+        plantilla mas vista (358 vistas el 4 nov, el 18% del dia), tenia dos
+        bloques y la de pais tiene tres, y el hueco `vivo` estaba casi
+        parado. Iba despues de la tabla de posiciones, con ad('vivo') y la
+        condicion {% raw %}{% if league_standings %}{% endraw %}. Se desplego el 5 a las 09:07.
 
-        LA CONDICIÓN. Va DESPUÉS de la tabla de posiciones y sólo si la tabla
-        existe. Es el mismo cuidado que ya costó un fallo más arriba: dos
-        bloques pegados salen con la misma creatividad y parecen un error de
-        la página. La tabla son ~600 px, así que separa de verdad. Sin tabla,
-        no hay tercer anuncio. -#}
-    {% if league_standings %}
-    {{ ad('vivo') }}
-    {% endif %}
+        Y funciono en lo suyo: `vivo` paso de 140 a 240 impresiones y de
+        0,75 a 1,44 MXN. El problema fue lo que paso al lado:
+
+                                 4 nov        5 nov
+          nuestros 4 bloques   1.644 impr   1.526 impr   (-7%)
+          ANUNCIOS AUTOMATICOS   502 impr     132 impr   (-74%)
+                               31,46 MXN     7,62 MXN
+
+        Las vistas cayeron un 39% ese dia (se acabo un pico de la LVBP), o
+        sea que parte de eso es trafico. Pero ajustando por trafico salian
+        ~303 impresiones automaticas y hubo 132: faltan ~170. Y los
+        automaticos pagan 57,7 MXN de RPM por impresion contra 13,2 de los
+        nuestros, asi que ese hueco son unos 10 MXN del dia.
+
+        La hipotesis: meter un tercer bloque manual en la plantilla con mas
+        trafico hizo que Google dejara de colocar ahi los suyos, que valen
+        cuatro veces mas. Se cambiaron 0,69 MXN por unos 10.
+
+        NO ESTA DEMOSTRADO: es un solo dia y la asignacion de automaticos
+        de Google varia sola. Por eso se retira y se mide, en vez de
+        discutirlo. Si en dos o tres dias los automaticos no vuelven, era
+        trafico y esto se puede reponer tal cual.
+
+        La regla que deja: en este sitio los automaticos rinden mas que un
+        bloque manual de mas. Anadir bloques no es gratis. -#}
 
     {# ══ NOTICIAS DEL EQUIPO ══ #}
     {% if team_news %}
