@@ -126,6 +126,48 @@ def _make_game_slug(game: dict) -> str:
     return f"{first}-vs-{second}-{date_str}"
 
 
+def _url_partido_proximo(u: dict, sport: str = "") -> str:
+    """URL de la ficha de un partido que AÚN NO SE JUEGA.
+
+    Por qué existe. Hasta el 07/11/2026 las fichas de /partido/ eran páginas
+    huérfanas hasta la mañana del partido: no las enlazaba nadie y no estaban
+    en ningún sitemap. Medido en Search Console, cohorte del domingo 1 nov
+    (~50 fichas, 28 días de ventana):
+
+        31 oct (víspera)      4 impresiones
+        1 nov  (el partido)   1.123
+        2 nov                 369
+        3 nov                 209
+        4 nov                 174
+
+    La demanda de "dónde ver X vs Y" está la víspera y la mañana del partido,
+    y la víspera Google no tenía la página. La cohorte del lunes 2 nov, que
+    era NBA y ligas menores, hizo 38 impresiones y CERO clics en toda su vida.
+
+    `upcoming_games` trae el rival en plano (`home` y `away` son cadenas, no
+    diccionarios con `name`), así que hay que adaptarlo antes de pasarlo por
+    _make_game_slug. La fecha viene en `date` por la vía de ESPN y en
+    `date_utc` por la vía de la base; se aceptan las dos.
+
+    El deporte NO es decorativo: _make_game_slug ordena home-vs-away en
+    fútbol, boxeo y MMA, y away-vs-home en el resto. Si se pierde, la mitad
+    de los enlaces apuntarían al orden contrario y comerían un 301 cada uno.
+    """
+    home = (u.get("home") or "").strip()
+    away = (u.get("away") or "").strip()
+    fecha = u.get("date") or u.get("date_utc") or ""
+    if not home or not away or not fecha:
+        return ""
+    if "TBD" in (home, away):
+        return ""
+    return "/partido/" + _make_game_slug({
+        "home": {"name": home},
+        "away": {"name": away},
+        "date": str(fecha),
+        "sport": sport or u.get("sport", ""),
+    })
+
+
 def _game_url(game: dict) -> str:
     """Full path for a game: /partido/america-vs-cruz-azul-2026-08-11.
     UFC y F1 tienen página de evento propia (cartelera/sesiones): /evento/{slug}."""
@@ -7033,9 +7075,55 @@ async def sitemap_index():
 
 @app.get("/sitemap-partidos.xml")
 async def sitemap_partidos():
-    """Today's games, matchups and recaps — changes hourly."""
+    """Partidos de hoy Y de los próximos 7 días — cambia cada hora.
+
+    Los días futuros se añadieron el 07/11/2026. Hasta entonces este sitemap
+    publicaba SOLO los partidos de hoy, así que la ficha del Clásico de mañana
+    no entraba en ningún sitemap hasta la mañana del propio Clásico. Medido en
+    Search Console con la cohorte del domingo 1 nov (~50 fichas):
+
+        31 oct (víspera)      4 impresiones
+        1 nov  (el partido)   1.123
+
+    Y "dónde ver X vs Y" se busca la víspera y la mañana del partido. Llegábamos
+    tarde a nuestra propia demanda. /evento/ (UFC, F1, boxeo) ya se publicaba con
+    120 días de antelación; esto solo aplica el mismo criterio al fútbol.
+
+    7 días y no 30: ESPN confirma el calendario con poca antelación y más allá
+    de una semana muchos partidos salen con hora provisional o rival TBD, que
+    es exactamente lo que no queremos publicar.
+
+    persist=False en los días futuros a propósito. Escribir en `games` filas
+    con state='pre' de partidos que aún no se juegan crea las filas zombi que
+    describe get_team_upcoming en db.py: si nadie las reescribe el día del
+    partido, se quedan en 'pre' para siempre con su channels_json caduco. El
+    sitemap no tiene por qué alimentar la base; solo lee.
+
+    El mismo patrón —asyncio.gather sobre varias fechas— ya está probado en
+    producción en _res_terminados, que lo usa hacia atrás para /resultados.
+    """
     today_str, _, _ = _sm_dates()
+    _hoy_mx = datetime.now(TZ_MX)
+    _futuras = await asyncio.gather(*[
+        get_todays_games(
+            date_str=(_hoy_mx + timedelta(days=_d)).strftime("%Y%m%d"),
+            persist=False,
+        ) for _d in range(1, 8)
+    ], return_exceptions=True)
+
     games = await get_todays_games()
+    _vistos = {g.get("id") for g in games if isinstance(g, dict)}
+    for _lista in _futuras:
+        if isinstance(_lista, Exception):
+            continue
+        for _g in (_lista or []):
+            # Un partido puede salir en dos fechas por la zona horaria. Sin
+            # deduplicar, la misma URL aparecería dos veces en el sitemap.
+            if not isinstance(_g, dict) or _g.get("id") in _vistos:
+                continue
+            _vistos.add(_g.get("id"))
+            games.append(_g)
+
     urls = []
     for game in games:
         if game.get("home", {}).get("name", "") == "TBD" or game.get("away", {}).get("name", "") == "TBD":
@@ -9552,7 +9640,21 @@ async def team_page(request: Request, team_slug: str):
     if _ath and _ath.get("league") in _ATHLETE_LEAGUES:
         return await _athlete_page(request, team_slug, _ath)
     if team_info:
-        team_name = team_info["name"]
+        # DOS nombres, y la diferencia importa (07/11/2026).
+        #
+        #   team_name_db  el que escribe ESPN. Es el que va a la BASE, porque
+        #                 get_team_history / get_team_upcoming / get_team_channels
+        #                 buscan con ILIKE '%nombre%' contra lo que ESPN guardó.
+        #   team_name     el que ve el usuario y el que entra en title, H1 y meta.
+        #
+        # Normalmente son el mismo. Se separan cuando ESPN usa un nombre que
+        # nadie busca: el Dépor es "Deportivo" para ESPN, pero la 2ª consulta
+        # de TODO el sitio es "deportivo la coruña" (2.314 impresiones en 28
+        # días). Cambiar `name` a secas habría dejado sus páginas de país sin
+        # próximo partido, porque ILIKE '%Deportivo de La Coruña%' no casa con
+        # la fila "Deportivo". Ver el comentario en config.POPULAR_TEAMS.
+        team_name_db = team_info["name"]
+        team_name = team_info.get("nombre_seo") or team_name_db
         team_sport = team_info.get("sport", "")
         team_league_seo = team_info.get("league", "")
         team_aka = team_info.get("aka", team_name)
@@ -9561,6 +9663,7 @@ async def team_page(request: Request, team_slug: str):
         clean_slug = team_slug.replace("-", " ")
         resolved = TEAM_ALIASES.get(clean_slug, clean_slug)
         team_name = resolved.title()
+        team_name_db = team_name
         team_sport = ""
         team_league_seo = ""
         team_aka = team_name
@@ -9724,7 +9827,8 @@ async def team_page(request: Request, team_slug: str):
     top_channels = []
     try:
         if not recent_results:
-            db_history = await get_team_history(team_name, limit=5, sport=_dep_db)
+            # team_name_db, NO team_name: la base guarda el nombre de ESPN.
+            db_history = await get_team_history(team_name_db, limit=5, sport=_dep_db)
             for h in db_history:
                 recent_results.append({
                     "home": h["home_name"], "away": h["away_name"],
@@ -9735,7 +9839,7 @@ async def team_page(request: Request, team_slug: str):
                     "league_slug": h.get("league_slug", ""),
                 })
         if not upcoming_games:
-            db_upcoming = await get_team_upcoming(team_name, limit=5, sport=_dep_db)
+            db_upcoming = await get_team_upcoming(team_name_db, limit=5, sport=_dep_db)
             for u in db_upcoming:
                 import json as _json_mod
                 ch_list = _json_mod.loads(u.get("channels_json", "[]")) if u.get("channels_json") else []
@@ -9747,9 +9851,22 @@ async def team_page(request: Request, team_slug: str):
                     "channels": ch_list,
                 })
         # Top channels for this team (always try)
-        top_channels = await get_team_channels(team_name, sport=_dep_db)
+        top_channels = await get_team_channels(team_name_db, sport=_dep_db)
     except Exception:
         pass  # DB unavailable — degrade gracefully
+
+    # ── Enlace a la ficha de cada próximo partido ──
+    #
+    # Va DESPUÉS del bloque de arriba a propósito: upcoming_games se llena por
+    # dos caminos —ESPN y, si ESPN no trae nada, la base— y hay que anotar los
+    # dos. Si esto estuviera dentro del try, los equipos servidos desde la base
+    # se quedarían sin enlace, que son justo los que menos tráfico tienen.
+    #
+    # Hasta hoy la ficha del partido de mañana no la enlazaba NADIE. El bloque
+    # "Próximo partido" y el calendario pintaban el rival, la hora y el canal
+    # en <div> planos. Ver _url_partido_proximo para los números de GSC.
+    for _u in upcoming_games:
+        _u["url"] = _url_partido_proximo(_u, _dep_db)
 
     # ── La liga del equipo los días que NO juega ──
     #
@@ -9826,7 +9943,9 @@ async def team_page(request: Request, team_slug: str):
     if league_info_map:
         t_sport, t_league = league_info_map
         try:
-            team_news = await fetch_team_news(t_sport, t_league, team_name, limit=5)
+            # team_name_db: las noticias se filtran contra titulares de ESPN,
+            # que escribe "Deportivo", no "Deportivo de La Coruña".
+            team_news = await fetch_team_news(t_sport, t_league, team_name_db, limit=5)
         except Exception:
             pass
 
@@ -9908,7 +10027,7 @@ async def team_page(request: Request, team_slug: str):
         if _lejos:
             try:
                 from sports_api import fetch_mlb_offseason
-                offseason = await fetch_mlb_offseason(team_name)
+                offseason = await fetch_mlb_offseason(team_name_db)
             except Exception as e:
                 logger.warning("offseason MLB %s falló: %s", team_slug, e)
 

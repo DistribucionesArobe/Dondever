@@ -1436,7 +1436,25 @@ POPULAR_TEAMS = {
     # El más caro de los que faltaban es el Deportivo: la consulta número uno
     # de España en 90 días es "dónde mirar cented academy fs contra deportivo
     # la coruña" (83 clics, 2.236 impresiones) y no teníamos ficha del club.
-    "deportivo": {"name": "Deportivo", "league": "La Liga"},
+    # `nombre_seo` es para MOSTRAR; `name` tiene que seguir siendo el de ESPN.
+    #
+    # Por que existe este campo (07/11/2026). "deportivo la coruña" es la 2ª
+    # consulta de todo el sitio: 2.314 impresiones y 86 clics en 28 dias, CTR
+    # 3,7%. La pagina se llamaba solo "Deportivo", que ni distingue al club ni
+    # casa con lo que la gente escribe.
+    #
+    # Y no se podia arreglar cambiando `name` a secas: ese valor se pasa a
+    # get_team_history y get_team_upcoming, que buscan en la base con
+    # ILIKE '%nombre%'. La base guarda lo que escribe ESPN, "Deportivo", asi
+    # que ILIKE '%Deportivo de La Coruña%' no casaria con NADA y las paginas
+    # de pais del Depor se quedarian sin proximo partido ni historial.
+    #
+    # Nombre verificado en la ficha oficial de LaLiga: razon social "Real Club
+    # Deportivo de A Coruña SAD", nombre corto "RC Deportivo", estadio
+    # Abanca-Riazor "en La Coruña". Se usa la forma larga castellana porque es
+    # la que buscan, no una inventada.
+    "deportivo": {"name": "Deportivo", "nombre_seo": "Deportivo de La Coruña",
+                  "league": "La Liga"},
     "levante": {"name": "Levante", "league": "La Liga"},
     "racing-santander": {"name": "Racing Santander", "league": "La Liga"},
     "malaga": {"name": "Málaga", "league": "La Liga"},

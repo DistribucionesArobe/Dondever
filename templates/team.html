@@ -685,6 +685,24 @@
             {% else %}
             <div style="margin-top:0.5rem;font-size:0.75rem;color:#9ca3af;">Canales por confirmar — revisa esta página el día del partido.</div>
             {% endif %}
+            {#- ENLACE A LA FICHA DEL PARTIDO. Puesto el 07/11/2026.
+
+                Hasta hoy este bloque pintaba rival, hora y canal en <div>
+                planos y NO enlazaba a /partido/. La ficha del partido de
+                mañana era una página huérfana: sin enlace interno y fuera del
+                sitemap hasta la mañana del juego. En GSC, la cohorte del
+                domingo 1 nov hizo 4 impresiones la víspera y 1.123 el día.
+
+                Es un enlace con texto descriptivo y no la caja entera
+                envuelta: el ancla lleva los dos nombres, que es justo la
+                consulta ("donde ver X vs Y"). Envolver un <div> con hijos
+                <div> en un <a> además es HTML dudoso.
+
+                Se pinta solo si hay url: _url_partido_proximo devuelve ""
+                cuando falta la fecha o algún rival es TBD. -#}
+            {% if nxt.url %}
+            <a href="{{ nxt.url }}" style="display:inline-block;margin-top:0.7rem;font-size:0.82rem;font-weight:700;color:#0ea5e9;text-decoration:none;">D&oacute;nde ver {{ nxt.home }} vs {{ nxt.away }} &rarr;</a>
+            {% endif %}
         </div>
         {% else %}
         <p style="margin-top:0.5rem;color:#6b7280;">Consulta abajo los últimos resultados, o pulsa <b>&#9734; Avisarme</b> arriba y te avisamos cuando vuelvan a jugar.</p>
@@ -746,7 +764,13 @@
         <div style="font-size:0.65rem;color:#9ca3af;margin-bottom:0.3rem;">{{ tz_frase|capitalize }}</div>
         <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
             {% for u in upcoming_games %}
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
+            {#- Cada fila enlaza a su ficha de partido desde el 07/11/2026. Un <a>
+                de bloque que envuelve <div> es válido en HTML5. `color:inherit` y
+                `text-decoration:none` dejan la fila exactamente igual a como se
+                veía: el objetivo es que Google encuentre la ficha, no cambiar el
+                diseño. Si no hay url (fecha ausente o rival TBD) se pinta el <div>
+                de siempre y no pasa nada. -#}
+            <{% if u.url %}a href="{{ u.url }}" title="D&oacute;nde ver {{ u.home }} vs {{ u.away }}"{% else %}div{% endif %} style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;color:inherit;text-decoration:none;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
                 <div style="display:flex;align-items:center;gap:0.4rem;flex:1;">
                     {% if u.home_logo %}<img src="{{ u.home_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
                     <span style="font-size:0.8rem;font-weight:600;">{{ u.home }}</span>
@@ -756,7 +780,7 @@
                     <span style="font-size:0.8rem;font-weight:600;">{{ u.away }}</span>
                     {% if u.away_logo %}<img src="{{ u.away_logo }}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:contain;">{% endif %}
                 </div>
-            </div>
+            </{% if u.url %}a{% else %}div{% endif %}>
             {% if u.channels %}
             <div style="padding:0 0.8rem 0.5rem;font-size:0.68rem;color:#9ca3af;{% if not loop.last %}border-bottom:1px solid #f3f4f6;{% endif %}">
                 &#128250;
