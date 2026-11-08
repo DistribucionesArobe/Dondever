@@ -5225,6 +5225,14 @@ async def api_tira_vivo():
             "liga": g.get("league_name", ""),
             "estado": estado,
             "etiqueta": etiqueta,
+            # La fecha cruda viaja para que el chip pueda llevar data-utc y
+            # timezone.js le ajuste la hora como al resto del sitio. Sin esto
+            # la tira diría hora de México a todo el mundo mientras el bloque
+            # de arriba dice la del país del visitante: el mismo desfase que
+            # ya pasó en la ficha de Magallanes (7:00 PM arriba, 5:00 PM
+            # abajo). Hoy España es el 36% de las vistas, así que no es un
+            # caso raro.
+            "fecha_utc": g.get("date", "") if estado == "pre" else "",
             "local": home.get("short") or home.get("name", ""),
             "visita": away.get("short") or away.get("name", ""),
             "marcador_local": home.get("score", ""),

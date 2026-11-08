@@ -32,15 +32,28 @@
     —el partido de hoy o el próximo— y antes del primer anuncio. Primero se
     responde, luego se ofrece. Es la misma regla de /resultados.
 
-    Si no hay nada que mostrar, o si falla la petición, el <section> se
-    queda con display:none y la página no cambia en absoluto.
+    La sección nace VISIBLE con tres chips de hueco para no empujar la página
+    cuando llegan los datos. Si no hay partidos se retira entera; si la
+    petición falla, se quedan los huecos y no se rompe nada.
 -#}
-<section id="tira-vivo" class="tira-vivo" style="display:none;" aria-label="Partidos de hoy">
+{#- Nace VISIBLE con tres chips de hueco, no oculta.
+
+    Si apareciera de golpe al llegar la respuesta, empujaría hacia abajo todo
+    lo que tiene debajo —incluido el primer anuncio— y eso es desplazamiento
+    de diseño (CLS), que Google mide y penaliza. En /equipo/, que es el 91%
+    de las impresiones del sitio, no es un detalle.
+
+    Así el hueco ya está reservado desde el primer pintado y los chips de
+    verdad entran encima sin mover nada. Si no hay partidos, la sección se
+    quita: ese día sí hay un salto, pero hacia arriba y es el caso raro. -#}
+<section class="tira-vivo" aria-label="Partidos de hoy">
     <div class="tira-vivo-cab">
         <span class="tira-vivo-titulo">Ahora mismo</span>
         <a href="/" class="tira-vivo-todos">Ver todo &rarr;</a>
     </div>
-    <div class="tira-vivo-pista" id="tira-vivo-pista"></div>
+    <div class="tira-vivo-pista" data-tira-pista>
+        <span class="tv-hueco"></span><span class="tv-hueco"></span><span class="tv-hueco"></span>
+    </div>
 </section>
 
 <style>
@@ -67,9 +80,14 @@
     font-size:0.74rem;line-height:1.35;}
 .tv-chip-eq{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:82px;}
 .tv-chip-mar{font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums;}
+/* Hueco reservado: MISMA altura que un chip real (0.6+0.2+2 filas de 1.35),
+   o reservar no serviria de nada y el salto volveria. */
+.tv-hueco{flex:0 0 auto;min-width:118px;height:62px;border-radius:9px;
+    background:#eef2f7;border:1px solid #e5e7eb;}
 /* El modo oscuro va aqui y no en dark-mode.css porque el bloque entero vive
    en este parcial: quien lo incluya se lleva los dos. Ya paso con
    /resultados, que se publico sin sus estilos oscuros. */
+body.dark .tv-hueco{background:#1b2638;border-color:#334155;}
 body.dark .tv-chip{background:#1e293b;border-color:#334155;}
 body.dark .tv-chip:hover{border-color:#475569;}
 body.dark .tv-chip-mar{color:#f1f5f9;}
@@ -81,14 +99,16 @@ body.dark .tira-vivo-titulo{color:#94a3b8;}
     // Se espera a que la pagina este lista: la tira es lo ultimo que importa.
     // Si algo falla aqui, la seccion sigue oculta y la ficha queda intacta.
     function pintar() {
-        var pista = document.getElementById('tira-vivo-pista');
-        var caja  = document.getElementById('tira-vivo');
-        if (!pista || !caja) return;
+        // Por clase y no por id: este parcial esta pensado para ir tambien en
+        // /liga/ y /partido/, y dos includes en la misma pagina darian dos
+        // elementos con el mismo id, que es HTML invalido y rompe getElementById.
+        var pistas = document.querySelectorAll('[data-tira-pista]');
+        if (!pistas.length) return;
 
         fetch('/api/tira-vivo', { headers: { 'Accept': 'application/json' } })
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (d) {
-                if (!d || !d.partidos || !d.partidos.length) return;
+                if (!d || !d.partidos || !d.partidos.length) { quitar(); return; }
 
                 // Ruta actual sin barra final: si el visitante YA esta en la
                 // ficha de ese partido, el chip seria un enlace a si mismo.
@@ -104,8 +124,14 @@ body.dark .tira-vivo-titulo{color:#94a3b8;}
                     var marcador2 = (p.estado === 'pre')
                         ? ''
                         : '<span class="tv-chip-mar">' + (p.marcador_visita || 0) + '</span>';
+                    // data-utc SOLO en los que aun no empiezan. timezone.js
+                    // reemplaza el textContent entero del elemento que lo
+                    // lleve, asi que ponerlo en un partido en vivo se comeria
+                    // el punto rojo y dejaria una hora donde va el reloj.
+                    var utc = (p.estado === 'pre' && p.fecha_utc)
+                        ? ' data-utc="' + esc(p.fecha_utc) + '"' : '';
                     html += '<a class="tv-chip' + (vivo ? ' vivo' : '') + '" href="' + p.url + '">'
-                          +   '<span class="tv-chip-estado">'
+                          +   '<span class="tv-chip-estado"' + utc + '>'
                           +     (vivo ? '<span class="tv-chip-punto"></span>' : '')
                           +     esc(p.etiqueta || '')
                           +   '</span>'
@@ -114,11 +140,49 @@ body.dark .tira-vivo-titulo{color:#94a3b8;}
                           + '</a>';
                 });
 
-                if (!html) return;          // todo filtrado: no se muestra nada
-                pista.innerHTML = html;
-                caja.style.display = '';
+                if (!html) { quitar(); return; }   // todo filtrado
+                for (var i = 0; i < pistas.length; i++) pistas[i].innerHTML = html;
+                ajustarHoras();
             })
-            .catch(function () { /* sin tira, la pagina funciona igual */ });
+            .catch(function () { /* sin tira se queda el hueco, nada se rompe */ });
+    }
+
+    // Quitar la seccion entera cuando no hay nada que enseñar: si no, se
+    // quedarian los tres huecos grises para siempre.
+    function quitar() {
+        var secs = document.querySelectorAll('.tira-vivo');
+        for (var i = 0; i < secs.length; i++) secs[i].style.display = 'none';
+    }
+
+    // La hora en el huso del visitante.
+    //
+    // timezone.js convierte todo lo que lleve data-utc, pero lo hace al cargar
+    // la pagina y estos chips llegan DESPUES, asi que nunca los tocaria. Por
+    // eso se repite aqui la conversion para los chips, apoyandose en el huso
+    // que ese mismo script ya dejo en window.__DV_TZ: no se duplica la tabla
+    // de paises, solo se reusa el resultado.
+    //
+    // Sin esto la tira diria hora de Mexico a todo el mundo mientras el bloque
+    // de arriba dice la del pais del visitante. Ese desfase ya ocurrio en la
+    // ficha de Magallanes (7:00 PM arriba, 5:00 PM abajo) y hoy Espana es el
+    // 36% de las vistas, asi que no es un caso de laboratorio.
+    function ajustarHoras() {
+        var tz = window.__DV_TZ;
+        if (!tz || window.__DV_COUNTRY === 'MX') return;   // MX ya es la base
+        var els = document.querySelectorAll('.tv-chip-estado[data-utc]');
+        for (var i = 0; i < els.length; i++) {
+            var utc = els[i].getAttribute('data-utc');
+            if (!utc) continue;
+            try {
+                var dt = new Date(utc.replace('Z', '+00:00'));
+                if (isNaN(dt.getTime())) continue;
+                els[i].textContent = dt.toLocaleTimeString('es-MX', {
+                    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz
+                }).replace(/\s?(a|p)\.?\s?m\.?/i, function (m) {
+                    return ' ' + m.trim().toUpperCase().replace(/\./g, '');
+                });
+            } catch (e) { /* se queda la hora de Mexico, que es mejor que nada */ }
+        }
     }
 
     // Escapar SIEMPRE: los nombres vienen de ESPN, no de nosotros, y entran
