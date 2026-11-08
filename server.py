@@ -5233,8 +5233,22 @@ async def api_tira_vivo():
             # abajo). Hoy España es el 36% de las vistas, así que no es un
             # caso raro.
             "fecha_utc": g.get("date", "") if estado == "pre" else "",
-            "local": home.get("short") or home.get("name", ""),
-            "visita": away.get("short") or away.get("name", ""),
+            # NOMBRE COMPLETO, no la abreviatura de ESPN.
+            #
+            # La primera versión usaba `short` y la tira salía así en la ficha
+            # del Barça (visto en producción el 08/11/2026):
+            #
+            #     TIG/LEO   INT/COMO   OLD/SHW   CEL/LEV   RSG/VLL   UDG/DUR
+            #
+            # Está visible y es invisible a la vez: nadie sabe qué es "OLD/SHW",
+            # así que el ojo pasa por encima sin registrar nada. Es exactamente
+            # lo contrario de lo que la tira viene a hacer, que es dar un sitio
+            # al que ir. Sofascore pone "Man Utd" y "Aston Villa", no códigos.
+            #
+            # El recorte visual lo hace el CSS con puntos suspensivos, que es
+            # legible ("Atlético M…"), al revés que una sigla.
+            "local": home.get("name") or home.get("short", ""),
+            "visita": away.get("name") or away.get("short", ""),
             "marcador_local": home.get("score", ""),
             "marcador_visita": away.get("score", ""),
         }
@@ -9362,8 +9376,22 @@ def _short_team_name(full_name: str, league: str = "") -> str:
     # El cuerpo de la página estaba bien; lo roto era el título, que es lo
     # único que ve Google en el resultado. Mismo patrón que el fallo de
     # "Panthers vs Panthers" documentado más abajo.
+    # La guarda es SOLO "de" y "del", las preposiciones de verdad. Los
+    # artículos (la, los, el) se siguen recortando como siempre.
+    #
+    # La primera versión de este arreglo incluía los artículos y cambiaba el
+    # nombre de DOS equipos, no de uno:
+    #
+    #     /equipo/deportivo            'de La Coruña'  -> 'Deportivo de La Coruña'   ← el fallo
+    #     /equipo/deportivo-la-guaira  'La Guaira'     -> 'Deportivo La Guaira'      ← de propina
+    #
+    # Lo segundo no es un fallo, es un cambio de criterio sin medir. Esta
+    # función existe para devolver el nombre "como la gente busca", y no
+    # tengo dato de que en Venezuela se busque "Deportivo La Guaira" antes
+    # que "La Guaira". Así que se deja como estaba. Comprobado sobre los 493
+    # equipos del catálogo: con esta versión cambia exactamente uno.
     _recortado = re.sub(r"^(club|cf|fc|cd|ca|deportivo)\s+", "", name, flags=re.I)
-    if not re.match(r"^(de|del|la|las|los|el)\b", _recortado, flags=re.I):
+    if not re.match(r"^(de|del)\b", _recortado, flags=re.I):
         name = _recortado
     name = re.sub(r"\s+(uanl|unam|fc|cf|sc|ac|bc|de la uanl)$", "", name, flags=re.I)
     return name.strip() or full_name

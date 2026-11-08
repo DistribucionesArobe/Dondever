@@ -67,7 +67,10 @@
 .tira-vivo-pista{display:flex;gap:0.45rem;overflow-x:auto;-webkit-overflow-scrolling:touch;
     scrollbar-width:none;padding-bottom:0.2rem;}
 .tira-vivo-pista::-webkit-scrollbar{display:none;}
-.tv-chip{flex:0 0 auto;min-width:118px;background:#fff;border:1px solid #e5e7eb;border-radius:9px;
+/* 158px y no 118: desde que el chip lleva el nombre real del equipo y no la
+   sigla de ESPN, "Atlético Madrid" necesita sitio. Con 118 px todo acababa
+   en puntos suspensivos y volvíamos al problema de no entender nada. */
+.tv-chip{flex:0 0 auto;min-width:158px;background:#fff;border:1px solid #e5e7eb;border-radius:9px;
     padding:0.4rem 0.55rem;text-decoration:none;color:inherit;display:block;}
 .tv-chip:hover{border-color:#cbd5e1;}
 .tv-chip-estado{font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;
@@ -78,11 +81,11 @@
 @keyframes tvlatido{0%,100%{opacity:1;}50%{opacity:0.35;}}
 .tv-chip-fila{display:flex;align-items:center;justify-content:space-between;gap:0.4rem;
     font-size:0.74rem;line-height:1.35;}
-.tv-chip-eq{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:82px;}
+.tv-chip-eq{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:118px;}
 .tv-chip-mar{font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums;}
 /* Hueco reservado: MISMA altura que un chip real (0.6+0.2+2 filas de 1.35),
    o reservar no serviria de nada y el salto volveria. */
-.tv-hueco{flex:0 0 auto;min-width:118px;height:62px;border-radius:9px;
+.tv-hueco{flex:0 0 auto;min-width:158px;height:62px;border-radius:9px;
     background:#eef2f7;border:1px solid #e5e7eb;}
 /* El modo oscuro va aqui y no en dark-mode.css porque el bloque entero vive
    en este parcial: quien lo incluya se lleva los dos. Ya paso con
