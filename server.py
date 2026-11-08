@@ -9346,7 +9346,25 @@ def _short_team_name(full_name: str, league: str = "") -> str:
         parts = name.split()
         return parts[-1] if len(parts) > 1 else name
     # Soccer / LatAm: strip club noise
-    name = re.sub(r"^(club|cf|fc|cd|ca|deportivo)\s+", "", name, flags=re.I)
+    #
+    # OJO con lo que queda DESPUÉS de recortar. La regla sirve para "Deportivo
+    # Toluca" → "Toluca" y "Club América" → "América", donde lo que sigue al
+    # prefijo es el nombre de verdad. Pero cuando lo que sigue es una
+    # preposición, el prefijo NO era ruido: era parte del nombre.
+    #
+    # Medido en producción el 08/11/2026, en cuanto el Dépor pasó a llamarse
+    # "Deportivo de La Coruña" (antes era solo "Deportivo", sin espacio
+    # detrás, así que la regla ni se activaba):
+    #
+    #   title: "Dónde ver de La Coruña vs Orense hoy: 10:30 AM MX"
+    #   h1:    "Dónde ver de La Coruña hoy vs Orense"
+    #
+    # El cuerpo de la página estaba bien; lo roto era el título, que es lo
+    # único que ve Google en el resultado. Mismo patrón que el fallo de
+    # "Panthers vs Panthers" documentado más abajo.
+    _recortado = re.sub(r"^(club|cf|fc|cd|ca|deportivo)\s+", "", name, flags=re.I)
+    if not re.match(r"^(de|del|la|las|los|el)\b", _recortado, flags=re.I):
+        name = _recortado
     name = re.sub(r"\s+(uanl|unam|fc|cf|sc|ac|bc|de la uanl)$", "", name, flags=re.I)
     return name.strip() or full_name
 
