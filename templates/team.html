@@ -711,6 +711,12 @@
     </div>
     {% endif %}
 
+    {#- Va AQUÍ y no arriba del H1: primero se responde a lo que la persona
+        vino a buscar —a qué hora y en qué canal juega su equipo— y sólo
+        después se le ofrece a dónde ir. Es la misma regla que en
+        /resultados. Ver el encabezado de _tira_vivo.html. -#}
+    {% include "_tira_vivo.html" %}
+
     {#- Esta caja vendía la promesa ("Recibe alertas de X: 1 hora antes +
         aviso de goles") y mandaba a WhatsApp, mientras el botón de arriba
         hacía exactamente eso GRATIS por push y no prometía nada. Desde que

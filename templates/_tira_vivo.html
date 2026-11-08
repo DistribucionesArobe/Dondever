@@ -1,0 +1,143 @@
+{#- ══════════════════════════════════════════════════════════════════
+    TIRA DE PARTIDOS EN VIVO  ·  puesta el 07/11/2026
+
+    QUÉ PROBLEMA RESUELVE
+
+    GA4, 7 de noviembre: 1,3 páginas por visitante, y el 98% de la gente
+    entra por primera vez. Search Console, 28 días: /equipo/ es el 91% de
+    las impresiones del sitio. O sea, nueve de cada diez visitantes llegan
+    desde Google a una ficha de equipo, leen el horario y se van, porque esa
+    página no les ofrece ningún sitio al que ir.
+
+    La portada SÍ tenía bloque de partidos en vivo. Las fichas no. Estaba
+    puesto justo donde no entra nadie.
+
+    DE DÓNDE SALE LA IDEA
+
+    De Sofascore, que lleva una tira igual pegada arriba en todas sus
+    páginas. Se copia el patrón —una fila compacta, scroll lateral, lo que
+    pasa ahora mismo—, no su diseño: aquí usa los colores y las clases de
+    DondeVer.
+
+    POR QUÉ SE PINTA CON JAVASCRIPT Y NO EN EL SERVIDOR
+
+    /equipo/ está en _HTML_CACHE_PREFIXES, cinco minutos de caché. Un
+    marcador renderizado en el servidor saldría congelado hasta cinco
+    minutos, que en un partido en vivo es decir una mentira. Así el HTML se
+    sigue cacheando y el marcador se pide aparte, cada 30 s.
+
+    DÓNDE VA
+
+    DESPUÉS del bloque que responde a lo que la persona vino a buscar
+    —el partido de hoy o el próximo— y antes del primer anuncio. Primero se
+    responde, luego se ofrece. Es la misma regla de /resultados.
+
+    Si no hay nada que mostrar, o si falla la petición, el <section> se
+    queda con display:none y la página no cambia en absoluto.
+-#}
+<section id="tira-vivo" class="tira-vivo" style="display:none;" aria-label="Partidos de hoy">
+    <div class="tira-vivo-cab">
+        <span class="tira-vivo-titulo">Ahora mismo</span>
+        <a href="/" class="tira-vivo-todos">Ver todo &rarr;</a>
+    </div>
+    <div class="tira-vivo-pista" id="tira-vivo-pista"></div>
+</section>
+
+<style>
+.tira-vivo{margin:0.9rem 0 0.2rem;}
+.tira-vivo-cab{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:0.4rem;}
+.tira-vivo-titulo{font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;}
+.tira-vivo-todos{font-size:0.72rem;font-weight:700;color:#0ea5e9;text-decoration:none;}
+/* Scroll lateral. -webkit-overflow-scrolling por el iOS viejo, que es
+   bastante del trafico de Mexico. La barra se oculta: en movil no se ve y
+   en escritorio ensucia una fila de 60 px. */
+.tira-vivo-pista{display:flex;gap:0.45rem;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;padding-bottom:0.2rem;}
+.tira-vivo-pista::-webkit-scrollbar{display:none;}
+.tv-chip{flex:0 0 auto;min-width:118px;background:#fff;border:1px solid #e5e7eb;border-radius:9px;
+    padding:0.4rem 0.55rem;text-decoration:none;color:inherit;display:block;}
+.tv-chip:hover{border-color:#cbd5e1;}
+.tv-chip-estado{font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;
+    color:#9ca3af;margin-bottom:0.2rem;display:flex;align-items:center;gap:0.22rem;}
+.tv-chip.vivo .tv-chip-estado{color:#dc2626;}
+.tv-chip-punto{width:6px;height:6px;border-radius:50%;background:#dc2626;
+    animation:tvlatido 1.5s infinite;}
+@keyframes tvlatido{0%,100%{opacity:1;}50%{opacity:0.35;}}
+.tv-chip-fila{display:flex;align-items:center;justify-content:space-between;gap:0.4rem;
+    font-size:0.74rem;line-height:1.35;}
+.tv-chip-eq{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:82px;}
+.tv-chip-mar{font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums;}
+/* El modo oscuro va aqui y no en dark-mode.css porque el bloque entero vive
+   en este parcial: quien lo incluya se lleva los dos. Ya paso con
+   /resultados, que se publico sin sus estilos oscuros. */
+body.dark .tv-chip{background:#1e293b;border-color:#334155;}
+body.dark .tv-chip:hover{border-color:#475569;}
+body.dark .tv-chip-mar{color:#f1f5f9;}
+body.dark .tira-vivo-titulo{color:#94a3b8;}
+</style>
+
+<script>
+(function () {
+    // Se espera a que la pagina este lista: la tira es lo ultimo que importa.
+    // Si algo falla aqui, la seccion sigue oculta y la ficha queda intacta.
+    function pintar() {
+        var pista = document.getElementById('tira-vivo-pista');
+        var caja  = document.getElementById('tira-vivo');
+        if (!pista || !caja) return;
+
+        fetch('/api/tira-vivo', { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d || !d.partidos || !d.partidos.length) return;
+
+                // Ruta actual sin barra final: si el visitante YA esta en la
+                // ficha de ese partido, el chip seria un enlace a si mismo.
+                var aqui = location.pathname.replace(/\/$/, '');
+
+                var html = '';
+                d.partidos.forEach(function (p) {
+                    if (!p.url || p.url.replace(/\/$/, '') === aqui) return;
+                    var vivo = p.estado === 'in';
+                    var marcador = (p.estado === 'pre')
+                        ? ''
+                        : '<span class="tv-chip-mar">' + (p.marcador_local || 0) + '</span>';
+                    var marcador2 = (p.estado === 'pre')
+                        ? ''
+                        : '<span class="tv-chip-mar">' + (p.marcador_visita || 0) + '</span>';
+                    html += '<a class="tv-chip' + (vivo ? ' vivo' : '') + '" href="' + p.url + '">'
+                          +   '<span class="tv-chip-estado">'
+                          +     (vivo ? '<span class="tv-chip-punto"></span>' : '')
+                          +     esc(p.etiqueta || '')
+                          +   '</span>'
+                          +   '<span class="tv-chip-fila"><span class="tv-chip-eq">' + esc(p.local) + '</span>' + marcador + '</span>'
+                          +   '<span class="tv-chip-fila"><span class="tv-chip-eq">' + esc(p.visita) + '</span>' + marcador2 + '</span>'
+                          + '</a>';
+                });
+
+                if (!html) return;          // todo filtrado: no se muestra nada
+                pista.innerHTML = html;
+                caja.style.display = '';
+            })
+            .catch(function () { /* sin tira, la pagina funciona igual */ });
+    }
+
+    // Escapar SIEMPRE: los nombres vienen de ESPN, no de nosotros, y entran
+    // en innerHTML. Un nombre con comillas o < rompe el chip o algo peor.
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', pintar);
+    } else {
+        pintar();
+    }
+    // Refresco mientras la pestana este visible. Sin el setInterval a secas,
+    // que seguiria pidiendo con la pestana en segundo plano toda la tarde.
+    setInterval(function () {
+        if (!document.hidden) pintar();
+    }, 30000);
+})();
+</script>

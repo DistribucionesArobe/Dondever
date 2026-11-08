@@ -696,6 +696,14 @@ _TTL_LARGO = 1800
 # marcadores en vivo se refrescan aparte desde /api/live-scores.
 _HOME_CACHE = _TTLCache(maxsize=64, ttl=60)
 
+# /sitemap-partidos.xml, 6 horas. No es un lujo: desde el 07/11/2026 ese
+# sitemap recorre 8 fechas (hoy + 7 días) y cada fecha son ~150 peticiones
+# salientes entre ESPN y TheSportsDB. Sin caché, cada visita de Googlebot
+# dispararía ~1.200. Y esa ruta NO pasa por el caché de HTML de abajo, que
+# solo mira _HTML_CACHE_PREFIXES, _HTML_CACHE_HUBS y la portada.
+# Ver el docstring de sitemap_partidos para el detalle.
+_SITEMAP_PARTIDOS_CACHE = _TTLCache(maxsize=2, ttl=21600)
+
 # La portada de OTRO día vive aparte, y mucho más tiempo.
 #
 # Medido en producción el 26/09/2026: la portada de hoy responde en 135-250 ms,
@@ -5168,6 +5176,70 @@ async def api_live_scores():
                         headers={"Cache-Control": "public, max-age=15"})
 
 
+@app.get("/api/tira-vivo")
+async def api_tira_vivo():
+    """Partidos para la tira horizontal que va en las fichas.
+
+    Por qué existe y no se reusa /api/live-scores: ese devuelve SOLO ids y
+    marcadores, porque su trabajo es parchear tarjetas que el servidor ya
+    pintó en la portada. Aquí no hay tarjeta previa que parchear — la tira se
+    construye entera en el cliente, así que hace falta nombre, enlace y hora.
+
+    Y se hace en el cliente a propósito. /equipo/ está en _HTML_CACHE_PREFIXES
+    con 5 minutos de vida: un marcador renderizado en el servidor saldría
+    congelado hasta cinco minutos, que en un partido en vivo es una mentira.
+    Pintarlo con JS sobre HTML cacheado resuelve las dos cosas a la vez.
+
+    El orden es el del interés real: lo que se juega AHORA, luego lo que está
+    por empezar, y al final lo que acabó. 20 como tope: es una tira que se
+    desplaza de lado, no un listado.
+    """
+    games = await get_todays_games()
+    orden = {"in": 0, "pre": 1, "post": 2}
+    vivos, proximos, acabados = [], [], []
+
+    for g in games:
+        if not isinstance(g, dict):
+            continue
+        estado = (g.get("status") or {}).get("state")
+        if estado not in orden:
+            continue
+        home = (g.get("home") or {})
+        away = (g.get("away") or {})
+        # Sin nombres no hay chip que pintar, y los TBD no se enlazan (la
+        # ficha de un partido sin rival confirmado no existe).
+        if not home.get("name") or not away.get("name"):
+            continue
+        if "TBD" in (home.get("name"), away.get("name")):
+            continue
+
+        if estado == "in":
+            etiqueta = (g.get("status") or {}).get("clock") or "EN VIVO"
+        elif estado == "post":
+            etiqueta = "FINAL"
+        else:
+            etiqueta = format_mx_time(g.get("date", "")) or ""
+
+        chip = {
+            "url": _game_url(g),
+            "liga": g.get("league_name", ""),
+            "estado": estado,
+            "etiqueta": etiqueta,
+            "local": home.get("short") or home.get("name", ""),
+            "visita": away.get("short") or away.get("name", ""),
+            "marcador_local": home.get("score", ""),
+            "marcador_visita": away.get("score", ""),
+        }
+        (vivos if estado == "in" else proximos if estado == "pre" else acabados).append(chip)
+
+    return JSONResponse(
+        {"partidos": (vivos + proximos + acabados)[:20]},
+        # 30 s: suficiente para que un gol aparezca casi al instante y para
+        # que la tira no genere una petición por visitante y segundo.
+        headers={"Cache-Control": "public, max-age=30"},
+    )
+
+
 @app.get("/api/live/{game_id}")
 async def api_live_game(game_id: str):
     """Situación completa de un partido (campo NFL, diamante MLB, goles, línea por periodo) para /partido/."""
@@ -7101,7 +7173,37 @@ async def sitemap_partidos():
 
     El mismo patrón —asyncio.gather sobre varias fechas— ya está probado en
     producción en _res_terminados, que lo usa hacia atrás para /resultados.
+
+    ─────────────────────────────────────────────────────────────────────
+    POR QUÉ ESTA RUTA ESTÁ CACHEADA (y por qué era obligatorio cachearla)
+
+    get_todays_games sin filtros recorre las 62 ligas de LEAGUES, y por cada
+    una pide el marcador a ESPN más hasta dos llamadas a TheSportsDB (horario
+    y transmisiones). Son del orden de 150 peticiones POR FECHA.
+
+    Con los 7 días nuevos eso pasa de ~150 a ~1.200 peticiones por cada visita
+    a este sitemap. Y esta ruta NO entra en el caché de HTML: el middleware
+    solo mira _HTML_CACHE_PREFIXES, _HTML_CACHE_HUBS y la portada, y
+    /sitemap-partidos.xml no es ninguna de las tres. Sin caché, cada vez que
+    Googlebot lo pidiera —y lo pide seguido, el changefreq es hourly— se
+    disparaban 1.200 peticiones salientes.
+
+    Las fechas pasadas no tenían este problema porque /resultados ya las
+    calienta. Las futuras no las pide nadie más: el caché está siempre frío.
+
+    Seis horas de vida es de sobra: el calendario de dentro de tres días no
+    cambia cada hora, y el lastmod que emitimos es una FECHA, así que dentro
+    del mismo día no envejece. Si un canal se confirma, entra en la siguiente
+    reconstrucción y la ficha del partido ya lo muestra al instante de todos
+    modos: el sitemap solo dice qué URLs existen, no qué contienen.
     """
+    # Se cachea la LISTA de urls, no el objeto Response: devolver el mismo
+    # Response a varias peticiones es compartir estado mutable entre ellas.
+    # Rearmarlo es un join de cadenas, no cuesta nada.
+    _cacheado = _SITEMAP_PARTIDOS_CACHE.get("urls")
+    if _cacheado is not None:
+        return _sm_wrap(_cacheado)
+
     today_str, _, _ = _sm_dates()
     _hoy_mx = datetime.now(TZ_MX)
     _futuras = await asyncio.gather(*[
@@ -7113,6 +7215,7 @@ async def sitemap_partidos():
 
     games = await get_todays_games()
     _vistos = {g.get("id") for g in games if isinstance(g, dict)}
+    futuros = []
     for _lista in _futuras:
         if isinstance(_lista, Exception):
             continue
@@ -7122,11 +7225,15 @@ async def sitemap_partidos():
             if not isinstance(_g, dict) or _g.get("id") in _vistos:
                 continue
             _vistos.add(_g.get("id"))
-            games.append(_g)
+            futuros.append(_g)
+
+    def _sin_rival(g):
+        return (g.get("home", {}).get("name", "") == "TBD"
+                or g.get("away", {}).get("name", "") == "TBD")
 
     urls = []
     for game in games:
-        if game.get("home", {}).get("name", "") == "TBD" or game.get("away", {}).get("name", "") == "TBD":
+        if _sin_rival(game):
             continue
         urls.append(_sm_url(f'{APP_URL}{_game_url(game)}', today_str, "hourly", "0.8", hreflang=True))
         home_slug = _slugify_team(game["home"]["name"])
@@ -7135,6 +7242,29 @@ async def sitemap_partidos():
             urls.append(_sm_url(f'{APP_URL}/donde-ver/{away_slug}-vs-{home_slug}', today_str, "daily", "0.7"))
         if game.get("status", {}).get("state") == "post":
             urls.append(_sm_url(f'{APP_URL}/resultado/{_make_game_slug(game)}', today_str, "never", "0.5"))
+
+    # Los días futuros emiten SOLO la ficha del partido.
+    #
+    # /donde-ver/{a}-vs-{b} no lleva fecha: es la página perenne del cruce, y
+    # ya la emiten los partidos de hoy. Sacarla también para los 7 días
+    # siguientes no añadiría ni una URL nueva la mayoría de las veces, y
+    # cuando la añadiera sería la de un cruce que todavía no ha ocurrido:
+    # justo el tipo de página fina que alimenta los "soft 404" y las
+    # "descubiertas: sin indexar" que ya arrastramos en Search Console.
+    #
+    # /resultado/ tampoco, evidentemente: un partido que no se ha jugado no
+    # tiene resultado. El estado de los futuros es 'pre', así que la condición
+    # de abajo nunca se cumpliría, pero se deja explícito para que nadie lo
+    # "arregle" metiéndolos en el bucle de arriba.
+    #
+    # prioridad 0.7 y no 0.8: hoy vale más que pasado mañana. changefreq
+    # "daily" porque el canal y la hora de un partido futuro sí se mueven.
+    for game in futuros:
+        if _sin_rival(game):
+            continue
+        urls.append(_sm_url(f'{APP_URL}{_game_url(game)}', today_str, "daily", "0.7", hreflang=True))
+
+    _SITEMAP_PARTIDOS_CACHE["urls"] = urls
     return _sm_wrap(urls)
 
 
