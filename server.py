@@ -11307,6 +11307,50 @@ _TIP_POR_PAIS_Y_LIGA = {
         "regional del equipo. League Pass tiene los juegos fuera de tu mercado, con las "
         "mismas reglas de blackout local que MLB."
     ),
+    # ── LVBP fuera de Venezuela ────────────────────────────────────────────
+    #
+    # Mismo fallo que el de los Dodgers, encontrado el 09/11/2026 en
+    # /equipo/navegantes-del-magallanes/en/estados-unidos: la página de un
+    # equipo de BÉISBOL VENEZOLANO le explicaba al visitante dónde ver la
+    # Liga MX y la NFL, y le ofrecía "ESPN Latinoamérica", que en EE. UU. no
+    # existe.
+    #
+    # Por qué importa más de lo que parece. Medido en Search Console, 28 días:
+    #
+    #   consultas con "lvbp"        1.750 impresiones, 184 clics, CTR 10,5%
+    #   consultas con "magallanes"  33.200 impresiones, 622 clics
+    #   (el sitio entero va al 1,9% de CTR, o sea que esto convierte 5 veces mejor)
+    #
+    # Y Venezuela paga 14,67 MXN de RPM mientras EE. UU. paga 191,16. El mismo
+    # contenido, trece veces el valor, según dónde esté la persona.
+    #
+    # VERIFICADO el 09/11/2026 en la portada de beisbolplay.com, que dice de sí
+    # misma: "Somos la única plataforma digital autorizada para transmitir vía
+    # streaming los partidos de la LVBP. No importa en qué parte del mundo te
+    # encuentres." Precio en su propia web: 7,99 USD al mes. Es una marca de
+    # Ole Interactive LLC.
+    #
+    # LO QUE NO SE DICE, a propósito: varios medios (El Emergente, TuJonrón,
+    # Mediotiempo) afirman que los LUNES la liga se transmite gratis por el
+    # canal de YouTube de la LVBP, como "Lunes de Béisbol Mastercard". No pude
+    # confirmarlo en fuente oficial —lvbp.com no respondió— así que se queda
+    # fuera hasta comprobarlo. Si se confirma, es el mejor gancho que tenemos
+    # para estas páginas y hay que añadirlo aquí.
+    ("estados-unidos", "LVBP"): (
+        "Los canales que transmiten la LVBP —Meridiano, Televen, Venevisión y TVES— son "
+        "venezolanos y no se reciben en Estados Unidos. Desde aquí la vía es BeisbolPlay, "
+        "que se declara la única plataforma digital autorizada para transmitir la liga vía "
+        "streaming en cualquier parte del mundo, con suscripción mensual (7,99 USD según su "
+        "web). Funciona en navegador y en app para iOS y Android."
+    ),
+    ("espana", "LVBP"): (
+        "Ningún canal español emite la LVBP, y los venezolanos —Meridiano, Televen, "
+        "Venevisión y TVES— no llegan a España. La vía es BeisbolPlay, que se declara la "
+        "única plataforma digital autorizada para transmitir la liga vía streaming en "
+        "cualquier parte del mundo, con suscripción mensual (7,99 USD según su web). Ojo "
+        "con la hora: los juegos empiezan de madrugada en España."
+    ),
+
     # España no tenía NI UNA entrada aquí, así que todas sus fichas caían en
     # el consejo genérico del país. Y España fue el primer mercado del sitio
     # el 29/10/2026: 280 de 727 clics.
