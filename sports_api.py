@@ -2091,6 +2091,93 @@ async def parse_sportsdb_standalone_events(
 
 # ── Main aggregator ──────────────────────────────────────
 
+# ══════════════════════════════════════════════════════════════════════════
+# LOS LUNES, LA LVBP ES GRATIS Y MUNDIAL
+#
+# VERIFICADO el 10/11/2026 en el canal oficial de la liga en YouTube,
+# @LVBP_Oficial, que se llama literalmente "Mastercard LVBP" y se describe
+# como "Canal oficial de YouTube de la Liga Venezolana de Beisbol
+# Profesional". Sus cuatro transmisiones de temporada publicadas son:
+#
+#     Leones vs Cardenales     lun  9 nov   449 K visualizaciones
+#     Cardenales vs Tigres     lun  2 nov   301 K
+#     Tigres vs Leones         lun 26 oct   546 K
+#     Magallanes vs Cardenales lun 19 oct   679 K
+#
+# Cuatro de cuatro en lunes, desde el arranque de la temporada. Partido
+# completo, no resumen: entre 4 y 5 horas cada uno.
+#
+# POR QUÉ ESTO VALE TANTO (Search Console, 28 días). Las consultas de LVBP
+# tienen un CTR del 10,6% contra el 1,9% del sitio entero, y la intención es
+# abrumadoramente la misma:
+#
+#     lvbp en vivo                                33 clics
+#     ver lvbp en vivo GRATIS                     24
+#     lvbp en vivo hoy canales de transmisión     15
+#     lvbp en vivo GRATIS                         15
+#     donde ver la lvbp en vivo                   12
+#     lvbp GRATIS                                  6
+#
+# Seis de las diez primeras piden "gratis", y NINGUNA menciona un país. Por
+# eso esto va aquí y no en las páginas por país: el venezolano de Caracas y
+# el de Miami escriben lo mismo, y hasta hoy a los dos les respondíamos con
+# una suscripción de pago.
+#
+# DÓNDE VA Y POR QUÉ. En get_todays_games, que es el embudo único por el que
+# pasan TODOS los juegos del sitio: portada, /equipo/, /partido/, /liga/,
+# /resultados y "Gratis hoy". Ponerlo en cualquier otro sitio repetiría el
+# error de las dos copias de la tabla US→MX, que ya costó un bug.
+#
+# channels_confirmed NO se toca. Ese campo dice si el canal sale de un dato
+# del partido o del default de la liga; aquí se añade un emisor verificado
+# sin pisar lo que ya hubiera.
+_LVBP_CANAL_LUNES = "Mastercard LVBP (YouTube)"
+_LVBP_URL_LUNES = "https://www.youtube.com/@LVBP_Oficial/streams"
+
+# Caracas, que es donde se juega. No se reusa TZ_MX: un partido que empieza
+# el lunes a las 7 PM en Caracas son las 5 PM en México (mismo día, bien) pero
+# las 23:00 UTC (lunes) o 00:00 del martes según la hora exacta. Decidir el
+# día en la zona del estadio es lo único que no se rompe en los bordes.
+try:
+    from zoneinfo import ZoneInfo as _ZI_VE
+    TZ_VE = _ZI_VE("America/Caracas")
+except Exception:                      # pragma: no cover
+    TZ_VE = timezone(timedelta(hours=-4))
+
+
+def _marcar_lvbp_lunes(eventos: list) -> None:
+    """Añade el canal gratuito de YouTube a los juegos de LVBP en lunes.
+
+    Modifica la lista en el sitio. Si algo falla con una fecha, ese partido se
+    salta y los demás siguen: un canal de más que falta es un detalle, pero una
+    excepción aquí tumbaría la portada entera.
+    """
+    for g in eventos:
+        try:
+            if not isinstance(g, dict) or g.get("league_slug") != "lvbp":
+                continue
+            crudo = g.get("date", "")
+            if not crudo:
+                continue
+            dt = datetime.fromisoformat(str(crudo).replace("Z", "+00:00"))
+            # El día se decide en hora de Venezuela, que es donde se juega.
+            # Con la fecha UTC, un partido de lunes por la noche en Caracas
+            # cae en martes y nos perderíamos justo los que importan.
+            if dt.astimezone(TZ_VE).weekday() != 0:   # 0 = lunes
+                continue
+            emisores = g.setdefault("broadcasts", [])
+            if any(_LVBP_CANAL_LUNES == (b.get("name") if isinstance(b, dict) else b)
+                   for b in emisores):
+                continue
+            # Primero en la lista: es el único gratis y el único que sirve en
+            # todo el mundo. country vacío = sin restricción geográfica, que es
+            # lo que lo distingue de Meridiano o Televen.
+            emisores.insert(0, {"name": _LVBP_CANAL_LUNES, "country": "",
+                                "url": _LVBP_URL_LUNES})
+        except Exception:
+            continue
+
+
 async def get_todays_games(
     date_str: Optional[str] = None,
     league_filter: Optional[str] = None,
@@ -2152,6 +2239,8 @@ async def get_todays_games(
             logger.error(f"Error fetching TheSportsDB {slug}: {result}")
             continue
         all_events.extend(result)
+
+    _marcar_lvbp_lunes(all_events)
 
     all_events.sort(key=lambda e: e.get("date", ""))
 

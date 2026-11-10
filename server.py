@@ -350,6 +350,16 @@ def _is_free_broadcast(channel_name: str, country: str = "MX") -> bool:
     c = channel_name.lower().strip()
     if not c:
         return False
+    # El canal oficial de la LVBP en YouTube es el ÚNICO emisor del sitio que
+    # es gratis en todos los países a la vez, así que va antes del mapa por
+    # país y no dentro de él. Verificado el 10/11/2026: los lunes publica el
+    # partido completo, en abierto y sin bloqueo geográfico.
+    #
+    # Esto es justo lo que busca el tráfico de LVBP: seis de sus diez
+    # consultas principales llevan la palabra "gratis" y ninguna menciona un
+    # país. Ver _marcar_lvbp_lunes en sports_api.
+    if "mastercard lvbp" in c:
+        return True
     _FREE_MAP = {
         "US": (FREE_CHANNELS_US, FREE_PREFIXES_US),
         "VE": (FREE_CHANNELS_VE, FREE_PREFIXES_VE),
