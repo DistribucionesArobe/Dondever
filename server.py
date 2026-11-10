@@ -3780,12 +3780,34 @@ LEAGUE_SEO_EXTRA = {
         #
         # El nuevo título cubre las cinco formas en que se busca esto: lvbp,
         # en vivo, hoy, dónde ver, transmisión y gratis.
+        # ── ACTUALIZADO EL 10/11/2026: los lunes es gratis en TODO el mundo ──
+        #
+        # El párrafo de abajo decía "si estás fuera de Venezuela, BeisbolPlay
+        # es la única opción". Eso dejó de ser cierto: el canal oficial de la
+        # liga en YouTube (@LVBP_Oficial, "Mastercard LVBP") publica el juego
+        # completo de los lunes, en abierto y sin bloqueo geográfico.
+        # Verificado mirando sus cuatro transmisiones de temporada: 9 nov
+        # (449K visualizaciones), 2 nov (301K), 26 oct (546K), 19 oct (679K).
+        # Cuatro de cuatro en lunes.
+        #
+        # Por qué esto va en el TEXTO FIJO y no solo en los datos del partido.
+        # El canal se añade a los juegos de lunes (ver _marcar_lvbp_lunes en
+        # sports_api), pero eso solo se ve los lunes. Y la gente busca esto
+        # los siete días:
+        #
+        #   ver lvbp en vivo GRATIS    24 clics en 28 días
+        #   lvbp en vivo GRATIS        15
+        #   lvbp GRATIS                 6
+        #
+        # Seis de las diez consultas principales de LVBP llevan "gratis". Si
+        # Google rastrea esta página un martes y no encuentra la respuesta,
+        # seis de cada siete veces nos quedamos fuera.
         "title": "LVBP en vivo hoy: dónde ver la transmisión gratis | DondeVer",
-        "meta_desc": "LVBP hoy en vivo y gratis: transmisión por Meridiano, Televen, Venevisión y TVES, más horarios y canales por país. Magallanes, Caracas, Lara, Zulia y Aragua.",
+        "meta_desc": "LVBP hoy en vivo: los lunes el juego va gratis en el canal oficial de la liga en YouTube, desde cualquier país. El resto, Meridiano, Televen y BeisbolPlay.",
         "h2": "Donde ver la LVBP (beisbol venezolano) en vivo",
         "paragraphs": [
             "La LVBP (Liga Venezolana de Beisbol Profesional) es la liga de beisbol invernal de Venezuela, una de las mas importantes del Caribe. Cuenta con 8 equipos: Navegantes del Magallanes, Leones del Caracas, Tigres de Aragua, Cardenales de Lara, Aguilas del Zulia, Tiburones de La Guaira, Caribes de Anzoategui y Bravos de Margarita.",
-            "Ocho canales transmiten la LVBP en Venezuela. En senal abierta y gratis: Meridiano TV, Televen, Venevision, TVES y Canal i. Por cable: IVC, ByM Sport y 1 Baseball. Tambien esta BeisbolPlay, que es la plataforma de streaming con todos los juegos de la temporada. Ojo con una confusion habitual: Inter y Simple TV son las operadoras de cable, no canales con derechos; quien las tiene ve la LVBP por Meridiano, IVC o ByM Sport. Si estas fuera de Venezuela, BeisbolPlay es la unica opcion: transmite todos los juegos a nivel nacional e internacional. La temporada 2026-2027 arranca el lunes 12 de octubre, la ronda regular termina el 27 de diciembre, el Round Robin empieza el 2 de enero y la Serie Final el 23 de enero. El campeon representa a Venezuela en la Serie del Caribe.",
+            "Ocho canales transmiten la LVBP en Venezuela. En senal abierta y gratis: Meridiano TV, Televen, Venevision, TVES y Canal i. Por cable: IVC, ByM Sport y 1 Baseball. Tambien esta BeisbolPlay, que es la plataforma de streaming con todos los juegos de la temporada. Ojo con una confusion habitual: Inter y Simple TV son las operadoras de cable, no canales con derechos; quien las tiene ve la LVBP por Meridiano, IVC o ByM Sport. Los LUNES el juego se transmite GRATIS en el canal oficial de la liga en YouTube, que se llama Mastercard LVBP: es el partido completo, en abierto y sin bloqueo por pais, asi que sirve igual en Caracas, en Miami o en Madrid. El resto de los dias, si estas fuera de Venezuela, la via es BeisbolPlay, que se declara la unica plataforma digital autorizada para transmitir la liga via streaming en cualquier parte del mundo, con suscripcion mensual de 7,99 USD segun su web. La temporada 2026-2027 arranca el lunes 12 de octubre, la ronda regular termina el 27 de diciembre, el Round Robin empieza el 2 de enero y la Serie Final el 23 de enero. El campeon representa a Venezuela en la Serie del Caribe.",
         ],
         "links": [],
     },
@@ -11346,19 +11368,25 @@ _TIP_POR_PAIS_Y_LIGA = {
     # confirmarlo en fuente oficial —lvbp.com no respondió— así que se queda
     # fuera hasta comprobarlo. Si se confirma, es el mejor gancho que tenemos
     # para estas páginas y hay que añadirlo aquí.
+    # El dato de los LUNES se añadió el 10/11/2026, un día después que el
+    # resto. Es lo que de verdad responde a la consulta: seis de las diez
+    # búsquedas principales de LVBP llevan la palabra "gratis".
     ("estados-unidos", "LVBP"): (
         "Los canales que transmiten la LVBP —Meridiano, Televen, Venevisión y TVES— son "
-        "venezolanos y no se reciben en Estados Unidos. Desde aquí la vía es BeisbolPlay, "
-        "que se declara la única plataforma digital autorizada para transmitir la liga vía "
-        "streaming en cualquier parte del mundo, con suscripción mensual (7,99 USD según su "
-        "web). Funciona en navegador y en app para iOS y Android."
+        "venezolanos y no se reciben en Estados Unidos. Los lunes el juego se ve gratis en "
+        "el canal oficial de la liga en YouTube (Mastercard LVBP), completo y sin bloqueo "
+        "por país. El resto de los días la vía es BeisbolPlay, que se declara la única "
+        "plataforma digital autorizada para transmitir la liga vía streaming en cualquier "
+        "parte del mundo, con suscripción mensual (7,99 USD según su web)."
     ),
     ("espana", "LVBP"): (
         "Ningún canal español emite la LVBP, y los venezolanos —Meridiano, Televen, "
-        "Venevisión y TVES— no llegan a España. La vía es BeisbolPlay, que se declara la "
-        "única plataforma digital autorizada para transmitir la liga vía streaming en "
-        "cualquier parte del mundo, con suscripción mensual (7,99 USD según su web). Ojo "
-        "con la hora: los juegos empiezan de madrugada en España."
+        "Venevisión y TVES— no llegan a España. Los lunes el juego se ve gratis en el canal "
+        "oficial de la liga en YouTube (Mastercard LVBP), completo y sin bloqueo por país. "
+        "El resto de los días, BeisbolPlay, que se declara la única plataforma digital "
+        "autorizada para transmitir la liga vía streaming en cualquier parte del mundo, con "
+        "suscripción mensual (7,99 USD según su web). Ojo con la hora: los juegos empiezan "
+        "de madrugada en España."
     ),
 
     # España no tenía NI UNA entrada aquí, así que todas sus fichas caían en
