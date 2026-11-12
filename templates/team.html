@@ -1251,9 +1251,54 @@
         secas es la tira de 130 px—. Se exige al menos un bloque ALTO de por
         medio. Si no lo hay, no hay segundo anuncio: un bloque visible vale
         más que dos pegados que se reparten la impresión. -#}
-    {% if upcoming_games or recent_results or clasicos_equipo or (stats and stats.all_stats) %}
-    {{ ad('bottom') }}
-    {% endif %}
+    {#- ══ SEGUNDO ANUNCIO: RETIRADO EL 12/11/2026 PARA MEDIR ══
+
+        No se quita por estorbar. Se quita porque los números dicen que ese
+        hueco vale menos vacío que lleno.
+
+        AdSense, por bloque, del 5 al 11 de noviembre de 2026:
+
+          BLOQUE              impresiones  RPM impr  Active View  7 días
+          "DondeVer top"            3.633    27,48      65,38%    99,85 MXN
+          "DondeVer mid"            3.033     8,69      39,18%    26,37
+          "DondeVer bottom 2"       3.163     3,76      19,97%    11,91   ← éste
+          ---------------------------------------------------------------
+          NUESTROS 4 BLOQUES       11.086    13,04      41,34%   144,61
+          ANUNCIOS AUTOMÁTICOS      4.265    39,44          —    168,20
+
+        Dos cosas de ahí:
+
+        1. Este bloque tiene un 19,97% de Active View. Cuatro de cada cinco
+           impresiones no llegan a verse, y aun así cuentan como impresión y
+           bajan la media de la cuenta. Deja 11,91 MXN en SIETE DÍAS: 1,70 al
+           día. Es el peor del sitio por mucho.
+
+        2. Los automáticos de Google rinden 39,44 MXN de RPM por impresión
+           contra 13,04 de los nuestros —tres veces— y ya hacen el 54% del
+           dinero con el 28% de las impresiones.
+
+        Y el experimento del 05/11 (ver más abajo, en la zona de la tabla de
+        posiciones) demostró el mecanismo en la dirección contraria: al AÑADIR
+        un tercer bloque aquí, los automáticos cayeron un 74% en un día. Si
+        añadir los ahuyenta, quitar debería dejarles sitio. Eso es lo que esta
+        retirada pone a prueba.
+
+        QUÉ MEDIR, A PARTIR DEL 15/11 (tres días completos):
+          · impresiones de los automáticos  (hoy 4.265 en la semana)
+          · RPM de impresión de los automáticos (hoy 39,44)
+          · ingresos totales del día
+        Si los automáticos no suben, este bloque se repone tal cual
+        descomentando lo de abajo: se perdían 1,70 MXN al día y se recuperan.
+
+        Se toca UNA plantilla y UN bloque. team.html es la más vista, así que
+        la señal sale limpia; si se tocaran varias no sabríamos cuál fue.
+        Lección del 05/11, que se tomó con un solo día de datos y por eso
+        quedó sin demostrar.
+
+        {% if upcoming_games or recent_results or clasicos_equipo or (stats and stats.all_stats) %}
+        {{ '{{' }} ad('bottom') {{ '}}' }}
+        {% endif %}
+    -#}
 
     {# ══ TABLA DE POSICIONES ══ #}
     {% if league_standings %}
