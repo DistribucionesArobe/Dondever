@@ -340,6 +340,26 @@ DEFAULT_LEAGUE_CHANNELS = {
     # En las fichas de país sí están, porque allí cada canal lleva su campo
     # de alcance al lado.
     "segunda": ["DAZN España", "Orange TV"],
+    # Primera Federación (11/11/2026). Fuente PRIMARIA para DAZN: su propia
+    # sala de prensa, 3 de julio de 2026, "acuerdo con la Real Federación
+    # Española de Fútbol (RFEF) para emitir la Primera Federación durante la
+    # temporada 2026/27… diez partidos en directo por jornada durante la fase
+    # regular, además de los playoffs de ascenso".
+    #
+    # Movistar Plus+ y FC Play salen de prensa (adslzone, roams), no de fuente
+    # primaria, pero coinciden entre sí y no contradicen a DAZN. Van.
+    #
+    # Las autonómicas NO van en esta lista. Esta alimenta el bloque "Canales
+    # habituales de {liga}" de /liga/, cuya frase es "se transmite
+    # habitualmente por", y eso sería falso: TVG, Esport3, La 7 de Murcia,
+    # Aragón TV y Betevé emiten SÓLO al equipo de su comunidad. Mismo criterio
+    # que se aplicó a la Segunda el 04/11. Donde sí van, con su alcance
+    # escrito al lado, es en LEAGUE_CHANNELS_BY_COUNTRY (server.py).
+    #
+    # LaLiga+ dejó de emitirla el 30/06/2026. Si alguien la ve en una guía
+    # vieja, está caducada.
+    "primera-federacion-g1": ["DAZN España", "Movistar Plus+", "FC Play"],
+    "primera-federacion-g2": ["DAZN España", "Movistar Plus+", "FC Play"],
     "serie-a": ["ESPN MX", "Disney+"],
     "bundesliga": ["Fox Sports MX"],
     "ligue-1": ["Fox Sports MX"],

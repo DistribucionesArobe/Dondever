@@ -791,6 +791,38 @@ LEAGUES = {
     # LaLiga Hypermotion; "Segunda Divisi\u00f3n" se cubre en los alias y en el
     # texto SEO, que es como lo escribe la gente.
     "segunda":       ("soccer", "esp.2",         "LaLiga Hypermotion", "\u26bd"),
+    # Primera Federacion (tercera categoria del futbol espanol), anadida el
+    # 11/11/2026. Van DOS entradas y no una porque la competicion se juega en
+    # dos grupos geograficos con tablas separadas, y porque nuestro parseo de
+    # fuentes es "sportsdb:<un id>" (sports_api, league.split(":")[1]): no
+    # admite dos ids en un renglon. Antes que tocar seis puntos de llamada
+    # para soportarlo, dos ligas, que ademas es como las nombra la RFEF.
+    #
+    # POR QUE ESTA LIGA Y NO OTRA. Es la que respalda el dato, no una
+    # corazonada. Espana convierte al 3,6% de CTR contra el 1,9% del sitio
+    # entero, en la MISMA posicion media (8,5), y sus mejores paginas son
+    # clubes modestos: Poblense 9,4%, Auriense/Cented Academy 98 clics,
+    # Sporting Hortaleza 3,7%. Hoy solo los vemos la noche que les toca Copa
+    # del Rey. Son equipos de Primera y Segunda Federacion: esto los pone 38
+    # jornadas en vez de una noche.
+    #
+    # VERIFICADO EL 11/11/2026 antes de escribir una linea:
+    #   \u00b7 TheSportsDB eventsseason 2026-2027: G1 380 partidos (28/08/26 a
+    #     23/05/27), G2 380 (29/08/26 a 23/05/27). Conteos completos.
+    #   \u00b7 Los 40 equipos NO chocan con ninguno de los 492 slugs que ya
+    #     existen, ni uno.
+    #   \u00b7 Que Cultural Leonesa, Mirandes, Huesca, Cartagena, Zaragoza, Real
+    #     Murcia, Alcorcon y Hercules esten aqui y no en Segunda parecia un
+    #     error de datos. No lo es: los 22 equipos de esp.2 en ESPN no
+    #     solapan con estas dos listas en NINGUN nombre. Dos fuentes
+    #     independientes, de acuerdo.
+    #
+    # OJO: lookup_all_teams.php devuelve VACIO para las dos. Los equipos
+    # salen de los propios partidos (idHomeTeam, strHomeTeamBadge y strVenue
+    # si vienen). No habra enriquecido de lookupteam: ni descripcion, ni
+    # redes, ni estadio fuera del que trae el partido.
+    "primera-federacion-g1": ("soccer", "sportsdb:5086", "Primera Federación G1", "\u26bd"),
+    "primera-federacion-g2": ("soccer", "sportsdb:5088", "Primera Federación G2", "\u26bd"),
     "serie-a":       ("soccer", "ita.1",         "Serie A",          "\u26bd"),
     "bundesliga":    ("soccer", "ger.1",         "Bundesliga",       "\u26bd"),
     "ligue-1":       ("soccer", "fra.1",         "Ligue 1",         "\u26bd"),
@@ -1215,6 +1247,57 @@ POPULAR_TEAMS = {
     "tempo": {"name": "Toronto Tempo", "league": "WNBA"},
     "connecticut-sun": {"name": "Connecticut Sun", "league": "WNBA"},
     "storm": {"name": "Seattle Storm", "league": "WNBA"},
+    # Primera Federación — tercera categoría del fútbol español (11/11/2026).
+    #
+    # Los nombres están copiados EXACTAMENTE como los devuelve TheSportsDB en
+    # strHomeTeam (ids 5086 y 5088, temporada 2026-2027). No escritos de
+    # memoria ni "arreglados": el emparejamiento es por nombre, y si no
+    # coinciden la ficha sale vacía. Por eso dice "Gimnàstic" con à catalana,
+    # "Cacereño" con ñ y "Athletic Bilbao B" y no "Bilbao Athletic".
+    #
+    # Las cinco filiales (Athletic Bilbao B, Deportivo Fabril, Atlético
+    # Madrileño, Real Madrid Castilla, Villarreal B) se quedan. Son equipos
+    # reales de la competición, juegan y la gente los busca.
+    "arenas-club": {"name": "Arenas Club", "league": "Primera Federación G1"},
+    "athletic-bilbao-b": {"name": "Athletic Bilbao B", "league": "Primera Federación G1"},
+    "barakaldo": {"name": "Barakaldo", "league": "Primera Federación G1"},
+    "cd-coria": {"name": "CD Coria", "league": "Primera Federación G1"},
+    "cacereno": {"name": "Cacereño", "league": "Primera Federación G1"},
+    "cultural-leonesa": {"name": "Cultural Leonesa", "league": "Primera Federación G1"},
+    "deportivo-fabril": {"name": "Deportivo Fabril", "league": "Primera Federación G1"},
+    "extremadura": {"name": "Extremadura", "league": "Primera Federación G1"},
+    "lugo": {"name": "Lugo", "league": "Primera Federación G1"},
+    "mirandes": {"name": "Mirandés", "league": "Primera Federación G1"},
+    "merida": {"name": "Mérida", "league": "Primera Federación G1"},
+    "ponferradina": {"name": "Ponferradina", "league": "Primera Federación G1"},
+    "pontevedra": {"name": "Pontevedra", "league": "Primera Federación G1"},
+    "racing-club-de-ferrol": {"name": "Racing Club de Ferrol", "league": "Primera Federación G1"},
+    "real-aviles-industrial": {"name": "Real Avilés Industrial", "league": "Primera Federación G1"},
+    "real-union": {"name": "Real Unión", "league": "Primera Federación G1"},
+    "ud-logrones": {"name": "UD Logroñés", "league": "Primera Federación G1"},
+    "ud-ourense": {"name": "UD Ourense", "league": "Primera Federación G1"},
+    "unionistas-de-salamanca": {"name": "Unionistas de Salamanca", "league": "Primera Federación G1"},
+    "zamora": {"name": "Zamora", "league": "Primera Federación G1"},
+    "alcorcon": {"name": "Alcorcón", "league": "Primera Federación G2"},
+    "algeciras": {"name": "Algeciras", "league": "Primera Federación G2"},
+    "antequera": {"name": "Antequera", "league": "Primera Federación G2"},
+    "atletico-madrileno": {"name": "Atlético Madrileño", "league": "Primera Federación G2"},
+    "ce-europa": {"name": "CE Europa", "league": "Primera Federación G2"},
+    "cartagena": {"name": "Cartagena", "league": "Primera Federación G2"},
+    "gimnastic": {"name": "Gimnàstic", "league": "Primera Federación G2"},
+    "huesca": {"name": "Huesca", "league": "Primera Federación G2"},
+    "hercules": {"name": "Hércules", "league": "Primera Federación G2"},
+    "ibiza": {"name": "Ibiza", "league": "Primera Federación G2"},
+    "juventud-torremolinos": {"name": "Juventud Torremolinos", "league": "Primera Federación G2"},
+    "rayo-majadahonda": {"name": "Rayo Majadahonda", "league": "Primera Federación G2"},
+    "real-jaen": {"name": "Real Jaén", "league": "Primera Federación G2"},
+    "real-madrid-castilla": {"name": "Real Madrid Castilla", "league": "Primera Federación G2"},
+    "real-murcia": {"name": "Real Murcia", "league": "Primera Federación G2"},
+    "real-zaragoza": {"name": "Real Zaragoza", "league": "Primera Federación G2"},
+    "sant-andreu": {"name": "Sant Andreu", "league": "Primera Federación G2"},
+    "teruel": {"name": "Teruel", "league": "Primera Federación G2"},
+    "villarreal-b": {"name": "Villarreal B", "league": "Primera Federación G2"},
+    "aguilas": {"name": "Águilas", "league": "Primera Federación G2"},
     # Liga Endesa (ACB) — basquet de España.
     #
     # La liga llevaba meses configurada y la página /liga/liga-endesa servía
@@ -1896,6 +1979,17 @@ TEAM_ALIASES = {
     "leb oro": "primera-feb",
     "segunda feb": "segunda-feb",
     "leb plata": "segunda-feb",
+    # Primera Federación. Los dos primeros alias mandan al Grupo 1 a secas
+    # porque hay que elegir uno y no hay forma de saber cuál quiere quien
+    # escribe "primera federacion" sin nombrar equipo. Quien busca un club
+    # concreto llega por el nombre del club, que sí es inequívoco.
+    "primera federacion": "primera-federacion-g1",
+    "primera rfef": "primera-federacion-g1",
+    "1a federacion": "primera-federacion-g1",
+    "primera federacion grupo 1": "primera-federacion-g1",
+    "primera federacion grupo 2": "primera-federacion-g2",
+    "primera rfef grupo 1": "primera-federacion-g1",
+    "primera rfef grupo 2": "primera-federacion-g2",
     # LVBP
     "magallanes": "navegantes del magallanes",
     "navegantes": "navegantes del magallanes",

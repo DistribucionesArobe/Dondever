@@ -7423,6 +7423,11 @@ _PAIS_DE_LIGA = {
     # Ojo a la diferencia con La Liga: esa sí está en _MERCADOS_FICHA con los
     # once países, y _MERCADOS_FICHA tiene prioridad sobre este diccionario.
     "LaLiga Hypermotion": "espana",
+    # Primera Federación, por el mismo motivo y con más razón todavía: si la
+    # Segunda no le interesa a nadie en Panamá, el Barakaldo menos. Dos
+    # grupos × 20 equipos × 2 países = 80 páginas, en vez de 440.
+    "Primera Federación G1": "espana",
+    "Primera Federación G2": "espana",
 }
 # Donde vive la gente que busca su liga desde fuera.
 _DIASPORA = ("espana", "estados-unidos")
@@ -10930,6 +10935,51 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
              "sports": "3 partidos por jornada"},
             {"name": "Canal Sur, TV Canaria, TV3, TVG", "type": "TV Abierta (gratis)",
              "sports": "Cada autonómica, los partidos del equipo de su comunidad"},
+        ],
+    },
+    # Primera Federación, los dos grupos. Verificado el 11/11/2026.
+    #
+    # DAZN sale de fuente primaria: su sala de prensa, 3 de julio de 2026.
+    # Dice "diez partidos en directo por jornada", y así está escrito. Son
+    # veinte partidos por jornada entre los dos grupos, o sea que la mitad
+    # NO se emite en DAZN: por eso el alcance va escrito y no un "DAZN" a
+    # secas, que prometería un partido que puede no existir. Misma lección
+    # que la Eredivisie de aquí abajo.
+    #
+    # Las autonómicas son lo que más le importa al lector local y son
+    # GRATIS, que es justo lo que busca la gente. Pero cada una emite sólo
+    # al equipo de su comunidad, y eso va dicho. Las cuatro que NO la
+    # emiten esta temporada (Telemadrid, Canal Sur, Canal Extremadura y
+    # EITB) no se nombran: decir que una cadena no la da no ayuda a nadie a
+    # ver el partido, y si cambian a mitad de temporada se queda mintiendo.
+    #
+    # Fuente de las autonómicas y de Movistar: prensa especializada (roams,
+    # adslzone), no primaria. Concuerdan entre sí. Si algún día alguien
+    # revisa esto, el sitio a mirar es rfef.es.
+    "Primera Federación G1": {
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "10 partidos por jornada entre los dos grupos, "
+                       "más todo el playoff de ascenso"},
+            {"name": "Movistar Plus+", "type": "Cable/Streaming",
+             "sports": "Los 10 partidos de cada jornada y canal propio de la competición"},
+            {"name": "TVG, Esport3, La 7, Aragón TV, Betevé", "type": "TV Abierta (gratis)",
+             "sports": "Cada autonómica, sólo el partido del equipo de su comunidad"},
+            {"name": "FC Play", "type": "Streaming",
+             "sports": "La temporada completa, 69,99 € con playoffs"},
+        ],
+    },
+    "Primera Federación G2": {
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "10 partidos por jornada entre los dos grupos, "
+                       "más todo el playoff de ascenso"},
+            {"name": "Movistar Plus+", "type": "Cable/Streaming",
+             "sports": "Los 10 partidos de cada jornada y canal propio de la competición"},
+            {"name": "TVG, Esport3, La 7, Aragón TV, Betevé", "type": "TV Abierta (gratis)",
+             "sports": "Cada autonómica, sólo el partido del equipo de su comunidad"},
+            {"name": "FC Play", "type": "Streaming",
+             "sports": "La temporada completa, 69,99 € con playoffs"},
         ],
     },
     "Eredivisie": {
