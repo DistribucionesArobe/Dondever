@@ -1295,9 +1295,13 @@
         Lección del 05/11, que se tomó con un solo día de datos y por eso
         quedó sin demostrar.
 
-        {% if upcoming_games or recent_results or clasicos_equipo or (stats and stats.all_stats) %}
-        {{ '{{' }} ad('bottom') {{ '}}' }}
-        {% endif %}
+        PARA REPONERLO, copia estas tres líneas fuera del comentario tal cual
+        —sin el escape que tenían antes aquí, que habría pintado el texto
+        "ad('bottom')" en la página en vez del anuncio—:
+
+            {% if upcoming_games or recent_results or clasicos_equipo or (stats and stats.all_stats) %}
+            {{ ad('bottom') }}
+            {% endif %}
     -#}
 
     {# ══ TABLA DE POSICIONES ══ #}
