@@ -373,7 +373,32 @@ DEFAULT_LEAGUE_CHANNELS = {
     #   habitualmente por" es cierta para los tres.
     #
     # DAZN va primero porque es la única que lleva los ocho.
-    "liga-f": ["DAZN España", "RTVE", "TV3"],
+    #
+    # ══ CORREGIDO EL MISMO DÍA, Y LA CORRECCIÓN ES LA PARTE ÚTIL ══
+    #
+    # Primero puse aquí ["DAZN España", "RTVE", "TV3"] con el argumento de
+    # que en la Liga F las abiertas eligen de toda la liga y cualquier equipo
+    # puede caer en abierto. Eso es cierto COMO POSIBILIDAD y falso COMO
+    # DATO DE PARTIDO, que es como se acaba publicando.
+    #
+    # El motivo: TheSportsDB no trae strTVStation en ninguno de los 240
+    # partidos de esta liga (comprobado el 11/11). Con el campo vacío, la
+    # línea `"channels": chs or list(_default_chs)` de más abajo le cuelga
+    # ESTA LISTA ENTERA a CADA partido. O sea, el sitio diría que los ocho
+    # partidos de la jornada están en RTVE y TV3 cuando sólo lo están cuatro.
+    #
+    # Y no todas las mentiras cuestan igual. Nombrar una plataforma de pago
+    # que no lleva ese partido es una molestia; nombrar un canal GRATIS que
+    # no lo lleva hace que alguien encienda La 1 y se pierda el partido. Esa
+    # es la que no se puede permitir.
+    #
+    # Así que aquí queda sólo DAZN, que sí lleva los ocho y por tanto es
+    # cierto partido a partido. Lo del abierto no se pierde: vive en
+    # LEAGUE_CHANNELS_BY_COUNTRY (server.py), donde cada canal lleva su
+    # alcance escrito al lado —"parte de los 4 partidos en abierto de cada
+    # jornada"— y se lee como lo que es, una guía de la liga y no una
+    # promesa sobre el partido de esta noche.
+    "liga-f": ["DAZN España"],
     "serie-a": ["ESPN MX", "Disney+"],
     "bundesliga": ["Fox Sports MX"],
     "ligue-1": ["Fox Sports MX"],
