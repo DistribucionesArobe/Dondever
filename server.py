@@ -1653,11 +1653,30 @@ _MERCADOS_LIGA = {
     # Argentina y Panamá.
     "wnba": "México, Estados Unidos y Latinoamérica",
     "copa-del-rey": "España, México y Latinoamérica",
-    # Las tres de nicho español: fuera de España casi no se siguen, así que no
-    # se les promete un mercado que no tienen.
+    # Las de nicho español: fuera de España casi no se siguen, así que no se
+    # les promete un mercado que no tienen.
     "primera-feb": "España",
     "segunda-feb": "España",
     "liga-femenina": "España",
+    "primera-federacion-g1": "España",
+    "primera-federacion-g2": "España",
+    # SEGUNDA: ESTABA SIN PONER Y LLEVABA ASÍ DESDE EL 04/11.
+    #
+    # Lo vi mirando /liga/primera-federacion-g1 en producción el 13/11: la
+    # página decía "Todos los juegos de Primera Federación G1 con horarios,
+    # canales de TV y opciones de streaming para México, Estados Unidos y
+    # Latinoamérica". A un español le estábamos diciendo que su liga es para
+    # México.
+    #
+    # Al venir a arreglarlo me encontré con que "segunda" tampoco estaba y
+    # llevaba nueve días cayendo al valor por defecto. Se coló porque
+    # "segunda-feb" SÍ está —es la de básquet— y al leer la lista el ojo da
+    # la entrada por puesta. Dos ligas distintas con nombres casi iguales.
+    #
+    # Esto no se detecta con tests: la página renderiza perfecta, con un
+    # texto que es correcto en castellano y falso en los hechos. Sólo se ve
+    # entrando a mirarla.
+    "segunda": "España, México y Latinoamérica",
     # Europa, pan-regional: España primero porque es el único mercado nuestro
     # donde estas competiciones son el deporte local.
     "champions": "España, México, Estados Unidos y Latinoamérica",
