@@ -823,6 +823,28 @@ LEAGUES = {
     # redes, ni estadio fuera del que trae el partido.
     "primera-federacion-g1": ("soccer", "sportsdb:5086", "Primera Federación G1", "\u26bd"),
     "primera-federacion-g2": ("soccer", "sportsdb:5088", "Primera Federación G2", "\u26bd"),
+    # Liga F — primera division del futbol femenino espanol (13/11/2026).
+    #
+    # VERIFICADO ANTES DE ANADIRLA:
+    #   · TheSportsDB id 5106, temporada 2026-2027: 240 partidos del
+    #     29/08/2026 al 23/05/2027. Conteo completo, no truncado.
+    #   · Los 16 equipos no chocan con ningun slug de los que ya hay: todos
+    #     llevan sufijo (Femenino, Femeni, Women, Gloriosas, CFF).
+    #     Comprobado contra La Liga, Hypermotion y Liga Endesa, que es donde
+    #     estan los homonimos masculinos.
+    #
+    # DERECHOS DE TV 2026/27, y aqui hay que ser honesto con la fuente:
+    #   DAZN lleva los 8 partidos de cada jornada; RTVE y TV3/3Cat emiten
+    #   CUATRO por jornada EN ABIERTO, repartidos entre las dos. Contrato
+    #   hasta 2028/29.
+    #   Sale de prensa de agosto de 2026 (Sportcal, Advanced Television,
+    #   iusport, lasfutbolistas), que coinciden entre si. NO se llego a la
+    #   fuente primaria. Si alguien lo revisa, el sitio es ligaf.es.
+    #
+    # Lo del abierto es lo que mas nos importa: cuatro partidos gratis por
+    # jornada en RTVE y TV3 es justo la respuesta que busca quien escribe
+    # "donde ver" sin querer pagar.
+    "liga-f":        ("soccer", "sportsdb:5106", "Liga F",           "⚽"),
     "serie-a":       ("soccer", "ita.1",         "Serie A",          "\u26bd"),
     "bundesliga":    ("soccer", "ger.1",         "Bundesliga",       "\u26bd"),
     "ligue-1":       ("soccer", "fra.1",         "Ligue 1",         "\u26bd"),
@@ -1310,6 +1332,43 @@ POPULAR_TEAMS = {
     # Los nombres están copiados EXACTAMENTE como los devuelve nuestro propio
     # pipeline en /liga/liga-endesa (TheSportsDB 4408), no escritos de memoria:
     # si no coinciden, el emparejamiento por nombre falla y la ficha sale vacía.
+    # Liga F — los 16 equipos (13/11/2026).
+    #
+    # DOS CAMPOS DISTINTOS Y NO SON LO MISMO:
+    #   "name"       es lo que devuelve TheSportsDB. Va copiado EXACTO,
+    #                aunque suene raro, porque el emparejamiento de partidos
+    #                es por nombre y si no coincide la ficha sale vacia.
+    #   "nombre_seo" es lo que lee la persona. Existe para esto justamente,
+    #                igual que con el Deportivo de La Coruna.
+    #
+    # TheSportsDB mezcla tres idiomas en la misma liga: "Women" en unos,
+    # "Femenino" en otros, "Femeni" en los catalanes. Escribir "Athletic Club
+    # Women" en un sitio en castellano queda mal, asi que esos cuatro llevan
+    # nombre_seo. Los demas ya vienen bien y se dejan como estan: "Barcelona
+    # Femeni" y "Espanyol Femeni" son sus nombres reales en catalan, y
+    # "Alaves Gloriosas", "Madrid CFF" y "Logrono United" tambien son los
+    # suyos; no se "traducen" porque no son traducciones, son nombres.
+    "alaves-gloriosas": {"name": "Alavés Gloriosas", "league": "Liga F"},
+    "athletic-club-women": {"name": "Athletic Club Women",
+                            "nombre_seo": "Athletic Club Femenino", "league": "Liga F"},
+    "atletico-madrid-femenino": {"name": "Atlético Madrid Femenino", "league": "Liga F"},
+    "badalona-women": {"name": "Badalona Women", "league": "Liga F"},
+    "barcelona-femeni": {"name": "Barcelona Femení", "league": "Liga F"},
+    "deportivo-de-la-coruna-women": {"name": "Deportivo de La Coruña Women",
+                                     "nombre_seo": "Deportivo de La Coruña Femenino",
+                                     "league": "Liga F"},
+    "eibar-women": {"name": "Eibar Women",
+                    "nombre_seo": "Eibar Femenino", "league": "Liga F"},
+    "espanyol-femeni": {"name": "Espanyol Femení", "league": "Liga F"},
+    "granada-femenino": {"name": "Granada Femenino", "league": "Liga F"},
+    "logrono-united": {"name": "Logroño United", "league": "Liga F"},
+    "madrid-cff": {"name": "Madrid CFF", "league": "Liga F"},
+    "real-madrid-femenino": {"name": "Real Madrid Femenino", "league": "Liga F"},
+    "real-sociedad-femenino": {"name": "Real Sociedad Femenino", "league": "Liga F"},
+    "sevilla-women": {"name": "Sevilla Women",
+                      "nombre_seo": "Sevilla Femenino", "league": "Liga F"},
+    "tenerife-femenino": {"name": "Tenerife Femenino", "league": "Liga F"},
+    "valencia-femenino": {"name": "Valencia Femenino", "league": "Liga F"},
     "real-madrid-baloncesto": {"name": "Real Madrid Baloncesto", "league": "Liga Endesa"},
     "barcelona-basquet": {"name": "FC Barcelona Basquet", "league": "Liga Endesa"},
     "baskonia": {"name": "Baskonia", "league": "Liga Endesa"},
@@ -1990,6 +2049,15 @@ TEAM_ALIASES = {
     "primera federacion grupo 2": "primera-federacion-g2",
     "primera rfef grupo 1": "primera-federacion-g1",
     "primera rfef grupo 2": "primera-federacion-g2",
+    # Liga F. "Liga Iberdrola" y "Primera Iberdrola" eran los nombres
+    # anteriores y la gente mayor de treinta todavia los escribe; "Liga F" es
+    # el actual. Se cubren los dos porque buscar no es saber el nombre bueno.
+    "liga f": "liga-f",
+    "liga iberdrola": "liga-f",
+    "primera iberdrola": "liga-f",
+    "primera division femenina": "liga-f",
+    "futbol femenino espana": "liga-f",
+    "liga femenina de futbol": "liga-f",
     # LVBP
     "magallanes": "navegantes del magallanes",
     "navegantes": "navegantes del magallanes",

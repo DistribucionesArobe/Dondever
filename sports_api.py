@@ -360,6 +360,20 @@ DEFAULT_LEAGUE_CHANNELS = {
     # vieja, está caducada.
     "primera-federacion-g1": ["DAZN España", "Movistar Plus+", "FC Play"],
     "primera-federacion-g2": ["DAZN España", "Movistar Plus+", "FC Play"],
+    # Liga F (13/11/2026). Aquí SÍ van las abiertas, al revés que en Primera
+    # Federación, y la diferencia importa:
+    #
+    #   En 1ª Federación cada autonómica emite sólo a SU equipo, así que
+    #   decir "se transmite habitualmente por TVG" sería falso para quince
+    #   de los veinte clubes. Por eso allí quedaron fuera de esta lista.
+    #
+    #   En la Liga F no es así: RTVE y TV3 emiten CUATRO partidos de cada
+    #   jornada, elegidos de toda la liga, no de un territorio. Cualquier
+    #   equipo puede caer en abierto cualquier semana. La frase "se transmite
+    #   habitualmente por" es cierta para los tres.
+    #
+    # DAZN va primero porque es la única que lleva los ocho.
+    "liga-f": ["DAZN España", "RTVE", "TV3"],
     "serie-a": ["ESPN MX", "Disney+"],
     "bundesliga": ["Fox Sports MX"],
     "ligue-1": ["Fox Sports MX"],

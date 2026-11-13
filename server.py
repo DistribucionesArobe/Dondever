@@ -1660,6 +1660,7 @@ _MERCADOS_LIGA = {
     "liga-femenina": "España",
     "primera-federacion-g1": "España",
     "primera-federacion-g2": "España",
+    "liga-f": "España",
     # SEGUNDA: ESTABA SIN PONER Y LLEVABA ASÍ DESDE EL 04/11.
     #
     # Lo vi mirando /liga/primera-federacion-g1 en producción el 13/11: la
@@ -7447,6 +7448,8 @@ _PAIS_DE_LIGA = {
     # grupos × 20 equipos × 2 países = 80 páginas, en vez de 440.
     "Primera Federación G1": "espana",
     "Primera Federación G2": "espana",
+    # Liga F: 16 equipos x 2 países = 32 páginas, en vez de 176.
+    "Liga F": "espana",
 }
 # Donde vive la gente que busca su liga desde fuera.
 _DIASPORA = ("espana", "estados-unidos")
@@ -9298,7 +9301,8 @@ _DEPORTE_POR_LIGA = {
                "Bundesliga", "Ligue 1", "Eredivisie", "Liga Portugal", "MLS",
                "Liga Argentina", "Liga BetPlay", "Primera Chile", "LigaPro Ecuador",
                "Liga 1 Perú", "Liga FUTVE",
-               "LaLiga Hypermotion", "Primera Federación G1", "Primera Federación G2"),
+               "LaLiga Hypermotion", "Primera Federación G1", "Primera Federación G2",
+               "Liga F"),
     "beisbol": ("MLB", "LMB", "LMP", "LVBP", "LIDOM"),
     "basketball": ("NBA", "WNBA", "LNBP", "Liga Endesa"),
     "futbol americano": ("NFL",),
@@ -11014,6 +11018,30 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
              "sports": "Cada autonómica, sólo el partido del equipo de su comunidad"},
             {"name": "FC Play", "type": "Streaming",
              "sports": "La temporada completa, 69,99 € con playoffs"},
+        ],
+    },
+    # Liga F, 13/11/2026. Fuente: prensa de agosto de 2026 (Sportcal,
+    # Advanced Television, iusport, lasfutbolistas), coincidentes entre sí.
+    # No se llegó a la fuente primaria; si alguien revisa esto, ligaf.es.
+    #
+    # El alcance va escrito en cada línea, como siempre, pero aquí el reparto
+    # es más limpio que en otras ligas: DAZN lleva los OCHO partidos de cada
+    # jornada —no una selección—, así que para DAZN sí se puede decir "todos"
+    # sin matizar. RTVE y TV3 se reparten cuatro, elegidos de toda la liga.
+    #
+    # Lo de en abierto va primero en la frase de cada una porque es lo que
+    # busca la gente. Seis de cada diez consultas de LVBP llevan "gratis"; no
+    # hay motivo para pensar que aquí sea distinto.
+    "Liga F": {
+        "espana": [
+            {"name": "DAZN", "type": "Streaming",
+             "sports": "Los 8 partidos de cada jornada"},
+            {"name": "RTVE (La 1 / Teledeporte)", "type": "TV Abierta (gratis)",
+             "sports": "Parte de los 4 partidos en abierto de cada jornada, "
+                       "que reparte con TV3"},
+            {"name": "TV3 / 3Cat", "type": "TV Abierta (gratis)",
+             "sports": "Parte de los 4 partidos en abierto de cada jornada, "
+                       "que reparte con RTVE"},
         ],
     },
     "Eredivisie": {
