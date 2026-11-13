@@ -9280,10 +9280,25 @@ _TEAM_SEO_EXTRA = {
 # Etiqueta de deporte por liga. 'sport' lo consumen _build_team_faq, is_nfl y
 # las ramas de NFL_TEAM_EXTRA, que comparan contra estas cadenas en español.
 _DEPORTE_POR_LIGA = {
+    # Las tres españolas se añadieron el 13/11 porque faltaban: la Segunda
+    # desde el 04/11 y los dos grupos de Primera Federación desde el 12/11.
+    #
+    # No lo encontró un test: lo gritó el propio servidor al arrancar. La
+    # guarda de abajo ya avisaba —"Ligas sin deporte en _DEPORTE_POR_LIGA
+    # (sus equipos no saldrán en related_teams ni en el FAQ)"— y el WARNING
+    # salía en cada arranque sin que nadie lo leyera. Alguien la escribió
+    # bien en su día; lo que faltó fue mirar la salida.
+    #
+    # Lo que se perdía mientras tanto: los 22 equipos de la Segunda y los 40
+    # de Primera Federación no aparecían en "Otros equipos de la liga" ni en
+    # el FAQ de sus fichas. O sea, justo los enlaces internos que hacen que
+    # una ficha no nazca huérfana, que es el problema que se arregló en la
+    # tarea #402 para /partido/.
     "futbol": ("Liga MX", "Liga MX Femenil", "Premier League", "La Liga", "Serie A",
                "Bundesliga", "Ligue 1", "Eredivisie", "Liga Portugal", "MLS",
                "Liga Argentina", "Liga BetPlay", "Primera Chile", "LigaPro Ecuador",
-               "Liga 1 Perú", "Liga FUTVE"),
+               "Liga 1 Perú", "Liga FUTVE",
+               "LaLiga Hypermotion", "Primera Federación G1", "Primera Federación G2"),
     "beisbol": ("MLB", "LMB", "LMP", "LVBP", "LIDOM"),
     "basketball": ("NBA", "WNBA", "LNBP", "Liga Endesa"),
     "futbol americano": ("NFL",),
