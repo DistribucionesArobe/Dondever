@@ -179,11 +179,12 @@ body.dark .tira-vivo-titulo{color:#94a3b8;}
             try {
                 var dt = new Date(utc.replace('Z', '+00:00'));
                 if (isNaN(dt.getTime())) continue;
-                els[i].textContent = dt.toLocaleTimeString('es-MX', {
-                    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz
-                }).replace(/\s?(a|p)\.?\s?m\.?/i, function (m) {
-                    return ' ' + m.trim().toUpperCase().replace(/\./g, '');
-                });
+                // El formato tambien sale de timezone.js (window.__DV_HORA_LOCAL):
+                // en Espana la hora va en 24 h y si la regla se copiara aqui,
+                // la tira diria "6:45 PM" y el bloque de arriba "18:45".
+                if (typeof window.__DV_HORA_LOCAL === 'function') {
+                    els[i].textContent = window.__DV_HORA_LOCAL(dt, tz, window.__DV_COUNTRY);
+                }
             } catch (e) { /* se queda la hora de Mexico, que es mejor que nada */ }
         }
     }

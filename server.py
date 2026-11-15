@@ -910,7 +910,14 @@ def format_mx_day_time(iso_date: str, tz=None) -> str:
         _tz = tz or TZ_MX
         dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
         mx = dt.astimezone(_tz)
-        hora = mx.strftime('%I:%M %p').lstrip('0')
+        # España escribe la hora en 24 h. Con la zona corregida pero el formato
+        # americano, el título de un partido de Primera Federación decía
+        # "sábado 14 6:45 PM" para un partido de las 18:45: la hora ya era la
+        # buena, pero escrita como no la escribe nadie en Valencia ni en
+        # Zaragoza. La convención es de la ZONA, no de quien llama, así que se
+        # decide aquí y no puede divergir entre el título y la plantilla.
+        _h24 = getattr(_tz, "key", "") == "Europe/Madrid"
+        hora = mx.strftime('%H:%M') if _h24 else mx.strftime('%I:%M %p').lstrip('0')
         hoy = datetime.now(_tz).date()
         dias = (mx.date() - hoy).days
         mes = "" if -1 <= dias <= 6 else f" {_MONTHS_ES_SHORT[mx.month - 1]}"
@@ -9392,6 +9399,37 @@ _CORTO_VE = {
 }
 
 
+# Ligas cuyo público está SOLO en España. Entran aquí por el mismo criterio
+# que ya usa _PAIS_DE_LIGA: competiciones domésticas cuyos clubes no busca
+# nadie fuera. No entra La Liga —esa sí se sigue en los once países y ponerle
+# hora de Madrid por defecto sería el error simétrico—, ni la Liga Endesa, que
+# tiene mercados declarados en México, EE.UU. y Argentina.
+#
+# ENCONTRADO EL 14/11/2026. La tercera página más vista del sitio ese día fue
+#
+#   "Dónde ver Juventud Torremolinos vs Huesca: sábado 14 11:45 AM MX y canal"
+#
+# 43 vistas, 35 usuarios, ciudades: Valencia 31, Zaragoza 24, Madrid 18,
+# Barcelona 16, Salamanca 16. El partido se jugó a las 18:45 en España. Ese
+# título es lo que indexa Google y lo que lee un aragonés buscando a qué hora
+# juega el Huesca, y le daba una hora que no existe en su reloj. El cuerpo sí
+# convertía por JavaScript; el <title> se genera en el servidor y se quedaba
+# en hora de México.
+#
+# Ese día España hizo el 53 % de los clics de anuncio del sitio con el 27 %
+# de las vistas. Es el mercado donde el título importa más, no menos.
+_LIGAS_SOLO_ESPANA = (
+    "LaLiga Hypermotion",
+    "Primera Federación G1",
+    "Primera Federación G2",
+    "Liga F",
+    # La copa doméstica, por el mismo motivo por el que ya está en
+    # _MERCADO_PAGINA_LIGA: en las primeras rondas juegan Portugalete,
+    # Amorebieta, CD Minera.
+    "Copa del Rey",
+)
+
+
 def _tz_de_liga(liga: str):
     """(zona, sigla, frase) para una liga. México salvo donde el público no está ahí.
 
@@ -9405,6 +9443,8 @@ def _tz_de_liga(liga: str):
     from zoneinfo import ZoneInfo as _ZI
     if liga in ("LVBP", "Liga FUTVE"):
         return _ZI("America/Caracas"), "VE", "hora de Venezuela"
+    if liga in _LIGAS_SOLO_ESPANA:
+        return _ZI("Europe/Madrid"), "ES", "hora peninsular española"
     return TZ_MX, "MX", "hora de México"
 
 
@@ -11628,6 +11668,12 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     def format_local_time(iso_date: str) -> str:
         try:
             dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00")).astimezone(tz_local)
+            # 24 h en España, igual que en format_mx_day_time y en timezone.js:
+            # /equipo/real-madrid/en/espana decía "6:45 PM" para un partido de
+            # las 18:45. La hora era correcta y estaba escrita como no la
+            # escribe nadie allí. Son las páginas con mejor CTR del sitio.
+            if tz_name == "Europe/Madrid":
+                return dt.strftime("%H:%M")
             return dt.strftime("%I:%M %p").lstrip("0")
         except Exception:
             return ""

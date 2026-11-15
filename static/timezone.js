@@ -93,6 +93,32 @@
     try { localStorage.setItem('dv_country', code); } catch(e) {}
   }
 
+  // Países que escriben la hora en 24 h. En España "6:45 PM" no se escribe
+  // así: se escribe 18:45. Con el huso corregido pero el formato americano la
+  // hora era la buena y la lectura seguía siendo ajena.
+  //
+  // Esto tiene que coincidir con el servidor (format_mx_day_time usa 24 h
+  // cuando la zona es Europe/Madrid). Si no coinciden, el <title> dice 18:45
+  // y el cuerpo dice 6:45 PM en la misma pantalla: es el fallo que ya se vio
+  // en la ficha de Magallanes, con la hora bien y escrita de dos maneras.
+  var RELOJ_24H = { 'ES': true };
+
+  function horaLocal(d, tz, countryCode) {
+    if (RELOJ_24H[countryCode]) {
+      return d.toLocaleTimeString('es-ES', {
+        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz
+      });
+    }
+    return d.toLocaleTimeString('es-MX', {
+      hour: 'numeric', minute: '2-digit', hour12: true, timeZone: tz
+    }).replace(/\s?(a|p)\.?\s?m\.?/i, function(m) {
+      return ' ' + m.trim().toUpperCase().replace(/\./g, '');
+    });
+  }
+  // Para los bloques que se pintan después de cargar (ver _tira_vivo.html):
+  // reusan el resultado en vez de duplicar la regla.
+  window.__DV_HORA_LOCAL = horaLocal;
+
   // ── Convert times ──────────────────────────────────────
   function convertTimes(countryCode) {
     var tz = COUNTRY_TZ[countryCode];
@@ -110,14 +136,7 @@
         try {
           var d = new Date(utc.replace('Z', '+00:00'));
           if (isNaN(d.getTime())) return;
-          var local = d.toLocaleTimeString('es-MX', {
-            hour: 'numeric', minute: '2-digit', hour12: true,
-            timeZone: tz
-          });
-          local = local.replace(/\s?(a|p)\.?\s?m\.?/i, function(m) {
-            return ' ' + m.trim().toUpperCase().replace(/\./g, '');
-          });
-          el.textContent = local;
+          el.textContent = horaLocal(d, tz, countryCode);
         } catch(e) {}
       });
     }
