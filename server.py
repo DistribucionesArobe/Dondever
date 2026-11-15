@@ -1245,6 +1245,63 @@ async def pwa_service_worker():
     )
 
 
+def _peso_liga(item):
+    """Orden de las ligas en la portada. Clave de sorted(), ascendente.
+
+    Las ligas salían en el orden en que ESPN devolvía los partidos, y la
+    plantilla sólo deja visibles las cinco primeras (MAX_VISIBLE_LEAGUES); el
+    resto va detrás de "Mostrar más ligas".
+
+    Medido en la portada el 16/10/2026: las cinco visibles eran Eredivisie,
+    Liga 1 Perú, Bundesliga, Serie A y Ligue 1 — ligas europeas cuyos partidos
+    ya habían acabado, o sea cinco cabeceras con un "Resultados" plegado y
+    nada más. Los 16 partidos por jugar (NBA 9, americano universitario 3,
+    NHL 2, MLB 1, Liga Argentina 1) estaban TODOS colapsados. Una portada que
+    se llama "dónde ver" enseñaba un partido.
+
+    Se ordena en Python y no en JavaScript para que el HTML salga bien de una
+    vez — también para Googlebot, que no espera a que corra el script.
+
+    ══ SEGUNDA CORRECCIÓN, 15/11/2026, VISTA EN LA PORTADA ══
+
+    El arreglo anterior cambió "el orden de ESPN" por "más partidos por jugar
+    primero". Fue mejor, pero el número de partidos no mide interés: mide
+    cuántas eliminatorias ha metido una federación hoy.
+
+    Lo que se veía ese domingo por la mañana:
+
+        Coupe de France · 33 partidos · Chatou vs Les Ulis, Massay vs
+        Montlouis, Rochefort FC vs Juventus Papus… eliminatorias regionales
+        de clubes amateur franceses, ninguna con emisor conocido.
+
+    Y detrás de "Mostrar más ligas", escondidos: los 4 partidos de Primera
+    Federación y los 5 de Liga F. El día antes España hizo el 53 % de los
+    clics de anuncio del sitio con el 27 % de las vistas (CTR 4,53 % contra
+    1,50 % de México). La portada le daba el espacio a los franceses por
+    volumen.
+
+    La regla nueva NO es "España primero" —México sigue siendo el mercado de
+    más vistas y no se le quita nada—. Es más simple y sale del nombre del
+    sitio: una liga en la que NINGÚN partido de hoy tiene emisor conocido no
+    contesta "dónde ver", así que va después de las que sí. Y va DESPUÉS del
+    recuento de partidos en vivo, porque un partido que se está jugando
+    interesa aunque no sepamos el canal.
+
+    Vive aquí, a nivel de módulo, y no dentro de la ruta, para que el test
+    pueda ordenar con ESTA función y no con una copia. La primera versión del
+    test copiaba la lógica, y una copia puede seguir en verde mientras el
+    original cambia.
+    """
+    juegos = item[1]["games"]
+    en_vivo = sum(1 for g in juegos if g["status"]["state"] == "in")
+    por_jugar = sum(1 for g in juegos if g["status"]["state"] == "pre")
+    # ¿Sabemos el canal de ALGÚN partido de hoy de esta liga?
+    sin_canal = 0 if any(g.get("channels") for g in juegos) else 1
+    # El 0/1 manda al final las ligas sin nada por ver. Los negativos ordenan
+    # de más partidos a menos, porque sorted() va ascendente.
+    return (0 if (en_vivo or por_jugar) else 1, -en_vivo, sin_canal, -por_jugar)
+
+
 # ── Web Routes ───────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
@@ -1281,31 +1338,8 @@ async def home(
             }
         sports_grouped[league_name]["games"].append(game)
 
-    # ── Orden de las ligas en la portada ─────────────────
-    #
-    # Las ligas salían en el orden en que ESPN devolvía los partidos, y la
-    # plantilla sólo deja visibles las cinco primeras (MAX_VISIBLE_LEAGUES);
-    # el resto va detrás de "Mostrar más ligas".
-    #
-    # Medido en la portada el 16/10/2026: las cinco visibles eran Eredivisie,
-    # Liga 1 Perú, Bundesliga, Serie A y Ligue 1 — ligas europeas cuyos
-    # partidos ya habían acabado, o sea cinco cabeceras con un "Resultados"
-    # plegado y nada más. Los 16 partidos por jugar (NBA 9, futbol americano
-    # universitario 3, NHL 2, MLB 1, Liga Argentina 1) estaban TODOS
-    # colapsados. Una portada que se llama "dónde ver" enseñaba un partido.
-    #
-    # Ahora manda lo que queda por ver: primero las ligas con partidos en
-    # vivo o por empezar, de más a menos, y al final las que ya terminaron.
-    # Se ordena aquí y no en JavaScript para que el HTML salga bien de una vez
-    # — también para Googlebot, que no espera a que corra el script.
-    def _peso_liga(item):
-        juegos = item[1]["games"]
-        en_vivo = sum(1 for g in juegos if g["status"]["state"] == "in")
-        por_jugar = sum(1 for g in juegos if g["status"]["state"] == "pre")
-        # El 0/1 manda al final las ligas sin nada por ver. Los negativos
-        # ordenan de más partidos a menos, porque sorted() va ascendente.
-        return (0 if (en_vivo or por_jugar) else 1, -en_vivo, -por_jugar)
-
+    # El orden lo decide _peso_liga, definido a nivel de módulo justo encima
+    # de esta ruta (con la nota larga de por qué es así).
     sports_grouped = dict(sorted(sports_grouped.items(), key=_peso_liga))
 
     # ── Fetch odds for homepage games ────────────────────
@@ -9448,12 +9482,49 @@ def _tz_de_liga(liga: str):
     return TZ_MX, "MX", "hora de México"
 
 
+# name de la API → nombre_seo, para MOSTRAR.
+#
+# `nombre_seo` existía en config.py desde el caso del Deportivo de La Coruña,
+# pero se leía en UN SOLO sitio del código (la ficha de equipo). Resultado,
+# visto en producción el 15/11/2026 en /liga/liga-f:
+#
+#   "Real Sociedad Femenino vs Athletic Club Women"
+#
+# Media página en español y media en inglés, en el mercado que ayer hizo el
+# 53 % de los clics de anuncio del sitio. Son 5 equipos con "Women" en el
+# nombre que devuelve la API, y cuatro de ellos YA tenían su nombre_seo
+# escrito y sin usar.
+#
+# Se aplica aquí, en _short_team_name, porque es el embudo por el que pasan
+# los títulos, los H1 y las descripciones de /equipo/ y de /equipo/x/en/pais
+# —lo que indexa Google— y porque su salida no se compara contra nada: los
+# doce sitios que la llaman la usan para construir texto. El `name` original
+# no se toca, que es lo que empareja con la API.
+#
+# Lo que esto NO arregla: las tarjetas de la portada, los listados de /liga/
+# y los bloques de schema.org imprimen `game.home.name` directo, así que ahí
+# sigue saliendo "Athletic Club Women". Eso necesita separar `name` de
+# `name_api` y barrer diez plantillas; va aparte y con su propia revisión.
+_NOMBRE_SEO = {
+    d["name"]: d["nombre_seo"]
+    for d in POPULAR_TEAMS.values()
+    if isinstance(d, dict) and d.get("nombre_seo") and d.get("name")
+}
+
+
 def _short_team_name(full_name: str, league: str = "") -> str:
     """'Los Angeles Dodgers' → 'Dodgers'; 'Boston Red Sox' → 'Red Sox'; 'Tigres UANL' → 'Tigres'.
     Soccer clubs keep their name minus 'Club/FC/CF' noise. That's how people search."""
     if not full_name:
         return ""
     name = full_name.strip()
+    # El nombre que lee la persona, antes de cualquier recorte. Va primero
+    # porque los recortes de abajo están pensados para los nombres de la API
+    # ("Club América" → "América") y un nombre_seo ya viene escrito como se
+    # debe leer: recortarlo después sería deshacerlo.
+    _seo = _NOMBRE_SEO.get(name)
+    if _seo:
+        return _seo
     _ve = _CORTO_VE.get(name)
     if _ve:
         return _ve

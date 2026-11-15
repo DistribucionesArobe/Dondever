@@ -1352,6 +1352,12 @@ POPULAR_TEAMS = {
     "athletic-club-women": {"name": "Athletic Club Women",
                             "nombre_seo": "Athletic Club Femenino", "league": "Liga F"},
     "atletico-madrid-femenino": {"name": "Atlético Madrid Femenino", "league": "Liga F"},
+    # SIN nombre_seo A PROPÓSITO. "Women" aquí no es un fallo de traducción:
+    # es el nombre del club. Lo usa la propia Liga F en sus notas ("FC
+    # Badalona Women secures their second consecutive victory") y lo usa el
+    # Barça en su web EN ESPAÑOL ("Badalona Women - Barça Femení").
+    # Comprobado el 15/11/2026. Traducirlo a "Badalona Femenino" sería
+    # inventarle un nombre que nadie usa ni busca.
     "badalona-women": {"name": "Badalona Women", "league": "Liga F"},
     "barcelona-femeni": {"name": "Barcelona Femení", "league": "Liga F"},
     "deportivo-de-la-coruna-women": {"name": "Deportivo de La Coruña Women",

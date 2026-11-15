@@ -416,7 +416,32 @@ DEFAULT_LEAGUE_CHANNELS = {
     "carabao-cup": ["Fox Sports MX"],
     "dfb-pokal": ["Fox Sports MX"],
     "coppa-italia": ["ESPN MX", "Disney+"],
-    "coupe-de-france": ["Fox Sports MX"],
+    # ══ VACIADA EL 15/11/2026, VISTO EN PRODUCCIÓN ══
+    #
+    # La portada mostraba 33 partidos de Coupe de France, TODOS con
+    # "📺 Fox Sports MX · probable" y todos a las 07:00 AM:
+    #
+    #   Chatou vs Les Ulis · Massay vs Montlouis · Rochefort FC vs Juventus
+    #   Papus · Veauche vs St Paul en Jarez · Violaines vs Vermelles…
+    #
+    # Son eliminatorias regionales de clubes amateur franceses. Ninguna
+    # televisora mexicana las emite, y ESPN no devuelve emisor para ellas, así
+    # que la línea `"channels": chs or list(_default_chs)` le colgaba esta
+    # entrada a los 33. Es el mismo fallo que se corrigió a tiempo en la Liga F
+    # (ver la nota larga de arriba), pero este ya estaba publicado.
+    #
+    # Buscado el 15/11/2026: NO hay fuente que confirme derechos de la Copa de
+    # Francia en México para 2026-27. La única señal es una web de
+    # programación que atribuye 7 emisiones históricas a TVC Deportes —no a
+    # Fox— y que a 23/12/2025 no listaba ningún evento en vivo. Con eso no se
+    # afirma nada: queda vacía y los partidos dicen "Por confirmar", que es la
+    # verdad y es lo que ya hacemos con la NFL en México.
+    #
+    # Si algún día se confirma el emisor de una ronda final, va aquí CON fecha
+    # y fuente, y aun así seguirá siendo falso para las rondas regionales: el
+    # problema de fondo es que una copa de 33 partidos amateur no tiene un
+    # canal por defecto, tenga o no derechos la final.
+    "coupe-de-france": [],
     "us-open-cup": ["ESPN+", "Apple TV+"],
     "copa-argentina": ["ESPN", "TNT Sports"],
     # ── Copas internacionales ──
