@@ -761,9 +761,24 @@ _HTML_CACHE_HUBS = {"/resultados", "/playoffs-mlb", "/gratis-hoy", "/pronosticos
                     "/streaming", "/casinos"}
 
 
+try:
+    import memoria as _memoria
+except Exception:  # pragma: no cover - el vigía nunca debe tumbar el sitio
+    _memoria = None
+
+
 class HTMLCacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         path = request.url.path
+        # El vigía de memoria va aquí, en el middleware que ya pasa por TODAS
+        # las peticiones, para no añadir otra capa. Ver memoria.py: en el caso
+        # normal es leer /proc/self/status y comparar un número; solo escribe
+        # cuando la memoria marca un máximo nuevo de 50 MB en 50 MB.
+        if _memoria is not None:
+            try:
+                _memoria.revisar(path)
+            except Exception:
+                pass
         is_home = path == "/"
         cacheable = (
             request.method == "GET"
@@ -6117,6 +6132,24 @@ async def whatsapp_debug():
     except Exception as e:
         info["subscribers"]["error"] = str(e)
     return info
+
+
+@app.get("/api/internal/memoria")
+async def memoria_diag(token: str = ""):
+    """Memoria del proceso AHORA. Protegido por ADMIN_TOKEN.
+
+    Para no tener que esperar a un pico: devuelve el RSS actual, el máximo que
+    ha visto el vigía y cuántas entradas tiene cada caché. Ver memoria.py para
+    por qué existe esto y qué tres teorías equivocadas lo provocaron.
+
+    Lo que hay que mirar: si el RSS sube entre dos consultas y los números de
+    las cachés NO, el problema no son las cachés.
+    """
+    if not token or token != os.getenv("ADMIN_TOKEN", ""):
+        return JSONResponse(status_code=403, content={"error": "forbidden"})
+    if _memoria is None:
+        return JSONResponse(status_code=503, content={"error": "memoria.py no cargó"})
+    return _memoria.informe()
 
 
 @app.get("/api/internal/events-diag")
