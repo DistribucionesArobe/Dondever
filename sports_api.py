@@ -145,29 +145,38 @@ def _normalize_channel(raw: str) -> str:
 
 
 
-# ══ REDIMENSIONADAS EL 16/11/2026 — LOS NÚMEROS ERAN DE CUANDO HABÍA 47 LIGAS ══
+# ══ 16/11/2026 — EL TAMAÑO ERA DE CUANDO HABÍA 47 LIGAS ══
 #
-# Los dos comentarios de abajo decían "47 ligas" y ya no es verdad: hoy
-# config.LEAGUES tiene 65 y ALL_LEAGUES 70. Con 64 y 96 huecos, un tercio de
-# lo cacheado se desaloja ANTES de caducar, así que se vuelve a pedir a la API
-# en cada visita. _tv_cache es el peor caso porque su clave es liga+fecha y
-# cada petición pide hoy y mañana: 65 x 2 = 130 claves peleando por 96 huecos.
-#
-# Eso es lo que llenó el log de Render de "429 Too Many Requests" de
+# El comentario de _tv_cache decía "~47 ligas" y ya no es verdad: hoy
+# config.LEAGUES tiene 65 y ALL_LEAGUES 70. Su clave es liga+fecha y cada
+# petición pide hoy y mañana, así que son 140 claves peleando por 96 huecos:
+# un tercio se desaloja ANTES de caducar y se vuelve a pedir a la API en cada
+# visita. Eso es lo que llenó el log de Render de "429 Too Many Requests" de
 # TheSportsDB (límite: 100 peticiones por minuto COMPARTIDAS por todo el
-# sitio, ver el docstring de _fetch_sportsdb_season en events_api.py).
+# sitio, ver el docstring de _fetch_sportsdb_season en events_api.py), el día
+# que el servicio se quedó sin memoria y se cayó cuatro veces en una mañana.
 #
-# Subir el tamaño AHORRA memoria en vez de gastarla: lo que se guarda son
-# listas JSON de un día (decenas de KB), mientras que el desalojo constante
-# dispara decenas de peticiones HTTP simultáneas, cada una con su cliente y su
-# buffer de respuesta. El servicio se estaba quedando sin memoria (>2 GB) y
-# cayéndose cuatro veces en una mañana.
+# REGLA PARA LA PRÓXIMA LIGA: este número va atado a len(ALL_LEAGUES) x las
+# fechas que se piden. No es un número mágico. Si se queda corto otra vez, el
+# síntoma es el mismo: 429 en el log y llamadas repetidas.
 #
-# REGLA PARA LA PRÓXIMA LIGA: estos números van atados a len(ALL_LEAGUES). Si
-# vuelven a quedarse cortos, el síntoma es el mismo — 429 en el log y llamadas
-# repetidas. No es un número mágico: es el catálogo x las fechas que se piden.
-_cache = TTLCache(maxsize=160, ttl=300)      # 70 ligas, con margen
-# La clave lleva fecha y cada petición pide hoy + mañana → 70 x 2, con margen.
+# _cache SE QUEDA EN 64 A PROPÓSITO. Lo subí a 160 y lo revertí al revisar:
+# no hay NINGUNA evidencia de que esté desalojando. Los 429 del log son todos
+# de TheSportsDB, no de ESPN, y guarda el scoreboard entero de un día (todos
+# los partidos con competidores, emisoras y momios), que no sé cuánto pesa
+# porque no puedo medirlo sin red. Agrandar a ojo una caché de tamaño
+# desconocido, en un proceso que se está muriendo de memoria, es exactamente
+# el error que acabo de evitar con las cachés de HTML — donde la sospecha
+# también parecía razonable y al medirla resultaron ser 30 MB de 2.048.
+#
+# Su clave es espn:{sport}:{league}:{date} y hay rutas que piden 5 días
+# pasados y varios futuros, así que 64 PUEDE quedarse corto. Pero eso se
+# arregla midiendo el peso de una entrada en producción, no adivinando aquí.
+_cache = TTLCache(maxsize=64, ttl=300)
+# _tv_cache SÍ se sube, y con prueba: los 429 del log son de este endpoint.
+# La clave lleva fecha y cada petición pide hoy + mañana → 70 ligas x 2 = 140
+# claves peleando por 96 huecos. Guarda la lista de eventos de UN día de UNA
+# liga, que es pequeña. 224 deja margen para el próximo puñado de ligas.
 _tv_cache = TTLCache(maxsize=224, ttl=14400)
 # Enfriamiento tras un fallo (429, timeout). 2 min. Ver fetch_sportsdb_schedule.
 _tv_fail_cache = TTLCache(maxsize=224, ttl=120)
@@ -1144,7 +1153,29 @@ async def fetch_sportsdb_schedule(
     cache_key = f"sportsdb:schedule:{sportsdb_league_id}:{date_str}"
     if cache_key in _tv_cache:
         return _tv_cache[cache_key]
-    # ¿Acabamos de fallar con esta misma clave? Ver _tv_fail_cache abajo.
+
+    # ── El cortacircuitos GLOBAL, que esta función no usaba ──────────────
+    #
+    # ENCONTRADO AL REVISAR, Y CORRIGE MI PROPIO ARREGLO. Primero puse aquí
+    # solo un enfriamiento por clave (_tv_fail_cache, abajo). Eso corta que
+    # la MISMA liga y fecha se repita, pero no sirve de nada en la tormenta
+    # real: durante un 429 hay 140 claves distintas (70 ligas x 2 fechas), y
+    # con el enfriamiento por clave la primera pasada dispara las 140 igual.
+    #
+    # _sportsdb_blocked_until ya existía y ya lo usaban fetch_sportsdb_tv_by_day
+    # y fetch_sportsdb_tv_for_event: ante un 429, 30 minutos sin llamar a
+    # NADA de TheSportsDB. Es lo correcto porque la cuota (100 peticiones por
+    # minuto) es compartida por todos los endpoints: si uno la agotó, los
+    # demás también están fuera. Esta función, que es justo la que llenaba el
+    # log de 429, era la única de las tres que no lo miraba.
+    #
+    # Los dos se quedan y hacen cosas distintas: el global para cuando la API
+    # nos echa, el de clave para fallos sueltos (timeout, 5xx de un día
+    # concreto) que no deben parar el sitio entero.
+    import time as _time
+    global _sportsdb_blocked_until
+    if _time.time() < _sportsdb_blocked_until:
+        return _tv_stale.get(cache_key, [])
     if cache_key in _tv_fail_cache:
         return _tv_stale.get(cache_key, [])
 
@@ -1154,6 +1185,11 @@ async def fetch_sportsdb_schedule(
     async with httpx.AsyncClient(timeout=12) as client:
         try:
             resp = await client.get(url, params=params)
+            if resp.status_code == 429:
+                _sportsdb_blocked_until = _time.time() + 1800
+                logger.warning("TheSportsDB rate limited (429) en eventsday — 30 min de pausa")
+                _tv_fail_cache[cache_key] = True
+                return _tv_stale.get(cache_key, [])
             resp.raise_for_status()
             data = resp.json()
             events = data.get("events") or []
