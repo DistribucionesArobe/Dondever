@@ -145,10 +145,36 @@ def _normalize_channel(raw: str) -> str:
 
 
 
-# Cache: 5 min TTL — reduced from 500 to 80 to fit in 512MB Render free tier
-_cache = TTLCache(maxsize=64, ttl=300)  # 47 leagues need 64 slots to avoid eviction
-# TV cache: 4 hour TTL — reduced from 1000 to 100
-_tv_cache = TTLCache(maxsize=96, ttl=14400)  # ~47 ligas x fecha: con 30 slots se desalojaba y repetía llamadas (429 en TheSportsDB)
+# ══ REDIMENSIONADAS EL 16/11/2026 — LOS NÚMEROS ERAN DE CUANDO HABÍA 47 LIGAS ══
+#
+# Los dos comentarios de abajo decían "47 ligas" y ya no es verdad: hoy
+# config.LEAGUES tiene 65 y ALL_LEAGUES 70. Con 64 y 96 huecos, un tercio de
+# lo cacheado se desaloja ANTES de caducar, así que se vuelve a pedir a la API
+# en cada visita. _tv_cache es el peor caso porque su clave es liga+fecha y
+# cada petición pide hoy y mañana: 65 x 2 = 130 claves peleando por 96 huecos.
+#
+# Eso es lo que llenó el log de Render de "429 Too Many Requests" de
+# TheSportsDB (límite: 100 peticiones por minuto COMPARTIDAS por todo el
+# sitio, ver el docstring de _fetch_sportsdb_season en events_api.py).
+#
+# Subir el tamaño AHORRA memoria en vez de gastarla: lo que se guarda son
+# listas JSON de un día (decenas de KB), mientras que el desalojo constante
+# dispara decenas de peticiones HTTP simultáneas, cada una con su cliente y su
+# buffer de respuesta. El servicio se estaba quedando sin memoria (>2 GB) y
+# cayéndose cuatro veces en una mañana.
+#
+# REGLA PARA LA PRÓXIMA LIGA: estos números van atados a len(ALL_LEAGUES). Si
+# vuelven a quedarse cortos, el síntoma es el mismo — 429 en el log y llamadas
+# repetidas. No es un número mágico: es el catálogo x las fechas que se piden.
+_cache = TTLCache(maxsize=160, ttl=300)      # 70 ligas, con margen
+# La clave lleva fecha y cada petición pide hoy + mañana → 70 x 2, con margen.
+_tv_cache = TTLCache(maxsize=224, ttl=14400)
+# Enfriamiento tras un fallo (429, timeout). 2 min. Ver fetch_sportsdb_schedule.
+_tv_fail_cache = TTLCache(maxsize=224, ttl=120)
+# Último resultado BUENO por clave, para no devolver vacío durante un 429.
+# Va acotado a propósito: un dict normal aquí crecería sin techo y acabaría
+# siendo la fuga de memoria que estamos persiguiendo. 6 h cubre una jornada.
+_tv_stale = TTLCache(maxsize=224, ttl=21600)
 # Track when TheSportsDB is rate-limiting us to avoid flooding with 429s
 _sportsdb_blocked_until = 0  # timestamp when we can retry
 # Odds cache: 6h TTL — reduced from 200 to 50
@@ -1118,6 +1144,9 @@ async def fetch_sportsdb_schedule(
     cache_key = f"sportsdb:schedule:{sportsdb_league_id}:{date_str}"
     if cache_key in _tv_cache:
         return _tv_cache[cache_key]
+    # ¿Acabamos de fallar con esta misma clave? Ver _tv_fail_cache abajo.
+    if cache_key in _tv_fail_cache:
+        return _tv_stale.get(cache_key, [])
 
     url = f"{SPORTSDB_BASE}/eventsday.php"
     params = {"d": date_str, "l": sportsdb_league_id}
@@ -1129,10 +1158,39 @@ async def fetch_sportsdb_schedule(
             data = resp.json()
             events = data.get("events") or []
             _tv_cache[cache_key] = events
+            if events:
+                _tv_stale[cache_key] = events
             return events
         except Exception as e:
+            # EL FALLO TAMBIÉN SE RECUERDA, Y ESTO NO ES UN DETALLE.
+            #
+            # Antes esta rama hacía `return []` a secas, sin tocar ninguna
+            # caché. O sea: un 429 de TheSportsDB no se guardaba en ningún
+            # sitio, así que la siguiente visita volvía a preguntar, recibía
+            # otro 429, y así sin enfriarse nunca. Con el límite de 100
+            # peticiones por minuto compartidas, eso no es un error puntual:
+            # es un bucle que se alimenta solo y que el 16/11/2026 tenía el
+            # log de Render lleno de 429 mientras el proceso se quedaba sin
+            # memoria y se caía cuatro veces en una mañana.
+            #
+            # Dos minutos de enfriamiento: lo bastante para cortar el bucle,
+            # lo bastante poco para que un fallo pasajero no deje la liga sin
+            # canales el resto de la tarde.
+            #
+            # Y mientras tanto se devuelve el último resultado BUENO si lo
+            # hay, en vez de una lista vacía. No es cosmético: con la lista
+            # vacía, el `chs or list(_default_chs)` de más abajo le cuelga a
+            # TODOS los partidos los canales por defecto de la liga — que es
+            # exactamente el fallo que nos obligó a vaciar la Coupe de France
+            # y a dejar la Liga F solo con DAZN. Un 429 no debe convertirse en
+            # una afirmación falsa sobre quién transmite.
+            #
+            # Mismo patrón que _fetch_sportsdb_season en events_api.py, que ya
+            # lo hacía bien: reintento, respaldo al último bueno, nunca cachear
+            # vacío como si fuera un dato.
+            _tv_fail_cache[cache_key] = True
             logger.warning(f"TheSportsDB schedule error for league {sportsdb_league_id}: {e}")
-            return []
+            return _tv_stale.get(cache_key, [])
 
 
 # Nuestro tipo de deporte → el nombre que usa TheSportsDB en eventstv.php
