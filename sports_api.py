@@ -1200,30 +1200,39 @@ async def fetch_sportsdb_schedule(
         except Exception as e:
             # EL FALLO TAMBIÉN SE RECUERDA, Y ESTO NO ES UN DETALLE.
             #
+            # Aquí caen los fallos que NO son un 429 —timeout, 5xx, JSON
+            # roto—, porque el 429 se atiende arriba con la pausa global.
+            #
             # Antes esta rama hacía `return []` a secas, sin tocar ninguna
-            # caché. O sea: un 429 de TheSportsDB no se guardaba en ningún
-            # sitio, así que la siguiente visita volvía a preguntar, recibía
-            # otro 429, y así sin enfriarse nunca. Con el límite de 100
-            # peticiones por minuto compartidas, eso no es un error puntual:
-            # es un bucle que se alimenta solo y que el 16/11/2026 tenía el
-            # log de Render lleno de 429 mientras el proceso se quedaba sin
-            # memoria y se caía cuatro veces en una mañana.
+            # caché: el fallo no se guardaba en ningún sitio, así que la
+            # siguiente visita volvía a preguntar y volvía a fallar, sin
+            # enfriarse nunca. Con el límite de 100 peticiones por minuto
+            # compartidas, eso no es un error puntual: es un bucle que se
+            # alimenta solo.
             #
-            # Dos minutos de enfriamiento: lo bastante para cortar el bucle,
-            # lo bastante poco para que un fallo pasajero no deje la liga sin
-            # canales el resto de la tarde.
+            # Dos minutos y SOLO para esta clave: un timeout de un día
+            # concreto no es motivo para dejar el sitio entero media hora sin
+            # pedirle nada a TheSportsDB.
             #
-            # Y mientras tanto se devuelve el último resultado BUENO si lo
-            # hay, en vez de una lista vacía. No es cosmético: con la lista
-            # vacía, el `chs or list(_default_chs)` de más abajo le cuelga a
-            # TODOS los partidos los canales por defecto de la liga — que es
-            # exactamente el fallo que nos obligó a vaciar la Coupe de France
-            # y a dejar la Liga F solo con DAZN. Un 429 no debe convertirse en
-            # una afirmación falsa sobre quién transmite.
+            # Y mientras tanto se devuelve el último resultado BUENO de ESTA
+            # misma liga y fecha (la clave lleva las dos), en vez de una lista
+            # vacía. No es cosmético: con la lista vacía, el
+            # `chs or list(_default_chs)` de más abajo le cuelga a TODOS los
+            # partidos los canales por defecto de la liga — el fallo que nos
+            # obligó a vaciar la Coupe de France y a dejar la Liga F solo con
+            # DAZN. Un fallo de la API no debe convertirse en una afirmación
+            # falsa sobre quién transmite.
             #
-            # Mismo patrón que _fetch_sportsdb_season en events_api.py, que ya
-            # lo hacía bien: reintento, respaldo al último bueno, nunca cachear
-            # vacío como si fuera un dato.
+            # El precio: durante esos minutos se puede mostrar un dato de
+            # hasta 6 h antes (lo que dura _tv_stale). Si un partido se aplazó
+            # en ese rato, seguiría listado. Se acepta a sabiendas: es menos
+            # malo que inventarle el canal a toda la jornada.
+            #
+            # OJO, lo que esto NO hace: no reintenta. _fetch_sportsdb_season
+            # en events_api.py sí reintenta tres veces con espera, y es lo
+            # correcto allí porque se llama una vez cada seis horas. Aquí se
+            # llama en cada visita, así que reintentar sería echar más leña al
+            # fuego que estamos apagando.
             _tv_fail_cache[cache_key] = True
             logger.warning(f"TheSportsDB schedule error for league {sportsdb_league_id}: {e}")
             return _tv_stale.get(cache_key, [])
