@@ -767,6 +767,17 @@ except Exception:  # pragma: no cover - el vigía nunca debe tumbar el sitio
     _memoria = None
 
 
+class _ParridaInnecesaria(Exception):
+    """Salir del bloque de parrillas de TV sin pedir nada.
+
+    Es una señal, no un error: el partido ya terminó y buscar en qué canal lo
+    dieron no le sirve a nadie. Existe como excepción y no como un `if` porque
+    el bloque que envuelve son 120 líneas y meterlas todas un nivel adentro
+    sería un diff enorme para una condición de una línea. Ver el comentario
+    largo en la ruta de /partido/ para el porqué (fechas de 2025 en el log).
+    """
+
+
 class HTMLCacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         path = request.url.path
@@ -3007,7 +3018,35 @@ async def game_semantic(request: Request, slug: str):
     # portada arma decenas de juegos y no vale la pena, mientras que quien abre
     # la ficha es justo el que quiere saber su canal. Las parrillas se cachean
     # 6 h, así que son ~35 peticiones al día en total, no por visita.
+    #
+    # ══ SOLO SI EL PARTIDO NO HA TERMINADO. AÑADIDO EL 16/11/2026 ══
+    #
+    # Esa cuenta de "~35 peticiones al día" era cierta con una suposición que no
+    # se cumplía: que todas las fichas piden la parrilla de HOY o de mañana. La
+    # clave de la caché es canal+FECHA, y una ficha de un partido viejo pide la
+    # fecha de ese partido. Visto en el log de Render:
+    #
+    #   15:06:53  gatotv.com/canal/espn_7_peru/2025-04-28
+    #   15:06:53  gatotv.com/canal/golty_latinoamerica/2025-04-26
+    #   15:06:53  gatotv.com/canal/teleamazonas/2025-04-26
+    #   …unas treinta más en el MISMO segundo
+    #
+    # Abril de 2025. Año y medio atrás. Es Googlebot recorriendo fichas de
+    # partidos terminados: cada una estrena fecha, así que son 41 pares
+    # canal/país que NUNCA están en caché, descargados otra vez en cada visita.
+    # _grid_cache tiene 400 huecos; con diez fechas viejas ya se desborda y deja
+    # de servir también para las de hoy.
+    #
+    # El Semaphore(5) de gatotv.py no protege de esto: limita cuántas van a la
+    # vez, no cuántas van en total ni cuánto se retiene. Por eso lo descarté
+    # demasiado pronto al buscar la fuga de memoria.
+    #
+    # Y lo que más pesa: este trabajo NO SIRVE PARA NADA. A nadie le importa en
+    # qué canal daban un partido de hace año y medio. Es la misma condición que
+    # ya usa _fetch_game_odds unas líneas más arriba, por la misma razón.
     try:
+        if game.get("status", {}).get("state") not in ("pre", "in"):
+            raise _ParridaInnecesaria
         import gatotv as _gatotv
         _g_start = datetime.fromisoformat(str(game.get("date", "")).replace("Z", "+00:00"))
         # La parrilla es por día y en hora local de cada país; gatotv.py decide
@@ -3101,6 +3140,9 @@ async def game_semantic(request: Request, slug: str):
                 if _nuevos:
                     game["broadcasts"] = _nuevos + _bcs
                 game["channels_confirmed"] = True
+    except _ParridaInnecesaria:
+        # Partido terminado: ni se pidió. No es un fallo, así que no se avisa.
+        pass
     except Exception as e:
         logger.warning(f"GatoTV por país falló para {event_id}: {e}")
 
