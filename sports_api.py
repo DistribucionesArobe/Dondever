@@ -4844,83 +4844,118 @@ async def get_upcoming_league_games(sport: str, league: str, days: int = 5, limi
         league,
     )
 
-    tasks = []
-    for d in range(1, days + 1):
-        future_date = (now + timedelta(days=d)).strftime("%Y%m%d")
-        tasks.append(fetch_espn_scoreboard(sport, league, future_date))
+    # ══ POR TANDAS, NO LAS 120 DE GOLPE. 18/11/2026 ══
+    #
+    # Esto era un `gather` con TODAS las fechas a la vez. Con el default de 5
+    # días no se nota; el problema es quien pide muchos: /clasico/ llama con
+    # days=120 para encontrar el próximo duelo entre dos rivales, que puede
+    # estar a meses. Eso disparaba 120 peticiones simultáneas a ESPN y dejaba
+    # las 120 respuestas JSON vivas a la vez en la lista `scoreboards`.
+    #
+    # Lo dijo el vigía de memoria.py en el log de Render del 18/11, justo
+    # antes de un OOM, con las cachés medio vacías:
+    #
+    #   12:19:41   324 MB  tras /clasico/nacional-vs-medellin
+    #   12:19:45   487 MB  tras /clasico/chiefs-vs-raiders
+    #   12:19:47   626 MB  tras /clasico/lakers-vs-clippers
+    #   12:19:51   924 MB  tras /clasico/manchester-city-vs-manchester-united
+    #   12:20:13 1.425 MB  tras /liga/lmp
+    #
+    # De 324 MB a 1.425 MB en 32 segundos, ocho de los catorce saltos en
+    # páginas de clásicos. Era Googlebot recorriendo /clasicos: 52 rivalidades
+    # x 120 fechas = 6.240 peticiones, en ráfagas de 120.
+    #
+    # Y encima no se reaprovechaba nada: _cache tiene 64 huecos y una sola
+    # liga pedía 120 fechas, así que se desalojaban entre ellas y la siguiente
+    # visita repetía las 120.
+    #
+    # Con tandas de 10 el pico baja de 120 respuestas vivas a 10. Tarda más en
+    # total, pero esta función no está en el camino crítico de la portada ni de
+    # la ficha de partido: alimenta bloques secundarios. Preferimos una página
+    # un poco más lenta a un proceso muerto, que es lo que teníamos.
+    _TANDA = 10
+    fechas = [(now + timedelta(days=d)).strftime("%Y%m%d") for d in range(1, days + 1)]
+    eventos: list[dict] = []
+    for i in range(0, len(fechas), _TANDA):
+        lote = await asyncio.gather(
+            *(fetch_espn_scoreboard(sport, league, f) for f in fechas[i:i + _TANDA]),
+            return_exceptions=True,
+        )
+        for sb in lote:
+            if isinstance(sb, Exception):
+                continue
+            eventos.extend(sb.get("events", []))
+        # El lote se suelta aquí: solo nos quedamos con los eventos, no con el
+        # scoreboard entero (que trae ligas, semanas, cabeceras y temporada).
+        del lote
 
-    scoreboards = await asyncio.gather(*tasks, return_exceptions=True)
-
-    for sb in scoreboards:
-        if isinstance(sb, Exception):
+    for event in eventos:
+        status = event.get("status", {}).get("type", {}).get("state", "")
+        if status != "pre":
             continue
-        for event in sb.get("events", []):
-            status = event.get("status", {}).get("type", {}).get("state", "")
-            if status != "pre":
-                continue
-            comp = event.get("competitions", [{}])[0]
-            competitors = comp.get("competitors", [])
-            if len(competitors) < 2:
-                continue
+        comp = event.get("competitions", [{}])[0]
+        competitors = comp.get("competitors", [])
+        if len(competitors) < 2:
+            continue
 
-            home_c = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
-            away_c = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
+        home_c = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
+        away_c = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
 
-            # Extract broadcast channels with country info
-            channels = []
-            seen_ch = set()
-            for geo in comp.get("geoBroadcasts", []):
-                # Radio fuera (ver el comentario largo en el otro lector de
-                # geoBroadcasts). ESPN mezcla radio y TV en la misma lista.
-                if (geo.get("type", {}).get("shortName") or "").lower() == "radio":
-                    continue
-                raw = geo.get("media", {}).get("shortName", "")
-                if not raw:
-                    continue
-                ch = _normalize_channel(raw)
-                info = CHANNEL_ALIASES.get(ch, {})
-                display = info.get("name", ch)
+        # Extract broadcast channels with country info
+        channels = []
+        seen_ch = set()
+        for geo in comp.get("geoBroadcasts", []):
+            # Radio fuera (ver el comentario largo en el otro lector de
+            # geoBroadcasts). ESPN mezcla radio y TV en la misma lista.
+            if (geo.get("type", {}).get("shortName") or "").lower() == "radio":
+                continue
+            raw = geo.get("media", {}).get("shortName", "")
+            if not raw:
+                continue
+            ch = _normalize_channel(raw)
+            info = CHANNEL_ALIASES.get(ch, {})
+            display = info.get("name", ch)
+            if display.lower() not in seen_ch:
+                seen_ch.add(display.lower())
+                channels.append({
+                    "name": display,
+                    "country": info.get("country", ""),
+                    # Cadena local de un mercado de EE.UU. (Atlanta News First,
+                    # Victory+ ATL, NBC Sports BO…). ESPN las marca con
+                    # market Home/Away y no están en CHANNEL_ALIASES. Sin este
+                    # dato, la página de liga las imprimía sin etiqueta justo
+                    # después de "MX:", y parecían opciones para México.
+                    "is_us_regional": (not info) and geo.get("market", {}).get("type", "") in ("Home", "Away"),
+                })
+
+        # Canales de México con las MISMAS reglas que usa la ficha del partido
+        _home_nm = home_c.get("team", {}).get("displayName", "")
+        _away_nm = away_c.get("team", {}).get("displayName", "")
+        # Mismo criterio que parse_espn_events_enriched: si ESPN no dio un
+        # canal de México para ESTE partido y hay que caer al reparto de
+        # derechos de la liga, el canal es probable, no confirmado. Las
+        # páginas de liga y equipo lo pintaban como un hecho.
+        channels_confirmed = any(c.get("country") == "MX" for c in channels)
+        if not channels_confirmed:
+            for mx in mx_channels_for_game(league_slug_hint, _home_nm, _away_nm,
+                                           [c["name"] for c in channels]):
+                info = CHANNEL_ALIASES.get(mx, {})
+                display = info.get("name", mx)
                 if display.lower() not in seen_ch:
                     seen_ch.add(display.lower())
-                    channels.append({
-                        "name": display,
-                        "country": info.get("country", ""),
-                        # Cadena local de un mercado de EE.UU. (Atlanta News First,
-                        # Victory+ ATL, NBC Sports BO…). ESPN las marca con
-                        # market Home/Away y no están en CHANNEL_ALIASES. Sin este
-                        # dato, la página de liga las imprimía sin etiqueta justo
-                        # después de "MX:", y parecían opciones para México.
-                        "is_us_regional": (not info) and geo.get("market", {}).get("type", "") in ("Home", "Away"),
-                    })
+                    channels.append({"name": display, "country": info.get("country", "MX"),
+                                     "confirmed": False})
 
-            # Canales de México con las MISMAS reglas que usa la ficha del partido
-            _home_nm = home_c.get("team", {}).get("displayName", "")
-            _away_nm = away_c.get("team", {}).get("displayName", "")
-            # Mismo criterio que parse_espn_events_enriched: si ESPN no dio un
-            # canal de México para ESTE partido y hay que caer al reparto de
-            # derechos de la liga, el canal es probable, no confirmado. Las
-            # páginas de liga y equipo lo pintaban como un hecho.
-            channels_confirmed = any(c.get("country") == "MX" for c in channels)
-            if not channels_confirmed:
-                for mx in mx_channels_for_game(league_slug_hint, _home_nm, _away_nm,
-                                               [c["name"] for c in channels]):
-                    info = CHANNEL_ALIASES.get(mx, {})
-                    display = info.get("name", mx)
-                    if display.lower() not in seen_ch:
-                        seen_ch.add(display.lower())
-                        channels.append({"name": display, "country": info.get("country", "MX"),
-                                         "confirmed": False})
-
-            upcoming.append({
-                "id": event.get("id", ""),
-                "home": home_c.get("team", {}).get("displayName", ""),
-                "away": away_c.get("team", {}).get("displayName", ""),
-                "home_logo": home_c.get("team", {}).get("logo", ""),
-                "away_logo": away_c.get("team", {}).get("logo", ""),
-                "date": event.get("date", ""),
-                "channels": channels[:8],
-                "channels_confirmed": channels_confirmed,
-            })
+        upcoming.append({
+            "id": event.get("id", ""),
+            "home": home_c.get("team", {}).get("displayName", ""),
+            "away": away_c.get("team", {}).get("displayName", ""),
+            "home_logo": home_c.get("team", {}).get("logo", ""),
+            "away_logo": away_c.get("team", {}).get("logo", ""),
+            "date": event.get("date", ""),
+            "channels": channels[:8],
+            "channels_confirmed": channels_confirmed,
+        })
 
     upcoming.sort(key=lambda x: x.get("date", ""))
     return upcoming[:limit]
