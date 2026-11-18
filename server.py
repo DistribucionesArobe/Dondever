@@ -882,12 +882,50 @@ app.add_middleware(HTMLCacheMiddleware)  # outermost: caches the final (GA-injec
 
 
 # ── Template helpers ─────────────────────────────────────
+def _hora_segun_zona(dt) -> str:
+    """La hora escrita como se escribe en el sitio al que pertenece la zona.
+
+    UNA SOLA FUENTE PARA ESTO, Y HAY MOTIVO. El 15/11/2026 se arregló que los
+    títulos de las ligas españolas salieran en hora peninsular, y se cambió el
+    formato a 24 h en format_mx_day_time. El 18/11 apareció en producción esto,
+    en tres de las siete páginas más vistas del día:
+
+        "Dónde ver Reus Fc Reddis vs Barakaldo hoy: 8:30 PM ES"
+        "Dónde ver Portugalete vs Real Unión Irun hoy: 7:00 PM ES"
+
+    El huso estaba bien —la sigla ES lo prueba— y la hora escrita como no la
+    escribe nadie en España. ¿Por qué? Porque la regla se había puesto en UNA
+    función y había TRES que formatean hora: format_mx_day_time (el próximo
+    partido), format_mx_time (el partido de HOY) y _fmt_local (los horarios por
+    país). Se arregló la primera, y el test comprobaba justamente esa rama.
+
+    Con el helper, añadir un país con reloj de 24 h es tocar este diccionario y
+    nada más. Si mañana entra Portugal o Italia, no hay tres sitios que
+    recordar.
+    """
+    _zona = str(getattr(dt.tzinfo, "key", "") or "")
+    if _zona in _ZONAS_24H:
+        # Sin recortar el cero: en 24 h "09:30" se escribe así, y sobre todo
+        # un .lstrip("0") aplicado fuera convertiría "00:30" en ":30". Varios
+        # sitios que llaman a format_mx_time hacen ese lstrip, así que el cero
+        # de la medianoche se protege aquí y no en cada uno.
+        return dt.strftime("%H:%M")
+    # El de 12 h sí: "01:30 PM" se lee "1:30 PM". Se recorta aquí para que los
+    # que llaman no tengan que acordarse.
+    return dt.strftime("%I:%M %p").lstrip("0")
+
+
+# Zonas donde la hora se escribe en 24 h. España por ahora; México, EE.UU. y
+# toda Latinoamérica usan el reloj de 12 h, así que el default sirve.
+_ZONAS_24H = {"Europe/Madrid"}
+
+
 def format_mx_time(iso_date: str, tz=None) -> str:
     """Hora local; México por defecto. Ver format_mx_day_time para el porqué de `tz`."""
     try:
         dt = datetime.fromisoformat(iso_date.replace("Z", "+00:00"))
         mx = dt.astimezone(tz or TZ_MX)
-        return mx.strftime("%I:%M %p")
+        return _hora_segun_zona(mx)
     except Exception:
         return ""
 
@@ -942,8 +980,7 @@ def format_mx_day_time(iso_date: str, tz=None) -> str:
         # buena, pero escrita como no la escribe nadie en Valencia ni en
         # Zaragoza. La convención es de la ZONA, no de quien llama, así que se
         # decide aquí y no puede divergir entre el título y la plantilla.
-        _h24 = getattr(_tz, "key", "") == "Europe/Madrid"
-        hora = mx.strftime('%H:%M') if _h24 else mx.strftime('%I:%M %p').lstrip('0')
+        hora = _hora_segun_zona(mx)
         hoy = datetime.now(_tz).date()
         dias = (mx.date() - hoy).days
         mes = "" if -1 <= dias <= 6 else f" {_MONTHS_ES_SHORT[mx.month - 1]}"
@@ -1839,7 +1876,10 @@ def _fmt_local(iso: str, tz_name: str, with_day: bool = False) -> str:
     from zoneinfo import ZoneInfo as _ZI
     try:
         dt = datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(_ZI(tz_name))
-        t = dt.strftime("%I:%M %p").lstrip("0").replace(":00 ", " ")
+        # La tercera de las tres. Ver _hora_segun_zona.
+        # El replace solo pega en 12 h (":00 PM" → " PM"); en 24 h "20:00" no
+        # lleva espacio detrás y queda intacto.
+        t = _hora_segun_zona(dt).replace(":00 ", " ")
         return f"{_DAYS_ES_SHORT[dt.weekday()]} {dt.day} {_MONTHS_ES_SHORT[dt.month - 1]} · {t}" if with_day else t
     except Exception:
         return ""
@@ -1979,7 +2019,7 @@ def _widget_row(g: dict) -> dict:
     elif state == "post":
         when, sub, live = f"{first.get('score', '')}-{second.get('score', '')}", "Final", False
     else:
-        when, sub, live = format_mx_time(g["date"]).lstrip("0"), format_mx_day_time(g["date"]).split(" · ")[0], False
+        when, sub, live = format_mx_time(g["date"]), format_mx_day_time(g["date"]).split(" · ")[0], False
     chans = [b.get("channel", "") for b in (g.get("broadcasts") or [])[:2]]
     return {"title": f"{first['name']} vs {second['name']}", "league": g.get("league_name", ""),
             "channels": ", ".join(c for c in chans if c), "when": when, "sub": sub, "live": live,
@@ -2006,7 +2046,7 @@ async def widget_team(request: Request, team_slug: str):
         score = f"{sh}-{sa}" if soccer_like else f"{sa}-{sh}"
         rows.append({"title": f"{first} vs {second}", "league": g.get("league_name", ""), "channels": g.get("channels", ""),
                      "channels_confirmed": g.get("channels_confirmed", True),
-                     "when": score if g["state"] != "pre" else g.get("time_mx", "").lstrip("0"),
+                     "when": score if g["state"] != "pre" else g.get("time_mx", ""),
                      "sub": {"in": "EN VIVO", "post": "Final"}.get(g["state"], "Hoy"), "live": g["state"] == "in",
                      "logo": g.get("home_logo", ""), "url": g.get("url") or f"/equipo/{team_slug}"})
     for g in payload.get("upcoming", []):
@@ -2014,7 +2054,7 @@ async def widget_team(request: Request, team_slug: str):
             break
         rows.append({"title": f"{g['home_name']} vs {g['away_name']}", "league": g.get("league_name", ""),
                      "channels": g.get("channels", ""), "channels_confirmed": g.get("channels_confirmed", True),
-                     "when": format_mx_time(g["date"]).lstrip("0") if g.get("date") else "",
+                     "when": format_mx_time(g["date"]) if g.get("date") else "",
                      "sub": format_mx_day_time(g["date"]).split(" · ")[0] if g.get("date") else "", "live": False,
                      "logo": g.get("home_logo", ""), "url": f"/equipo/{team_slug}"})
     resp = templates.TemplateResponse(request, "widget.html", {
@@ -2090,7 +2130,7 @@ async def playoffs_mlb(request: Request):
         seo_title = f"Playoffs MLB {year} EN VIVO: {_sn(g['away']['name'])} vs {_sn(g['home']['name'])} | Dónde ver"
     elif is_postseason and pre:
         g = pre[0]
-        t = format_mx_time(g.get("date", "")).lstrip("0")
+        t = format_mx_time(g.get("date", ""))
         ch = (g.get("broadcasts") or [{}])[0].get("channel", "")
         seo_title = f"Playoffs MLB {year} hoy: {_sn(g['away']['name'])} vs {_sn(g['home']['name'])} {t} MX{(' en ' + ch) if ch else ''}"
     else:
@@ -9771,7 +9811,7 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
     if pre:
         g = pre[0]
         opp, ch = _opp_and_channel(g)
-        t = format_mx_time(g.get("date", ""), tz=_tz_t).lstrip("0")
+        t = format_mx_time(g.get("date", ""), tz=_tz_t)
         ch_txt = f" por {ch}" if ch else ""
         t_txt = f" {t} {_tz_sigla}" if t else ""
         return {
