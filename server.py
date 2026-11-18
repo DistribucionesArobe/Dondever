@@ -1712,6 +1712,11 @@ _MONTHS_ES_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep
 #
 # El orden importa: lo primero que se nombra es donde está la liga.
 _MERCADOS_LIGA = {
+    # México — la Liga de Expansión no estaba y caía al texto por defecto.
+    # Su público medido no es sólo mexicano: la consulta que más clics nos
+    # trae de ESTADOS UNIDOS es un partido suyo (Alebrijes vs Mineros, 18/11).
+    # Es el caso de libro de "liga local → su país + diáspora".
+    "liga-expansion": "México y Estados Unidos",
     # España
     "la-liga": "España, México y Latinoamérica",
     "liga-endesa": "España, México y Latinoamérica",
@@ -7539,6 +7544,17 @@ def mx_date_str(iso: str) -> str:
 _PAIS_DE_LIGA = {
     "Liga MX": "mexico", "Liga MX Femenil": "mexico", "LMB": "mexico",
     "LMP": "mexico", "LNBP": "mexico",
+    # Añadida el 18/11/2026. Faltaba desde siempre, y el precio se puede medir:
+    # la consulta que MÁS clics nos trae de Estados Unidos en 28 días es
+    #
+    #   "dónde mirar alebrijes de oaxaca contra mineros de zacatecas"
+    #   4 clics · 103 impresiones · CTR 3,9 % · posición 5,5
+    #
+    # Los dos son clubes de esta liga. Rankeamos QUINTOS sin que la liga esté
+    # enganchada a ninguno de estos mapas: lo único que existe son las fichas
+    # /partido/ que se autogeneran de la API. Sin entrada aquí no hay páginas
+    # equipo×país, que es justo donde vive la diáspora mexicana en EE.UU.
+    "Liga Expansión MX": "mexico",
     "LVBP": "venezuela", "LIDOM": "republica-dominicana",
     # Faltaba, y el fallo no era silencioso: sin entrada aquí la liga caía al
     # escape de _TODOS —pensado para equipos autodescubiertos— y el sitemap
@@ -9399,6 +9415,10 @@ _TEAM_SEO_EXTRA = {
 # Etiqueta de deporte por liga. 'sport' lo consumen _build_team_faq, is_nfl y
 # las ramas de NFL_TEAM_EXTRA, que comparan contra estas cadenas en español.
 _DEPORTE_POR_LIGA = {
+    # La Liga Expansión MX se añadió el 18/11, y llevaba fuera desde que la
+    # liga existe en el sitio. El guard de abajo llevaba avisándolo en cada
+    # arranque. Sin esto, sus equipos no salen en related_teams ni en el FAQ.
+    #
     # Las tres españolas se añadieron el 13/11 porque faltaban: la Segunda
     # desde el 04/11 y los dos grupos de Primera Federación desde el 12/11.
     #
@@ -9413,7 +9433,8 @@ _DEPORTE_POR_LIGA = {
     # el FAQ de sus fichas. O sea, justo los enlaces internos que hacen que
     # una ficha no nazca huérfana, que es el problema que se arregló en la
     # tarea #402 para /partido/.
-    "futbol": ("Liga MX", "Liga MX Femenil", "Premier League", "La Liga", "Serie A",
+    "futbol": ("Liga MX", "Liga MX Femenil", "Liga Expansión MX",
+               "Premier League", "La Liga", "Serie A",
                "Bundesliga", "Ligue 1", "Eredivisie", "Liga Portugal", "MLS",
                "Liga Argentina", "Liga BetPlay", "Primera Chile", "LigaPro Ecuador",
                "Liga 1 Perú", "Liga FUTVE",

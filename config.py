@@ -784,7 +784,12 @@ LEAGUES = {
     "liga-mx":       ("soccer", "mex.1",        "Liga MX",          "\u26bd"),
     "liga-mx-femenil": ("soccer", "mex.w.1",     "Liga MX Femenil",  "\u26bd"),
     "mls":           ("soccer", "usa.1",         "MLS",              "\u26bd"),
-    "liga-expansion": ("soccer", "mex.2",        "Liga Expansion MX","\u26bd"),
+    # "Expansi\u00f3n" CON TILDE, corregido el 18/11/2026. No es cosm\u00e9tica: este
+    # string es la CLAVE con la que la liga se busca en _PAIS_DE_LIGA,
+    # _MERCADOS_LIGA y _DEPORTE_POR_LIGA. Mientras estuvo sin tilde, cualquier
+    # entrada escrita bien en esos mapas no habr\u00eda encajado nunca. Mismo caso
+    # que "Primera Federacion" el 12/11.
+    "liga-expansion": ("soccer", "mex.2",        "Liga Expansi\u00f3n MX","\u26bd"),
     "premier-league":("soccer", "eng.1",         "Premier League",   "\u26bd"),
     "la-liga":       ("soccer", "esp.1",         "La Liga",          "\u26bd"),
     # Segunda espa\u00f1ola, a\u00f1adida el 04/11/2026. El nombre oficial desde 2023 es
@@ -1348,6 +1353,47 @@ POPULAR_TEAMS = {
     # Femeni" y "Espanyol Femeni" son sus nombres reales en catalan, y
     # "Alaves Gloriosas", "Madrid CFF" y "Logrono United" tambien son los
     # suyos; no se "traducen" porque no son traducciones, son nombres.
+    # ══ LIGA DE EXPANSIÓN MX — los 16, añadidos el 18/11/2026 ══
+    #
+    # POR QUÉ: la consulta que más clics nos trae de Estados Unidos en 28 días
+    # es "dónde mirar alebrijes de oaxaca contra mineros de zacatecas" —4 clics,
+    # 103 impresiones, CTR 3,9 %, posición 5,5— y hasta hoy esta liga tenía
+    # CERO equipos aquí. Rankeábamos quintos solo con las fichas /partido/ que
+    # se autogeneran; no existía ni una página /equipo/ ni equipo×país.
+    #
+    # Y EE.UU. es el tráfico que mejor paga del sitio: RPM 126,00, contra 50,72
+    # de España y 14,22 de Venezuela. Una visita de allá vale 8,9 venezolanas.
+    #
+    # LOS NOMBRES SALEN DE NUESTRA PROPIA FUENTE, no de Wikipedia: se leyeron
+    # de la tabla de posiciones de /liga/liga-expansion, que la arma ESPN
+    # mex.2, que es exactamente contra lo que se emparejan los partidos. Si se
+    # copian de otro sitio, el `name` no encaja y la ficha sale vacía.
+    #
+    # OJO CON CORRECAMINOS: ya existe "correcaminos-uam" (Correcaminos UAM,
+    # basquetbol LNBP). Éste es UAT, fútbol, y son equipos distintos. Por eso
+    # el slug lleva el sufijo.
+    #
+    # CANALES: la liga ya tenía ESPN MX + ViX en DEFAULT_LEAGUE_CHANNELS desde
+    # antes; NO los he verificado yo. Y para Estados Unidos NO hay canal puesto
+    # a propósito: no encontré fuente que confirme quién la emite allá, así que
+    # dirá "por confirmar", que es la verdad. Está pendiente de investigar.
+    "alebrijes-de-oaxaca": {"name": "Alebrijes de Oaxaca", "league": "Liga Expansión MX"},
+    "mineros-de-zacatecas": {"name": "Mineros de Zacatecas", "league": "Liga Expansión MX"},
+    "atletico-la-paz": {"name": "Club Atlético La Paz", "league": "Liga Expansión MX"},
+    "atletico-morelia": {"name": "Club Atlético Morelia", "league": "Liga Expansión MX"},
+    "leones-negros": {"name": "Leones Negros", "league": "Liga Expansión MX"},
+    "piratas-campeche": {"name": "Piratas", "league": "Liga Expansión MX"},
+    "cancun-fc": {"name": "Cancún FC", "league": "Liga Expansión MX"},
+    "venados-fc": {"name": "Venados FC", "league": "Liga Expansión MX"},
+    "durango": {"name": "Durango", "league": "Liga Expansión MX"},
+    "tlaxcala-fc": {"name": "Tlaxcala FC", "league": "Liga Expansión MX"},
+    "tapatio": {"name": "Tapatío", "league": "Liga Expansión MX"},
+    "correcaminos-uat": {"name": "Correcaminos UAT", "league": "Liga Expansión MX"},
+    "dorados-de-sinaloa": {"name": "Dorados de Sinaloa", "league": "Liga Expansión MX"},
+    "jaiba-brava": {"name": "Club Jaiba Brava", "league": "Liga Expansión MX"},
+    "cruz-azul-hidalgo": {"name": "Cruz Azul Hidalgo", "league": "Liga Expansión MX"},
+    "tepatitlan-fc": {"name": "Tepatitlán FC", "league": "Liga Expansión MX"},
+
     "alaves-gloriosas": {"name": "Alavés Gloriosas", "league": "Liga F"},
     "athletic-club-women": {"name": "Athletic Club Women",
                             "nombre_seo": "Athletic Club Femenino", "league": "Liga F"},
