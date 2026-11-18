@@ -59,6 +59,38 @@ EPG_TAGS = {
     "PE": "PE1",
     "EC": "EC1",
     "MX": "MX1",
+    # ── España, añadida el 18/11/2026 ──────────────────────────────────────
+    #
+    # Hasta hoy teníamos parrilla automática de los seis países que PEOR pagan
+    # y de ninguno de los dos que mejor: España (RPM 50,72) y Estados Unidos
+    # (RPM 126,00). Todo lo que el sitio decía de España salía de listas
+    # escritas a mano —y esta semana se escribieron tres (Primera Federación,
+    # Liga F, Copa del Rey) buscando en prensa una por una.
+    #
+    # ES1 trae canal dedicado de las que nos importan, comprobado en el índice
+    # del sitio el 18/11:
+    #
+    #   Primera.Federación.es · M+.Copa.del.Rey.es · LaLiga.TV.Hypermotion.es
+    #   DAZN.LaLiga · Movistar.Deportes.1/2/3 · Movistar.Plus+
+    #   La.1 · La.2 · Teledeporte · TV3 · Esport.3 · ETB.1/2 · TVG · IB3
+    #
+    # Las autonómicas en abierto son justo el dato que más caro sale
+    # equivocar: nombrar una plataforma de pago que no lleva el partido es una
+    # molestia; nombrar La 1 cuando no lo da hace que alguien encienda la tele
+    # y se lo pierda. Que salga de una parrilla publicada y no de nuestro
+    # criterio es una mejora de fondo, no un canal más.
+    #
+    # EE.UU. SE QUEDA FUERA Y NO ES UN OLVIDO. Su fichero (US_SPORTS1) no
+    # tiene canales: son pseudo-canales por equipo para listas IPTV
+    # —MLB-LosAngelesDodgers.us, NFL-DallasCowboys.us—, sin un solo emisor
+    # real. Engancharlo pondría "Canal: NFL-DallasCowboys" en la ficha, que no
+    # se puede sintonizar. Para EE.UU. seguimos sin fuente automática.
+    #
+    # COSTE: ES1 pesa 2,5 MB comprimido, seis veces más que MX1 (389 KB). Se
+    # descarga en serie, con lock y caché de 12 h, y _parse se queda SOLO con
+    # los programas que son un enfrentamiento (en México: 272 de 17.365), así
+    # que lo retenido es pequeño; el pico es transitorio.
+    "ES": "ES1",
 }
 
 # El archivo se regenera una vez al día (visto 17-Sep-2026 11:35 en el índice).
