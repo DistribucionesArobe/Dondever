@@ -7625,6 +7625,32 @@ _PAIS_DE_LIGA = {
 }
 # Donde vive la gente que busca su liga desde fuera.
 _DIASPORA = ("espana", "estados-unidos")
+
+# Excepciones: ligas cuya diáspora NO está sólo donde dice la regla general.
+#
+# Esto existe porque la regla de arriba se escribió mirando el caso mexicano y
+# dominicano, donde España y EE. UU. sí son los dos destinos, y se aplicó a
+# todas las ligas locales por igual. Para la LVBP eso es falso, y el aviso
+# estaba a diez líneas de distancia: el comentario de _TODOS dice, desde que se
+# escribió, que "Chile y Perú tienen clics en Tigres de Aragua y Leones del
+# Caracas". Se usó ese dato para justificar los once países en los deportes
+# globales y no se volvió sobre la LVBP, que es justo la liga de la que
+# hablaba.
+#
+# Medido el 18/11/2026 en Search Console, Chile, últimos 3 meses:
+#
+#   /equipo/navegantes-del-magallanes   18 clics · 414 impresiones · pos. 8,1
+#   /liga/lvbp                          17 clics · 117 impresiones · CTR 14,5 %
+#
+# Ese 14,5 % es el CTR más alto de las diez páginas que Chile más pulsa, en un
+# país que mide 2,2 % de media. Es decir: la página que mejor convierte en
+# Chile no tenía versión para Chile, porque este diccionario no existía.
+#
+# Perú NO entra todavía. El comentario de _TODOS lo nombra junto a Chile, pero
+# eso no lo he medido yo y aquí no se escribe nada sin haberlo mirado.
+_DIASPORA_POR_LIGA = {
+    "LVBP": ("espana", "estados-unidos", "chile"),
+}
 # Los once países, escritos a mano y no como list(TEAM_COUNTRY_SEO).
 #
 # Aquí había exactamente eso, list(TEAM_COUNTRY_SEO), y TEAM_COUNTRY_SEO se
@@ -7707,7 +7733,7 @@ def _paises_de_equipo(team_slug: str) -> list:
         # medidos en Chile, Ecuador, Argentina y Panamá: cortarla a tres
         # países cerraba la puerta justo donde se abría.
         return _TODOS
-    return [propio, *(p for p in _DIASPORA if p != propio)]
+    return [propio, *(p for p in _DIASPORA_POR_LIGA.get(liga, _DIASPORA) if p != propio)]
 
 
 @app.get("/sitemap-equipos-paises.xml")
