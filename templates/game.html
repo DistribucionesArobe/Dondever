@@ -76,6 +76,24 @@
           "logo": "{{ game.away.logo }}"{% endif %}
         }
       ],
+      {#- performer son los mismos dos equipos que competitor, y va aparte a
+          propósito. Search Console avisa de "Falta el campo performer" en
+          2.036 elementos: competitor es la propiedad específica de
+          SportsEvent, pero el validador de Google busca la genérica de Event.
+          No es un dato nuevo ni inventado —son los equipos que ya declaramos
+          arriba—, solo el mismo hecho dicho con el nombre que Google lee. -#}
+      "performer": [
+        {
+          "@type": "SportsTeam",
+          "name": "{{ game.home.name }}"{% if game.home.logo %},
+          "logo": "{{ game.home.logo }}"{% endif %}
+        },
+        {
+          "@type": "SportsTeam",
+          "name": "{{ game.away.name }}"{% if game.away.logo %},
+          "logo": "{{ game.away.logo }}"{% endif %}
+        }
+      ],
       {% endif %}
       {#- Solo declaramos BroadcastEvent cuando el canal está confirmado para
           ESTE partido. Un dato estructurado es una afirmación dirigida a

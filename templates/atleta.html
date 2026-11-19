@@ -25,7 +25,13 @@
       "url": "{{ app_url }}/equipo/{{ slug }}",
       "jobTitle": "{{ {'f1': 'Piloto de Fórmula 1', 'motogp': 'Piloto de MotoGP', 'indycar': 'Piloto de IndyCar', 'nascar': 'Piloto de NASCAR', 'ufc': 'Peleador de UFC'}.get(kind, 'Boxeador') }}",
       "memberOf": {"@type": "SportsOrganization", "name": "{{ org_name }}"}
-      {% if nxt %},"subjectOf": {"@type": "SportsEvent", "name": "{{ nxt.name }}", "startDate": "{{ nxt.date }}", "url": "{{ app_url }}/evento/{{ nxt.slug }}"}{% endif %}
+      {#- location: era el ÚNICO SportsEvent del sitio que no lo declaraba, y
+          es el error "Falta el campo location" de Search Console: 13
+          elementos, los únicos en rojo de 2.036. Las demás plantillas ya lo
+          ponían. Si el evento trae circuito o ciudad se usa el dato real; si
+          no, una VirtualLocation a su propia ficha, que es el mismo patrón
+          que game.html y no afirma un lugar que no conocemos. -#}
+      {% if nxt %},"subjectOf": {"@type": "SportsEvent", "name": "{{ nxt.name }}", "startDate": "{{ nxt.date }}", "url": "{{ app_url }}/evento/{{ nxt.slug }}", "location": {% if nxt.venue or nxt.city %}{"@type": "Place", "name": {{ (nxt.venue or nxt.city)|tojson }}{% if nxt.city %}, "address": {{ nxt.city|tojson }}{% endif %}}{% else %}{"@type": "VirtualLocation", "url": "{{ app_url }}/evento/{{ nxt.slug }}"}{% endif %}}{% endif %}
     }
     </script>
     <script type="application/ld+json">
