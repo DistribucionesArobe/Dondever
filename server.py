@@ -768,18 +768,18 @@ def _es_portada_de_otro_dia(request) -> bool:
 # reporta 4,37 s de media para el sitio entero con el aviso "el host tuvo
 # problemas", que es lo que le hace bajar el ritmo de rastreo.
 #
-# Por qué la segunda no es más rápida, que era lo raro: clasico_page pide
-# get_upcoming_league_games(days=120) —el único sitio del código que pasa de
+# Por qué la segunda no era más rápida, que era lo raro: clasico_page pedía
+# get_upcoming_league_games(days=120) —el único sitio del código que pasaba de
 # 14 días— y eso son 120 fechas contra ESPN, mientras que el _cache de
-# scoreboards es un TTLCache(maxsize=64). Una sola visita desborda esa caché
-# mientras se ejecuta y se expulsa a sí misma. Subir los 64 está descartado a
-# propósito por memoria (ver el comentario en sports_api.py), así que lo que
-# procede es no repetir el trabajo: cachear el HTML ya renderizado.
+# scoreboards es un TTLCache(maxsize=64). Una sola visita desbordaba esa caché
+# mientras se ejecutaba y se expulsaba a sí misma. Subir los 64 está descartado
+# a propósito por memoria (ver el comentario en sports_api.py).
 #
-# Esto NO arregla la primera visita de cada clásico, que sigue costando sus
-# 5-6 s. Lo que quita son todas las demás. Los 120 días son una decisión
-# aparte y sin tocar: son los que permiten anunciar un duelo que cae dentro de
-# cuatro meses, y recortarlos cambiaría lo que la página afirma.
+# Esa ventana se recortó a 30 días el mismo día (ver clasico_page), así que
+# ahora hay dos arreglos y cada uno cubre lo que el otro no: la ventana corta
+# abarata la PRIMERA visita —que es la que ve Googlebot, porque rastrea cada
+# clásico muy de tarde en tarde y con 300 s de TTL siempre lo encuentra frío—
+# y esta caché quita todas las demás, que son las de las personas.
 _HTML_CACHE_PREFIXES = ("/equipo/", "/liga/", "/partido/", "/evento/", "/canal/", "/donde-ver/",
                         "/guia/", "/resultado/", "/resultados/", "/donde-ver-en-", "/equipos",
                         "/widget/", "/clasico/")
@@ -12532,7 +12532,29 @@ async def clasico_page(request: Request, slug: str):
     h2h, standings, proximos, hoy = await asyncio.gather(
         _trae_h2h,
         get_league_standings(sport, league_id, limit=50),
-        get_upcoming_league_games(sport, league_id, days=120, limit=60),
+        # 30 días, no 120. Eran 120 porque un clásico puede caer dentro de
+        # cuatro meses, y el 20/11/2026 se decidió que anunciar algo a cuatro
+        # meses no vale lo que cuesta.
+        #
+        # Lo que costaba, medido contra producción: boca-vs-river 6.512 ms,
+        # cowboys-vs-eagles 6.034, real-madrid-vs-barcelona 5.685, frente a
+        # 120-260 ms del resto del sitio. Y la segunda visita no mejoraba.
+        #
+        # 30 y no 14 (lo que piden los otros diez sitios que llaman a esta
+        # función) por una razón concreta: el _cache de scoreboards de
+        # sports_api es un TTLCache(maxsize=64). Con 120 fechas, UNA visita
+        # desbordaba esa caché y se expulsaba a sí misma, que es exactamente
+        # por qué repetir la petición no era más rápido. Con 30 cabe entera y
+        # deja sitio para el resto del tráfico, así que la caché por fin sirve
+        # para lo que está.
+        #
+        # Qué cambia en la página: cuando el duelo cae fuera del mes, en vez
+        # de la fecha aparece el texto que ya existía —"el próximo duelo en
+        # cuanto se programe"— junto al historial y la serie, que es el grueso
+        # de lo que la gente viene a ver. La plantilla ya tenía ese caso
+        # resuelto con {% if proximo %}; no se inventa nada ni se deja un
+        # hueco.
+        get_upcoming_league_games(sport, league_id, days=30, limit=60),
         get_todays_games(league_filter=cfg["liga_slug"]),
         return_exceptions=True,
     )
