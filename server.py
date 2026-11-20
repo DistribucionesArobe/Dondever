@@ -753,12 +753,39 @@ def _es_portada_de_otro_dia(request) -> bool:
     return dia != datetime.now(TZ_MX).strftime("%Y-%m-%d")
 
 
+# "/clasico/" se añadió el 20/11/2026, y faltaba desde que existen esas páginas:
+# se crearon después de esta lista y nadie volvió aquí. No estaban excluidas a
+# propósito; simplemente no se actualizó el prefijo.
+#
+# El precio, medido contra producción con fetch cronometrado:
+#
+#   /clasico/real-madrid-vs-barcelona   5.685 ms
+#   /clasico/boca-vs-river              6.512 ms
+#   /clasico/cowboys-vs-eagles          6.034 ms
+#   /clasico/america-vs-chivas          3.995 ms y 4.969 ms la SEGUNDA vez
+#
+# frente a 120-260 ms de todo lo demás en su segunda petición. Y Googlebot
+# reporta 4,37 s de media para el sitio entero con el aviso "el host tuvo
+# problemas", que es lo que le hace bajar el ritmo de rastreo.
+#
+# Por qué la segunda no es más rápida, que era lo raro: clasico_page pide
+# get_upcoming_league_games(days=120) —el único sitio del código que pasa de
+# 14 días— y eso son 120 fechas contra ESPN, mientras que el _cache de
+# scoreboards es un TTLCache(maxsize=64). Una sola visita desborda esa caché
+# mientras se ejecuta y se expulsa a sí misma. Subir los 64 está descartado a
+# propósito por memoria (ver el comentario en sports_api.py), así que lo que
+# procede es no repetir el trabajo: cachear el HTML ya renderizado.
+#
+# Esto NO arregla la primera visita de cada clásico, que sigue costando sus
+# 5-6 s. Lo que quita son todas las demás. Los 120 días son una decisión
+# aparte y sin tocar: son los que permiten anunciar un duelo que cae dentro de
+# cuatro meses, y recortarlos cambiaría lo que la página afirma.
 _HTML_CACHE_PREFIXES = ("/equipo/", "/liga/", "/partido/", "/evento/", "/canal/", "/donde-ver/",
                         "/guia/", "/resultado/", "/resultados/", "/donde-ver-en-", "/equipos",
-                        "/widget/")
+                        "/widget/", "/clasico/")
 _HTML_CACHE_HUBS = {"/resultados", "/playoffs-mlb", "/gratis-hoy", "/pronosticos-hoy", "/futbol-hoy",
                     "/futbol-americano-hoy", "/basquetbol-hoy", "/beisbol-hoy", "/hockey-hoy",
-                    "/streaming", "/casinos"}
+                    "/streaming", "/casinos", "/clasicos"}
 
 
 try:
