@@ -7670,6 +7670,12 @@ _PAIS_DE_LIGA = {
     "Primera Federación G2": "espana",
     # Liga F: 16 equipos x 2 países = 32 páginas, en vez de 176.
     "Liga F": "espana",
+    # Primera FEB: la segunda categoría del baloncesto español. Mismo criterio
+    # que la Primera Federación de fútbol: nadie fuera de España busca al CB
+    # Tizona. 18 equipos × 2 países = 36 páginas, en vez de 198. Ojo a la
+    # diferencia con la Liga Endesa, que sí tiene mercados declarados en
+    # México, EE.UU. y Argentina en _MERCADOS_FICHA.
+    "Primera FEB": "espana",
 }
 # Donde vive la gente que busca su liga desde fuera.
 _DIASPORA = ("espana", "estados-unidos")
@@ -9555,7 +9561,7 @@ _DEPORTE_POR_LIGA = {
                "LaLiga Hypermotion", "Primera Federación G1", "Primera Federación G2",
                "Liga F"),
     "beisbol": ("MLB", "LMB", "LMP", "LVBP", "LIDOM"),
-    "basketball": ("NBA", "WNBA", "LNBP", "Liga Endesa"),
+    "basketball": ("NBA", "WNBA", "LNBP", "Liga Endesa", "Primera FEB"),
     "futbol americano": ("NFL",),
     "hockey": ("NHL",),
     "MMA": ("UFC",),
@@ -9667,6 +9673,11 @@ _LIGAS_SOLO_ESPANA = (
     "Primera Federación G1",
     "Primera Federación G2",
     "Liga F",
+    # Primera FEB: el baloncesto de Burgos, Ourense, Palencia y Menorca se
+    # busca desde España y se juega en horario español. La Liga Endesa NO
+    # entra aquí, y es a propósito: tiene público declarado en México,
+    # EE.UU. y Argentina.
+    "Primera FEB",
     # La copa doméstica, por el mismo motivo por el que ya está en
     # _MERCADO_PAGINA_LIGA: en las primeras rondas juegan Portugalete,
     # Amorebieta, CD Minera.
@@ -11438,6 +11449,36 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
     # Pendiente: acb.com tiene "Consulta dónde ver la Liga Endesa en cada
     # país", pero la tabla es una imagen y no se puede leer. México, EE.UU. y
     # Argentina —que también tienen páginas de esta liga— siguen sin canales.
+    # Primera FEB. VERIFICADO EL 22/11/2026 EN FUENTE PRIMARIA, no de memoria:
+    #
+    #   · canalfeb.tv redirige a baloncestotv.com.
+    #   · Sus Términos y Condiciones (baloncestotv.com/es/terms-and-conditions)
+    #     dicen literalmente que el servicio lo presta "Sportway Iberia SL,
+    #     proveedor exclusivo de la Federación Española de Baloncesto", y que
+    #     da acceso "de forma gratuita o mediante el pago de compras
+    #     individuales y paquetes de suscripción". Crear la cuenta es gratis;
+    #     la suscripción se cobra por mes.
+    #   · Abrí un partido real de Primera FEB (jornada 9, 22/11/2026) y pide
+    #     iniciar sesión.
+    #
+    # Por eso el type es "Streaming (requiere cuenta)" y no "TV Abierta": NO
+    # es gratis en el sentido que busca la gente, y marcarlo como tal lo
+    # metería en "Gratis hoy".
+    #
+    # LO QUE NO SE ESCRIBE: el precio. Hay notas de prensa que hablan de pase
+    # mensual y de temporada, pero la lista de precios está detrás del
+    # registro y no la he visto yo. Mejor no decir una cifra que decir una
+    # equivocada.
+    #
+    # PENDIENTE: comprobar si alguna autonómica o Teledeporte emite algún
+    # partido de Primera FEB en abierto. No encontré fuente que lo confirme,
+    # así que no va.
+    "Primera FEB": {
+        "espana": [
+            {"name": "BalONcesto TV", "type": "Streaming (requiere cuenta)",
+             "sports": "La competición completa, en directo y a la carta"},
+        ],
+    },
     "Liga Endesa": {
         "espana": [
             {"name": "DAZN", "type": "Streaming",
@@ -11749,6 +11790,25 @@ _DEFAULT_CHANNELS_BY_COUNTRY = {
 # consejo general del país, que es lo que había. Nada de rellenar por rellenar:
 # una frase vaga sobre una liga que no es la de la página es peor que ninguna.
 _TIP_POR_PAIS_Y_LIGA = {
+    # ── Primera FEB en España ──────────────────────────────────────────────
+    #
+    # Mismo fallo que el de Magallanes, visto el 22/11/2026 en
+    # /equipo/cb-tizona/en/espana: debajo del canal correcto, la ficha de un
+    # club de BALONCESTO terminaba con el consejo general de España, que
+    # habla de LaLiga, de la Champions y de Movistar. El consejo general sólo
+    # se calla cuando NO hay emisor confirmado, y aquí sí lo hay.
+    #
+    # Todo lo que dice este texto está verificado en los propios Términos de
+    # baloncestotv.com (22/11/2026). No se menciona precio: la lista está
+    # detrás del registro y no la he visto.
+    ("espana", "Primera FEB"): (
+        "La Primera FEB se ve en BalONcesto TV, la plataforma oficial de la "
+        "Federación Española de Baloncesto, que emite la competición completa "
+        "en directo y a la carta. Hace falta crear una cuenta —eso es "
+        "gratis— y parte del contenido va con suscripción de pago. No nos "
+        "consta emisión en abierto de esta categoría; si la hubiera en alguna "
+        "autonómica, lo diremos aquí en cuanto esté confirmado."
+    ),
     ("estados-unidos", "MLB"): (
         "En Estados Unidos los juegos de temporada regular se reparten entre la cadena "
         "regional de cada equipo y las nacionales (FOX, FS1, TBS, ESPN). MLB.TV transmite "

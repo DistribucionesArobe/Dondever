@@ -659,10 +659,21 @@ DEFAULT_LEAGUE_CHANNELS = {
     # siete por jornada, y las autonómicas los de su equipo.
     "liga-femenina": ["Movistar Plus+", "Teledeporte", "Siroko TV",
                       "TV3", "TVG", "Aragón TV", "IB3", "EITB"],
-    # Primera y Segunda FEB: la liga existe y el calendario entra solo, pero
-    # NO encontré fuente fiable del reparto de TV 2026-27. Se quedan vacías a
-    # propósito: la ficha dirá "por confirmar" en vez de inventar un canal.
-    "primera-feb": [],
+    # Primera FEB: RESUELTO el 22/11/2026 contra fuente primaria. El canal es
+    # BalONcesto TV (baloncestotv.com, antes canalfeb.tv, que redirige allí).
+    # Sus propios Términos dicen que lo presta "Sportway Iberia SL, proveedor
+    # exclusivo de la Federación Española de Baloncesto", y su descripción
+    # lista "Primera FEB, Segunda FEB, Tercera FEB, LF Challenge, Liga
+    # Femenina 2 y Copa España, en directo y a la carta". Comprobado además
+    # abriendo un partido real de Primera FEB (jornada 9, 22/11/2026).
+    #
+    # Va aquí UNA sola entrada y no "por confirmar": es la plataforma oficial.
+    # Pero NO entra en FREE_CHANNELS —exige cuenta y hay contenido de pago—,
+    # así que "Gratis hoy" sigue sin mentir.
+    #
+    # La Segunda FEB se queda vacía a propósito: el mismo sitio la emite, pero
+    # no la tenemos como liga activa, así que no toco lo que no sirvo.
+    "primera-feb": ["BalONcesto TV"],
     "segunda-feb": [],
     # ES: canal DAZN MotoGP (dial 70), estrenado en 2026. Jerez, Catalunya y
     # Valencia se ven en abierto.

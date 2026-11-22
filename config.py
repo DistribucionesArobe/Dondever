@@ -1394,6 +1394,51 @@ POPULAR_TEAMS = {
     "cruz-azul-hidalgo": {"name": "Cruz Azul Hidalgo", "league": "Liga Expansión MX"},
     "tepatitlan-fc": {"name": "Tepatitlán FC", "league": "Liga Expansión MX"},
 
+    # ══ PRIMERA FEB — los 18, añadidos el 22/11/2026 ══
+    #
+    # POR QUÉ: la liga llevaba meses configurada (TheSportsDB 5134) y la
+    # página /liga/primera-feb servía calendario y resultados, pero con CERO
+    # equipos aquí y CERO canales. Rankeamos primeros en España para sus
+    # consultas solo con las fichas /partido/ autogeneradas: ni una página
+    # /equipo/, ni sitemap, ni equipo × país. España es hoy el 2º país en
+    # ingresos del sitio y el 1º en clics.
+    #
+    # LOS NOMBRES SALEN DE NUESTRA PROPIA FUENTE: se leyeron de
+    # eventsseason.php?id=5134&s=2026-2027, que es exactamente contra lo que
+    # se emparejan los partidos. Copiarlos de Wikipedia o del patrocinador
+    # ("Movistar Estudiantes", "Cajasiete Gran Canaria") rompería el
+    # emparejamiento y la ficha saldría vacía.
+    #
+    # CUATRO COLISIONES DE SLUG, todas resueltas con sufijo, igual que
+    # correcaminos-uat: ya existen "estudiantes" (Estudiantes de La Plata,
+    # fútbol argentino), "zamora" (Zamora CF, Primera Federación G1),
+    # "granada" y "cordoba" (LaLiga Hypermotion). Son clubes distintos.
+    #
+    # nombre_seo donde el nombre de la fuente está sin acento o es ambiguo
+    # fuera de su contexto: "Estudiantes" a secas, en un sitio que ya tiene
+    # al de La Plata, no sirve; y "Cordoba CB" va sin tilde en la fuente.
+    "albacete-basket": {"name": "Albacete Basket", "league": "Primera FEB"},
+    "fuenlabrada-basket": {"name": "Baloncesto Fuenlabrada", "league": "Primera FEB"},
+    "bahia-san-agustin": {"name": "CB Bahía San Agustín", "league": "Primera FEB"},
+    "cb-gran-canaria": {"name": "CB Gran Canaria", "league": "Primera FEB"},
+    "cb-menorca": {"name": "CB Menorca", "league": "Primera FEB"},
+    "cb-tizona": {"name": "CB Tizona", "league": "Primera FEB"},
+    "cb-zamora": {"name": "CB Zamora", "league": "Primera FEB"},
+    "cd-estela": {"name": "CD Estela", "league": "Primera FEB"},
+    "caja-87": {"name": "Caja 87 Baloncesto", "league": "Primera FEB"},
+    "ourense-baloncesto": {"name": "Club Ourense Baloncesto", "league": "Primera FEB"},
+    "cordoba-cb": {"name": "Cordoba CB", "nombre_seo": "Córdoba CB",
+                   "league": "Primera FEB"},
+    "estudiantes-baloncesto": {"name": "Estudiantes", "nombre_seo": "CB Estudiantes",
+                               "league": "Primera FEB"},
+    "granada-baloncesto": {"name": "Fundación CB Granada", "league": "Primera FEB"},
+    "lucentum-alicante": {"name": "Fundación Lucentum Baloncesto",
+                          "nombre_seo": "Lucentum Alicante", "league": "Primera FEB"},
+    "gipuzkoa-basket": {"name": "Gipuzkoa Basket", "league": "Primera FEB"},
+    "oviedo-cb": {"name": "Oviedo CB", "league": "Primera FEB"},
+    "palencia-baloncesto": {"name": "Palencia Baloncesto", "league": "Primera FEB"},
+    "palmer-basket": {"name": "Palmer Basket", "league": "Primera FEB"},
+
     "alaves-gloriosas": {"name": "Alavés Gloriosas", "league": "Liga F"},
     "athletic-club-women": {"name": "Athletic Club Women",
                             "nombre_seo": "Athletic Club Femenino", "league": "Liga F"},
@@ -2088,6 +2133,39 @@ TEAM_ALIASES = {
     "baloncesto femenino": "liga-femenina",
     "primera feb": "primera-feb",
     "leb oro": "primera-feb",
+    # Equipos de Primera FEB (22/11/2026). Sólo alias inequívocos: los clubes
+    # cuyo nombre corto ya pertenece a otro equipo del sitio —Estudiantes,
+    # Zamora, Granada, Córdoba— llevan el deporte en el alias, porque si
+    # "granada" mandara aquí le quitaría el sitio al Granada CF, que tiene
+    # mucho más tráfico. Quien busca el de baloncesto lo dice.
+    "feb": "primera-feb",
+    "movistar estudiantes": "estudiantes-baloncesto",
+    "cb estudiantes": "estudiantes-baloncesto",
+    "estudiantes baloncesto": "estudiantes-baloncesto",
+    "cb granada": "granada-baloncesto",
+    "granada baloncesto": "granada-baloncesto",
+    "cb zamora": "cb-zamora",
+    "zamora baloncesto": "cb-zamora",
+    "cordoba cb": "cordoba-cb",
+    "cordoba baloncesto": "cordoba-cb",
+    "lucentum": "lucentum-alicante",
+    "lucentum alicante": "lucentum-alicante",
+    "cb menorca": "cb-menorca",
+    "basquet menorca": "cb-menorca",
+    "ourense baloncesto": "ourense-baloncesto",
+    "cob": "ourense-baloncesto",
+    "palencia baloncesto": "palencia-baloncesto",
+    "gipuzkoa basket": "gipuzkoa-basket",
+    "albacete basket": "albacete-basket",
+    "baloncesto fuenlabrada": "fuenlabrada-basket",
+    "cb tizona": "cb-tizona",
+    "tizona burgos": "cb-tizona",
+    "oviedo cb": "oviedo-cb",
+    "oviedo baloncesto": "oviedo-cb",
+    "palmer basket": "palmer-basket",
+    "bahia san agustin": "bahia-san-agustin",
+    "caja 87": "caja-87",
+    "cd estela": "cd-estela",
     "segunda feb": "segunda-feb",
     "leb plata": "segunda-feb",
     # Primera Federación. Los dos primeros alias mandan al Grupo 1 a secas
@@ -2469,6 +2547,27 @@ CHANNEL_ALIASES = {
     # un publico espanol ese es justo el dato que nadie mas le da masticado.
     "Teledeporte":       {"name": "Teledeporte", "country": "ES", "type": "free"},
     "TDP":               {"name": "Teledeporte", "country": "ES", "type": "free"},
+    # BalONcesto TV — la plataforma oficial de la FEB (Primera, Segunda y
+    # Tercera FEB, LF Challenge, Liga Femenina 2 y Copa España).
+    #
+    # VERIFICADO EN FUENTE PRIMARIA el 22/11/2026, en sus propios Términos y
+    # Condiciones (baloncestotv.com/es/terms-and-conditions), no de memoria:
+    #   · "El Servicio es proporcionado por Sportway Iberia SL, proveedor
+    #      exclusivo de la Federación Española de Baloncesto".
+    #   · "acceso personal a contenido audiovisual (...) de forma gratuita o
+    #      mediante el pago de compras individuales y paquetes de suscripción".
+    #   · "Para utilizar el Servicio, debe registrar una cuenta de usuario."
+    #     Crear la cuenta es gratis; la suscripción se cobra por mes.
+    #
+    # Por eso el type es "streaming" y NO "free": parte del catálogo es
+    # gratuito, pero siempre detrás de registro, y el resto es de pago. Lo
+    # comprobé abriendo un partido de Primera FEB: salta "Iniciar sesión".
+    # Marcarlo como free lo metería en "Gratis hoy", que sería mentir.
+    #
+    # Y NO SE PUEDE INCRUSTAR: los mismos términos prohíben "difundir ni
+    # copiar material, ponerlo a disposición del público ni utilizarlo con
+    # fines comerciales". Es exactamente el caso que prohíbe video_embeds.py.
+    "BalONcesto TV":     {"name": "BalONcesto TV", "country": "ES", "type": "streaming"},
     "MLB.TV": {"name": "MLB.TV", "country": "LATAM", "type": "streaming"},
     "NBA League Pass": {"name": "NBA League Pass", "country": "LATAM", "type": "streaming"},
 }
