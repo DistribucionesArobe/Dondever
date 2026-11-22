@@ -2832,6 +2832,26 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
         if ln and ln not in leagues_here:
             leagues_here.append(ln)
 
+    # Si esta semana el canal no tiene nada, se mira el histórico de 12 meses.
+    #
+    # Sin esto, /canal/azteca-7 se quedaba en 307 palabras y su única sección
+    # decía "No hay partidos hoy", mientras /canal/tudn tenía 809 porque hoy sí
+    # juega. Y "azteca 7 en vivo" es una búsqueda PERMANENTE: el que la escribe
+    # quiere ver su canal, no enterarse de si hoy hay fútbol. Esa página está
+    # en la posición 47,4 con un CTR del 35,7 % — encuentra poquísima gente y
+    # casi todos pulsan.
+    #
+    # El histórico sale de games.channels_json, que ya guardábamos. Si el canal
+    # no transmitió nada en un año, la lista viene vacía y la sección no sale:
+    # preferible a rellenar con texto inventado.
+    leagues_hist = []
+    if not leagues_here:
+        try:
+            from db import get_channel_leagues
+            leagues_hist = [ln for ln, _ in await get_channel_leagues(channel_name)]
+        except Exception as e:  # la base puede estar caída; la página no se cae con ella
+            logger.warning("histórico de canal no disponible para %s: %s", channel_slug, e)
+
     _r = templates.TemplateResponse(
         request,
         "canal.html",
@@ -2857,6 +2877,7 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             "week_total": len(next_games),
             "week_range": _SEMANA_DIAS,
             "leagues_here": leagues_here[:8],
+            "leagues_hist": leagues_hist,
             "current_date": date or today.strftime("%Y%m%d"),
             # Sufijo para conservar el día al cambiar de deporte. Vacío cuando
             # el visitante NO pidió una fecha: si se pegara siempre, los chips

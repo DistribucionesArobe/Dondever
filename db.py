@@ -341,6 +341,55 @@ async def get_team_channels(team_name: str, sport: str = "") -> list[tuple[str, 
         return [(r[0], r[1]) for r in result.all()]
 
 
+async def get_channel_leagues(channel_name: str, limit: int = 8) -> list[tuple[str, int]]:
+    """Ligas que este canal ha transmitido en los últimos 12 meses.
+
+    Es la inversa de get_team_channels, y existe por una razón medida. En
+    Search Console (EE.UU., 28 días) las consultas que mejor convierten del
+    país que mejor paga son CANALES, no partidos, y están todas enterradas:
+
+        azteca 7 en vivo               CTR 35,7 %   posición 47,4
+        ver tudn en vivo por internet  CTR 100  %   posición 51,5
+        espn mx en vivo                CTR 40   %   posición 12,6
+
+    El motivo se ve comparando las dos páginas: /canal/tudn tiene 809 palabras
+    porque hoy tiene partidos; /canal/azteca-7 tiene 307 y su sección central
+    dice "No hay partidos en Azteca 7 hoy". La sección "Qué se transmite en
+    este canal" se calculaba SOLO con los partidos de hoy y de la semana, así
+    que el día que el canal no tiene fútbol, desaparece.
+
+    Y eso es un error de concepto, no de diseño: "azteca 7 en vivo" es una
+    búsqueda permanente —quiero ver mi canal— contra una página que es una
+    parrilla diaria. Google ve algo delgado e intermitente.
+
+    El dato para arreglarlo ya lo teníamos guardado: cada partido que pasa por
+    el sitio deja sus canales en games.channels_json. Esto solo lo lee. No se
+    inventa nada: si el canal no transmitió nada en doce meses, devuelve vacío
+    y la sección sigue sin salir.
+
+    Doce meses por lo mismo que en get_team_channels: un canal que perdió los
+    derechos deja de aparecer en una temporada.
+    """
+    async with async_session() as session:
+        result = await session.execute(
+            text("""
+                SELECT league_name, COUNT(*) as cnt
+                FROM games,
+                     LATERAL jsonb_array_elements_text(channels_json::jsonb) AS ch
+                WHERE ch ILIKE :canal
+                  AND league_name IS NOT NULL
+                  AND league_name <> ''
+                  AND date_utc IS NOT NULL
+                  AND date_utc >= NOW() - INTERVAL '12 months'
+                GROUP BY league_name
+                ORDER BY cnt DESC
+                LIMIT :limite
+            """),
+            {"canal": channel_name, "limite": limit}
+        )
+        return [(r[0], r[1]) for r in result.all()]
+
+
 async def get_h2h(team_a: str, team_b: str, limit: int = 30) -> list[dict]:
     """Enfrentamientos entre dos equipos, del más reciente al más viejo.
 

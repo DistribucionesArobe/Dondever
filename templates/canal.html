@@ -331,12 +331,24 @@
         {% if ch_desc %}<p>{{ ch_desc }}</p>{% endif %}
         <p class="ch-note">La disponibilidad y el n&uacute;mero de canal cambian seg&uacute;n tu pa&iacute;s y tu proveedor de TV. Verifica con tu operador antes de contratar.</p>
 
+        {#- Dos redacciones, y la diferencia importa: una habla de ESTA semana y
+            la otra del último año. Decir "estos días" sobre un dato de hace
+            ocho meses sería mentir al lector, y además le quitaría el valor:
+            saber que un canal lleva un año dando una liga es justo lo que
+            busca el que escribe "azteca 7 en vivo" un martes sin fútbol. -#}
         {% if leagues_here %}
         <h2>Qu&eacute; se transmite en {{ channel_name }}</h2>
         <p>Competencias que hemos visto en {{ channel_name }} estos d&iacute;as:</p>
         <div class="ch-leagues">
             {% for ln in leagues_here %}<span class="ch-league-tag">{{ ln }}</span>{% endfor %}
         </div>
+        {% elif leagues_hist %}
+        <h2>Qu&eacute; se transmite en {{ channel_name }}</h2>
+        <p>Esta semana no hay partidos, pero estas son las competencias que hemos visto en {{ channel_name }} durante el &uacute;ltimo a&ntilde;o:</p>
+        <div class="ch-leagues">
+            {% for ln in leagues_hist %}<span class="ch-league-tag">{{ ln }}</span>{% endfor %}
+        </div>
+        <p class="ch-note">Sale de los partidos que hemos registrado nosotros, as&iacute; que empieza el d&iacute;a que empezamos a guardarlos. La programaci&oacute;n puede cambiar.</p>
         {% endif %}
 
         <h2>Preguntas frecuentes</h2>
