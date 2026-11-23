@@ -23,7 +23,8 @@ from video_embeds import video_de_partido, video_de_liga, liga_con_transmision
 from db import init_db, persist_games, get_team_history, get_team_upcoming, get_team_channels
 import sports_api as _sports_api_mod
 from sports_api import (
-    get_todays_games, search_games, get_team_stats, get_league_standings,
+    get_todays_games as _get_todays_games_crudo,
+    search_games, get_team_stats, get_league_standings,
     fetch_odds, match_odds_to_game, match_full_odds_to_game,
     get_recent_league_results, get_upcoming_league_games, fetch_team_news,
     fetch_meli_product_image, fetch_espn_event_summary,
@@ -398,7 +399,7 @@ def score_game_interest(game: dict) -> int:
 
     # 3. Free TV bonus (0-15)
     broadcasts = game.get("broadcasts", [])
-    if any(_is_free_broadcast(b.get("channel", "")) for b in broadcasts):
+    if any(_is_free_broadcast(_nombre_canal(b)) for b in broadcasts):
         score += 15
 
     # 4. Has odds (0-5)
@@ -1501,12 +1502,12 @@ async def home(
     free_games = [
         g for g in games
         if g["status"]["state"] == "pre"
-        and any(_is_free_broadcast(b.get("channel", "")) for b in g.get("broadcasts", []))
+        and any(_is_free_broadcast(_nombre_canal(b)) for b in g.get("broadcasts", []))
     ]
     for g in free_games:
         g["free_channels"] = [
-            b["channel"] for b in g.get("broadcasts", [])
-            if _is_free_broadcast(b.get("channel", ""))
+            _nombre_canal(b) for b in g.get("broadcasts", [])
+            if _is_free_broadcast(_nombre_canal(b))
         ]
 
     # ── Live games section ──────────────────────────────
@@ -2047,7 +2048,7 @@ def _widget_row(g: dict) -> dict:
         when, sub, live = f"{first.get('score', '')}-{second.get('score', '')}", "Final", False
     else:
         when, sub, live = format_mx_time(g["date"]), format_mx_day_time(g["date"]).split(" · ")[0], False
-    chans = [b.get("channel", "") for b in (g.get("broadcasts") or [])[:2]]
+    chans = [_nombre_canal(b) for b in (g.get("broadcasts") or [])[:2]]
     return {"title": f"{first['name']} vs {second['name']}", "league": g.get("league_name", ""),
             "channels": ", ".join(c for c in chans if c), "when": when, "sub": sub, "live": live,
             # El widget es lo que vive incrustado en sitios ajenos, donde nadie
@@ -2158,7 +2159,7 @@ async def playoffs_mlb(request: Request):
     elif is_postseason and pre:
         g = pre[0]
         t = format_mx_time(g.get("date", ""))
-        ch = (g.get("broadcasts") or [{}])[0].get("channel", "")
+        ch = _nombre_canal((g.get("broadcasts") or [{}])[0])
         seo_title = f"Playoffs MLB {year} hoy: {_sn(g['away']['name'])} vs {_sn(g['home']['name'])} {t} MX{(' en ' + ch) if ch else ''}"
     else:
         seo_title = f"Dónde ver los playoffs MLB {year}: canales, horarios y calendario | DondeVer"
@@ -2440,12 +2441,12 @@ async def free_today(request: Request):
     free_games = [
         g for g in games
         if g["status"]["state"] in ("pre", "in")
-        and any(_is_free_broadcast(b.get("channel", "")) for b in g.get("broadcasts", []))
+        and any(_is_free_broadcast(_nombre_canal(b)) for b in g.get("broadcasts", []))
     ]
     for g in free_games:
         g["free_channels"] = [
-            b["channel"] for b in g.get("broadcasts", [])
-            if _is_free_broadcast(b.get("channel", ""))
+            _nombre_canal(b) for b in g.get("broadcasts", [])
+            if _is_free_broadcast(_nombre_canal(b))
         ]
         g["interest_score"] = score_game_interest(g)
 
@@ -2493,6 +2494,91 @@ async def canales_ads_page(request: Request):
             "total_games": len(games),
         },
     )
+
+
+async def get_todays_games(*args, **kwargs):
+    """get_todays_games de sports_api, con los emisores ya saneados.
+
+    Todas las rutas del sitio piden los partidos por aquí, así que éste es el
+    único sitio donde hay que acordarse. Ver _normalizar_emisores para el
+    porqué: la caída del 23/11/2026, en la que /canal/*, /canales y la
+    portada se caían por un emisor que llegaba como texto plano.
+    """
+    return _normalizar_emisores(await _get_todays_games_crudo(*args, **kwargs))
+
+
+def _normalizar_emisores(juegos):
+    """Deja todos los `broadcasts` como diccionarios con clave "channel". In-place.
+
+    LA RAÍZ DE LA CAÍDA DEL 23/11/2026, y el arreglo de verdad.
+
+    Parchear los sitios que leen el emisor no bastaba: la portada seguía
+    cayendo porque el fallo estaba en la PLANTILLA, en el macro
+    primary_channel_tag de index.html:
+
+        {%- if ... not b.get('is_us_regional') -%}
+
+    Jinja llama .get() sobre lo que le des, y si el emisor llegó como texto
+    plano en vez de diccionario, revienta igual que en Python. Perseguir eso
+    plantilla por plantilla —son diez— es garantizar que se vuelva a escapar
+    una.
+
+    Así que se normaliza UNA vez, en la puerta de entrada: a partir de aquí
+    nadie más tiene que acordarse. Texto plano → {"channel": texto}. None y
+    los que no tienen nombre → fuera. Diccionario sin "channel" pero con
+    "name" → se le copia. Lo demás se respeta tal cual, incluidos "info",
+    "logo" e "is_us_regional", que el resto del código sí usa.
+    """
+    for g in juegos or []:
+        bcs = g.get("broadcasts")
+        if not isinstance(bcs, list):
+            continue
+        limpios = []
+        for b in bcs:
+            nombre = _nombre_canal(b)
+            if not nombre:
+                continue              # None, {}, o un emisor sin nombre: no aporta nada
+            if isinstance(b, dict):
+                if b.get("channel") != nombre:
+                    b = {**b, "channel": nombre}
+                limpios.append(b)
+            else:
+                limpios.append({"channel": nombre})
+        if limpios != bcs:
+            g["broadcasts"] = limpios
+    return juegos
+
+
+def _nombre_canal(b) -> str:
+    """El nombre de un emisor, venga como venga. Nunca lanza.
+
+    CAÍDA EN PRODUCCIÓN, 23/11/2026. Todas las páginas /canal/* y /canales
+    devolvían 503 mientras el resto del sitio respondía 200 en menos de 300 ms.
+    El cuerpo del error era nuestro —{"error":"temporalmente no disponible"}—,
+    o sea el manejador global de excepciones convirtiendo un fallo real.
+
+    Esas dos rutas eran las ÚNICAS del sitio que leían el nombre del emisor
+    con corchetes, `b["channel"]`, sin red:
+
+        /canales        línea ~2624   ch = b["channel"]
+        /canal/{slug}   línea ~2767   _slugify_channel(b["channel"])
+
+    Si un emisor llega sin la clave "channel" salta KeyError; si llega como
+    texto plano en vez de diccionario, TypeError. Cualquiera de los dos tumba
+    la página entera. El resto del código usa .get() y por eso aguantaba.
+
+    No se reprodujo en local porque aquí las APIs están bloqueadas y los
+    partidos llegan sin emisores: la línea no se ejecuta nunca.
+
+    Por qué importa: /canal/azteca-7 mide 28,6 % de CTR desde Estados Unidos
+    —el tráfico que paga RPM 81,35 contra los 13,61 de México— y llevaba
+    caída. Un 503 sostenido además saca la página del índice.
+    """
+    if isinstance(b, dict):
+        return (b.get("channel") or b.get("name") or "").strip()
+    if isinstance(b, str):
+        return b.strip()
+    return ""
 
 
 def _slugify_channel(name: str) -> str:
@@ -2621,7 +2707,9 @@ async def canales_index(request: Request):
     channels: dict[str, dict] = {}
     for g in games:
         for b in g.get("broadcasts", []):
-            ch = b["channel"]
+            ch = _nombre_canal(b)
+            if not ch:
+                continue
             slug = _slugify_channel(ch)
             if slug not in channels:
                 saff = STREAMING_AFFILIATES.get(ch)
@@ -2724,7 +2812,7 @@ async def _channel_week(channel_slug: str, days: int = _SEMANA_DIAS) -> list:
     for dt, juegos in semana:
         del_dia = [
             g for g in juegos
-            if any(_slugify_channel(b.get("channel", "")) == channel_slug
+            if any(_slugify_channel(_nombre_canal(b)) == channel_slug
                    for b in g.get("broadcasts", []))
         ]
         if not del_dia:
@@ -2764,9 +2852,10 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
     channel_games = []
     for g in games:
         for b in g.get("broadcasts", []):
-            if _slugify_channel(b["channel"]) == channel_slug:
+            _cn = _nombre_canal(b)
+            if _cn and _slugify_channel(_cn) == channel_slug:
                 if not channel_name:
-                    channel_name = b["channel"]
+                    channel_name = _cn
                 if g not in channel_games:
                     channel_games.append(g)
 
@@ -3213,7 +3302,7 @@ async def game_semantic(request: Request, slug: str):
             if _mx_grid:
                 from sports_api import CHANNEL_ALIASES as _ALIAS
                 _bcs = list(game.get("broadcasts") or [])
-                _ya = {(b.get("channel") or "").lower() for b in _bcs}
+                _ya = {_nombre_canal(b).lower() for b in _bcs}
                 _nuevos = []
                 for _ch in _mx_grid:
                     _info = dict(_ALIAS.get(_ch, {"name": _ch, "type": "cable"}))
@@ -4720,7 +4809,7 @@ async def league_page(request: Request, league_slug: str):
     league_channels_today = []
     for g in games:
         for b in g.get("broadcasts", []):
-            ch = b.get("channel", "")
+            ch = _nombre_canal(b)
             if ch and ch not in league_channels_today:
                 league_channels_today.append(ch)
     # Fallback to default channels if no games today
@@ -5710,7 +5799,7 @@ async def api_team_quick(team_slug: str):
         home_left = sport in HOME_LEFT_SPORTS
         first = g["home"]["name"] if home_left else g["away"]["name"]
         second = g["away"]["name"] if home_left else g["home"]["name"]
-        channels = [b["channel"] for b in g.get("broadcasts", [])[:4]]
+        channels = [c for c in (_nombre_canal(b) for b in g.get("broadcasts", [])[:4]) if c]
         result = {
             "id": g["id"],
             "first": first, "second": second,
@@ -5848,7 +5937,7 @@ async def api_mis_equipos(teams: str = Query("", description="Comma-separated te
                 home_left = sport in ("soccer", "boxing", "mma")
                 first = g["home"] if home_left else g["away"]
                 second = g["away"] if home_left else g["home"]
-                channels = [b["channel"] for b in g.get("broadcasts", [])[:4]]
+                channels = [c for c in (_nombre_canal(b) for b in g.get("broadcasts", [])[:4]) if c]
                 channels_str = ", ".join(channels) if channels else ""
                 today_games.append({
                     "id": g["id"],
@@ -8258,7 +8347,7 @@ async def channel_page(request: Request, channel_slug: str):
         if g.get("broadcasts"):
             for b in g["broadcasts"]:
                 # Match by normalized name or raw name
-                raw = b.get("channel", "")
+                raw = _nombre_canal(b)
                 info = b.get("info", {})
                 norm = info.get("name", raw) if info else raw
                 if norm == channel_name or raw == channel_name:
@@ -8607,7 +8696,7 @@ def _build_match_faq(game: dict) -> list[dict]:
     canales = []
     if confirmado:
         for b in (game.get("broadcasts") or []):
-            ch = b.get("channel") if isinstance(b, dict) else str(b)
+            ch = _nombre_canal(b)
             if ch and ch not in canales:
                 canales.append(ch)
     if canales:
@@ -8756,7 +8845,7 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
     if games:
         for g in games[:2]:
             for b in g.get("broadcasts", []):
-                ch = b.get("channel", "")
+                ch = _nombre_canal(b)
                 if ch and ch not in channels_today:
                     channels_today.append(ch)
     if channels_today:
@@ -8808,7 +8897,7 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
             # primero y la frase queda falsa sin que lo parezca.
             _ch0 = []
             for _b in (_g0.get("broadcasts") or []):
-                _c = _b.get("channel", "") if isinstance(_b, dict) else str(_b)
+                _c = _nombre_canal(_b)
                 if _c and _c not in _ch0:
                     _ch0.append(_c)
             _ch0_str = ", ".join(_ch0[:5]) or ch_str
@@ -9030,7 +9119,7 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
         if not _g.get("channels_confirmed", True):
             continue
         for _b in (_g.get("broadcasts") or []):
-            _c = _b.get("channel", "") if isinstance(_b, dict) else str(_b)
+            _c = _nombre_canal(_b)
             if _c and _is_free_broadcast(_c, _pais_faq) and _c not in _hoy_gratis:
                 _hoy_gratis.append(_c)
     if _hoy_gratis:
@@ -9231,7 +9320,7 @@ def generate_match_preview(game: dict) -> dict | None:
 
     # Channel info
     if broadcasts:
-        ch_names = [b.get("channel", "") for b in broadcasts[:3] if b.get("channel")]
+        ch_names = [c for c in (_nombre_canal(b) for b in broadcasts[:3]) if c]
         if ch_names:
             full_parts.append(
                 f"El partido se transmite por {', '.join(ch_names)}."
@@ -9974,7 +10063,7 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         # afirmar uno que nadie verificó.
         if not game.get("channels_confirmed", True):
             return opp, ""
-        chans = [b.get("channel") if isinstance(b, dict) else str(b)
+        chans = [_nombre_canal(b)
                  for b in (game.get("broadcasts") or [])]
         chans = [c for c in chans if c]
         return opp, (chans[0] if chans else "")
@@ -10166,7 +10255,7 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         ch = ""
         if chs:
             c0 = chs[0]
-            ch = c0.get("channel") if isinstance(c0, dict) else str(c0)
+            ch = _nombre_canal(c0)
         ch_txt = f" en {ch}" if ch else ""
         when_txt = f" {when}" if when else ""
         when_short = when.replace(" · ", " ")[:3].lower() + when.replace(" · ", " ")[3:] if when else ""
@@ -12215,7 +12304,7 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     _ch_de_hoy = ""
     for _g in (games or []):
         for _b in (_g.get("broadcasts_pais") or []):
-            _n = (_b.get("channel") or "").strip()
+            _n = _nombre_canal(_b)
             if _n:
                 _ch_de_hoy = _n
                 break
@@ -12923,7 +13012,7 @@ async def winter_league_en(request: Request, slug: str):
     canales = []
     for g in games:
         for b in g.get("broadcasts", []):
-            ch = b.get("channel", "")
+            ch = _nombre_canal(b)
             if ch and ch not in canales:
                 canales.append(ch)
 
@@ -12986,7 +13075,7 @@ async def team_page_en(request: Request, team_slug: str):
         for b in g.get("broadcasts", []):
             inf = b.get("info") or {}
             if inf.get("country") in ("US", "") or not inf:
-                ch = b.get("channel", "")
+                ch = _nombre_canal(b)
                 if ch and ch not in out:
                     out.append(ch)
         return out[:4]
