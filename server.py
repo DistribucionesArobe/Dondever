@@ -8983,15 +8983,60 @@ def _build_team_faq(*, team_name, team_sport, team_league, stats, games,
                   f"En TV de paga, ESPN transmite juegos selectos. El 'Free Game of the Day' de MLB.TV "
                   f"rota entre diferentes equipos.")
     elif team_sport == "basketball":
-        answer = (f"Juegos selectos de {team_name} se transmiten por ABC en USA (gratis con antena). "
-                  f"NBA League Pass ofrece prueba gratuita al inicio de temporada. "
-                  f"En México, ESPN transmite partidos selectos con suscripción de TV de paga.")
+        # El básquet del sitio ya NO es sólo la NBA: están la LNBP mexicana, la
+        # Liga Endesa, la Liga Femenina y, desde el 22/11/2026, los 18 equipos
+        # de Primera FEB. Esta respuesta hablaba de ABC y de NBA League Pass
+        # para todos ellos, así que a un aficionado del CB Tizona en Burgos le
+        # ofrecía un pase de la NBA. Visto al probar los equipos nuevos.
+        if team_league in ("NBA", "WNBA"):
+            answer = (f"Juegos selectos de {team_name} se transmiten por ABC en USA (gratis con antena). "
+                      f"NBA League Pass ofrece prueba gratuita al inicio de temporada. "
+                      f"En México, ESPN transmite partidos selectos con suscripción de TV de paga.")
+        elif team_league == "Liga Endesa":
+            answer = (f"Sí hay partidos de {team_league} en abierto: Teledeporte pasa uno por jornada, "
+                      f"y las autonómicas (TV3, TVG, Aragón TV, EITB) otro los domingos por la mañana. "
+                      f"El resto de la competición va por DAZN y Movistar Plus+, con suscripción.")
+        elif team_league in ("Primera FEB", "Liga Femenina"):
+            answer = (f"La {team_league} se ve en su plataforma oficial de la FEB, donde crear la cuenta "
+                      f"es gratis y parte del contenido va con suscripción. No nos consta emisión en "
+                      f"abierto de esta categoría; si la hubiera, lo diremos aquí en cuanto se confirme.")
+        else:
+            answer = (f"La disponibilidad gratuita de {team_league} varía por país y por jornada. "
+                      f"Consulta esta página el día del partido: mostramos el canal confirmado de cada "
+                      f"juego y marcamos cuáles van en TV abierta.")
     elif team_sport == "futbol americano":
         answer = (f"En México, Canal 5 y Azteca 7 transmiten juegos de NFL cada semana en abierto. "
                   f"En USA, CBS, Fox y NBC transmiten juegos gratis con antena. "
                   f"Amazon Prime tiene Thursday Night Football (requiere suscripción).")
     else:
         answer = f"Consulta DondeVer.app el día del partido para ver las opciones de transmisión de {team_name}."
+    # La pregunta que más convierte del sitio, respondida en genérico.
+    #
+    # Esta entrada existía desde hace meses y siempre contestaba lo mismo —"en
+    # Liga MX algunos partidos van por Canal 5 o Azteca 7"—, aunque ese día
+    # supiéramos el canal exacto del partido de hoy. Y es justo la intención
+    # que mejor rinde: las consultas con "gratis" van al 10,2 % de CTR contra
+    # el 2,0 % del sitio (Search Console, 28 días al 22/11/2026).
+    #
+    # Si hoy hay partido y su canal pasa _is_free_broadcast, se responde con
+    # el dato real ANTES del texto general. Si no, no se toca nada: la
+    # respuesta genérica sigue siendo la correcta y no se afirma que algo sea
+    # gratis sin tener el canal confirmado.
+    _pais_faq = _tz_de_liga(team_league or "")[1]
+    _hoy_gratis = []
+    for _g in (games or []):
+        if (_g.get("status") or {}).get("state") not in ("pre", "in"):
+            continue
+        if not _g.get("channels_confirmed", True):
+            continue
+        for _b in (_g.get("broadcasts") or []):
+            _c = _b.get("channel", "") if isinstance(_b, dict) else str(_b)
+            if _c and _is_free_broadcast(_c, _pais_faq) and _c not in _hoy_gratis:
+                _hoy_gratis.append(_c)
+    if _hoy_gratis:
+        _lista = " y ".join(_hoy_gratis[:2])
+        answer = (f"Hoy sí: el partido de {team_name} se transmite GRATIS por {_lista}, "
+                  f"en TV abierta y sin suscripción. " + answer)
     faq.append({"q": f"¿Cómo ver a {team_name} en vivo gratis?", "a": answer})
 
     # ── 6. Liga-specific bonus question ──
@@ -9804,6 +9849,67 @@ def _short_team_name(full_name: str, league: str = "") -> str:
     return name.strip() or full_name
 
 
+# ══ "gratis" en el título cuando el partido de hoy va por TV abierta ══
+#
+# MEDIDO EN SEARCH CONSOLE EL 22/11/2026, 28 días, filtrando las consultas que
+# contienen la palabra "gratis":
+#
+#   consultas con "gratis"   3.100 impresiones · 315 clics · CTR 10,2 % · pos 14,1
+#   el sitio entero        904.000 impresiones · 17.700   · CTR  2,0 % · pos  8,7
+#
+# Cinco veces el CTR del sitio desde una posición CINCO PUESTOS PEOR. Eso no
+# es posición, es intención: quien escribe "gratis" pulsa lo que sea.
+# Casos sueltos: "lvbp streaming gratis" 23,5 % · "ver wnba en vivo gratis"
+# 22 % · /canal/azteca-7 22,7 % desde la posición 59,6.
+#
+# Y esas consultas son el 0,34 % de nuestras impresiones. Casi no existimos
+# ahí. Revisado el código ese día: de los 22 títulos del sitio, NINGUNO
+# llevaba la palabra, aunque desde hace meses sabemos qué partido va en
+# abierto —_is_free_broadcast ya mueve "Gratis hoy" y las etiquetas—.
+#
+# El contraste que cierra el argumento, el mismo día y periodo:
+#
+#   cruz azul hoy            9.257 impresiones ·  3 clics · 0,0 % · pos 10,7
+#   cuando juega cruz azul   6.001             ·  5       · 0,1 % · pos  8,1
+#
+# 15.258 impresiones y 8 clics. En Liga MX y NBA, Google pone su propio panel
+# con la hora y el canal, responde él y nadie baja. Ahí no hay título que
+# valga. Donde sí lo hay es en la intención que Google no atiende: "gratis".
+#
+# LO QUE ESTO NO HACE: inventar. Sólo entra si el canal de HOY, el de este
+# partido, pasa _is_free_broadcast para el país de la liga. Si el canal no
+# está confirmado, _opp_and_channel ya devuelve "" y aquí no entra nada.
+_MAX_TITULO = 65
+
+
+def _titulo_gratis(team_name: str, opp: str, ch: str, pais: str,
+                   t_txt: str = "", vivo: bool = False) -> str | None:
+    """Título con "gratis" si el canal de hoy es TV abierta. None si no aplica.
+
+    Devuelve None en dos casos distintos y los dos son correctos: cuando el
+    canal no es gratis, y cuando la palabra no cabe sin pasar de _MAX_TITULO.
+    Quien llama se queda entonces con el título de siempre.
+
+    El orden de sacrificio no es arbitrario. Si no cabe todo, lo que se cae es
+    el NOMBRE DEL CANAL, no la palabra "gratis": el canal sigue estando en la
+    descripción, en el H1 y en la página, y la palabra es la que multiplica
+    por cinco el CTR. La hora y "Dónde ver <equipo>" al frente no se tocan —
+    son las dos cosas que ya están medidas como las que funcionan.
+    """
+    if not ch or not _is_free_broadcast(ch, pais):
+        return None
+    if vivo:
+        candidatos = (f"Dónde ver {team_name} vs {opp} EN VIVO gratis por {ch}",
+                      f"Dónde ver {team_name} vs {opp} EN VIVO gratis hoy")
+    else:
+        candidatos = (f"Dónde ver {team_name} vs {opp} hoy:{t_txt} gratis por {ch}",
+                      f"Dónde ver {team_name} vs {opp} gratis hoy:{t_txt}")
+    for c in candidatos:
+        if len(c) <= _MAX_TITULO:
+            return c
+    return None
+
+
 def _build_team_seo(team_name: str, team_league: str, search_term: str, games: list,
                     upcoming_games: list, recent_results: list, is_nfl: bool = False,
                     offseason: dict | None = None) -> dict:
@@ -9888,10 +9994,17 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         g = live[0]
         opp, ch = _opp_and_channel(g)
         ch_txt = f" por {ch}" if ch else ""
+        _gratis = _titulo_gratis(team_name, opp, ch, _tz_sigla, vivo=True)
+        _es_gratis = _gratis is not None
         return {
-            "title": f"Dónde ver {team_name} vs {opp} EN VIVO hoy{ch_txt}",
-            "h1": f"{team_name} vs {opp} en vivo hoy{ch_txt}",
-            "desc": f"{team_name} vs {opp} se juega ahora{ch_txt}. Marcador en vivo, canal de TV y cómo verlo en streaming{lg_sfx} desde México y Latinoamérica.",
+            "title": _gratis or f"Dónde ver {team_name} vs {opp} EN VIVO hoy{ch_txt}",
+            "h1": (f"{team_name} vs {opp} en vivo hoy, gratis{ch_txt}" if _es_gratis
+                   else f"{team_name} vs {opp} en vivo hoy{ch_txt}"),
+            # Cuando es gratis la descripción lo dice ANTES que nada: es la
+            # palabra que Google resalta en negritas y la razón del clic.
+            "desc": ((f"{team_name} vs {opp} se juega ahora y se ve gratis{ch_txt}, sin suscripción. "
+                      f"Marcador en vivo, horario en tu país y cómo verlo{lg_sfx}.") if _es_gratis
+                     else f"{team_name} vs {opp} se juega ahora{ch_txt}. Marcador en vivo, canal de TV y cómo verlo en streaming{lg_sfx} desde México y Latinoamérica."),
         }
     if pre:
         g = pre[0]
@@ -9899,9 +10012,12 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
         t = format_mx_time(g.get("date", ""), tz=_tz_t)
         ch_txt = f" por {ch}" if ch else ""
         t_txt = f" {t} {_tz_sigla}" if t else ""
+        _gratis = _titulo_gratis(team_name, opp, ch, _tz_sigla, t_txt=t_txt)
+        _es_gratis = _gratis is not None
         return {
-            "title": f"Dónde ver {team_name} vs {opp} hoy:{t_txt}{ch_txt}",
-            "h1": f"Dónde ver {team_name} hoy vs {opp}:{t_txt}{ch_txt}",
+            "title": _gratis or f"Dónde ver {team_name} vs {opp} hoy:{t_txt}{ch_txt}",
+            "h1": (f"Dónde ver {team_name} hoy vs {opp} gratis:{t_txt}{ch_txt}" if _es_gratis
+                   else f"Dónde ver {team_name} hoy vs {opp}:{t_txt}{ch_txt}"),
             # "canal de transmisión", literal, porque es como se pregunta en
             # México y LATAM. Medido el 19/10/2026, 90 días, filtrando
             # "transmisi": 1.740 impresiones y 35 clics, CTR 2,0 %.
@@ -9916,7 +10032,21 @@ def _build_team_seo(team_name: str, team_league: str, search_term: str, games: l
             # de 1,4%. La misma gente, preguntando lo mismo con "donde ver",
             # nos pulsa al 6,4%. La diferencia es que "transmisión" no aparecía
             # en ningún título ni descripción nuestra.
-            "desc": f"{team_name} vs {opp} hoy{t_txt} (hora de México){ch_txt}. Canal de transmisión, horario en tu país, streaming{lg_sfx} y qué hacer si no tienes cable.",
+            #
+            # 22/11/2026: cuando el canal de hoy es TV abierta, la descripción
+            # lo dice en la primera frase y se queda sin la coletilla de "qué
+            # hacer si no tienes cable", que ahí sobra: justamente no hace
+            # falta cable. Ver la nota larga de _titulo_gratis.
+            "desc": ((f"{team_name} vs {opp} hoy{t_txt} ({_tz_frase}) se ve GRATIS{ch_txt}, "
+                      f"en TV abierta y sin suscripción. Horario en tu país y canal "
+                      f"confirmado{lg_sfx}.") if _es_gratis
+                     # "(hora de México)" estaba escrito a mano aquí mientras el
+                     # título de la MISMA página usaba _tz_de_liga. Salió a la
+                     # luz al probar Primera FEB el 22/11/2026: el título decía
+                     # "20:44 ES" y la descripción, debajo, "(hora de México)".
+                     # Es el mismo fallo que arreglaron las tareas #416 y #425,
+                     # en el único sitio que se quedó sin tocar.
+                     else f"{team_name} vs {opp} hoy{t_txt} ({_tz_frase}){ch_txt}. Canal de transmisión, horario en tu país, streaming{lg_sfx} y qué hacer si no tienes cable."),
         }
     if post:
         g = post[0]
@@ -12243,18 +12373,47 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
         is_home = st in (home.get("name", "") or "").lower()
         opp = _short_team_name(away.get("name", "") if is_home else home.get("name", ""), team_league)
         team_short = _short_team_name(team_name, team_league)
+        # ── ¿El canal de hoy es TV abierta EN ESTE PAÍS? ──────────────────
+        #
+        # Aquí el país no se deduce: lo dice la URL. Es el mejor sitio del
+        # sitio para esto, mejor incluso que /equipo/ a secas, donde hay que
+        # suponer el mercado desde la liga. Ver la nota larga de
+        # _titulo_gratis para el dato de Search Console que lo motiva.
+        #
+        # CUIDADO CON EL PAÍS POR DEFECTO: _is_free_broadcast cae a la lista
+        # MEXICANA cuando no conoce el país, y eso aquí sería mentir —
+        # /equipo/x/en/chile diría que Canal 5 es TV abierta en Chile—. Así
+        # que sólo se aplica a los seis países para los que SÍ tenemos lista
+        # verificada. Para Argentina, Colombia, Chile, Perú y Ecuador no
+        # decimos nada, que es la verdad: no sabemos qué es abierto allá.
+        _code = country.get("code", "")
+        _gratis_pais = (_ch_ok and _code in ("MX", "US", "VE", "DO", "PA", "ES")
+                        and _is_free_broadcast(first_ch, _code))
         if today_g["status"]["state"] == "in":
-            seo_title = (f"{team_short} vs {opp} EN VIVO en {cname}"
-                         + (f": canal {first_ch}" if _ch_ok else "") + " | Dónde ver")
-            seo_h1 = f"{team_short} vs {opp} en vivo en {cname} {country['flag']}"
+            _cand = f"{team_short} vs {opp} EN VIVO GRATIS en {cname} por {first_ch}"
+            seo_title = (_cand if _gratis_pais and len(_cand) <= _MAX_TITULO
+                         else (f"{team_short} vs {opp} EN VIVO en {cname}"
+                               + (f": canal {first_ch}" if _ch_ok else "") + " | Dónde ver"))
+            seo_h1 = (f"{team_short} vs {opp} en vivo y gratis en {cname} {country['flag']}"
+                      if _gratis_pais
+                      else f"{team_short} vs {opp} en vivo en {cname} {country['flag']}")
         else:
             t_local = format_local_time(today_g.get("date", ""))
-            seo_title = (f"{team_short} en {cname} hoy: {t_local}"
-                         + (f" en {first_ch}" if _ch_ok else "")
-                         + f" vs {opp} | Dónde ver")
-            seo_h1 = f"Dónde ver {team_short} vs {opp} en {cname}: {t_local} ({tz_label})"
+            _cand = f"{team_short} vs {opp} GRATIS en {cname} hoy: {t_local} en {first_ch}"
+            if _gratis_pais and len(_cand) > _MAX_TITULO:
+                # Igual que en _titulo_gratis: antes de rendirse se sacrifica
+                # el nombre del canal, nunca la palabra.
+                _cand = f"{team_short} vs {opp} GRATIS en {cname} hoy: {t_local}"
+            seo_title = (_cand if _gratis_pais and len(_cand) <= _MAX_TITULO
+                         else (f"{team_short} en {cname} hoy: {t_local}"
+                               + (f" en {first_ch}" if _ch_ok else "")
+                               + f" vs {opp} | Dónde ver"))
+            seo_h1 = (f"Dónde ver {team_short} vs {opp} gratis en {cname}: {t_local} ({tz_label})"
+                      if _gratis_pais
+                      else f"Dónde ver {team_short} vs {opp} en {cname}: {t_local} ({tz_label})")
             seo_desc = (f"{team_short} vs {opp} hoy a las {t_local} {tz_label} en {cname}. "
-                        + (f"Canal: {first_ch}. " if _ch_ok else "Emisor aún sin confirmar. ")
+                        + (f"GRATIS por {first_ch}, en TV abierta y sin suscripción. " if _gratis_pais
+                           else f"Canal: {first_ch}. " if _ch_ok else "Emisor aún sin confirmar. ")
                         + f"Todos los canales de TV y streaming para ver {team_league} desde {cname}.")
 
     return templates.TemplateResponse(request, "team_country.html", {
