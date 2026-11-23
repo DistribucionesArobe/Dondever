@@ -2370,7 +2370,23 @@ def _marcar_lvbp_lunes(eventos: list) -> None:
             # Primero en la lista: es el único gratis y el único que sirve en
             # todo el mundo. country vacío = sin restricción geográfica, que es
             # lo que lo distingue de Meridiano o Televen.
-            emisores.insert(0, {"name": _LVBP_CANAL_LUNES, "country": "",
+            # "channel" Y "name": este insert es la CAUSA RAÍZ de la caída del
+            # lunes 23/11/2026, en la que todas las páginas /canal/* y /canales
+            # devolvieron 503 mientras el resto del sitio iba bien.
+            #
+            # Todo el sitio lee el emisor por "channel"; esta línea era la única
+            # que creaba uno con "name" a secas. Quien lo leía con corchetes
+            # —/canales y /canal/{slug}— se comía un KeyError y el manejador
+            # global lo convertía en 503.
+            #
+            # Por qué tardó en aparecer: sólo entra los LUNES (el partido que la
+            # LVBP sube completo a YouTube) y sólo con la LVBP en temporada. El
+            # domingo 22 el sitio funcionó y facturó 91,47 MXN.
+            #
+            # Se deja "name" además de "channel" porque la comprobación de
+            # duplicados de cuatro líneas más arriba busca por "name".
+            emisores.insert(0, {"channel": _LVBP_CANAL_LUNES,
+                                "name": _LVBP_CANAL_LUNES, "country": "",
                                 "url": _LVBP_URL_LUNES})
         except Exception:
             continue

@@ -2510,10 +2510,12 @@ async def get_todays_games(*args, **kwargs):
 def _normalizar_emisores(juegos):
     """Deja todos los `broadcasts` como diccionarios con clave "channel". In-place.
 
-    LA RAÍZ DE LA CAÍDA DEL 23/11/2026, y el arreglo de verdad.
+    LA RED DE LA CAÍDA DEL 23/11/2026. La causa concreta de aquel día está
+    arreglada en su origen (_marcar_lvbp_lunes, sports_api); esto existe para
+    que el siguiente emisor mal formado no vuelva a tumbar el sitio.
 
     Parchear los sitios que leen el emisor no bastaba: la portada seguía
-    cayendo porque el fallo estaba en la PLANTILLA, en el macro
+    cayendo porque el fallo estaba también en la PLANTILLA, en el macro
     primary_channel_tag de index.html:
 
         {%- if ... not b.get('is_us_regional') -%}
@@ -2557,15 +2559,22 @@ def _nombre_canal(b) -> str:
     El cuerpo del error era nuestro —{"error":"temporalmente no disponible"}—,
     o sea el manejador global de excepciones convirtiendo un fallo real.
 
-    Esas dos rutas eran las ÚNICAS del sitio que leían el nombre del emisor
-    con corchetes, `b["channel"]`, sin red:
+    CAUSA RAÍZ, encontrada al revisar: _marcar_lvbp_lunes en sports_api metía
+    el emisor del partido que la LVBP sube a YouTube con la clave "name" y sin
+    "channel". Era el único sitio del código que creaba un emisor así, y sólo
+    se ejecuta los LUNES y con la LVBP en temporada: por eso el domingo 22 el
+    sitio funcionó y facturó 91,47 MXN, y el lunes 23 se cayó. Ya está
+    corregido allí; esto se queda como red.
 
-        /canales        línea ~2624   ch = b["channel"]
-        /canal/{slug}   línea ~2767   _slugify_channel(b["channel"])
+    Lo que reventaba eran las dos rutas que leían el nombre con corchetes:
 
-    Si un emisor llega sin la clave "channel" salta KeyError; si llega como
-    texto plano en vez de diccionario, TypeError. Cualquiera de los dos tumba
-    la página entera. El resto del código usa .get() y por eso aguantaba.
+        /canales        ch = b["channel"]              → KeyError
+        /canal/{slug}   _slugify_channel(b["channel"]) → KeyError
+
+    OJO, y esto lo dije mal en su momento: NO eran las únicas dos lecturas con
+    corchetes del fichero, había siete. Las otras cinco iban detrás de un
+    .get() que las protegía o viven en rutas de poco tráfico. Todas quedaron
+    pasando por aquí de todos modos.
 
     No se reprodujo en local porque aquí las APIs están bloqueadas y los
     partidos llegan sin emisores: la línea no se ejecuta nunca.
