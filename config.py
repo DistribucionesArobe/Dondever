@@ -1826,8 +1826,88 @@ POPULAR_TEAMS = {
     "deportivo-pereira": {"name": "Deportivo Pereira", "league": "Liga BetPlay"},
     "independiente-medellin": {"name": "Independiente Medellín", "league": "Liga BetPlay"},
     "independiente-santa-fe": {"name": "Independiente Santa Fe", "league": "Liga BetPlay"},
-    "junior-barranquilla": {"name": "Junior de Barranquilla", "league": "Liga BetPlay"},
-    "millonarios": {"name": "Millonarios FC", "league": "Liga BetPlay"},
+    # Mismo caso: ESPN lo llama "Atlético Junior". "Junior de Barranquilla" es
+    # como se le dice, no como viene el dato, así que va a nombre_seo.
+    "junior-barranquilla": {"name": "Atlético Junior",
+                            "nombre_seo": "Junior de Barranquilla",
+                            "league": "Liga BetPlay"},
+
+    # ══ LIGA BETPLAY — los 8 que faltaban, añadidos el 23/11/2026 ══
+    #
+    # Salieron de cruzar las 1.000 consultas con más impresiones de Search
+    # Console (28 días) contra los 582 equipos y 65 ligas ya configurados.
+    # De esas 1.000, sólo 14 no estaban cubiertas, y una era:
+    #
+    #   "dónde mirar llaneros contra boyacá chicó"  272 impr · 1 clic · pos 8,3
+    #
+    # Teníamos 12 de los 20 equipos de la liga. Los nombres salen de ESPN
+    # col.1 —la misma fuente contra la que se emparejan los partidos—, no de
+    # Wikipedia: si no coinciden, la ficha sale vacía.
+    "aguilas-doradas": {"name": "Águilas Doradas", "league": "Liga BetPlay"},
+    "alianza-fc": {"name": "Alianza FC", "league": "Liga BetPlay"},
+    "boyaca-chico-fc": {"name": "Boyacá Chicó FC", "league": "Liga BetPlay"},
+    "cucuta-deportivo": {"name": "Cúcuta Deportivo", "league": "Liga BetPlay"},
+    "fortaleza-ceif": {"name": "Fortaleza CEIF", "league": "Liga BetPlay"},
+    "internacional-de-bogota": {"name": "Internacional de Bogotá", "league": "Liga BetPlay"},
+    "jaguares-de-cordoba": {"name": "Jaguares de Córdoba", "league": "Liga BetPlay"},
+    "llaneros-fc": {"name": "Llaneros FC", "league": "Liga BetPlay"},
+
+    # ══ LIGA FEMENINA ENDESA — los 16, añadidos el 23/11/2026 ══
+    #
+    # Otra liga con CERO equipos, como estaba la Primera FEB. La encontró el
+    # mismo cruce: "avenida - cd ibaeta" trae 265 impresiones y 2 clics en
+    # posición 9,6, y los dos equipos están en esta liga.
+    #
+    # Los nombres vienen de TheSportsDB 5486 (eventsseason 2026-2027), que es
+    # contra lo que se emparejan. TODOS llevan nombre_seo porque la fuente les
+    # pega "Women" en inglés: es el fallo que ya salió en la Liga F y que se
+    # leía "Real Sociedad Femenino vs Athletic Club Women" en el mercado que
+    # más paga del sitio. El `name` no se toca; sólo lo que lee la persona.
+    #
+    # TRES COLISIONES DE SLUG, resueltas con sufijo -femenino: "valencia-
+    # basket" y "basket-zaragoza" ya existen en la Liga Endesa masculina, y
+    # "estudiantes" es el de La Plata. Son clubes distintos (o secciones
+    # distintas del mismo club, que para una ficha es lo mismo).
+    "araski-aes": {"name": "Araski AES Women", "nombre_seo": "Araski AES",
+                   "league": "Liga Femenina"},
+    "baloncesto-leganes": {"name": "Baloncesto Leganés Women",
+                           "nombre_seo": "Baloncesto Leganés", "league": "Liga Femenina"},
+    "baloncesto-mallorca": {"name": "Baloncesto Mallorca Women",
+                            "nombre_seo": "Baloncesto Mallorca", "league": "Liga Femenina"},
+    "basket-zaragoza-femenino": {"name": "Basket Zaragoza Women",
+                                 "nombre_seo": "Basket Zaragoza Femenino",
+                                 "league": "Liga Femenina"},
+    "cab-estepona": {"name": "CAB Estepona Women", "nombre_seo": "CAB Estepona",
+                     "league": "Liga Femenina"},
+    "cb-avenida": {"name": "CB Avenida Women", "nombre_seo": "CB Avenida",
+                   "league": "Liga Femenina"},
+    "cb-jairis": {"name": "CB Jairis Women", "nombre_seo": "CB Jairis",
+                  "league": "Liga Femenina"},
+    "cd-ibaeta": {"name": "CD Ibaeta Women", "nombre_seo": "CD Ibaeta",
+                  "league": "Liga Femenina"},
+    "celta-baloncesto-femenino": {"name": "Celta Baloncesto Femenino",
+                                  "league": "Liga Femenina"},
+    "ensino-lugo-cb": {"name": "Ensino Lugo CB Women", "nombre_seo": "Ensino Lugo",
+                       "league": "Liga Femenina"},
+    "estudiantes-femenino": {"name": "Estudiantes Women",
+                             "nombre_seo": "Estudiantes Femenino",
+                             "league": "Liga Femenina"},
+    "gernika-kesb": {"name": "Gernika KESB Women", "nombre_seo": "Gernika KESB",
+                     "league": "Liga Femenina"},
+    "sedis-basquet": {"name": "Sedis Bàsquet Women", "nombre_seo": "Sedis Bàsquet",
+                      "league": "Liga Femenina"},
+    "uni-ferrol": {"name": "Uni Ferrol Women", "nombre_seo": "Uni Ferrol",
+                   "league": "Liga Femenina"},
+    "uni-girona-cb": {"name": "Uni Girona CB Women", "nombre_seo": "Uni Girona",
+                      "league": "Liga Femenina"},
+    "valencia-basket-femenino": {"name": "Valencia Basket Women",
+                                 "nombre_seo": "Valencia Basket Femenino",
+                                 "league": "Liga Femenina"},
+    # CORREGIDO EL 23/11/2026: decía "Millonarios FC" y ESPN col.1 —que es
+    # contra lo que se emparejan los partidos— devuelve "Millonarios" a secas.
+    # La ficha existía y no casaba con nada. Mismo fallo que el del Deportivo
+    # de La Coruña y el de "Athletic Club Women".
+    "millonarios": {"name": "Millonarios", "league": "Liga BetPlay"},
     "once-caldas": {"name": "Once Caldas", "league": "Liga BetPlay"},
     # ── Liga Argentina ──
     "argentinos-juniors": {"name": "Argentinos Juniors", "league": "Liga Argentina"},

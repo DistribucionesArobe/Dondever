@@ -7768,6 +7768,10 @@ _PAIS_DE_LIGA = {
     "Primera Federación G2": "espana",
     # Liga F: 16 equipos x 2 países = 32 páginas, en vez de 176.
     "Liga F": "espana",
+    # Liga Femenina Endesa: añadida el 23/11/2026 junto con sus 16 equipos.
+    # Mismo criterio que la Primera FEB — el baloncesto femenino español no se
+    # busca fuera de España.
+    "Liga Femenina": "espana",
     # Primera FEB: la segunda categoría del baloncesto español. Mismo criterio
     # que la Primera Federación de fútbol: nadie fuera de España busca al CB
     # Tizona. 18 equipos × 2 países = 36 páginas, en vez de 198. Ojo a la
@@ -9704,7 +9708,8 @@ _DEPORTE_POR_LIGA = {
                "LaLiga Hypermotion", "Primera Federación G1", "Primera Federación G2",
                "Liga F"),
     "beisbol": ("MLB", "LMB", "LMP", "LVBP", "LIDOM"),
-    "basketball": ("NBA", "WNBA", "LNBP", "Liga Endesa", "Primera FEB"),
+    "basketball": ("NBA", "WNBA", "LNBP", "Liga Endesa", "Primera FEB",
+                   "Liga Femenina"),
     "futbol americano": ("NFL",),
     "hockey": ("NHL",),
     "MMA": ("UFC",),
@@ -9816,6 +9821,9 @@ _LIGAS_SOLO_ESPANA = (
     "Primera Federación G1",
     "Primera Federación G2",
     "Liga F",
+    # La Liga Femenina Endesa, por lo mismo: Araski, Gernika y Uni Ferrol no
+    # se buscan fuera de España.
+    "Liga Femenina",
     # Primera FEB: el baloncesto de Burgos, Ourense, Palencia y Menorca se
     # busca desde España y se juega en horario español. La Liga Endesa NO
     # entra aquí, y es a propósito: tiene público declarado en México,
@@ -11677,6 +11685,27 @@ LEAGUE_CHANNELS_BY_COUNTRY = {
     # Pendiente: acb.com tiene "Consulta dónde ver la Liga Endesa en cada
     # país", pero la tabla es una imagen y no se puede leer. México, EE.UU. y
     # Argentina —que también tienen páginas de esta liga— siguen sin canales.
+    # Liga Femenina Endesa. Los canales NO los he verificado yo: estaban ya en
+    # DEFAULT_LEAGUE_CHANNELS desde septiembre con su propia nota de origen
+    # (feb.es 11 y 23/09/2026, recogido por TM Broadcast). Aquí sólo se
+    # exponen por país para que la ficha de equipo los enseñe; si alguno
+    # cambia, se corrige allí, que es donde está la fuente.
+    "Liga Femenina": {
+        "espana": [
+            {"name": "Movistar Plus+", "type": "Cable/Streaming",
+             "sports": "La competición completa, con un partido exclusivo por jornada"},
+            {"name": "Teledeporte", "type": "TV Abierta (gratis)",
+             "sports": "El partido en abierto de cada jornada"},
+            {"name": "Siroko TV", "type": "Streaming",
+             "sports": "Siete partidos por jornada"},
+            {"name": "TV3 / 3Cat", "type": "TV Abierta (gratis)",
+             "sports": "Los partidos de los equipos catalanes"},
+            {"name": "TVG / AGalega", "type": "TV Abierta (gratis)",
+             "sports": "Los partidos de los equipos gallegos"},
+            {"name": "EITB (ETB1 / ETB2)", "type": "TV Abierta (gratis)",
+             "sports": "Los partidos de los equipos vascos"},
+        ],
+    },
     # Primera FEB. VERIFICADO EL 22/11/2026 EN FUENTE PRIMARIA, no de memoria:
     #
     #   · canalfeb.tv redirige a baloncestotv.com.
