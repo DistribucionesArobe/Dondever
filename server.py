@@ -77,6 +77,69 @@ templates = Jinja2Templates(directory="templates")
 # OJO: esto trata el síntoma. La causa hay que buscarla en los logs de Render,
 # y por eso el handler registra ruta y tipo de excepción con traza completa —
 # la idea es poder arreglar el origen, no taparlo.
+def _evento_page_error(ruta: str, codigo: int) -> str:
+    """El evento `page_error` para GA4. Una sola definición, dos usuarios.
+
+    PRIMERO gtag, y sólo si no aparece se recurre a dataLayer. Hacer las dos
+    cosas a la vez —que es como lo escribí primero— arriesga contar el evento
+    DOS VECES cuando GTM también está configurado para mandar a GA4, y un
+    contador inflado es peor que no tenerlo: la próxima vez que miremos
+    cuántas pantallas de error hubo, el número mentiría.
+
+    El reintento existe porque el script de GA4 es `async`: puede no estar
+    listo cuando esto se ejecuta. Cuatro segundos de margen (10 × 400 ms) y
+    si para entonces no hay gtag, es que la medición va por GTM.
+    """
+    _r = json.dumps(ruta)
+    return (f'<script>(function(){{var d={{error_path:{_r},error_status:{codigo}}};'
+            f'(function t(n){{if(typeof window.gtag==="function")'
+            f'{{window.gtag("event","page_error",d);return;}}'
+            f'if(n>0){{setTimeout(function(){{t(n-1);}},400);return;}}'
+            f'window.dataLayer=window.dataLayer||[];'
+            f'window.dataLayer.push({{event:"page_error",error_path:{_r},'
+            f'error_status:{codigo}}});}})(10);}})();</script>\n')
+
+
+def _script_error_ga(ruta: str, codigo: int) -> bytes:
+    """GTM + GA4 + el evento page_error, para las páginas que NO pasan por el
+    middleware de inyección.
+
+    POR QUÉ EXISTE, medido el 24/11/2026: las respuestas de ESTE manejador
+    —todos los 503— salían SIN NINGUNA etiqueta de analítica. Y no es un
+    descuido de la plantilla: `@app.exception_handler(Exception)` lo atiende
+    Starlette en ServerErrorMiddleware, que envuelve por FUERA a todos los
+    middlewares de la aplicación. O sea que GAInjectMiddleware nunca ve esa
+    respuesta y no le inyecta nada.
+
+    Consecuencia real: el lunes 23/11 las páginas /canal/* devolvieron 503
+    durante horas y en GA4 no apareció ni una sola de esas visitas. El día
+    marcó 432 vistas, todas de páginas que SÍ funcionaron; la gente que se
+    topó con el error fue invisible. Por eso el tráfico parecía caer un 24 %
+    mientras los ingresos caían un 49 %: la diferencia estaba sin medir.
+
+    Las páginas de 404 y 410 sí llevan etiqueta, porque esas las devuelve la
+    ruta con TemplateResponse y sí atraviesan el middleware. Era justo la
+    diferencia que me hizo concluir dos veces cosas distintas.
+    """
+    gtm_id = os.getenv("GTM_CONTAINER_ID", "").strip()
+    ga_id = os.getenv("GA_MEASUREMENT_ID", "").strip()
+    if not gtm_id and not ga_id:
+        return b""
+    s = ""
+    if gtm_id:
+        s += (f'<script>(function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{"gtm.start":'
+              f'new Date().getTime(),event:"gtm.js"}});var f=d.getElementsByTagName(s)[0],'
+              f'j=d.createElement(s),dl=l!="dataLayer"?"&l="+l:"";j.async=true;j.src='
+              f'"https://www.googletagmanager.com/gtm.js?id="+i+dl;f.parentNode.insertBefore(j,f);'
+              f'}})(window,document,"script","dataLayer","{gtm_id}");</script>\n')
+    if ga_id:
+        s += (f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
+              f'<script>window.dataLayer=window.dataLayer||[];'
+              f'function gtag(){{dataLayer.push(arguments);}}gtag("js",new Date());'
+              f'gtag("config","{ga_id}");</script>\n')
+    return (s + _evento_page_error(ruta, codigo)).encode("utf-8")
+
+
 @app.exception_handler(Exception)
 async def _error_no_previsto(request: Request, exc: Exception):
     logger.exception(
@@ -95,6 +158,15 @@ async def _error_no_previsto(request: Request, exc: Exception):
         )
     except Exception:  # si hasta la plantilla de error falla, algo muy raro pasa
         r = HTMLResponse("<h1>Vuelve en un momento</h1>", status_code=503)
+    # La etiqueta de analítica, a mano, porque aquí no llega el middleware.
+    # Ver _script_error_ga para el porqué y lo que costó no tenerla.
+    try:
+        _s = _script_error_ga(request.url.path, 503)
+        if _s and b"</head>" in r.body:
+            r.body = r.body.replace(b"</head>", _s + b"</head>", 1)
+            r.headers["content-length"] = str(len(r.body))
+    except Exception as _e:
+        logger.warning("no se pudo marcar el error en GA4: %s", _e)
     r.headers["Retry-After"] = "120"
     return r
 
@@ -580,6 +652,30 @@ class GAInjectMiddleware(BaseHTTPMiddleware):
             #         f'<script src="https://5gvci.com/act/files/tag.min.js?z=11479109" data-cfasync="false" async></script>\n'
             #         f'<script>(function(s){{s.dataset.zone="11481358",s.src="https://nap5k.com/tag.min.js"}})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement("script")))</script>\n'
             #     )
+            # ── Avisar a GA4 cuando la página servida es un error ──────────
+            #
+            # POR QUÉ, y es una lección del lunes 23/11/2026. Ese día todas las
+            # páginas /canal/* devolvieron 503 durante horas y en Analytics no
+            # se notó: la etiqueta de GA4 la inyecta este mismo middleware en
+            # CUALQUIER respuesta HTML, también en las de error, así que esas
+            # visitas se contaron como visitas normales. Resultado: el tráfico
+            # parecía bajar un 24 % mientras los ingresos bajaban un 49 %, y
+            # hubo que deducir la diferencia en vez de verla.
+            #
+            # Con esto, cada página de error manda su propio evento con la ruta
+            # y el código. Así se pregunta directamente: "¿cuánta gente vio una
+            # pantalla de error ayer, y en qué rutas?".
+            #
+            # Va en el middleware y no en 404.html a propósito: hay VEINTIÚN
+            # sitios en este fichero que renderizan esa plantilla, con códigos
+            # 404, 410 y 503. Aquí se cubren los veintiuno y los que vengan.
+            #
+            # dataLayer.push() funciona aunque GTM aún no haya cargado —la cola
+            # se procesa después—, y el gtag va con reintentos porque el script
+            # de GA4 es async y puede no estar listo cuando esto se ejecuta.
+            if response.status_code >= 400:
+                snippet += _evento_page_error(request.url.path, response.status_code)
+
             snippet = snippet.encode("utf-8")
 
             if b"</head>" in body:
