@@ -5787,6 +5787,42 @@ async def api_instagram_image(date: Optional[str] = None):
     })
 
 
+@app.get("/api/pais")
+async def api_pais(request: Request):
+    """País del visitante, según la cabecera que ya pone Cloudflare.
+
+    POR QUÉ EXISTE
+    El país decide tres cosas en la ficha: la hora, el orden de los canales y
+    el aviso de diáspora. Hasta ahora las tres dependían de ipapi.co, un
+    servicio de terceros con tope de 1.000 peticiones al día en el plan
+    gratuito. El sitio hace muchas más que eso, así que a partir de cierta
+    hora todo el mundo era mexicano por omisión: la hora, el orden y el aviso.
+
+    El dato ya lo tenemos. El sitio está detrás de Cloudflare (comprobado el
+    25/11/2026: `server: cloudflare`, `cf-ray: …-QRO`) y /go/bet lee
+    `cf-ipcountry` desde hace meses para elegir casa de apuestas. Esto no
+    añade una fuente nueva; deja de ir a buscar fuera lo que llega en la
+    petición.
+
+    `no-store` es obligatorio. La respuesta cambia por visitante, y esta ruta
+    NO está en _HTML_CACHE_PREFIXES, pero Cloudflare está delante: sin la
+    cabecera podría guardar la respuesta de un español y servírsela a un
+    venezolano, que es exactamente el error que el aviso intenta evitar.
+
+    Devuelve `{"pais": ""}` cuando la cabecera no llega (por ejemplo si se
+    desactivara la geolocalización en Cloudflare). El cliente trata la cadena
+    vacía como "no sé" y cae a su plan B, igual que si la petición fallara.
+    """
+    pais = ((request.headers.get("cf-ipcountry")
+             or request.headers.get("x-vercel-ip-country") or "").upper().strip())
+    # Cloudflare manda "XX" para clientes sin país conocido y "T1" para Tor.
+    if pais in ("XX", "T1") or len(pais) != 2 or not pais.isalpha():
+        pais = ""
+    return JSONResponse({"pais": pais},
+                        headers={"Cache-Control": "no-store, private",
+                                 "CDN-Cache-Control": "no-store"})
+
+
 @app.get("/api/leagues")
 async def api_leagues():
     """List available leagues."""
@@ -7986,6 +8022,42 @@ def _paises_de_equipo(team_slug: str) -> list:
         # países cerraba la puerta justo donde se abría.
         return _TODOS
     return [propio, *(p for p in _DIASPORA_POR_LIGA.get(liga, _DIASPORA) if p != propio)]
+
+
+def _paises_diaspora(team_slug: str) -> list:
+    """Países para el aviso de diáspora de la ficha, con su código ISO.
+
+    Sale de _paises_de_equipo, que es la MISMA lista que alimenta el sitemap y
+    los enlaces del pie. Importa que sea la misma: la plantilla tenía diez
+    países escritos a mano y enlazaba a combinaciones que el sitemap ya no
+    publica, así que el aviso podía prometer una página delgada que nadie
+    mantiene.
+
+    Se quitan dos:
+    · el país propio de la liga, porque a un español en la ficha de un equipo
+      español no hay que mandarlo a otra parte — esta página ya es la suya;
+    · México, por lo mismo: el sitio se escribe desde México y para México, y
+      el JS tampoco enseña el aviso a un mexicano.
+
+    Devuelve el código ISO porque el aviso se pinta en el cliente: la caché de
+    HTML lleva la ruta como llave y no el país (ver _HTML_CACHE_PREFIXES), así
+    que decidir el país en el servidor le serviría a un venezolano la versión
+    de un español. Se pintan todos ocultos y el navegador enseña el que toca.
+    """
+    liga = (POPULAR_TEAMS.get(team_slug) or {}).get("league", "")
+    fuera = {"mexico"}
+    _propio = _PAIS_DE_LIGA.get(liga)
+    if isinstance(_propio, str):
+        fuera.add(_propio)
+    salida = []
+    for cs in _paises_de_equipo(team_slug):
+        if cs in fuera:
+            continue
+        c = TEAM_COUNTRY_SEO.get(cs)
+        if c and c.get("code"):
+            salida.append({"slug": cs, "code": c["code"],
+                           "name": c["name"], "flag": c.get("flag", "")})
+    return salida
 
 
 @app.get("/sitemap-equipos-paises.xml")
@@ -11027,6 +11099,10 @@ async def team_page(request: Request, team_slug: str):
         # sitemap se contradecían. Ahora salen los dos de _paises_de_equipo.
         "paises_ficha": [(cs, TEAM_COUNTRY_SEO[cs]["name"], TEAM_COUNTRY_SEO[cs]["flag"])
                          for cs in _paises_de_equipo(team_slug) if cs in TEAM_COUNTRY_SEO],
+        # Los mismos países, con código ISO, para el aviso de diáspora de
+        # arriba. Ver _paises_diaspora: quita México y el país propio de la
+        # liga, y el navegador enseña el que toca.
+        "paises_diaspora": _paises_diaspora(team_slug),
         # Rivalidades de este equipo. Lista vacía para los ~280 equipos que no
         # están en _CLASICOS; la plantilla no pinta nada en ese caso.
         "clasicos_equipo": _clasicos_de_equipo(team_slug),

@@ -217,25 +217,44 @@
   }
 
   // ── IP-based detection (async, only if no stored pref) ─
-  function detectFromIP(callback) {
-    // Use free ipapi.co — returns just the 2-letter country code
+  //
+  // Primero /api/pais, que es nuestro: devuelve la cabecera cf-ipcountry que
+  // Cloudflare ya pone en cada petición. ipapi.co queda como plan B.
+  //
+  // El orden importa, y no por elegancia: el plan gratuito de ipapi.co corta
+  // a las 1.000 peticiones DIARIAS. Pasado ese tope, todo el que entraba sin
+  // preferencia guardada caía en el 'MX' por omisión — la hora, el orden de
+  // los canales y el aviso de "estás en X" se equivocaban a la vez, y justo
+  // a las horas de más tráfico. El dato bueno lo teníamos en la cabecera
+  // desde el principio; sólo no lo estábamos leyendo aquí.
+  function pedir(url, ok, fallo) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'https://ipapi.co/country/', true);
+    xhr.open('GET', url, true);
     xhr.timeout = 3000;
     xhr.onload = function() {
-      if (xhr.status === 200) {
-        var code = xhr.responseText.trim().toUpperCase();
-        if (COUNTRY_TZ[code]) {
-          callback(code);
-        } else {
-          callback(null);
-        }
-      } else {
-        callback(null);
-      }
+      if (xhr.status === 200) { ok(xhr.responseText); } else { fallo(); }
     };
-    xhr.onerror = xhr.ontimeout = function() { callback(null); };
+    xhr.onerror = xhr.ontimeout = fallo;
     xhr.send();
+  }
+
+  function detectFromIP(callback) {
+    function conIpapi() {
+      pedir('https://ipapi.co/country/', function(txt) {
+        var code = txt.trim().toUpperCase();
+        callback(COUNTRY_TZ[code] ? code : null);
+      }, function() { callback(null); });
+    }
+    pedir('/api/pais', function(txt) {
+      var code = '';
+      try { code = (JSON.parse(txt).pais || '').toUpperCase(); } catch (e) { code = ''; }
+      // Un país que no está en COUNTRY_TZ no es un fallo de la cabecera: es
+      // un visitante de fuera de los 21 mercados que cubrimos. Preguntarle a
+      // ipapi.co lo mismo devolvería el mismo país, así que no se reintenta;
+      // se devuelve null y el llamador cae a la zona del navegador.
+      if (code) { callback(COUNTRY_TZ[code] ? code : null); return; }
+      conIpapi();
+    }, conIpapi);
   }
 
   // ── Affiliate geo-targeting (MX/US/LATAM) ──────────────

@@ -340,6 +340,40 @@
         .cl-mini > *{position:relative;z-index:1;display:block}
         .cl-mini .cm-nb{font-size:.95rem;font-weight:900;line-height:1.2}
         .cl-mini .cm-tg{font-size:.72rem;font-weight:600;opacity:.92;margin-top:.2rem}
+
+        /* ── Diáspora: "¿Lo ves desde otro país?" ──────────────────────────
+           El enlace a la ficha /en/{pais} existía desde octubre y no lo
+           usaba nadie: era una fila verde clara, del tamaño de un pie de
+           página, debajo de los partidos. En Search Console se veía el
+           resultado — España entra 130 veces al mes por la ficha genérica
+           y 13 por la de España. El contenido bueno estaba ahí; el camino
+           hasta él, no.
+           Así que ahora es una tarjeta oscura, a todo el ancho, encima de
+           los partidos y con un botón. No es decoración: es lo primero que
+           necesita saber alguien que abre esta página desde Madrid o
+           Houston, porque los canales de abajo no son los suyos. */
+        .dv-dia{display:flex;align-items:center;gap:.85rem;text-decoration:none;
+                border-radius:14px;padding:.85rem 1rem;margin:0 0 1rem;color:#fff;
+                background:linear-gradient(135deg,#0b1020 0%,#13224a 58%,#1d4ed8 100%);
+                box-shadow:0 2px 10px rgba(11,16,32,.18);transition:transform .15s,box-shadow .15s}
+        .dv-dia:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(11,16,32,.26)}
+        .dv-dia-bandera{font-size:2rem;line-height:1;flex:0 0 auto}
+        .dv-dia-txt{flex:1;min-width:0}
+        .dv-dia-eti{display:block;font-size:.64rem;font-weight:800;letter-spacing:.09em;
+                    text-transform:uppercase;color:#93c5fd;margin-bottom:.12rem}
+        .dv-dia-tit{display:block;font-size:.98rem;font-weight:900;line-height:1.22}
+        .dv-dia-sub{display:block;font-size:.76rem;color:#cbd5e1;line-height:1.38;margin-top:.18rem}
+        .dv-dia-btn{flex:0 0 auto;background:#fff;color:#13224a;font-weight:800;
+                    font-size:.78rem;padding:.5rem .85rem;border-radius:9px;white-space:nowrap}
+        @media (max-width:520px){
+            .dv-dia{flex-wrap:wrap;gap:.6rem}
+            .dv-dia-bandera{font-size:1.6rem}
+            /* flex-basis 100%, no width:100%. Con width el botón se mide
+               contra el borde de la tarjeta y se salía por la derecha
+               justo el ancho del padding; con flex-basis cabe en la línea
+               y encoge si hace falta. */
+            .dv-dia-btn{flex:1 1 100%;text-align:center;order:3}
+        }
     </style>
 
     <!-- FAQPage JSON-LD is in <head> — no duplicate here -->
@@ -456,6 +490,45 @@
     </div>
     {% endif %}
 
+    {# ── "¿Estás en otro país?" ────────────────────────────────────────────
+       Las fichas /en/{pais} son las que pueden rankear para "dónde ver X en
+       Estados Unidos", y hasta hoy solo se enlazaban al pie, debajo de todo.
+       En Search Console, Estados Unidos trae 49,300 impresiones al mes con
+       posición media 12.4: la gente ya nos ve, pero el enlace que de verdad
+       les sirve estaba enterrado.
+
+       Se pintan todas y el navegador enseña la que toca, igual que con los
+       canales: así el HTML es uno solo y el caché de 30 minutos no le sirve
+       a un mexicano la versión de Estados Unidos. Al que está en México no
+       le aparece nada, porque esta página ya es la suya.
+
+       VA ANTES DE LOS PARTIDOS, y fuera del `{% if games %}`. Las dos cosas
+       son arreglos, no estética: estaba dentro de la rama con partidos, así
+       que un venezolano en Madrid que abría la ficha de un equipo que hoy
+       no juega —la mitad de los días— no veía ningún enlace a su página.
+       Y estaba debajo de la lista de canales, que son de otros países: leer
+       cuatro canales ajenos antes de enterarse de que hay una página con
+       los tuyos es el orden exactamente invertido. #}
+    {% if paises_diaspora %}
+    <div class="geo-cta" hidden>
+        {% for p in paises_diaspora %}
+        <a class="dv-dia" data-geo-for="{{ p.code }}" hidden
+           href="/equipo/{{ team_slug }}/en/{{ p.slug }}">
+            <span class="dv-dia-bandera">{{ p.flag }}</span>
+            <span class="dv-dia-txt">
+                <span class="dv-dia-eti">Est&aacute;s en {{ p.name }}</span>
+                <span class="dv-dia-tit">{{ team_name }} desde {{ p.name }}</span>
+                <span class="dv-dia-sub">Canales y horario de {{ team_name }} para {{ p.name }}, en una sola p&aacute;gina.</span>
+            </span>
+            {# El botón no repite el país: ya está dos veces arriba, y
+               "Ver canales en República Dominicana →" se comía media
+               tarjeta en móvil. #}
+            <span class="dv-dia-btn">Ver canales &rarr;</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {# ══ PARTIDOS DE HOY (lo mas importante arriba) ══ #}
     {% if games %}
     <h2>Partidos de hoy <span class="game-count">({{ games|length }})</span></h2>
@@ -532,41 +605,6 @@
         {% endif %}
     </div>
     {% endfor %}
-
-    {# ── "¿Estás en otro país?" ────────────────────────────────────────────
-       Las fichas /en/{pais} son las que pueden rankear para "dónde ver X en
-       Estados Unidos", y hasta hoy solo se enlazaban al pie, debajo de todo.
-       En Search Console, Estados Unidos trae 49,300 impresiones al mes con
-       posición media 12.4: la gente ya nos ve, pero el enlace que de verdad
-       les sirve estaba enterrado.
-
-       Se pintan todas y el navegador enseña la que toca, igual que con los
-       canales: así el HTML es uno solo y el caché de 30 minutos no le sirve
-       a un mexicano la versión de Estados Unidos. Al que está en México no
-       le aparece nada, porque esta página ya es la suya. #}
-    <div class="geo-cta" hidden style="margin:0.6rem 0 1rem;">
-        {% for cs, cn, bandera, code in [
-            ('estados-unidos','Estados Unidos','&#127482;&#127480;','US'),
-            ('venezuela','Venezuela','&#127483;&#127466;','VE'),
-            ('republica-dominicana','Rep. Dominicana','&#127465;&#127476;','DO'),
-            ('panama','Panam&aacute;','&#127477;&#127462;','PA'),
-            ('colombia','Colombia','&#127464;&#127476;','CO'),
-            ('argentina','Argentina','&#127462;&#127479;','AR'),
-            ('espana','Espa&ntilde;a','&#127466;&#127480;','ES'),
-            ('peru','Per&uacute;','&#127477;&#127466;','PE'),
-            ('chile','Chile','&#127464;&#127473;','CL'),
-            ('ecuador','Ecuador','&#127466;&#127464;','EC')] %}
-        <a data-geo-for="{{ code }}" hidden href="/equipo/{{ team_slug }}/en/{{ cs }}"
-           style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 0.9rem;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;text-decoration:none;">
-            <span style="font-size:1.1rem;">{{ bandera|safe }}</span>
-            <span style="flex:1;min-width:0;">
-                <span style="display:block;font-size:0.85rem;font-weight:700;color:#166534;">&iquest;Lo ves desde {{ cn|safe }}?</span>
-                <span style="display:block;font-size:0.75rem;color:#15803d;">Canales y hora local de {{ team_name }} en {{ cn|safe }}</span>
-            </span>
-            <span style="color:#059669;font-weight:700;">&rarr;</span>
-        </a>
-        {% endfor %}
-    </div>
 
     {% else %}
     <div class="no-games" style="text-align:left;background:white;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem;">
