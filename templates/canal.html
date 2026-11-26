@@ -120,6 +120,13 @@
         .ch-info h2:first-child { margin-top:0; }
         .ch-info p { font-size:0.88rem; line-height:1.65; color:#374151; margin-bottom:0.5rem; }
         .ch-note { font-size:0.75rem; color:#9ca3af; }
+        /* El atributo hidden lo aplica [hidden]{display:none} de la hoja del
+           navegador, y cualquier display de autor le gana. Ayer eso hizo que
+           se pintaran las diez tarjetas de país a la vez en la ficha de
+           equipo. Aquí los dos textos son spans sin display propio, así que
+           hidden bastaría; la regla queda explícita para que no vuelva a
+           pasar si alguien les pone un display más adelante. */
+        .dv-ca-dentro[hidden], .dv-ca-fuera[hidden] { display: none; }
         .ch-link { color:#059669; font-weight:700; text-decoration:none; }
         .ch-ad { font-size:0.62rem; color:#9ca3af; }
         .ch-leagues { display:flex; flex-wrap:wrap; gap:0.35rem; margin-bottom:0.5rem; }
@@ -184,7 +191,10 @@
         <div style="flex:1;min-width:0;">
             <div style="font-size:1.25rem;font-weight:800;color:#fff;line-height:1.2;">{{ channel_name }}</div>
             <div style="font-size:0.78rem;color:#94a3b8;margin-top:0.15rem;">
-                {%- if ch_type == 'broadcast' %}TV abierta &middot; gratis
+                {#- "gratis" sin país era falso para medio público de la
+                    página. Aquí no hace falta JS: nombrar el país la vuelve
+                    cierta para cualquiera que la lea. -#}
+                {%- if ch_type == 'broadcast' %}TV abierta &middot; gratis{% if ch_pais_nombre %} en {{ ch_pais_nombre }}{% endif %}
                 {%- elif ch_type == 'streaming' %}Streaming &middot; suscripci&oacute;n
                 {%- elif ch_type == 'cable' %}TV de paga &middot; cable o sat&eacute;lite
                 {%- else %}Canal de deportes{% endif -%}
@@ -321,7 +331,24 @@
     {# ── Contenido permanente: cómo ver el canal y qué transmite ── #}
     <section class="ch-info">
         <h2>C&oacute;mo ver {{ channel_name }} en vivo</h2>
-        {% if howto %}<p>{{ howto }}</p>{% endif %}
+        {#- "Gratis con antena" es verdad en el país del canal y falso fuera.
+            Las dos frases se pintan siempre y el navegador enseña la que
+            toca, igual que el aviso de diáspora de la ficha de equipo:
+            /canal/ está en _HTML_CACHE_PREFIXES y la llave del caché no
+            lleva país, así que decidirlo en el servidor le serviría a un
+            texano la versión del mexicano.
+            Por omisión se ve la del país del canal — es la que debe indexar
+            Google, que rastrea desde la versión es-MX del sitio. -#}
+        {% if howto %}
+            {% if ch_pais_nombre and ch_type == 'broadcast' %}
+            <p class="dv-ca" data-dv-canal-pais="{{ ch_country }}">
+                <span class="dv-ca-dentro">{{ howto }}</span>
+                <span class="dv-ca-fuera" hidden>Es televisi&oacute;n abierta en {{ ch_pais_nombre }}: all&aacute; se ve gratis con antena y sin suscripci&oacute;n. Fuera de {{ ch_pais_nombre }} no tenemos confirmado si la se&ntilde;al llega ni con qu&eacute; operador, y no lo afirmamos sin comprobarlo.</span>
+            </p>
+            {% else %}
+            <p>{{ howto }}</p>
+            {% endif %}
+        {% endif %}
         {% if stream_route %}
         <p><strong>Por internet:</strong> {{ stream_route[1] }}</p>
         {% endif %}
@@ -354,8 +381,8 @@
         <h2>Preguntas frecuentes</h2>
         <div class="ch-faq">
             <p><b>&iquest;Qu&eacute; est&aacute;n pasando ahora en {{ channel_name }}?</b> {% if live_count %}En este momento hay {{ live_count }} partido{{ 's' if live_count != 1 else '' }} en vivo; lo ves arriba con el marcador actualizado.{% elif total_games %}Hoy hay {{ total_games }} partido{{ 's' if total_games != 1 else '' }} programado{{ 's' if total_games != 1 else '' }} en {{ channel_name }}; arriba est&aacute; el horario de cada uno.{% else %}Hoy no tenemos partidos programados en {{ channel_name }}. Arriba aparecen los pr&oacute;ximos d&iacute;as.{% endif %}</p>
-            <p><b>&iquest;{{ channel_name }} es gratis?</b> {% if ch_type == 'broadcast' %}S&iacute;: es televisi&oacute;n abierta y no necesitas suscripci&oacute;n.{% elif ch_type == 'streaming' %}No: requiere una suscripci&oacute;n de pago, aunque algunos planes incluyen prueba inicial.{% else %}No: forma parte de la televisi&oacute;n de paga, as&iacute; que necesitas un plan de cable o satélite que lo incluya.{% endif %}</p>
-            <p><b>&iquest;Se puede ver {{ channel_name }} sin cable?</b> {% if stream_route %}S&iacute;. {{ stream_route[1] }}{% elif ch_type == 'streaming' %}S&iacute;, es una plataforma de streaming: solo necesitas internet y una cuenta.{% elif ch_type == 'broadcast' %}S&iacute;, es TV abierta.{% else %}Depende de tu pa&iacute;s: algunos operadores ofrecen la se&ntilde;al en su propia app con tu cuenta de cable.{% endif %}</p>
+            <p><b>&iquest;{{ channel_name }} es gratis?</b> {% if ch_type == 'broadcast' %}{% if ch_pais_nombre %}<span class="dv-ca" data-dv-canal-pais="{{ ch_country }}"><span class="dv-ca-dentro">S&iacute;: es televisi&oacute;n abierta y no necesitas suscripci&oacute;n.</span><span class="dv-ca-fuera" hidden>En {{ ch_pais_nombre }} s&iacute;, porque es televisi&oacute;n abierta. Desde donde est&aacute;s no lo tenemos comprobado.</span></span>{% else %}S&iacute;: es televisi&oacute;n abierta y no necesitas suscripci&oacute;n.{% endif %}{% elif ch_type == 'streaming' %}No: requiere una suscripci&oacute;n de pago, aunque algunos planes incluyen prueba inicial.{% else %}No: forma parte de la televisi&oacute;n de paga, as&iacute; que necesitas un plan de cable o satélite que lo incluya.{% endif %}</p>
+            <p><b>&iquest;Se puede ver {{ channel_name }} sin cable?</b> {% if stream_route %}S&iacute;. {{ stream_route[1] }}{% elif ch_type == 'streaming' %}S&iacute;, es una plataforma de streaming: solo necesitas internet y una cuenta.{% elif ch_type == 'broadcast' %}{% if ch_pais_nombre %}<span class="dv-ca" data-dv-canal-pais="{{ ch_country }}"><span class="dv-ca-dentro">S&iacute;, es TV abierta.</span><span class="dv-ca-fuera" hidden>En {{ ch_pais_nombre }} s&iacute;, es TV abierta. Fuera de all&iacute; depende del operador y no lo tenemos comprobado.</span></span>{% else %}S&iacute;, es TV abierta.{% endif %}{% else %}Depende de tu pa&iacute;s: algunos operadores ofrecen la se&ntilde;al en su propia app con tu cuenta de cable.{% endif %}</p>
             <p><b>&iquest;En qu&eacute; horario est&aacute;n los partidos?</b> Todos los horarios de esta p&aacute;gina est&aacute;n en hora del centro de M&eacute;xico (CDMX). Si est&aacute;s en otro pa&iacute;s, en la p&aacute;gina de cada partido ves la hora local.</p>
         </div>
     </section>
@@ -364,7 +391,10 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
  {"@type":"Question","name":"¿Cómo ver {{ channel_name }} en vivo?","acceptedAnswer":{"@type":"Answer","text":"{{ howto }} {% if stream_route %}{{ stream_route[1] }}{% endif %}"}},
- {"@type":"Question","name":"¿{{ channel_name }} es gratis?","acceptedAnswer":{"@type":"Answer","text":"{% if ch_type == 'broadcast' %}Sí, es televisión abierta y no requiere suscripción.{% elif ch_type == 'streaming' %}No, requiere una suscripción de pago.{% else %}No, forma parte de la televisión de paga.{% endif %}"}},
+ {#- El schema no puede cambiar por visitante: es el mismo HTML cacheado y es
+    lo que Google puede enseñar en el resultado. Así que aquí la frase lleva
+    el país siempre, que es la única redacción cierta para cualquiera. -#}
+{"@type":"Question","name":"¿{{ channel_name }} es gratis?","acceptedAnswer":{"@type":"Answer","text":"{% if ch_type == 'broadcast' %}{% if ch_pais_nombre %}En {{ ch_pais_nombre }} sí: es televisión abierta y no requiere suscripción. Fuera de {{ ch_pais_nombre }} depende del operador.{% else %}Sí, es televisión abierta y no requiere suscripción.{% endif %}{% elif ch_type == 'streaming' %}No, requiere una suscripción de pago.{% else %}No, forma parte de la televisión de paga.{% endif %}"}},
  {"@type":"Question","name":"¿Qué partidos pasan hoy en {{ channel_name }}?","acceptedAnswer":{"@type":"Answer","text":"{% if total_games %}Hoy {{ channel_name }} transmite {{ total_games }} partido{{ 's' if total_games != 1 else '' }}, con horario del centro de México.{% else %}Hoy no hay partidos programados en {{ channel_name }}; en la página aparecen los próximos.{% endif %}"}}
 ]}
 </script>
@@ -379,5 +409,12 @@
 <script src="/static/dark-mode.js" defer></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/pwa-sw.js').catch(()=>{});}</script>
 <script src="/static/affiliate.js" defer></script>
+{#- timezone.js faltaba justo aquí, y sin él el texto por país de arriba no
+    se ejecutaría nunca: el arreglo habría quedado muerto en el HTML.
+    Esta plantilla era de las pocas del sitio que no lo cargaba.
+    No toca las horas: convertTimes busca elementos [data-utc] y esta página
+    no tiene ninguno, así que sigue mostrando hora del centro de México, que
+    es lo que el pie ya declara. -#}
+<script src="/static/timezone.js" defer></script>
 </body>
 </html>

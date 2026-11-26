@@ -2855,6 +2855,28 @@ CHANNEL_STREAM_ROUTE = {
     "fox-sports-mx": ("Fox One", "Fox One es la app de streaming de Fox Sports México."),
 }
 
+# El país de cada canal, con nombre, para no afirmar fuera de él lo que sólo
+# vale ahí.
+#
+# POR QUÉ EXISTE. /canal/azteca-7 decía "Es televisión abierta: se ve gratis
+# con antena", y la FAQ remataba con "¿Azteca 7 es gratis? Sí". En México es
+# cierto. En Estados Unidos no, y Estados Unidos es justo donde esa página
+# convierte mejor de todo el sitio: 21,6 % de CTR en 28 días, medido el
+# 26/11/2026 en Search Console. O sea, al paisano que llega —y llega casi
+# todo el que nos ve— le dábamos la respuesta equivocada para donde está.
+#
+# No se arregla afirmando otra cosa: decir por qué operador se ve Azteca 7 en
+# EE. UU. exigiría verificar derechos canal por canal. Se arregla dejando de
+# afirmar. Donde no lo tenemos comprobado, se dice que no lo tenemos
+# comprobado.
+#
+# LATAM queda fuera a propósito: no es un país, y "en LATAM se ve gratis con
+# antena" no significa nada para nadie.
+_PAIS_CANAL_NOMBRE = {
+    "MX": "México", "US": "Estados Unidos", "VE": "Venezuela",
+    "ES": "España", "DO": "República Dominicana", "PA": "Panamá",
+}
+
 _CHANNEL_TYPE_HOWTO = {
     "broadcast": "Es televisión abierta: se ve gratis con antena o en la señal digital de tu zona, sin suscripción.",
     "cable": "Es un canal de televisión de paga: necesitas un plan de cable o satélite que lo incluya, o la app oficial del canal iniciando sesión con tu proveedor.",
@@ -3060,6 +3082,9 @@ async def canal_page(request: Request, channel_slug: str, date: Optional[str] = 
             "saff": saff,
             "ch_type": ch_type,
             "ch_country": ch_country,
+            # Vacío cuando el canal es "LATAM" o no tiene país: la plantilla
+            # usa eso como señal de "no hagas el cambio por país".
+            "ch_pais_nombre": _PAIS_CANAL_NOMBRE.get(ch_country, ""),
             "ch_desc": ch_desc,
             "ch_cerrado": ch_cerrado,
             "ch_nota": ch_nota,

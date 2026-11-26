@@ -347,8 +347,33 @@
     });
   }
 
+  // ── Canales: "gratis con antena" sólo donde es verdad ──
+  //
+  // La página de un canal se escribe desde su país: Azteca 7 "se ve gratis
+  // con antena" es cierto en México y falso en Houston. Y Houston es donde
+  // esa página mejor convierte: 21,6 % de CTR en 28 días. Al que llegaba le
+  // dábamos la respuesta equivocada para donde está.
+  //
+  // El HTML trae las dos redacciones y aquí se elige. Si no sabemos el país
+  // —o es el del canal— se queda la de dentro, que es la que debe indexar
+  // Google.
+  function textoDeCanal(country) {
+    var bloques = document.querySelectorAll('.dv-ca[data-dv-canal-pais]');
+    if (!bloques.length) return;
+    bloques.forEach(function(b) {
+      var paisCanal = b.getAttribute('data-dv-canal-pais');
+      var fuera = !!(country && paisCanal && country !== paisCanal);
+      var dentro = b.querySelector('.dv-ca-dentro');
+      var otro = b.querySelector('.dv-ca-fuera');
+      // Reversible a propósito: el usuario puede cambiar de país a mano.
+      if (dentro) dentro.hidden = fuera;
+      if (otro) otro.hidden = !fuera;
+    });
+  }
+
   // ── Main init ──────────────────────────────────────────
   function init(country) {
+    textoDeCanal(country);
     convertTimes(country);
     updateSelectorUI(country);
     setupSelector();
@@ -381,5 +406,6 @@
     applyAffiliateGeo(quickCountry);
     reorderChannels(quickCountry);
     showGeoCTA(quickCountry);
+    textoDeCanal(quickCountry);
   }
 })();
