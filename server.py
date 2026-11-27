@@ -12537,11 +12537,37 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
     # partido. Que acertara era casualidad —la Champions en España también es
     # de Movistar—, pero la próxima vez no tiene por qué.
     _ch_de_hoy = ""
+    # ¿Ese canal está CONFIRMADO para este partido, o es el habitual de la
+    # liga? El cuerpo de la página ya distingue las dos cosas y pinta
+    # "· probable" cuando no lo está. El título y la descripción no lo
+    # miraban, y el resultado era una página diciéndose lo contrario a sí
+    # misma. Medido el 26/11/2026 en /equipo/chivas/en/estados-unidos:
+    #
+    #   <title>  … 8:00 PM en FOX vs Pachuca
+    #   <meta>   GRATIS por FOX, en TV abierta y sin suscripción
+    #   cuerpo   FOX · probable
+    #
+    # (Al revisarlo creí además que el "gratis, TV abierta" era falso porque
+    # la tabla de la página lista FOX Deportes como CABLE. NO lo era: el
+    # emisor del partido es "FOX", la cadena abierta, que sí está en
+    # FREE_CHANNELS_US y no casa con "FOX Deportes" porque la comparación es
+    # exacta. Son dos canales distintos y las dos frases eran correctas por
+    # separado. El fallo real es sólo el de arriba: afirmar lo que el propio
+    # cuerpo marca como probable.)
+    #
+    # Lo ve justo el público de EE. UU., que ese día pagó un RPM de 328 — el
+    # más alto del sitio.
+    #
+    # Poner "probable" en el título no sirve: ya se descartó esa vía arriba
+    # (ver la nota de "Por confirmar"), porque en Google se lee como un
+    # error. Lo correcto es callar el canal, que es lo que hace _ch_ok.
+    _ch_confirmado = True
     for _g in (games or []):
         for _b in (_g.get("broadcasts_pais") or []):
             _n = _nombre_canal(_b)
             if _n:
                 _ch_de_hoy = _n
+                _ch_confirmado = bool(_g.get("channels_confirmed", True))
                 break
         if _ch_de_hoy:
             break
@@ -12578,7 +12604,10 @@ async def team_country_page(request: Request, team_slug: str, country_slug: str)
                        and bool(country_channels)
                        and bool(country_channels[0].get("placeholder")))
     _ch_ok = (bool(first_ch) and not _ch_placeholder
-              and "confirmar" not in first_ch.lower())
+              and "confirmar" not in first_ch.lower()
+              # Un canal sólo "probable" no entra en el título ni en la
+              # descripción. Ver la nota de _ch_confirmado.
+              and _ch_confirmado)
 
     # 02/11/2026: el mismo error de antes, un paso más abajo. Si no hay emisor
     # confirmado, la ficha decía "No tenemos un emisor confirmado en España

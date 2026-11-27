@@ -112,6 +112,35 @@
         .tip-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; line-height: 1.6; color: #166534; }
         .footer { background: #1a1a2e; color: #9ca3af; text-align: center; padding: 1.5rem 1rem; font-size: 0.75rem; margin-top: 2rem; }
         .footer a { color: #10b981; text-decoration: none; }
+
+        /* ── Tarjeta de respuesta ────────────────────────────────────────
+           Quien llega aquí escribió "donde ver chivas hoy en usa". Quiere
+           dos datos: a qué hora y en qué canal, EN SU PAÍS. Hasta ahora
+           lo primero que veía era el escudo, un H1, un párrafo genérico y
+           una fila de banderas de otros diez países; la respuesta estaba
+           más abajo, en letra pequeña dentro de la tarjeta de partido.
+
+           El 26/11/2026 estas páginas tuvieron su mejor día: León 479
+           impresiones de EE. UU., Chivas 235, Pachuca 195 — y 2, 2 y 3
+           clics. Son las páginas correctas llegándole al público
+           correcto; lo que fallaba era lo que se ve al abrirlas. */
+        .dv-resp{border-radius:16px;padding:1rem 1.15rem;margin:0 0 1.25rem;color:#fff;
+                 background:linear-gradient(135deg,#0b1020 0%,#13224a 60%,#1d4ed8 100%);
+                 box-shadow:0 2px 12px rgba(11,16,32,.2)}
+        .dv-resp-eti{display:flex;align-items:center;gap:.45rem;font-size:.68rem;font-weight:800;
+                     letter-spacing:.08em;text-transform:uppercase;color:#93c5fd;margin-bottom:.5rem}
+        .dv-resp-vivo{background:#ef4444;color:#fff;padding:.1rem .45rem;border-radius:999px;
+                      letter-spacing:.04em}
+        .dv-resp-duelo{font-size:1.02rem;font-weight:900;line-height:1.25}
+        .dv-resp-hora{font-size:2rem;font-weight:900;line-height:1.1;margin:.35rem 0 .1rem}
+        .dv-resp-tz{font-size:.72rem;color:#cbd5e1;font-weight:600}
+        .dv-resp-can{display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;margin-top:.7rem}
+        .dv-resp-can b{font-size:.7rem;font-weight:800;color:#93c5fd;text-transform:uppercase;
+                       letter-spacing:.06em}
+        .dv-resp-chip{background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:.8rem;
+                      padding:.25rem .6rem;border-radius:8px}
+        .dv-resp-chip.prob{background:rgba(255,255,255,.08);color:#cbd5e1;font-weight:600}
+        .dv-resp-nota{font-size:.72rem;color:#cbd5e1;margin-top:.5rem;line-height:1.45}
     </style>
 </head>
 <body>
@@ -140,6 +169,66 @@
        /equipo/, /liga/ y /canal/; bajó al final de la cabecera. #}
     <p>Canales de TV, cable y streaming para ver los partidos de {{ team_name }}{% if team_league %} ({{ team_league }}){% endif %} en vivo desde {{ country_name }}.</p>
 </div>
+
+{#- La respuesta, arriba del todo. Ver la nota de .dv-resp en el <style>.
+    Sale tanto si hay partido hoy como si el próximo es en unos días: en
+    los dos casos la pregunta es la misma, "¿a qué hora y en qué canal?". -#}
+{% set ns = namespace(hoy=None) %}
+{% for g in (games or []) %}{% if ns.hoy is none and g.status.state in ('pre', 'in') %}{% set ns.hoy = g %}{% endif %}{% endfor %}
+{% if ns.hoy %}
+{%- set _g = ns.hoy -%}
+{%- set _home_left = _g.sport in ('soccer', 'boxing', 'mma') -%}
+{%- set _a = _g.home if _home_left else _g.away -%}
+{%- set _b = _g.away if _home_left else _g.home -%}
+{%- set _conf = _g.get('channels_confirmed', True) -%}
+<div class="dv-resp">
+    <div class="dv-resp-eti">
+        <span>{{ country_flag }} {{ country_name }}</span>
+        {% if _g.status.state == 'in' %}<span class="dv-resp-vivo">EN VIVO</span>{% else %}<span>&middot; Hoy</span>{% endif %}
+    </div>
+    <div class="dv-resp-duelo">{{ _a.name }} vs {{ _b.name }}</div>
+    {% if _g.status.state != 'in' %}
+    <div class="dv-resp-hora">{{ format_local_time(_g.date) }}</div>
+    {#- tz_label ya viene redactado ("hora del Este (ET)", "hora peninsular
+        española"…). Anteponerle "hora de {país}" producía "hora de Estados
+        Unidos (hora del Este (ET))". -#}
+    <div class="dv-resp-tz">{{ tz_label }}</div>
+    {% endif %}
+    <div class="dv-resp-can">
+        <b>&#128250; D&oacute;nde</b>
+        {% if _g.broadcasts_pais %}
+            {% for b in _g.broadcasts_pais %}
+            <span class="dv-resp-chip {% if not _conf %}prob{% endif %}">{{ b.channel }}</span>
+            {% endfor %}
+        {% else %}
+            <span class="dv-resp-chip prob">Por confirmar en {{ country_name }}</span>
+        {% endif %}
+    </div>
+    {#- Si el emisor no está confirmado se dice aquí, con todas las letras.
+        Era justo la contradicción de esta plantilla: el título afirmaba
+        "GRATIS por FOX" y el cuerpo marcaba "FOX · probable". -#}
+    {% if _g.broadcasts_pais and not _conf %}
+    <div class="dv-resp-nota">Es el canal habitual de {{ team_league or 'la liga' }} en {{ country_name }}, todav&iacute;a sin confirmar para este partido.</div>
+    {% elif not _g.broadcasts_pais %}
+    <div class="dv-resp-nota">A&uacute;n no tenemos emisor confirmado para {{ country_name }}. Abajo est&aacute;n los canales que suelen dar {{ team_league or team_name }} aqu&iacute;.</div>
+    {% endif %}
+</div>
+{% elif next_game %}
+<div class="dv-resp">
+    <div class="dv-resp-eti"><span>{{ country_flag }} {{ country_name }}</span><span>&middot; Pr&oacute;ximo partido</span></div>
+    <div class="dv-resp-duelo">{{ next_game.home }} vs {{ next_game.away }}</div>
+    <div class="dv-resp-hora">{{ next_game.day_local }}</div>
+    <div class="dv-resp-tz">{% if next_game.hora_fiable %}{{ next_game.time_local }} &middot; {{ tz_label }}{% else %}horario por confirmar{% endif %}</div>
+    <div class="dv-resp-can">
+        <b>&#128250; D&oacute;nde</b>
+        {% if next_game.local_channels %}
+            {% for c in next_game.local_channels %}<span class="dv-resp-chip">{{ c }}</span>{% endfor %}
+        {% else %}
+            <span class="dv-resp-chip prob">Por confirmar en {{ country_name }}</span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 
 {{ ad('top') }}
 
