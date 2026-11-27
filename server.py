@@ -972,9 +972,25 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
             # punto de empezar: ahí 300 s de HTML viejo es una mentira.
             _ttl_corto = None
             _destino = store
+            _no_guardar = False
             try:
                 _v = int(response.headers.get("x-dv-ttl") or 0)
-                if 0 < _v <= 300:
+                # NEGATIVO = no guardar. La ruta ha visto que le falta un dato
+                # y prefiere que el siguiente visitante vuelva a pedirlo antes
+                # que heredar el hueco durante cinco minutos.
+                #
+                # Visto en producción el 27/11/2026 en /liga/asobal: el primer
+                # render tras el despliegue pilló a TheSportsDB devolviendo
+                # vacío en eventsnextleague, y la página se quedó sin "Próxima
+                # jornada". Pidiéndola sin caché salían las 12 filas.
+                #
+                # fetch_sportsdb_next_events ya se protege de cachear listas
+                # vacías —se arregló en su día para /liga/futve— pero este
+                # caché guarda el HTML ya montado y no mira de qué está hecho.
+                # Era el mismo fallo un piso más arriba.
+                if _v < 0:
+                    _no_guardar = True
+                elif 0 < _v <= 300:
                     _ttl_corto = _mono() + _v
                 elif _v > 300 and not is_home:
                     # La ruta declara que hoy no pasa nada en esta página.
@@ -984,11 +1000,17 @@ class HTMLCacheMiddleware(BaseHTTPMiddleware):
                     _destino = _HTML_CACHE_LARGO
             except (TypeError, ValueError):
                 pass
-            _destino[key] = (_zlib.compress(body, 6), ctype, _ttl_corto)
+            if not _no_guardar:
+                _destino[key] = (_zlib.compress(body, 6), ctype, _ttl_corto)
             headers = dict(response.headers)
             headers.pop("content-length", None)
             headers.pop("x-dv-ttl", None)
-            headers["X-Cache"] = "MISS"
+            headers["X-Cache"] = "SKIP" if _no_guardar else "MISS"
+            if _no_guardar:
+                # Y que tampoco lo guarde Cloudflare ni el navegador: si la
+                # respuesta está incompleta, cachearla fuera es el mismo
+                # problema en otra capa.
+                headers["cache-control"] = "no-store"
             if _ttl_corto is not None:
                 headers["cache-control"] = "public, max-age=15, s-maxage=15"
             # dict(response.headers) trae las claves en minúscula, así que un
@@ -4673,11 +4695,19 @@ async def liga_asobal(request: Request):
             _p["cuando"] = f"{_DIAS_ES[_d.weekday()][:3]} {_d.day} · {_d.strftime('%H:%M')}"
         except Exception:
             _p["cuando"] = ""
-    return templates.TemplateResponse(
+    _r = templates.TemplateResponse(
         request, "asobal.html",
         {"year": datetime.now(TZ_MX).year,
          "proximos": _prox[:12], "ultimos": _ult[:8]}
     )
+    # Sin próximos partidos esta página no responde a lo que viene a buscar
+    # el lector. Puede ser real (fin de temporada) o un fallo pasajero de la
+    # API, y desde aquí no se distinguen — pero en los dos casos es mejor que
+    # el siguiente visitante lo vuelva a pedir que heredar el hueco cinco
+    # minutos. Ver el "NEGATIVO = no guardar" en HTMLCacheMiddleware.
+    if not _prox:
+        _r.headers["x-dv-ttl"] = "-1"
+    return _r
 
 
 async def _marcar_transmisiones(games: list[dict], liga: str = "") -> int:
