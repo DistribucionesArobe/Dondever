@@ -4627,14 +4627,56 @@ async def liga_asobal(request: Request):
     Va ANTES de /liga/{league_slug} a propósito: FastAPI casa las rutas en
     orden de declaración y el comodín se tragaría "asobal".
 
-    Es la única liga del sitio que se explica a mano. Comprobado el 17/10/2026
-    contra TheSportsDB: 240 partidos cargados de 2025-26 y CERO de 2026-27, la
-    temporada en curso. Con una página de liga normal saldrían los partidos
-    del año pasado. Así que se responde lo que trae al lector —dónde se ve y
-    cuánto cuesta— con datos verificados, y el calendario cuando lo haya.
+    Era la única liga del sitio que se explicaba a mano. El 17/10/2026
+    TheSportsDB tenía 240 partidos de 2025-26 y CERO de 2026-27, así que una
+    página de liga normal habría enseñado los partidos del año pasado; se
+    respondió lo que trae al lector —dónde se ve y cuánto cuesta— y se dejó
+    el calendario "para cuando lo haya".
+
+    YA LO HAY. Comprobado el 27/11/2026: la temporada 2026-27 tiene 249
+    partidos cargados, 16 equipos, del 11/09/2026 al 05/06/2027, con 80 ya
+    jugados y con marcador. O sea que la causa del parche desapareció.
+
+    Lo que NO se hace aquí, a propósito: convertir el balonmano en un deporte
+    más del sitio. Eso significaría un noveno valor de `sport` recorriendo
+    unos ochenta condicionales de plantilla, dieciséis fichas de equipo y la
+    colisión de "FC Barcelona Handbol" con el Barça de fútbol. ASOBAL todavía
+    no ha traído una sola visita medida; gastar eso antes de saberlo es al
+    revés. Con el calendario aquí ya se responde "qué hay hoy", que es lo que
+    faltaba. Si trae tráfico, se promueve a liga completa.
     """
+    # Las dos funciones son genéricas y ya existían para las ligas de
+    # TheSportsDB; comprobado que responden para balonmano (20 próximos y 15
+    # jugados el 27/11). Si alguna falla, la página sigue siendo la de antes.
+    try:
+        from sports_api import fetch_sportsdb_next_events, fetch_sportsdb_past_events
+        _prox, _ult = await asyncio.gather(
+            fetch_sportsdb_next_events("4534"),
+            fetch_sportsdb_past_events("4534"),
+        )
+    except Exception as e:
+        logger.warning("calendario ASOBAL no disponible: %s", e)
+        _prox, _ult = [], []
+    # Un partido sin marcador llega con None y pintaría "null-null"
+    # (visto en CD Bidasoa vs Barcelona del 21/11). Fuera.
+    _ult = [r for r in _ult
+            if str(r.get("home_score")) not in ("None", "", "null")
+            and str(r.get("away_score")) not in ("None", "", "null")]
+    # La fecha se formatea aquí y no en la plantilla: es una liga española y
+    # el horario que importa es el de Madrid, no el de México.
+    # format_local_time vive dentro de la ruta de país, no es global.
+    from zoneinfo import ZoneInfo as _ZI
+    _tz_es = _ZI("Europe/Madrid")
+    for _p in _prox:
+        try:
+            _d = datetime.fromisoformat(str(_p.get("date", "")).replace("Z", "+00:00")).astimezone(_tz_es)
+            _p["cuando"] = f"{_DIAS_ES[_d.weekday()][:3]} {_d.day} · {_d.strftime('%H:%M')}"
+        except Exception:
+            _p["cuando"] = ""
     return templates.TemplateResponse(
-        request, "asobal.html", {"year": datetime.now(TZ_MX).year}
+        request, "asobal.html",
+        {"year": datetime.now(TZ_MX).year,
+         "proximos": _prox[:12], "ultimos": _ult[:8]}
     )
 
 

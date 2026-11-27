@@ -92,6 +92,21 @@
                 color:#1e40af;font-weight:700;text-decoration:none;font-size:.78rem}
         .footer{background:#1a1a2e;color:#9ca3af;text-align:center;padding:1.2rem;font-size:.8rem}
         .footer a{color:#10b981;text-decoration:none}
+
+        /* ── Calendario ───────────────────────────────────────────────────
+           Esta página nació sin él: en octubre TheSportsDB sólo tenía la
+           temporada 2025-26 y pintar eso habría sido enseñar partidos del
+           año pasado. Ya hay 2026-27 cargada (comprobado el 27/11), así que
+           la página puede responder además "qué hay hoy", que es lo que
+           trae a la gente a un sitio que se llama DondeVer. */
+        .cal{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.6rem}
+        .cal-row{display:flex;align-items:center;gap:.6rem;background:var(--bg-card,#fff);
+                 border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:.55rem .75rem}
+        .cal-fecha{flex:0 0 auto;font-size:.72rem;font-weight:800;color:#1d4ed8;min-width:5.2rem}
+        .cal-eq{flex:1;min-width:0;font-size:.85rem;font-weight:700;color:var(--text-primary,#1a1a2e);
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .cal-marc{flex:0 0 auto;font-size:.85rem;font-weight:900;color:var(--text-primary,#1a1a2e)}
+        .cal-nota{font-size:.72rem;color:#9ca3af;margin:.2rem 0 1.2rem}
     </style>
 </head>
 <body>
@@ -112,6 +127,34 @@
             <span class="pill">Desde el 11 de septiembre</span>
         </div>
     </div>
+
+    {#- El calendario va ANTES de las opciones de pago: quien llega buscando
+        "asobal hoy" quiere el partido, no la tarifa. Si la API no responde
+        las dos listas vienen vacías y la página es la de siempre. -#}
+    {% if proximos %}
+    <h2>Pr&oacute;ximos partidos</h2>
+    <div class="cal">
+        {% for p in proximos %}
+        <div class="cal-row">
+            <span class="cal-fecha">{{ p.cuando }}</span>
+            <span class="cal-eq">{{ p.home }} vs {{ p.away }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    <p class="cal-nota">Horarios de Espa&ntilde;a. Calendario de TheSportsDB; puede cambiar.</p>
+    {% endif %}
+
+    {% if ultimos %}
+    <h2>&Uacute;ltimos resultados</h2>
+    <div class="cal">
+        {% for r in ultimos %}
+        <div class="cal-row">
+            <span class="cal-eq">{{ r.home }} vs {{ r.away }}</span>
+            <span class="cal-marc">{{ r.home_score }}&ndash;{{ r.away_score }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <h2>Las tres opciones</h2>
     <div class="opts">
