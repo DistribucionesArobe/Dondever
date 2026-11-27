@@ -8158,6 +8158,16 @@ async def sitemap_core():
         ("privacidad", "monthly", "0.3"),
         ("terminos", "monthly", "0.3"),
         ("clasicos", "weekly", "0.8"),
+        # /liga/asobal existía desde el 17/10 y NO estaba aquí, ni se
+        # enlazaba desde ninguna plantilla del sitio (comprobado con grep el
+        # 27/11: cero resultados fuera de su propia ruta). O sea: Google
+        # nunca supo que existe y nadie podía llegar navegando.
+        #
+        # Esto corrige una conclusión que yo mismo había dado por buena hace
+        # un rato: "ASOBAL no ha traído una sola visita medida". Cierto, y
+        # no dice nada de la liga — una página huérfana no puede traer
+        # visitas. El experimento nunca llegó a correr.
+        ("liga/asobal", "weekly", "0.7"),
         ("guia/donde-ver-liga-mx", "weekly", "0.8"),
         ("guia/donde-ver-nfl-en-mexico", "weekly", "0.8"),
         ("guia/donde-ver-nba-en-mexico", "weekly", "0.8"),
@@ -8842,6 +8852,9 @@ COUNTRY_SPORT_PRIORITY = {
             {"label": "⚽ Dónde ver LaLiga", "url": "/liga/la-liga"},
             {"label": "🏆 Dónde ver Champions League", "url": "/liga/champions"},
             {"label": "🏀 Dónde ver Liga Endesa", "url": "/liga/liga-endesa"},
+            # El enlace más topical que tenemos para ASOBAL: liga española,
+            # en la página de España. Sin esto la página seguía huérfana.
+            {"label": "🤾 Dónde ver la Liga ASOBAL", "url": "/liga/asobal"},
             {"label": "🏎️ Dónde ver F1", "url": "/liga/f1"},
             {"label": "🏍️ Dónde ver MotoGP", "url": "/liga/motogp"},
             {"label": "🏀 Dónde ver NBA", "url": "/liga/nba"},
