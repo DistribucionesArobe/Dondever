@@ -99,14 +99,29 @@
            año pasado. Ya hay 2026-27 cargada (comprobado el 27/11), así que
            la página puede responder además "qué hay hoy", que es lo que
            trae a la gente a un sitio que se llama DondeVer. */
-        .cal{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.6rem}
-        .cal-row{display:flex;align-items:center;gap:.6rem;background:var(--bg-card,#fff);
-                 border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:.55rem .75rem}
-        .cal-fecha{flex:0 0 auto;font-size:.72rem;font-weight:800;color:#1d4ed8;min-width:5.2rem}
-        .cal-eq{flex:1;min-width:0;font-size:.85rem;font-weight:700;color:var(--text-primary,#1a1a2e);
-                overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .cal-marc{flex:0 0 auto;font-size:.85rem;font-weight:900;color:var(--text-primary,#1a1a2e)}
+           Usa la MISMA tabla que /liga/{slug} —escudo a la izquierda, fecha
+           en naranja al centro, visitante a la derecha— en vez de un diseño
+           propio. Que una liga se vea distinta de las demás no la hace
+           especial, la hace parecer a medio hacer. */
+        .cal-table{width:100%;border-collapse:collapse;background:var(--bg-card,#fff);
+                   border:1px solid var(--border,#e5e7eb);border-radius:10px;overflow:hidden;
+                   font-size:.78rem;margin-bottom:.4rem}
+        .cal-table th{background:#f9fafb;padding:.5rem .6rem;text-align:left;font-weight:700;
+                      color:#6b7280;font-size:.7rem;text-transform:uppercase;border-bottom:2px solid #e5e7eb}
+        .cal-table td{padding:.45rem .6rem;border-bottom:1px solid #f3f4f6}
+        .cal-table tr:last-child td{border-bottom:none}
+        .cal-table tr:hover{background:#f0fdf4}
+        .cal-eq{display:flex;align-items:center;gap:.4rem;font-weight:600}
+        .cal-eq.der{justify-content:flex-end}
+        .cal-logo{width:20px;height:20px;border-radius:50%;object-fit:contain;flex:0 0 auto}
+        .cal-cuando{text-align:center;font-weight:600;color:#f97316;white-space:nowrap}
+        .cal-marc{text-align:center;font-weight:800;color:var(--text-primary,#1a1a2e);white-space:nowrap}
         .cal-nota{font-size:.72rem;color:#9ca3af;margin:.2rem 0 1.2rem}
+        @media (max-width:560px){
+            .cal-table{font-size:.7rem}
+            .cal-table th,.cal-table td{padding:.35rem .4rem}
+            .cal-logo{width:16px;height:16px}
+        }
     </style>
 </head>
 <body>
@@ -132,28 +147,48 @@
         "asobal hoy" quiere el partido, no la tarifa. Si la API no responde
         las dos listas vienen vacías y la página es la de siempre. -#}
     {% if proximos %}
-    <h2>Pr&oacute;ximos partidos</h2>
-    <div class="cal">
-        {% for p in proximos %}
-        <div class="cal-row">
-            <span class="cal-fecha">{{ p.cuando }}</span>
-            <span class="cal-eq">{{ p.home }} vs {{ p.away }}</span>
-        </div>
-        {% endfor %}
-    </div>
-    <p class="cal-nota">Horarios de Espa&ntilde;a. Calendario de TheSportsDB; puede cambiar.</p>
+    <h2>Pr&oacute;xima jornada</h2>
+    <table class="cal-table">
+        <thead>
+            <tr>
+                <th>Local</th>
+                <th style="text-align:center">Fecha y hora</th>
+                <th style="text-align:right">Visitante</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in proximos %}
+            <tr>
+                <td><span class="cal-eq">{% if p.home_logo %}<img src="{{ p.home_logo }}" alt="" class="cal-logo" loading="lazy">{% endif %}{{ p.home }}</span></td>
+                <td class="cal-cuando">{{ p.cuando }}</td>
+                <td><span class="cal-eq der">{{ p.away }}{% if p.away_logo %}<img src="{{ p.away_logo }}" alt="" class="cal-logo" loading="lazy">{% endif %}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="cal-nota">Horarios de Espa&ntilde;a. El calendario puede cambiar.</p>
     {% endif %}
 
     {% if ultimos %}
     <h2>&Uacute;ltimos resultados</h2>
-    <div class="cal">
-        {% for r in ultimos %}
-        <div class="cal-row">
-            <span class="cal-eq">{{ r.home }} vs {{ r.away }}</span>
-            <span class="cal-marc">{{ r.home_score }}&ndash;{{ r.away_score }}</span>
-        </div>
-        {% endfor %}
-    </div>
+    <table class="cal-table">
+        <thead>
+            <tr>
+                <th>Local</th>
+                <th style="text-align:center">Resultado</th>
+                <th style="text-align:right">Visitante</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in ultimos %}
+            <tr>
+                <td><span class="cal-eq">{% if r.home_logo %}<img src="{{ r.home_logo }}" alt="" class="cal-logo" loading="lazy">{% endif %}{{ r.home }}</span></td>
+                <td class="cal-marc">{{ r.home_score }}&ndash;{{ r.away_score }}</td>
+                <td><span class="cal-eq der">{{ r.away }}{% if r.away_logo %}<img src="{{ r.away_logo }}" alt="" class="cal-logo" loading="lazy">{% endif %}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     {% endif %}
 
     <h2>Las tres opciones</h2>
